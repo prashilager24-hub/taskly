@@ -1,5 +1,6 @@
 import { pool } from '../../config/db';
 import type mysql from 'mysql2/promise';
+import ExcelJS from 'exceljs';
 
 // ── Dashboard filter shape (mirrors Java DashBoardFilter) ─────────────────────
 export interface DashBoardFilter {
@@ -519,4 +520,46 @@ async function getFLGoalSummary(filter: DashBoardFilter) {
     [filter.startDate, filter.endDate],
   );
   return rows;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Excel download: /download-efficiency-summary
+// Port of Java EfficiencyReportService.downloadEfficiencySummaryExcel()
+// ─────────────────────────────────────────────────────────────────────────────
+export async function downloadEfficiencySummary(filter: EfficiencySummaryFilter): Promise<Buffer> {
+  // Re-use the same query as listEfficiencyReport so data is identical
+  const rows = await listEfficiencyReport(filter);
+
+  const workbook  = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Efficiency Summary');
+
+  worksheet.columns = [
+    { header: 'Department',          key: 'DepartmentName',           width: 25 },
+    { header: 'User',                key: 'UserName',                 width: 25 },
+    { header: 'Avg Target %',        key: 'AvgTargetPercent',         width: 15 },
+    { header: 'Avg Utilization %',   key: 'AvgUtilizationPercent',    width: 18 },
+    { header: 'Avg Allocated Hrs',   key: 'AvgAllocatedHrs',          width: 18 },
+    { header: 'Avg Total Work',      key: 'AvgTotalWork',             width: 16 },
+    { header: 'Efficiency Level',    key: 'EfficiencyLevel',          width: 18 },
+  ];
+
+  // Style header row
+  const headerRow = worksheet.getRow(1);
+  headerRow.eachCell((cell) => {
+    cell.font      = { bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+  });
+
+  for (const row of rows as Record<string, unknown>[]) {
+    worksheet.addRow(row);
+  }
+
+  // Auto-fit row height for data rows
+  worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+    if (rowNumber > 1) row.height = 20;
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
 }

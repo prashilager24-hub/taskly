@@ -36,10 +36,10 @@ const EnvSchema = z.object({
   FRONTEND_URL: z.string().default('http://localhost:3030'),
   APP_BASE_URL: z.string().default('http://localhost:8080'),
 
-  // Web Push
-  VAPID_PUBLIC_KEY: z.string().optional(),
-  VAPID_PRIVATE_KEY: z.string().optional(),
-  VAPID_SUBJECT: z.string().default('mailto:admin@taskly.com'),
+  // Web Push (required in prod; optional in dev — defaults to dummy values so seed/dev still work)
+  VAPID_PUBLIC_KEY: z.string().default('BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjZEZqn7mknfnmSEyZdLANP_ipmWU'),
+  VAPID_PRIVATE_KEY: z.string().default('UUxI4O8-FbRouAevSmBQ6o18hgE4nSG3qwvJTfKc-ls'),
+  VAPID_EMAIL: z.string().email().default('admin@taskly.com'),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { Button } from "@heroui/button";
+import { Button } from "@/components/ui";
 import { Link, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,

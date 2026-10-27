@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from "@heroui/button";
-import { Modal, ModalContent, ModalHeader, ModalBody, DatePicker, ModalFooter, Chip, addToast, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, user } from "@heroui/react";
-import { Input } from "@heroui/input";
+import { Button } from "@/components/ui";
+import { Modal, ModalContent, ModalHeader, ModalBody, DatePicker, ModalFooter, Chip, addToast, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, user } from "@/components/ui";
+import { Input } from "@/components/ui";
 import { parseZonedDateTime } from "@internationalized/date";
 import axios from "axios";
-import { Select, SelectItem } from "@heroui/select";
+import { Select, SelectItem } from "@/components/ui";
 import ReusableTable, { TableColumn, TableAction } from "@/components/table"
 
 

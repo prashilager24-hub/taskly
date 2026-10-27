@@ -20,7 +20,7 @@ import {
     useDisclosure,
     addToast,
     Tabs, Tab
-} from "@heroui/react";
+} from "@/components/ui";
 import { format, isSameQuarter } from "date-fns";
 import CustomDateRangePicker from "../components/CustomDateRangePicker";
 import { finalGradeFromPercent, finalGradeLabelFromPercent } from "../lib/pmsGrade";

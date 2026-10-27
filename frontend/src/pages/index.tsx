@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { Input } from "@heroui/input";
+import { Input } from "@/components/ui";
 import {
   Card, CardBody, CardHeader, addToast,
   Button
-} from "@heroui/react";
+} from "@/components/ui";
 import { EyeFilledIcon, EyeSlashFilledIcon } from "@heroui/shared-icons";
 import { title } from "@/components/primitives";
 import { subscribeToPush } from "../lib/pushClient";

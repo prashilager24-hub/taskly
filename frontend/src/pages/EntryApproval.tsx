@@ -17,7 +17,7 @@ import {
     DrawerFooter,
 
     useDisclosure,
-} from "@heroui/react";
+} from "@/components/ui";
 import ReusableTable, { TableColumn, TableAction } from "@/components/table"
 import CustomDateRangePicker from "../components/CustomDateRangePicker"
 import { format } from "date-fns";

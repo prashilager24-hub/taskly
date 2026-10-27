@@ -1,32 +1,72 @@
 @import "tailwindcss";
 
-/* Poppins font definitions */
-@font-face {
-  font-family: "Poppins";
-  src: url("/fonts/poppins-regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
+/* Poppins is self-hosted via @fontsource/poppins (imported in main.tsx) */
 
-@font-face {
-  font-family: "Poppins";
-  src: url("/fonts/poppins-medium.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Poppins";
-  src: url("/fonts/poppins-bold.woff2") format("woff2");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* Tailwind configuration */
+/* Tailwind configuration — TapMind design system tokens */
 @config "../../tailwind.config.js";
+
+@layer base {
+  html,
+  body {
+    @apply bg-ink-50 text-ink-900 antialiased;
+  }
+
+  html.dark,
+  html.dark body {
+    @apply bg-ink-950 text-white;
+  }
+
+  /* Native date/time pickers: without this the icon is black-on-black in dark mode */
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local'] {
+    color-scheme: light;
+  }
+
+  html.dark input[type='date'],
+  html.dark input[type='time'],
+  html.dark input[type='datetime-local'] {
+    color-scheme: dark;
+  }
+
+  /* Table headers: uppercase, bold, tracked — applies to HeroUI and hand-built tables alike */
+  th {
+    @apply font-secondary font-medium uppercase tracking-wider text-[11px] text-ink-500 dark:text-ink-400;
+  }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #c7cddb; border-radius: 8px; }
+  ::-webkit-scrollbar-thumb:hover { background: #a9b1c4; }
+  html.dark ::-webkit-scrollbar-thumb { background: #3a4050; }
+  html.dark ::-webkit-scrollbar-thumb:hover { background: #525c74; }
+}
+
+@layer components {
+  /* Applied to everything interactive */
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2
+      focus-visible:ring-offset-white dark:focus-visible:ring-offset-ink-950;
+  }
+
+  .input-base {
+    @apply h-10 w-full border border-ink-200 bg-white px-3 text-sm text-ink-900 placeholder:text-ink-400
+      transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2
+      focus-visible:ring-offset-white dark:border-white/10 dark:bg-ink-900 dark:text-white
+      dark:placeholder:text-ink-500 dark:focus:border-brand-500;
+  }
+
+  /* Form-field labels: small, uppercase, tracked (TapMind's monospace label, set in Poppins) */
+  .label-base {
+    @apply mb-1.5 block font-secondary text-[10.5px] font-medium uppercase tracking-label text-ink-500
+      dark:text-ink-400;
+  }
+
+  /* Small overline text above a heading */
+  .eyebrow {
+    @apply font-secondary text-[10.5px] font-medium uppercase tracking-eyebrow text-ink-500 dark:text-ink-400;
+  }
+}
 
 @layer utilities {
   @keyframes slideUp {

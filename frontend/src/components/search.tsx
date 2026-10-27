@@ -1,4 +1,4 @@
-import { Autocomplete, AutocompleteItem } from "@heroui/react";
+import { Autocomplete, AutocompleteItem } from "@/components/ui";
 
 export default function SearchableSelect() {
     const users = [

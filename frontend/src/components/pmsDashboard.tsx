@@ -7,7 +7,7 @@
 //     Avatar,
 //     Divider,
 //     Spinner,
-// } from "@heroui/react";
+// } from "@/components/ui";
 
 // import {
 //     TrendingUp,
@@ -608,7 +608,7 @@ import {
     Avatar,
     Divider,
     Switch
-} from "@heroui/react";
+} from "@/components/ui";
 
 import { TrendingUp, Gauge, Target, Users } from "lucide-react";
 import { useState, useCallback } from "react";

@@ -11,7 +11,7 @@ import {
     Chip,
     Pagination,
     Select, SelectItem
-} from "@heroui/react";
+} from "@/components/ui";
 import { format } from "date-fns";
 
 const SearchIcon = (props) => (

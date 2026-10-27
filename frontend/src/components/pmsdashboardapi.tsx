@@ -10,7 +10,7 @@ import {
     DropdownMenu,
     DropdownItem,
     Button
-} from "@heroui/react";
+} from "@/components/ui";
 
 import axios from "axios";
 import { format } from "date-fns";

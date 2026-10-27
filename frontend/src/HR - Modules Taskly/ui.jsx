@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Mail, Info } from "lucide-react";
-import { Button, Card, CardBody, Chip, Input, Textarea } from "@heroui/react";
+import { Button, Card, CardBody, Chip, Input, Textarea } from "../components/ui";
 import { SCALE_LABELS } from "../lib/scale";
 import { avg, one } from "../lib/metrics";
 

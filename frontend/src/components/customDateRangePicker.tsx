@@ -6,7 +6,7 @@ import {
     PopoverTrigger,
     PopoverContent,
     Button,
-} from "@heroui/react";
+} from "@/components/ui";
 
 import { today, getLocalTimeZone } from "@internationalized/date";
 

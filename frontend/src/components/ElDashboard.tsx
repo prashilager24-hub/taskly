@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Accordion, AccordionItem } from "@heroui/react";
+import { Accordion, AccordionItem } from "@/components/ui";
 import EfficiencyTable from "./table2";
 const getBadgeColor = (level) => {
     if (level === "High") return "bg-green-100 text-green-700";
@@ -32,7 +32,7 @@ const CircularProgress = ({ value, size = 40, stroke = 4 }) => {
                     cx={size / 2}
                     cy={size / 2}
                     r={radius}
-                    stroke="#16a34a"
+                    stroke="#059669"
                     strokeWidth={stroke}
                     fill="transparent"
                     strokeDasharray={circumference}

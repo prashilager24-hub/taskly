@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Card, CardBody, Chip, Spinner, Button } from "@heroui/react";
+import { Card, CardBody, Chip, Spinner, Button } from "@/components/ui";
 import * as XLSX from "xlsx";
 import {
     computeQuarterlyGrade,

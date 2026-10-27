@@ -18,7 +18,7 @@ import {
     useDisclosure,
     addToast,
     Accordion, AccordionItem
-} from "@heroui/react";
+} from "@/components/ui";
 import axios from "axios";
 import { useState, useEffect, useMemo } from "react";
 import { set } from "date-fns";

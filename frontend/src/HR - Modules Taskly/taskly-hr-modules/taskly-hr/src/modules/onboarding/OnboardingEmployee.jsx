@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Send } from "lucide-react";
-import { Button, Textarea } from "@heroui/react";
+import { Button, Textarea } from "../../../../../../components/ui";
 import {
   Screen, Field, BackLink, Scale, ScaleLegend, Section,
   Pill, Empty, ContextBar, CardStat, Cards, THead,

@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Input } from "@heroui/input";
+import { Input } from "@/components/ui";
 import {
     Card,
     CardBody,
     CardHeader,
     Button,
     addToast,
-} from "@heroui/react";
+} from "@/components/ui";
 import queryString from 'query-string';
 import { EyeFilledIcon, EyeSlashFilledIcon } from "@heroui/shared-icons";
 import { title } from "@/components/primitives";

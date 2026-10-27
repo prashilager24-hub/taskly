@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Plus, Send, Star, AlertTriangle } from "lucide-react";
-import { Button, Input, Textarea, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
+import { Button, Input, Textarea, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "../../../../../../components/ui";
 import {
   Screen, Field, BackLink, Scale, ScaleLegend, Section, Pill,
   Empty, ContextBar, Thread, OpenPoint, THead,

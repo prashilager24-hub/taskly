@@ -1,4 +1,4 @@
-import { Button } from "@heroui/react";
+import { Button } from "@/components/ui";
 import { isSwitchedUser, getOriginalUser, switchBackToOriginal } from "./userSwitch";
 
 interface Props {

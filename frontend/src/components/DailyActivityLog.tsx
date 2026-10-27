@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Button } from "@heroui/button";
-import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Button } from "@/components/ui";
+import { Card, CardBody, CardHeader } from "@/components/ui";
 import { parseZonedDateTime } from "@internationalized/date";
-import { Input } from "@heroui/input";
+import { Input } from "@/components/ui";
 import WeeklyPulse from "./WeeklyPulse";
 import { useLocation } from "react-router-dom";
-import { Select, SelectItem, addToast, DatePicker, Autocomplete, Chip, CheckboxGroup, Modal, ModalHeader, ModalContent, ModalBody, ModalFooter, AutocompleteItem, Checkbox, RadioGroup, Radio, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
+import { Select, SelectItem, addToast, DatePicker, Autocomplete, Chip, CheckboxGroup, Modal, ModalHeader, ModalContent, ModalBody, ModalFooter, AutocompleteItem, Checkbox, RadioGroup, Radio, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@/components/ui";
 import { CalendarDate } from "@internationalized/date";
 import CustomDatePicker from "../components/customDatePicker"
-import { Textarea } from "@heroui/input";
+import { Textarea } from "@/components/ui";
 import { Divider } from "@heroui/divider";
 import axios from "axios";
 import EmptyContainer from "./EmptyContainer";

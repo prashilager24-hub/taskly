@@ -1,7 +1,7 @@
 // // import { useState, useEffect, useRef, useCallback } from "react";
-// // import { Tabs, Tab, Input, Select, SelectItem, MenuItem } from "@heroui/react";
+// // import { Tabs, Tab, Input, Select, SelectItem, MenuItem } from "@/components/ui";
 // // import axios from "axios";
-// // import { DateRangePicker } from "@heroui/react";
+// // import { DateRangePicker } from "@/components/ui";
 // // import { parseDate } from "@internationalized/date";
 // // // ─── CSS — only pseudo-elements & HeroUI slot overrides (can't do in Tailwind) ─
 // // const GLOBAL_STYLE = `
@@ -13,19 +13,19 @@
 // //   }
 // //   /* Bar tooltip — needs ::after with attr(), can't do in Tailwind */
 // //   .wp-bar:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
-// //     background:#1a1814;color:#fff;font-size:10px;padding:3px 8px;border-radius:5px;white-space:nowrap;pointer-events:none;z-index:10;}
+// //     background:#0b0b0b;color:#fff;font-size:10px;padding:3px 8px;border-radius:5px;white-space:nowrap;pointer-events:none;z-index:10;}
 // //   /* Section title rule — needs ::after, can't do in Tailwind */
-// //   .wp-section-title::after{content:'';flex:1;height:1px;background:#ddd9d0;}
+// //   .wp-section-title::after{content:'';flex:1;height:1px;background:#e4e4e7;}
 // //   /* KPI bottom accent bar — needs ::after with CSS var, can't do in Tailwind */
-// //   .wp-kpi::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--kpi-color,#e8530a);}
+// //   .wp-kpi::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--kpi-color,#ff6a1f);}
 // //   /* Textarea resize */
-// //   .wp-textarea{resize:vertical;min-height:72px;line-height:1.5;width:100%;border:1.5px solid #ccc8be;border-radius:8px;padding:10px 14px;font-size:14px;color:#1a1814;outline:none;transition:.15s;}
-// //   .wp-textarea:focus{border-color:#e8530a;background:#fff;box-shadow:0 0 0 3px rgba(232,83,10,.1);}
+// //   .wp-textarea{resize:vertical;min-height:72px;line-height:1.5;width:100%;border:1.5px solid #d4d4d8;border-radius:8px;padding:10px 14px;font-size:14px;color:#0b0b0b;outline:none;transition:.15s;}
+// //   .wp-textarea:focus{border-color:#ff6a1f;background:#fff;box-shadow:0 0 0 3px rgba(232,83,10,.1);}
 // //   /* ── HeroUI Tabs overrides ── */
 // //   .wp-tabs [data-slot="tabList"]{background:transparent!important;padding:0!important;gap:4px!important;border-radius:0!important;}
-// //   .wp-tabs [data-slot="tab"]{padding:7px 18px!important;border-radius:6px!important;font-size:13px!important;font-weight:600!important;color:#9b9892!important;background:transparent!important;transition:background .15s,color .15s!important;height:auto!important;min-height:0!important;}
+// //   .wp-tabs [data-slot="tab"]{padding:7px 18px!important;border-radius:6px!important;font-size:13px!important;font-weight:600!important;color:#8a8a8a!important;background:transparent!important;transition:background .15s,color .15s!important;height:auto!important;min-height:0!important;}
 // //   .wp-tabs [data-slot="tab"]:hover{background:rgba(255,255,255,.08)!important;color:#fff!important;}
-// //   .wp-tabs [aria-selected="true"][data-slot="tab"],.wp-tabs [data-selected="true"][data-slot="tab"]{background:#e8530a!important;color:#fff!important;}
+// //   .wp-tabs [aria-selected="true"][data-slot="tab"],.wp-tabs [data-selected="true"][data-slot="tab"]{background:#ff6a1f!important;color:#fff!important;}
 // //   .wp-tabs [data-slot="tabContent"]{font-size:13px!important;font-weight:600!important;}
 // //   .wp-tabs [data-slot="cursor"]{display:none!important;}
 // //   .wp-tabs [data-slot="panel"]{padding:0!important;outline:none!important;}
@@ -54,7 +54,7 @@
 // //     return { completion, utilisation, qualityScore, efficiency, overall };
 // // }
 // // function metricColor(v) {
-// //     return v >= 85 ? '#16a34a' : v >= 65 ? '#ca8a04' : '#dc2626';
+// //     return v >= 85 ? '#059669' : v >= 65 ? '#ca8a04' : '#ff4b2b';
 // // }
 // // function trendIcon(v) { return v >= 85 ? '▲' : v >= 65 ? '●' : '▼'; }
 
@@ -66,16 +66,16 @@
 // //     let h = '';
 // //     [.25, .5, .75, 1].forEach(f => {
 // //         const pts = Array.from({ length: n }, (_, i) => pt(i, r * f)).map(p => p.join(',')).join(' ');
-// //         h += `<polygon points="${pts}" fill="none" stroke="#ddd9d0" stroke-width="1"/>`;
+// //         h += `<polygon points="${pts}" fill="none" stroke="#e4e4e7" stroke-width="1"/>`;
 // //     });
-// //     for (let i = 0; i < n; i++) { const [x, y] = pt(i, r); h += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#ddd9d0" stroke-width="1"/>`; }
+// //     for (let i = 0; i < n; i++) { const [x, y] = pt(i, r); h += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#e4e4e7" stroke-width="1"/>`; }
 // //     const dpts = values.map((v, i) => pt(i, r * (v / 100))).map(p => p.join(',')).join(' ');
 // //     h += `<polygon points="${dpts}" fill="rgba(37,99,235,.12)" stroke="#2563eb" stroke-width="2"/>`;
 // //     values.forEach((v, i) => { const [x, y] = pt(i, r * (v / 100)); h += `<circle cx="${x}" cy="${y}" r="4" fill="${colors[i]}" stroke="#fff" stroke-width="2"/>`; });
 // //     for (let i = 0; i < n; i++) {
 // //         const [x, y] = pt(i, r + 16);
 // //         const anchor = x < cx - 5 ? 'end' : x > cx + 5 ? 'start' : 'middle';
-// //         h += `<text x="${x}" y="${y}" text-anchor="${anchor}" fill="#9b9892" font-size="9"  font-weight="700">${labels[i].toUpperCase()}</text>`;
+// //         h += `<text x="${x}" y="${y}" text-anchor="${anchor}" fill="#8a8a8a" font-size="9"  font-weight="700">${labels[i].toUpperCase()}</text>`;
 // //     }
 // //     return h;
 // // }
@@ -85,9 +85,9 @@
 // //     return (
 // //         <div className="text-center py-16 px-5 flex flex-col items-center gap-3.5">
 // //             <div className="text-5xl opacity-30">{icon}</div>
-// //             <div className="text-lg font-bold text-[#6b6760]">{title}</div>
-// //             <div className="text-sm text-[#9b9892]">{sub}</div>
-// //             <button onClick={onBtn} className="mt-1.5 px-6 py-2.5 bg-[#e8530a] text-white text-sm font-bold rounded-[9px] cursor-pointer border-none hover:bg-[#c94408] transition-all">
+// //             <div className="text-lg font-bold text-ink-500">{title}</div>
+// //             <div className="text-sm text-ink-400">{sub}</div>
+// //             <button onClick={onBtn} className="mt-1.5 px-6 py-2.5 bg-brand-600 text-white text-sm font-bold rounded-[9px] cursor-pointer border-none hover:bg-brand-700 transition-all">
 // //                 {btnLabel}
 // //             </button>
 // //         </div>
@@ -99,28 +99,28 @@
 // //     const TASK_TYPES = ['Feature', 'Bug', 'Refactor', 'Test', 'Docs', 'Review', 'Infra', 'Research'];
 // //     const TASK_STATUSES = [{ key: 'done', label: 'Done' }, { key: 'partial', label: 'Partial' }, { key: 'missed', label: 'Missed' }, { key: 'carry', label: 'Carry' }];
 // //     return (
-// //         <div style={{ display: 'grid', gridTemplateColumns: '90px 2fr 80px 1fr 1fr 1.5fr 36px', gap: 10, alignItems: 'center' }} className=" border border-[#ddd9d0] rounded-[10px] px-3.5 py-2.5 transition-all">
+// //         <div style={{ display: 'grid', gridTemplateColumns: '90px 2fr 80px 1fr 1fr 1.5fr 36px', gap: 10, alignItems: 'center' }} className=" border border-ink-200 rounded-[10px] px-3.5 py-2.5 transition-all">
 // //             <Input size="sm" placeholder="TP-50" label="Jira ID" labelPlacement="outside"
 // //                 value={task.jiraId || ''} onValueChange={v => onChange('jiraId', v.toUpperCase())}
-// //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }} />
+// //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
 // //             <Input size="sm" placeholder="e.g. Fix AdMob adapter crash" label="Task Name" labelPlacement="outside"
 // //                 value={task.name || ''} onValueChange={v => onChange('name', v)}
-// //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }} />
+// //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
 // //             <Input size="sm" type="number" placeholder="3" label="SP" labelPlacement="outside"
 // //                 value={task.sp || ''} onValueChange={v => onChange('sp', v)}
-// //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }} />
+// //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
 // //             <Select size="sm" label="Product" labelPlacement="outside"
 // //                 selectedKeys={[task.product || PRODUCTS[0]]} onSelectionChange={keys => onChange('product', Array.from(keys)[0])}
-// //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }}>
+// //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }}>
 // //                 {PRODUCTS.map(p => <SelectItem key={p}>{p}</SelectItem>)}
 // //             </Select>
 // //             <Select size="sm" label="Module" labelPlacement="outside"
 // //                 selectedKeys={[task.module || MODULES[0]]} onSelectionChange={keys => onChange('module', Array.from(keys)[0])}
-// //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }}>
+// //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }}>
 // //                 {MODULES.map(m => <SelectItem key={m}>{m}</SelectItem>)}
 // //             </Select>
 // //             <div className="flex flex-col gap-1">
-// //                 <div className="text-[10px] font-bold tracking-wide uppercase text-[#9b9892]">Type &amp; Status</div>
+// //                 <div className="text-[10px] font-bold tracking-wide uppercase text-ink-400">Type &amp; Status</div>
 // //                 <div style={{ display: 'flex', gap: 4 }}>
 // //                     <Select size="sm" aria-label="Type"
 // //                         selectedKeys={[task.type || 'Feature']} onSelectionChange={keys => onChange('type', Array.from(keys)[0])}
@@ -134,7 +134,7 @@
 // //                     </Select>
 // //                 </div>
 // //             </div>
-// //             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-[#ccc8be] bg-transparent text-[#9b9892] cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-[#dc2626] hover:border-[#dc2626] hover:text-white">
+// //             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">
 // //                 ×
 // //             </button>
 // //         </div>
@@ -144,17 +144,17 @@
 // // // ─── GOAL ROW COMPONENT ────────────────────────────────────────────────────────
 // // function GoalRowInput({ goal, onChange, onRemove }) {
 // //     return (
-// //         <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 36px', gap: 10, alignItems: 'center' }} className=" border border-[#ddd9d0] rounded-[10px] px-3.5 py-2.5">
+// //         <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 36px', gap: 10, alignItems: 'center' }} className=" border border-ink-200 rounded-[10px] px-3.5 py-2.5">
 // //             <Input size="sm" placeholder="e.g. Zero crashes in prod" label="Goal Description" labelPlacement="outside"
 // //                 value={goal.name || ''} onValueChange={v => onChange('name', v)}
-// //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }} />
+// //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
 // //             <Input size="sm" type="number" placeholder="100" label="Target %" labelPlacement="outside"
 // //                 value={goal.target || ''} onValueChange={v => onChange('target', v)}
-// //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }} />
+// //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
 // //             <Input size="sm" type="number" placeholder="85" label="Achieved %" labelPlacement="outside"
 // //                 value={goal.achieved || ''} onValueChange={v => onChange('achieved', v)}
-// //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }} />
-// //             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-[#ccc8be] bg-transparent text-[#9b9892] cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-[#dc2626] hover:border-[#dc2626] hover:text-white">
+// //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
+// //             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">
 // //                 ×
 // //             </button>
 // //         </div>
@@ -165,8 +165,8 @@
 // // function FormGroup({ label, hint, children, full, half }) {
 // //     return (
 // //         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, gridColumn: full ? '1/-1' : half ? 'span 2' : undefined }}>
-// //             <label className="text-[11px] font-bold tracking-[1.2px] uppercase text-[#6b6760]">
-// //                 {label}{hint && <span className="text-[10px] font-normal text-[#9b9892] tracking-normal ml-1.5 normal-case">{hint}</span>}
+// //             <label className="text-[11px] font-bold tracking-[1.2px] uppercase text-ink-500">
+// //                 {label}{hint && <span className="text-[10px] font-normal text-ink-400 tracking-normal ml-1.5 normal-case">{hint}</span>}
 // //             </label>
 // //             {children}
 // //         </div>
@@ -194,7 +194,7 @@
 // //     const goalId = useRef(3);
 
 // //     const live = (f.committed || f.completed) ? calcMetrics(f.committed, f.completed, f.days, f.bugs, f.selfRating) : null;
-// //     const lc = v => v >= 85 ? '#16a34a' : v >= 65 ? '#ca8a04' : '#dc2626';
+// //     const lc = v => v >= 85 ? '#059669' : v >= 65 ? '#ca8a04' : '#ff4b2b';
 // //     const ll = v => v >= 85 ? '▲ On Target' : v >= 65 ? '● Moderate' : '▼ Below';
 
 // //     function addTask() { const id = taskId.current++; setTasks(t => [...t, { id, jiraId: '', name: '', sp: '', product: PRODUCTS[0], module: MODULES[0], type: 'Feature', status: 'done' }]); }
@@ -205,8 +205,8 @@
 // //     function updateGoal(id, key, val) { setGoals(g => g.map(x => x.id === id ? { ...x, [key]: val } : x)); }
 
 // //     function handleSubmit() {
-// //         if (!f.name.trim()) { showToastGlobal('⚠️ Please enter your name!', '#e8530a'); return; }
-// //         if (!f.sprint.trim()) { showToastGlobal('⚠️ Please enter the sprint/week label!', '#e8530a'); return; }
+// //         if (!f.name.trim()) { showToastGlobal('⚠️ Please enter your name!', '#ff6a1f'); return; }
+// //         if (!f.sprint.trim()) { showToastGlobal('⚠️ Please enter the sprint/week label!', '#ff6a1f'); return; }
 // //         const metrics = calcMetrics(f.committed, f.completed, f.days, f.bugs, f.selfRating);
 // //         const entry = {
 // //             id: Date.now(), ...f,
@@ -231,17 +231,17 @@
 
 // //     return (
 // //         <div style={{ margin: '0 auto', padding: '36px 40px 60px' }}>
-// //             <div style={{ background: '#ffffff', border: '1px solid #ddd9d0', borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', overflow: 'hidden', marginBottom: 28 }}>
+// //             <div style={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', overflow: 'hidden', marginBottom: 28 }}>
 // //                 {/* Header */}
 // //                 <div style={{ padding: '24px 30px', display: 'flex', alignItems: 'center', gap: 16 }}>
 // //                     <div>
 // //                         <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 4 }}>Weekly Sprint Entry</h2>
-// //                         <p style={{ fontSize: 13, color: '#9b9892' }}>Fill in your sprint details — all metrics are calculated automatically</p>
+// //                         <p style={{ fontSize: 13, color: '#8a8a8a' }}>Fill in your sprint details — all metrics are calculated automatically</p>
 // //                     </div>
 // //                 </div>
 // //                 <div style={{ padding: '28px 30px' }}>
 // //                     {/* Identity */}
-// //                     <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-[#9b9892] mb-4">Developer Identity</div>
+// //                     <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-ink-400 mb-4">Developer Identity</div>
 // //                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18, marginBottom: 20 }}>
 // //                         <FormGroup label="Full Name"><Input variant="bordered" size="sm" placeholder="e.g. name" {...inp('name')} onValueChange={v => setF(p => ({ ...p, name: v }))} /></FormGroup>
 // //                         <FormGroup label="Role / Team"><Input variant="bordered" size="sm" placeholder="e.g. Engineer" {...inp('role')} onValueChange={v => setF(p => ({ ...p, role: v }))} /></FormGroup>
@@ -272,10 +272,10 @@
 // //                         <FormGroup label="Days Present" hint="(out of 5)"><Input variant="bordered" size="sm" type="number" placeholder="5" {...inp('days')} onValueChange={v => setF(p => ({ ...p, days: v }))} /></FormGroup>
 // //                     </div>
 
-// //                     <hr style={{ border: 'none', borderTop: '1px solid #ddd9d0', margin: '24px 0' }} />
+// //                     <hr style={{ border: 'none', borderTop: '1px solid #e4e4e7', margin: '24px 0' }} />
 
 // //                     {/* Story Points */}
-// //                     <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-[#9b9892] mb-4">Story Points</div>
+// //                     <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-ink-400 mb-4">Story Points</div>
 // //                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18, marginBottom: 20 }}>
 // //                         <FormGroup label="Story Points Committed"><Input variant="bordered" size="sm" type="number" placeholder="e.g. 20" {...inp('committed')} onValueChange={v => setF(p => ({ ...p, committed: v }))} /></FormGroup>
 // //                         <FormGroup label="Story Points Completed"><Input variant="bordered" size="sm" type="number" placeholder="e.g. 17" {...inp('completed')} onValueChange={v => setF(p => ({ ...p, completed: v }))} /></FormGroup>
@@ -287,8 +287,8 @@
 
 // //                     {/* Live Preview */}
 // //                     {live && (
-// //                         <div style={{ border: '1px solid #ddd9d0', borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
-// //                             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#9b9892', marginBottom: 12 }}>⚡ Live Auto-Calculation</div>
+// //                         <div style={{ border: '1px solid #e4e4e7', borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
+// //                             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#8a8a8a', marginBottom: 12 }}>⚡ Live Auto-Calculation</div>
 // //                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
 // //                                 {[
 // //                                     { k: 'Completion Rate', v: live.completion + '%', c: lc(live.completion), l: ll(live.completion) },
@@ -296,8 +296,8 @@
 // //                                     { k: 'Quality Score', v: live.qualityScore + '/100', c: lc(live.qualityScore), l: ll(live.qualityScore) },
 // //                                     { k: 'Efficiency Score', v: live.efficiency + '/100', c: lc(live.efficiency), l: ll(live.efficiency) },
 // //                                 ].map(m => (
-// //                                     <div key={m.k} style={{ background: '#ffffff', border: '1px solid #ddd9d0', borderRadius: 8, padding: '12px 14px' }}>
-// //                                         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#9b9892', marginBottom: 6 }}>{m.k}</div>
+// //                                     <div key={m.k} style={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: 8, padding: '12px 14px' }}>
+// //                                         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#8a8a8a', marginBottom: 6 }}>{m.k}</div>
 // //                                         <div style={{ fontSize: 22, fontWeight: 800, color: m.c, lineHeight: 1 }}>{m.v}</div>
 // //                                         <div style={{ fontSize: 11, color: m.c, marginTop: 4, fontWeight: 600 }}>{m.l}</div>
 // //                                     </div>
@@ -306,10 +306,10 @@
 // //                         </div>
 // //                     )}
 
-// //                     <hr style={{ border: 'none', borderTop: '1px solid #ddd9d0', margin: '24px 0' }} />
+// //                     <hr style={{ border: 'none', borderTop: '1px solid #e4e4e7', margin: '24px 0' }} />
 
 // //                     {/* Tasks */}
-// //                     <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-[#9b9892] mb-4">Tasks Worked This Week</div>
+// //                     <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-ink-400 mb-4">Tasks Worked This Week</div>
 // //                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
 // //                         {tasks.map(t => (
 // //                             <TaskRowInput key={t.id} task={t} onChange={(k, v) => updateTask(t.id, k, v)} onRemove={() => removeTask(t.id)} />
@@ -317,10 +317,10 @@
 // //                     </div>
 // //                     <AddBtn onClick={addTask}>＋ Add Task</AddBtn>
 
-// //                     <hr style={{ border: 'none', borderTop: '1px solid #ddd9d0', margin: '24px 0' }} />
+// //                     <hr style={{ border: 'none', borderTop: '1px solid #e4e4e7', margin: '24px 0' }} />
 
 // //                     {/* Goals */}
-// //                     <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-[#9b9892] mb-4">Weekly Goals <span style={{ fontSize: 10, color: '#9b9892', textTransform: 'none', letterSpacing: 0, fontWeight: 400, marginLeft: 6 }}>Set targets and track what you achieved</span></div>
+// //                     <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-ink-400 mb-4">Weekly Goals <span style={{ fontSize: 10, color: '#8a8a8a', textTransform: 'none', letterSpacing: 0, fontWeight: 400, marginLeft: 6 }}>Set targets and track what you achieved</span></div>
 // //                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
 // //                         {goals.map(g => (
 // //                             <GoalRowInput key={g.id} goal={g} onChange={(k, v) => updateGoal(g.id, k, v)} onRemove={() => removeGoal(g.id)} />
@@ -328,10 +328,10 @@
 // //                     </div>
 // //                     <AddBtn onClick={addGoal}>＋ Add Goal</AddBtn>
 
-// //                     <hr style={{ border: 'none', borderTop: '1px solid #ddd9d0', margin: '24px 0' }} />
+// //                     <hr style={{ border: 'none', borderTop: '1px solid #e4e4e7', margin: '24px 0' }} />
 
 // //                     {/* Reflection */}
-// //                     <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-[#9b9892] mb-4">Self Reflection</div>
+// //                     <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-ink-400 mb-4">Self Reflection</div>
 // //                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18 }}>
 // //                         <FormGroup label="Key Achievements This Week" full>
 // //                             <textarea className="wp-textarea" placeholder="What did you accomplish? What are you proud of?" {...inp('achievements')} />
@@ -349,13 +349,13 @@
 
 // //                     {/* Submit Row */}
 // //                     <div className="flex items-center gap-3.5 mt-6">
-// //                         <button onClick={handleSubmit} className="flex items-center gap-2.5 px-8 py-3 bg-[#e8530a] text-white text-[15px] font-bold rounded-[10px] cursor-pointer transition-all hover:bg-[#c94408] border-none">
+// //                         <button onClick={handleSubmit} className="flex items-center gap-2.5 px-8 py-3 bg-brand-600 text-white text-[15px] font-bold rounded-[10px] cursor-pointer transition-all hover:bg-brand-700 border-none">
 // //                             <span>Submit Sprint Entry</span><span>→</span>
 // //                         </button>
-// //                         <button onClick={handleReset} className="px-5 py-3 bg-transparent border-[1.5px] border-[#ccc8be] rounded-[10px] text-sm font-semibold text-[#6b6760] cursor-pointer transition-all">
+// //                         <button onClick={handleReset} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 rounded-[10px] text-sm font-semibold text-ink-500 cursor-pointer transition-all">
 // //                             Reset
 // //                         </button>
-// //                         <span className="text-xs text-[#9b9892] ml-auto">All fields with auto-calc will update your dashboard instantly</span>
+// //                         <span className="text-xs text-ink-400 ml-auto">All fields with auto-calc will update your dashboard instantly</span>
 // //                     </div>
 // //                 </div>
 // //             </div>
@@ -366,7 +366,7 @@
 // // function AddBtn({ onClick, children }) {
 // //     return (
 // //         <button onClick={onClick}
-// //             className="mt-2.5 px-4 py-2 bg-transparent border-[1.5px] border-dashed border-[#ccc8be] rounded-lg text-sm font-semibold text-[#6b6760] cursor-pointer flex items-center gap-2 transition-all hover:border-[#e8530a] hover:text-[#e8530a] hover:bg-[rgba(232,83,10,.04)]">
+// //             className="mt-2.5 px-4 py-2 bg-transparent border-[1.5px] border-dashed border-ink-300 rounded-lg text-sm font-semibold text-ink-500 cursor-pointer flex items-center gap-2 transition-all hover:border-brand-600 hover:text-brand-600 hover:bg-[rgba(232,83,10,.04)]">
 // //             {children}
 // //         </button>
 // //     );
@@ -473,7 +473,7 @@
 
 // //     // ── Conditional returns AFTER all hooks ──────────────────────────────────
 // //     if (loading) return (
-// //         <div style={{ margin: '0 auto', padding: '80px 40px', textAlign: 'center', color: '#9b9892', fontSize: 14 }}>
+// //         <div style={{ margin: '0 auto', padding: '80px 40px', textAlign: 'center', color: '#8a8a8a', fontSize: 14 }}>
 // //             Loading dashboard...
 // //         </div>
 // //     );
@@ -526,7 +526,7 @@
 // //         Math.min(100, cur.selfRating * 10)];
 
 // //     const radarLabels = ['Util', 'Velocity', 'Reviews', 'Quality', 'Goals', 'Self'];
-// //     const radarColors = ['#2563eb', '#e8530a', '#16a34a', '#7c3aed', '#ca8a04', '#0891b2'];
+// //     const radarColors = ['#2563eb', '#ff6a1f', '#059669', '#7c3aed', '#ca8a04', '#0891b2'];
 // //     const score = m.overall || m.efficiency;
 // //     const scoreColor = metricColor(score);
 // //     const scoreLabel = score >= 85 ? 'EXCELLENT' : score >= 70 ? 'GOOD' : score >= 55 ? 'FAIR' : 'NEEDS FOCUS';
@@ -535,9 +535,9 @@
 
 // //     const statusTag = { done: { lbl: '✓ Done' }, partial: { lbl: '◑ Partial' }, missed: { lbl: '✗ Missed' }, carry: { lbl: '→ Carry' } };
 // //     const tagStyle = {
-// //         done: { background: 'rgba(22,163,74,.1)', color: '#16a34a' },
+// //         done: { background: 'rgba(22,163,74,.1)', color: '#059669' },
 // //         partial: { background: 'rgba(202,138,4,.1)', color: '#ca8a04' },
-// //         missed: { background: 'rgba(220,38,38,.1)', color: '#dc2626' },
+// //         missed: { background: 'rgba(220,38,38,.1)', color: '#ff4b2b' },
 // //         carry: { background: 'rgba(107,114,128,.1)', color: '#6b7280' }
 // //     };
 
@@ -547,13 +547,13 @@
 
 // //             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
 // //                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-// //                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#ffffff', border: '1px solid #ddd9d0', borderRadius: 30, padding: '8px 18px 8px 10px', boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)' }}>
-// //                         <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#e8530a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#fff' }}>
+// //                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: 30, padding: '8px 18px 8px 10px', boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)' }}>
+// //                         <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#ff6a1f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#fff' }}>
 // //                             {selectedDev.split(' ').map(w => w[0]).join('').slice(0, 2)}
 // //                         </div>
 // //                         <div>
 // //                             <div style={{ fontSize: 15, fontWeight: 700 }}>{selectedDev}</div>
-// //                             <div style={{ fontSize: 11, color: '#9b9892' }}>{cur.role || 'Developer'}</div>
+// //                             <div style={{ fontSize: 11, color: '#8a8a8a' }}>{cur.role || 'Developer'}</div>
 // //                         </div>
 // //                     </div>
 // //                     <DateRangePicker
@@ -582,11 +582,11 @@
 // //                     </Select>
 // //                 </div>
 // //                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-// //                     <div style={{ fontSize: 11, color: '#9b9892', fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' }}>Filter by Week</div>
+// //                     <div style={{ fontSize: 11, color: '#8a8a8a', fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' }}>Filter by Week</div>
 // //                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
 // //                         {['all', ...sprints].map(s => (
 // //                             <button key={s} onClick={() => setWeekFilter(s)}
-// //                                 style={{ padding: '6px 14px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: '.15s', border: '1px solid', borderColor: weekFilter === s ? '#1a1814' : '#ddd9d0', background: weekFilter === s ? '#1a1814' : '#ffffff', color: weekFilter === s ? '#fff' : '#6b6760' }}>
+// //                                 style={{ padding: '6px 14px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: '.15s', border: '1px solid', borderColor: weekFilter === s ? '#0b0b0b' : '#e4e4e7', background: weekFilter === s ? '#0b0b0b' : '#ffffff', color: weekFilter === s ? '#fff' : '#6a6a6a' }}>
 // //                                 {s === 'all' ? 'Latest' : s}
 // //                             </button>
 // //                         ))}
@@ -595,7 +595,7 @@
 // //             </div>
 
 // //             {/* Section Title */}
-// //             <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-[#9b9892] mb-3.5">Performance Overview · {cur.sprint} ({cur.weekStart} → {cur.weekEnd})</div>
+// //             <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-ink-400 mb-3.5">Performance Overview · {cur.sprint} ({cur.weekStart} → {cur.weekEnd})</div>
 
 // //             {/* KPIs */}
 // //             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 14, marginBottom: 24 }}>
@@ -604,12 +604,12 @@
 // //                     { label: 'Utilisation', val: `${m.utilisation}%`, sub: `${cur.days}/5 days logged`, c: metricColor(m.utilisation), badge: trendIcon(m.utilisation) + ' Capacity' },
 // //                     { label: 'Quality Score', val: `${m.qualityScore}`, sub: `${cur.bugs} bug${cur.bugs !== 1 ? 's' : ''} introduced`, c: metricColor(m.qualityScore), badge: trendIcon(m.qualityScore) + ' ' + (m.qualityScore >= 85 ? 'Clean' : 'Review needed') },
 // //                     { label: 'Efficiency Score', val: `${m.efficiency}`, sub: 'Composite /100', c: metricColor(m.efficiency), badge: trendIcon(m.efficiency) + ' Efficiency' },
-// //                     { label: 'Goals Met', val: `${goalsMet}/${cur.goals.length}`, sub: `${tasksDone}/${tasksTotal} tasks done`, c: metricColor(goalsMet / Math.max(cur.goals.length, 1) * 100), badge: goalsMet === cur.goals.length && cur.goals.length > 0 ? 'All met' : goalsMet > 0 ? 'Partial' : 'Missed', badgeColor: 'rgba(22,163,74,.1)', badgeTextColor: '#16a34a' },
+// //                     { label: 'Goals Met', val: `${goalsMet}/${cur.goals.length}`, sub: `${tasksDone}/${tasksTotal} tasks done`, c: metricColor(goalsMet / Math.max(cur.goals.length, 1) * 100), badge: goalsMet === cur.goals.length && cur.goals.length > 0 ? 'All met' : goalsMet > 0 ? 'Partial' : 'Missed', badgeColor: 'rgba(22,163,74,.1)', badgeTextColor: '#059669' },
 // //                 ].map((k, i) => (
-// //                     <div key={i} className="wp-kpi relative overflow-hidden rounded-xl p-5 bg-white border border-[#ddd9d0]" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', '--kpi-color': k.c } as React.CSSProperties}>
-// //                         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#9b9892', marginBottom: 8 }}>{k.label}</div>
+// //                     <div key={i} className="wp-kpi relative overflow-hidden rounded-xl p-5 bg-white border border-ink-200" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', '--kpi-color': k.c } as React.CSSProperties}>
+// //                         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#8a8a8a', marginBottom: 8 }}>{k.label}</div>
 // //                         <div style={{ fontSize: 30, fontWeight: 900, lineHeight: 1, color: k.c, marginBottom: 4 }}>{k.val}</div>
-// //                         <div style={{ fontSize: 11, color: '#9b9892', fontFamily: 'monospace' }}>{k.sub}</div>
+// //                         <div style={{ fontSize: 11, color: '#8a8a8a', fontFamily: 'monospace' }}>{k.sub}</div>
 // //                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 12, marginTop: 8, background: k.badgeColor || `${k.c}22`, color: k.badgeTextColor || k.c }}>{k.badge}</div>
 // //                     </div>
 // //                 ))}
@@ -619,7 +619,7 @@
 // //             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 18 }}>
 // //                 <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
 // //                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-// //                         Sprint Velocity Trend <span style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 10, color: '#9b9892', fontWeight: 500 }}>{devEntries.length} weeks</span>
+// //                         Sprint Velocity Trend <span style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 10, color: '#8a8a8a', fontWeight: 500 }}>{devEntries.length} weeks</span>
 // //                     </div>
 // //                     <div className="bar-chart" style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 140 }}>
 // //                         {devEntries.map(e => {
@@ -629,71 +629,71 @@
 // //                             return (
 // //                                 <div key={e.sprint} className="flex-1 flex flex-col items-center gap-1">
 // //                                     <div className="flex-1 flex items-end gap-[3px] w-full">
-// //                                         <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative bg-[#ede9e1] border border-[#ddd9d0] transition-[height] duration-[400ms] ease-[cubic-bezier(.4,0,.2,1)]" style={{ height: `${cH}%` }} data-tip={`Committed: ${e.committed}SP`} />
+// //                                         <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative bg-ink-100 border border-ink-200 transition-[height] duration-[400ms] ease-[cubic-bezier(.4,0,.2,1)]" style={{ height: `${cH}%` }} data-tip={`Committed: ${e.committed}SP`} />
 // //                                         <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative transition-[height] duration-[400ms] ease-[cubic-bezier(.4,0,.2,1)]" style={{ height: `${dH}%`, background: 'linear-gradient(180deg,#2563eb,#1d4ed8)' }} data-tip={`Done: ${e.completed}SP (${pct}%)`} />
 // //                                     </div>
-// //                                     <div style={{ fontSize: 10, color: '#9b9892', fontFamily: 'monospace' }}>{e.sprint}</div>
+// //                                     <div style={{ fontSize: 10, color: '#8a8a8a', fontFamily: 'monospace' }}>{e.sprint}</div>
 // //                                 </div>
 // //                             );
 // //                         })}
 // //                     </div>
 // //                     <div style={{ display: 'flex', gap: 16, marginTop: 14 }}>
-// //                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#9b9892' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#ede9e1', border: '1px solid #ddd9d0', display: 'inline-block' }} /> Committed</div>
-// //                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#9b9892' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#2563eb', display: 'inline-block' }} /> Completed</div>
+// //                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#8a8a8a' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#f4f4f5', border: '1px solid #e4e4e7', display: 'inline-block' }} /> Committed</div>
+// //                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#8a8a8a' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#2563eb', display: 'inline-block' }} /> Completed</div>
 // //                     </div>
 // //                 </div>
 // //                 <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
 // //                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-// //                         Goal Achievement <span style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 10, color: '#9b9892', fontWeight: 500 }}>{goalsMet}/{cur.goals.length} met</span>
+// //                         Goal Achievement <span style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 10, color: '#8a8a8a', fontWeight: 500 }}>{goalsMet}/{cur.goals.length} met</span>
 // //                     </div>
 // //                     {cur.goals.length ? cur.goals.map((g, i) => {
 // //                         const pct = Math.min(100, Math.round((g.achieved / g.target) * 100));
-// //                         const c = g.achieved >= g.target ? '#16a34a' : g.achieved >= g.target * .7 ? '#ca8a04' : '#dc2626';
+// //                         const c = g.achieved >= g.target ? '#059669' : g.achieved >= g.target * .7 ? '#ca8a04' : '#ff4b2b';
 // //                         return (
 // //                             <div key={i} style={{ marginBottom: 14 }}>
 // //                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
 // //                                     <div style={{ fontSize: 13, fontWeight: 600 }}>{g.name}</div>
 // //                                     <div style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 700, color: c }}>{g.achieved}%</div>
 // //                                 </div>
-// //                                 <div style={{ height: 7, background: '#ede9e1', borderRadius: 20, overflow: 'hidden' }}>
+// //                                 <div style={{ height: 7, background: '#f4f4f5', borderRadius: 20, overflow: 'hidden' }}>
 // //                                     <div className="h-full rounded-[20px] transition-[width] duration-[600ms] ease-[cubic-bezier(.4,0,.2,1)]" style={{ width: `${pct}%`, background: c }} />
 // //                                 </div>
 // //                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-// //                                     <div style={{ fontSize: 10, fontFamily: 'monospace', color: '#9b9892' }}>Target: {g.target}%</div>
+// //                                     <div style={{ fontSize: 10, fontFamily: 'monospace', color: '#8a8a8a' }}>Target: {g.target}%</div>
 // //                                     <div style={{ fontSize: 10, fontFamily: 'monospace', color: c }}>{g.achieved >= g.target ? '✓ Achieved' : '✗ Not met'}</div>
 // //                                 </div>
 // //                             </div>
 // //                         );
-// //                     }) : <div style={{ color: '#9b9892', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>No goals set for this week</div>}
+// //                     }) : <div style={{ color: '#8a8a8a', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>No goals set for this week</div>}
 // //                 </div>
 // //             </div>
 
 // //             {/* Tasks + Radar + Score */}
 // //             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18, marginBottom: 18 }}>
-// //                 <div style={{ background: '#ffffff', border: '1px solid #ddd9d0', borderRadius: 14, padding: '22px 24px', boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', gridColumn: 'span 2' }}>
+// //                 <div style={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: 14, padding: '22px 24px', boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', gridColumn: 'span 2' }}>
 // //                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
 // //                         Tasks This Week
-// //                         {/* <span style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 10, color: '#9b9892', fontWeight: 500 }}>{tasksTotal} tasks · {cur.tasks.reduce((a, t) => a + t.sp, 0)} SP total</span> */}
+// //                         {/* <span style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 10, color: '#8a8a8a', fontWeight: 500 }}>{tasksTotal} tasks · {cur.tasks.reduce((a, t) => a + t.sp, 0)} SP total</span> */}
 // //                     </div>
 // //                     <table className="tasks-tbl w-full border-collapse">
 // //                         <thead><tr><th>Jira ID</th><th>Task</th><th>SP</th><th>Product</th><th>Module</th><th>Type</th><th>Status</th></tr></thead>
 // //                         <tbody>
 // //                             {cur.tasks.length ? cur.tasks.map((t, i) => (
 // //                                 <tr key={i}>
-// //                                     <td className="text-center">{t.jiraId ? <a href={`https://tapminds.atlassian.net/browse/${t.jiraId}`} target="_blank" rel="noreferrer" style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#2563eb', textDecoration: 'none', background: 'rgba(37,99,235,.08)', padding: '2px 8px', borderRadius: 5, whiteSpace: 'nowrap' }}>{t.jiraId} ↗</a> : <span style={{ color: '#9b9892', fontSize: 11 }}>—</span>}</td>
+// //                                     <td className="text-center">{t.jiraId ? <a href={`https://tapminds.atlassian.net/browse/${t.jiraId}`} target="_blank" rel="noreferrer" style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#2563eb', textDecoration: 'none', background: 'rgba(37,99,235,.08)', padding: '2px 8px', borderRadius: 5, whiteSpace: 'nowrap' }}>{t.jiraId} ↗</a> : <span style={{ color: '#8a8a8a', fontSize: 11 }}>—</span>}</td>
 // //                                     <td className="text-center" style={{ fontWeight: 500 }}>{t.name}</td>
 // //                                     <td className="text-center" ><span style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 6, color: '#2563eb' }}>{t.sp}</span></td>
-// //                                     <td className="text-center" ><span style={{ fontSize: 11, color: '#6b6760', padding: '2px 8px', borderRadius: 5, whiteSpace: 'nowrap' }}>{t.product || '—'}</span></td>
+// //                                     <td className="text-center" ><span style={{ fontSize: 11, color: '#6a6a6a', padding: '2px 8px', borderRadius: 5, whiteSpace: 'nowrap' }}>{t.product || '—'}</span></td>
 // //                                     <td className="text-center" ><span style={{ fontSize: 11, color: '#7c3aed', background: 'rgba(124,58,237,.07)', padding: '2px 8px', borderRadius: 5, whiteSpace: 'nowrap' }}>{t.module || '—'}</span></td>
-// //                                     <td className="text-center" style={{ fontSize: 11, color: '#9b9892' }}>{t.type}</td>
+// //                                     <td className="text-center" style={{ fontSize: 11, color: '#8a8a8a' }}>{t.type}</td>
 // //                                     <td className="text-center" ><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, ...tagStyle[t.status] }}>{statusTag[t.status]?.lbl}</span></td>
 // //                                 </tr>
-// //                             )) : <tr><td colSpan="7" style={{ textAlign: 'center', color: '#9b9892', padding: 20 }}>No tasks logged</td></tr>}
+// //                             )) : <tr><td colSpan="7" style={{ textAlign: 'center', color: '#8a8a8a', padding: 20 }}>No tasks logged</td></tr>}
 // //                         </tbody>
 // //                     </table>
 // //                 </div>
 // //                 {/* Radar + Score */}
-// //                 <div style={{ background: '#ffffff', border: '1px solid #ddd9d0', borderRadius: 14, padding: '22px 24px', boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', display: 'flex', flexDirection: 'column' }}>
+// //                 <div style={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: 14, padding: '22px 24px', boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', display: 'flex', flexDirection: 'column' }}>
 // //                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Performance Radar</div>
 // //                     <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
 // //                         <svg width="200" height="200" viewBox="0 0 200 200" style={{ overflow: 'visible' }} dangerouslySetInnerHTML={{ __html: buildRadar(radarVals, radarLabels, radarColors) }} />
@@ -701,7 +701,7 @@
 // //                     <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 8 }}>
 // //                         {radarLabels.map((l, i) => (
 // //                             <div key={l} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-// //                                 <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#9b9892' }}>
+// //                                 <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#8a8a8a' }}>
 // //                                     <span style={{ width: 8, height: 8, borderRadius: 2, background: radarColors[i], display: 'inline-block' }} />
 // //                                     {l}
 // //                                 </span>
@@ -711,7 +711,7 @@
 // //                     </div>
 // //                     <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
 // //                         <svg width="88" height="88" viewBox="0 0 88 88">
-// //                             <circle cx="44" cy="44" r="36" fill="none" stroke="#ede9e1" strokeWidth="8" />
+// //                             <circle cx="44" cy="44" r="36" fill="none" stroke="#f4f4f5" strokeWidth="8" />
 // //                             <circle cx="44" cy="44" r="36" fill="none" stroke={scoreColor} strokeWidth="8"
 // //                                 strokeDasharray={circumference} strokeDashoffset={dashOffset}
 // //                                 strokeLinecap="round" transform="rotate(-90 44 44)" style={{ transition: '.6s' }} />
@@ -726,25 +726,25 @@
 // //             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
 // //                 <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
 // //                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Developer Reflection</div>
-// //                     {cur.achievements && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#16a34a', marginBottom: 6 }}>✓ Achievements</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6b6760' }}>{cur.achievements}</div></div>}
-// //                     {cur.challenges && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#dc2626', marginBottom: 6 }}>⚠ Blockers</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6b6760' }}>{cur.challenges}</div></div>}
-// //                     {cur.nextFocus && <div><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#2563eb', marginBottom: 6 }}>→ Next Week Focus</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6b6760' }}>{cur.nextFocus}</div></div>}
-// //                     {!cur.achievements && !cur.challenges && !cur.nextFocus && <div style={{ textAlign: 'center', color: '#9b9892', padding: 20, fontSize: 13 }}>No reflection notes added</div>}
+// //                     {cur.achievements && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#059669', marginBottom: 6 }}>✓ Achievements</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6a6a6a' }}>{cur.achievements}</div></div>}
+// //                     {cur.challenges && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#ff4b2b', marginBottom: 6 }}>⚠ Blockers</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6a6a6a' }}>{cur.challenges}</div></div>}
+// //                     {cur.nextFocus && <div><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#2563eb', marginBottom: 6 }}>→ Next Week Focus</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6a6a6a' }}>{cur.nextFocus}</div></div>}
+// //                     {!cur.achievements && !cur.challenges && !cur.nextFocus && <div style={{ textAlign: 'center', color: '#8a8a8a', padding: 20, fontSize: 13 }}>No reflection notes added</div>}
 // //                 </div>
 // //                 <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
 // //                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Manager Review Note</div>
 // //                     <textarea value={managerNote} onChange={e => setManagerNote(e.target.value)} placeholder="Add manager feedback, coaching notes, or observations for this sprint…" className="wp-textarea" style={{ minHeight: 64 }} />
-// //                     <button onClick={() => { showToastGlobal('📝 Manager note saved!'); }} className="mt-2 px-4 py-2 bg-[#1a1814] text-white text-xs font-bold rounded-[7px] cursor-pointer border-none">Save Note</button>
-// //                     <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #ddd9d0' }}>
+// //                     <button onClick={() => { showToastGlobal('📝 Manager note saved!'); }} className="mt-2 px-4 py-2 bg-ink-900 text-white text-xs font-bold rounded-[7px] cursor-pointer border-none">Save Note</button>
+// //                     <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e4e4e7' }}>
 // //                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
 // //                             {[
 // //                                 { label: 'Reviews Done', val: cur.reviews, color: '#2563eb' },
 // //                                 { label: 'Carry-over SP', val: cur.carryover, color: '#ca8a04' },
-// //                                 { label: 'Blockers', val: cur.blockers, color: '#dc2626' },
+// //                                 { label: 'Blockers', val: cur.blockers, color: '#ff4b2b' },
 // //                                 { label: 'Self Rating', val: `${cur.selfRating}/10`, color: '#7c3aed' },
 // //                             ].map(x => (
 // //                                 <div key={x.label} style={{ borderRadius: 8, padding: 12 }} className="shadow-md">
-// //                                     <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#9b9892', marginBottom: 4 }}>{x.label}</div>
+// //                                     <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#8a8a8a', marginBottom: 4 }}>{x.label}</div>
 // //                                     <div style={{ fontSize: 20, fontWeight: 800, color: x.color }}>{x.val}</div>
 // //                                 </div>
 // //                             ))}
@@ -790,11 +790,11 @@
 // //     );
 
 // //     const sorted = [...newData].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-// //     const color = v => v >= 85 ? '#16a34a' : v >= 65 ? '#ca8a04' : '#dc2626';
+// //     const color = v => v >= 85 ? '#059669' : v >= 65 ? '#ca8a04' : '#ff4b2b';
 // //     return (
 // //         <div style={{ margin: '0 auto', padding: '36px 40px 60px' }}>
-// //             <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-[#9b9892] mb-4">
-// //                 All Sprint Entries <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: 11, marginLeft: 6, color: '#9b9892' }}>{newData.length} total</span>
+// //             <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-ink-400 mb-4">
+// //                 All Sprint Entries <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: 11, marginLeft: 6, color: '#8a8a8a' }}>{newData.length} total</span>
 // //             </div>
 // //             <div className="bg-surface border border-border rounded-xl p-6 shadow-sm overflow-x-auto">
 // //                 <table className="history-tbl w-full table-fixed border-collapse text-sm">
@@ -816,7 +816,7 @@
 
 // //                     {/* ✅ HEADER */}
 // //                     <thead>
-// //                         <tr className="text-left text-[11px] uppercase tracking-wider text-[#9b9892]">
+// //                         <tr className="text-left text-[11px] uppercase tracking-wider text-ink-400">
 // //                             <th className="pb-2">Developer</th>
 // //                             <th className="pb-2">Sprint</th>
 // //                             <th className="pb-2">Week</th>
@@ -842,7 +842,7 @@
 // //                                     {/* Developer */}
 // //                                     <td className="py-2">
 // //                                         <div className="font-semibold">{e.name}</div>
-// //                                         <div className="text-[11px] text-[#9b9892]">{e.role || ''}</div>
+// //                                         <div className="text-[11px] text-ink-400">{e.role || ''}</div>
 // //                                     </td>
 
 // //                                     {/* Sprint */}
@@ -853,7 +853,7 @@
 // //                                     </td>
 
 // //                                     {/* Week */}
-// //                                     <td className="py-2 text-xs text-[#9b9892] font-mono">
+// //                                     <td className="py-2 text-xs text-ink-400 font-mono">
 // //                                         {e.weekStart || ''}
 // //                                     </td>
 
@@ -872,7 +872,7 @@
 // //                                                         </span>
 // //                                                     ))
 // //                                             ) : (
-// //                                                 <span className="text-[#9b9892] text-xs">—</span>
+// //                                                 <span className="text-ink-400 text-xs">—</span>
 // //                                             )}
 // //                                         </div>
 // //                                     </td>
@@ -909,10 +909,10 @@
 // //                                             style={{
 // //                                                 color:
 // //                                                     e.bugs <= 1
-// //                                                         ? '#16a34a'
+// //                                                         ? '#059669'
 // //                                                         : e.bugs <= 3
 // //                                                             ? '#ca8a04'
-// //                                                             : '#dc2626'
+// //                                                             : '#ff4b2b'
 // //                                             }}
 // //                                         >
 // //                                             {e.bugs}
@@ -928,7 +928,7 @@
 // //                                     <td className="text-center whitespace-nowrap">
 // //                                         <button
 // //                                             onClick={() => onEdit(e)}
-// //                                             className="border border-[#ddd9d0] rounded px-2 py-1 text-xs font-semibold hover:bg-gray-100"
+// //                                             className="border border-ink-200 rounded px-2 py-1 text-xs font-semibold hover:bg-gray-100"
 // //                                         >
 // //                                             Edit
 // //                                         </button>
@@ -966,7 +966,7 @@
 // //     return (
 // //         <div
 // //             className={`fixed bottom-7 left-1/2 -translate-x-1/2 flex items-center gap-2.5 px-6 py-3.5 rounded-xl text-sm font-semibold text-white z-[9999] transition-all duration-300 pointer-events-none ${state.show ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-20'}`}
-// //             style={{ background: state.bg || '#1a1814', boxShadow: '0 4px 20px rgba(0,0,0,.1)' }}
+// //             style={{ background: state.bg || '#0b0b0b', boxShadow: '0 4px 20px rgba(0,0,0,.1)' }}
 // //         >
 // //             <span className="text-lg">{state.msg.slice(0, 2)}</span>
 // //             <span>{state.msg.slice(2)}</span>
@@ -1071,7 +1071,7 @@
 // //     }
 
 // //     return (
-// //         <div className="relative min-h-screen isolate text-[#1a1814] ">
+// //         <div className="relative min-h-screen isolate text-ink-900 ">
 // //             <style>{GLOBAL_STYLE}</style>
 
 // //             {/* ── HEADER ── */}
@@ -1113,9 +1113,9 @@
 // // }
 
 // import { useState, useEffect, useRef, useCallback } from "react";
-// import { Tabs, Tab, Input, Select, SelectItem } from "@heroui/react";
+// import { Tabs, Tab, Input, Select, SelectItem } from "@/components/ui";
 // import axios from "axios";
-// import { DateRangePicker } from "@heroui/react";
+// import { DateRangePicker } from "@/components/ui";
 // import { parseDate } from "@internationalized/date";
 
 // // ─── CSS ───────────────────────────────────────────────────────────────────────
@@ -1126,15 +1126,15 @@
 //     opacity:.4;
 //   }
 //   .wp-bar:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
-//     background:#1a1814;color:#fff;font-size:10px;padding:3px 8px;border-radius:5px;white-space:nowrap;pointer-events:none;z-index:10;}
-//   .wp-section-title::after{content:'';flex:1;height:1px;background:#ddd9d0;}
-//   .wp-kpi::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--kpi-color,#e8530a);}
-//   .wp-textarea{resize:vertical;min-height:72px;line-height:1.5;width:100%;border:1.5px solid #ccc8be;border-radius:8px;padding:10px 14px;font-size:14px;color:#1a1814;outline:none;transition:.15s;}
-//   .wp-textarea:focus{border-color:#e8530a;background:#fff;box-shadow:0 0 0 3px rgba(232,83,10,.1);}
+//     background:#0b0b0b;color:#fff;font-size:10px;padding:3px 8px;border-radius:5px;white-space:nowrap;pointer-events:none;z-index:10;}
+//   .wp-section-title::after{content:'';flex:1;height:1px;background:#e4e4e7;}
+//   .wp-kpi::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--kpi-color,#ff6a1f);}
+//   .wp-textarea{resize:vertical;min-height:72px;line-height:1.5;width:100%;border:1.5px solid #d4d4d8;border-radius:8px;padding:10px 14px;font-size:14px;color:#0b0b0b;outline:none;transition:.15s;}
+//   .wp-textarea:focus{border-color:#ff6a1f;background:#fff;box-shadow:0 0 0 3px rgba(232,83,10,.1);}
 //   .wp-tabs [data-slot="tabList"]{background:transparent!important;padding:0!important;gap:4px!important;border-radius:0!important;}
-//   .wp-tabs [data-slot="tab"]{padding:7px 18px!important;border-radius:6px!important;font-size:13px!important;font-weight:600!important;color:#9b9892!important;background:transparent!important;transition:background .15s,color .15s!important;height:auto!important;min-height:0!important;}
+//   .wp-tabs [data-slot="tab"]{padding:7px 18px!important;border-radius:6px!important;font-size:13px!important;font-weight:600!important;color:#8a8a8a!important;background:transparent!important;transition:background .15s,color .15s!important;height:auto!important;min-height:0!important;}
 //   .wp-tabs [data-slot="tab"]:hover{background:rgba(255,255,255,.08)!important;color:#fff!important;}
-//   .wp-tabs [aria-selected="true"][data-slot="tab"],.wp-tabs [data-selected="true"][data-slot="tab"]{background:#e8530a!important;color:#fff!important;}
+//   .wp-tabs [aria-selected="true"][data-slot="tab"],.wp-tabs [data-selected="true"][data-slot="tab"]{background:#ff6a1f!important;color:#fff!important;}
 //   .wp-tabs [data-slot="tabContent"]{font-size:13px!important;font-weight:600!important;}
 //   .wp-tabs [data-slot="cursor"]{display:none!important;}
 //   .wp-tabs [data-slot="panel"]{padding:0!important;outline:none!important;}
@@ -1163,7 +1163,7 @@
 //     return { completion, utilisation, qualityScore, efficiency, overall };
 // }
 // function metricColor(v) {
-//     return v >= 85 ? '#16a34a' : v >= 65 ? '#ca8a04' : '#dc2626';
+//     return v >= 85 ? '#059669' : v >= 65 ? '#ca8a04' : '#ff4b2b';
 // }
 // function trendIcon(v) { return v >= 85 ? '▲' : v >= 65 ? '●' : '▼'; }
 
@@ -1175,16 +1175,16 @@
 //     let h = '';
 //     [.25, .5, .75, 1].forEach(f => {
 //         const pts = Array.from({ length: n }, (_, i) => pt(i, r * f)).map(p => p.join(',')).join(' ');
-//         h += `<polygon points="${pts}" fill="none" stroke="#ddd9d0" stroke-width="1"/>`;
+//         h += `<polygon points="${pts}" fill="none" stroke="#e4e4e7" stroke-width="1"/>`;
 //     });
-//     for (let i = 0; i < n; i++) { const [x, y] = pt(i, r); h += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#ddd9d0" stroke-width="1"/>`; }
+//     for (let i = 0; i < n; i++) { const [x, y] = pt(i, r); h += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#e4e4e7" stroke-width="1"/>`; }
 //     const dpts = values.map((v, i) => pt(i, r * (v / 100))).map(p => p.join(',')).join(' ');
 //     h += `<polygon points="${dpts}" fill="rgba(37,99,235,.12)" stroke="#2563eb" stroke-width="2"/>`;
 //     values.forEach((v, i) => { const [x, y] = pt(i, r * (v / 100)); h += `<circle cx="${x}" cy="${y}" r="4" fill="${colors[i]}" stroke="#fff" stroke-width="2"/>`; });
 //     for (let i = 0; i < n; i++) {
 //         const [x, y] = pt(i, r + 16);
 //         const anchor = x < cx - 5 ? 'end' : x > cx + 5 ? 'start' : 'middle';
-//         h += `<text x="${x}" y="${y}" text-anchor="${anchor}" fill="#9b9892" font-size="9" font-weight="700">${labels[i].toUpperCase()}</text>`;
+//         h += `<text x="${x}" y="${y}" text-anchor="${anchor}" fill="#8a8a8a" font-size="9" font-weight="700">${labels[i].toUpperCase()}</text>`;
 //     }
 //     return h;
 // }
@@ -1194,9 +1194,9 @@
 //     return (
 //         <div className="text-center py-16 px-5 flex flex-col items-center gap-3.5">
 //             <div className="text-5xl opacity-30">{icon}</div>
-//             <div className="text-lg font-bold text-[#6b6760]">{title}</div>
-//             <div className="text-sm text-[#9b9892]">{sub}</div>
-//             <button onClick={onBtn} className="mt-1.5 px-6 py-2.5 bg-[#e8530a] text-white text-sm font-bold rounded-[9px] cursor-pointer border-none hover:bg-[#c94408] transition-all">
+//             <div className="text-lg font-bold text-ink-500">{title}</div>
+//             <div className="text-sm text-ink-400">{sub}</div>
+//             <button onClick={onBtn} className="mt-1.5 px-6 py-2.5 bg-brand-600 text-white text-sm font-bold rounded-[9px] cursor-pointer border-none hover:bg-brand-700 transition-all">
 //                 {btnLabel}
 //             </button>
 //         </div>
@@ -1208,28 +1208,28 @@
 //     const TASK_TYPES = ['Feature', 'Bug', 'Refactor', 'Test', 'Docs', 'Review', 'Infra', 'Research'];
 //     const TASK_STATUSES = [{ key: 'done', label: 'Done' }, { key: 'partial', label: 'Partial' }, { key: 'missed', label: 'Missed' }, { key: 'carry', label: 'Carry' }];
 //     return (
-//         <div style={{ display: 'grid', gridTemplateColumns: '90px 2fr 80px 1fr 1fr 1.5fr 36px', gap: 10, alignItems: 'center' }} className="border border-[#ddd9d0] rounded-[10px] px-3.5 py-2.5 transition-all">
+//         <div style={{ display: 'grid', gridTemplateColumns: '90px 2fr 80px 1fr 1fr 1.5fr 36px', gap: 10, alignItems: 'center' }} className="border border-ink-200 rounded-[10px] px-3.5 py-2.5 transition-all">
 //             <Input size="sm" placeholder="TP-50" label="Jira ID" labelPlacement="outside"
 //                 value={task.jiraId || ''} onValueChange={v => onChange('jiraId', v.toUpperCase())}
-//                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }} />
+//                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
 //             <Input size="sm" placeholder="e.g. Fix AdMob adapter crash" label="Task Name" labelPlacement="outside"
 //                 value={task.name || ''} onValueChange={v => onChange('name', v)}
-//                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }} />
+//                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
 //             <Input size="sm" type="number" placeholder="3" label="SP" labelPlacement="outside"
 //                 value={task.sp || ''} onValueChange={v => onChange('sp', v)}
-//                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }} />
+//                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
 //             <Select size="sm" label="Product" labelPlacement="outside"
 //                 selectedKeys={[task.product || PRODUCTS[0]]} onSelectionChange={keys => onChange('product', Array.from(keys)[0])}
-//                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }}>
+//                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }}>
 //                 {PRODUCTS.map(p => <SelectItem key={p}>{p}</SelectItem>)}
 //             </Select>
 //             <Select size="sm" label="Module" labelPlacement="outside"
 //                 selectedKeys={[task.module || MODULES[0]]} onSelectionChange={keys => onChange('module', Array.from(keys)[0])}
-//                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }}>
+//                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }}>
 //                 {MODULES.map(m => <SelectItem key={m}>{m}</SelectItem>)}
 //             </Select>
 //             <div className="flex flex-col gap-1">
-//                 <div className="text-[10px] font-bold tracking-wide uppercase text-[#9b9892]">Type &amp; Status</div>
+//                 <div className="text-[10px] font-bold tracking-wide uppercase text-ink-400">Type &amp; Status</div>
 //                 <div style={{ display: 'flex', gap: 4 }}>
 //                     <Select size="sm" aria-label="Type"
 //                         selectedKeys={[task.type || 'Feature']} onSelectionChange={keys => onChange('type', Array.from(keys)[0])}
@@ -1243,7 +1243,7 @@
 //                     </Select>
 //                 </div>
 //             </div>
-//             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-[#ccc8be] bg-transparent text-[#9b9892] cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-[#dc2626] hover:border-[#dc2626] hover:text-white">×</button>
+//             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">×</button>
 //         </div>
 //     );
 // }
@@ -1251,17 +1251,17 @@
 // // ─── GOAL ROW COMPONENT ────────────────────────────────────────────────────────
 // function GoalRowInput({ goal, onChange, onRemove }) {
 //     return (
-//         <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 36px', gap: 10, alignItems: 'center' }} className="border border-[#ddd9d0] rounded-[10px] px-3.5 py-2.5">
+//         <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 36px', gap: 10, alignItems: 'center' }} className="border border-ink-200 rounded-[10px] px-3.5 py-2.5">
 //             <Input size="sm" placeholder="e.g. Zero crashes in prod" label="Goal Description" labelPlacement="outside"
 //                 value={goal.name || ''} onValueChange={v => onChange('name', v)}
-//                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }} />
+//                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
 //             <Input size="sm" type="number" placeholder="100" label="Target %" labelPlacement="outside"
 //                 value={goal.target || ''} onValueChange={v => onChange('target', v)}
-//                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }} />
+//                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
 //             <Input size="sm" type="number" placeholder="85" label="Achieved %" labelPlacement="outside"
 //                 value={goal.achieved || ''} onValueChange={v => onChange('achieved', v)}
-//                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }} />
-//             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-[#ccc8be] bg-transparent text-[#9b9892] cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-[#dc2626] hover:border-[#dc2626] hover:text-white">×</button>
+//                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
+//             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">×</button>
 //         </div>
 //     );
 // }
@@ -1270,8 +1270,8 @@
 // function FormGroup({ label, hint, children, full, half }) {
 //     return (
 //         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, gridColumn: full ? '1/-1' : half ? 'span 2' : undefined }}>
-//             <label className="text-[11px] font-bold tracking-[1.2px] uppercase text-[#6b6760]">
-//                 {label}{hint && <span className="text-[10px] font-normal text-[#9b9892] tracking-normal ml-1.5 normal-case">{hint}</span>}
+//             <label className="text-[11px] font-bold tracking-[1.2px] uppercase text-ink-500">
+//                 {label}{hint && <span className="text-[10px] font-normal text-ink-400 tracking-normal ml-1.5 normal-case">{hint}</span>}
 //             </label>
 //             {children}
 //         </div>
@@ -1281,7 +1281,7 @@
 // function AddBtn({ onClick, children }) {
 //     return (
 //         <button onClick={onClick}
-//             className="mt-2.5 px-4 py-2 bg-transparent border-[1.5px] border-dashed border-[#ccc8be] rounded-lg text-sm font-semibold text-[#6b6760] cursor-pointer flex items-center gap-2 transition-all hover:border-[#e8530a] hover:text-[#e8530a] hover:bg-[rgba(232,83,10,.04)]">
+//             className="mt-2.5 px-4 py-2 bg-transparent border-[1.5px] border-dashed border-ink-300 rounded-lg text-sm font-semibold text-ink-500 cursor-pointer flex items-center gap-2 transition-all hover:border-brand-600 hover:text-brand-600 hover:bg-[rgba(232,83,10,.04)]">
 //             {children}
 //         </button>
 //     );
@@ -1361,7 +1361,7 @@
 //     });
 
 //     const live = (f.committed || f.completed) ? calcMetrics(f.committed, f.completed, f.days, f.bugs, f.selfRating) : null;
-//     const lc = v => v >= 85 ? '#16a34a' : v >= 65 ? '#ca8a04' : '#dc2626';
+//     const lc = v => v >= 85 ? '#059669' : v >= 65 ? '#ca8a04' : '#ff4b2b';
 //     const ll = v => v >= 85 ? '▲ On Target' : v >= 65 ? '● Moderate' : '▼ Below';
 
 //     function addTask() { const id = taskId.current++; setTasks(t => [...t, { id, jiraId: '', name: '', sp: '', product: PRODUCTS[0], module: MODULES[0], type: 'Feature', status: 'done' }]); }
@@ -1372,8 +1372,8 @@
 //     function updateGoal(id, key, val) { setGoals(g => g.map(x => x.id === id ? { ...x, [key]: val } : x)); }
 
 //     function handleSubmit() {
-//         if (!f.name.trim()) { showToastGlobal('⚠️ Please enter your name!', '#e8530a'); return; }
-//         if (!f.sprint.trim()) { showToastGlobal('⚠️ Please enter the sprint/week label!', '#e8530a'); return; }
+//         if (!f.name.trim()) { showToastGlobal('⚠️ Please enter your name!', '#ff6a1f'); return; }
+//         if (!f.sprint.trim()) { showToastGlobal('⚠️ Please enter the sprint/week label!', '#ff6a1f'); return; }
 //         const metrics = calcMetrics(f.committed, f.completed, f.days, f.bugs, f.selfRating);
 //         const entry = {
 //             // ← carry original id when editing so saveEntries can detect PUT
@@ -1406,20 +1406,20 @@
 
 //     return (
 //         <div style={{ margin: '0 auto', padding: '36px 40px 60px' }}>
-//             <div style={{ background: '#ffffff', border: '1px solid #ddd9d0', borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', overflow: 'hidden', marginBottom: 28 }}>
+//             <div style={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', overflow: 'hidden', marginBottom: 28 }}>
 //                 {/* Header */}
 //                 <div style={{ padding: '24px 30px', display: 'flex', alignItems: 'center', gap: 16 }}>
 //                     <div>
 //                         {/* ← Edit badge shown when editing */}
-//                         <h2 style={{ fontSize: 20, fontWeight: 800, color: '#1a1814', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 10 }}>
+//                         <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0b0b0b', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 10 }}>
 //                             {isEdit ? 'Edit Sprint Entry' : 'Weekly Sprint Entry'}
 //                             {isEdit && (
-//                                 <span style={{ fontSize: 12, fontWeight: 700, background: '#fff3e0', color: '#e8530a', border: '1px solid #fdd8b5', borderRadius: 20, padding: '2px 10px', letterSpacing: 1 }}>
+//                                 <span style={{ fontSize: 12, fontWeight: 700, background: '#fff3e0', color: '#ff6a1f', border: '1px solid #fdd8b5', borderRadius: 20, padding: '2px 10px', letterSpacing: 1 }}>
 //                                     EDITING · {initialEntry.sprint}
 //                                 </span>
 //                             )}
 //                         </h2>
-//                         <p style={{ fontSize: 13, color: '#9b9892' }}>
+//                         <p style={{ fontSize: 13, color: '#8a8a8a' }}>
 //                             {isEdit ? 'Update your sprint details — changes will be saved via PUT' : 'Fill in your sprint details — all metrics are calculated automatically'}
 //                         </p>
 //                     </div>
@@ -1427,7 +1427,7 @@
 
 //                 <div style={{ padding: '28px 30px' }}>
 //                     {/* Identity */}
-//                     <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-[#9b9892] mb-4">Developer Identity</div>
+//                     <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-ink-400 mb-4">Developer Identity</div>
 //                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18, marginBottom: 20 }}>
 //                         <FormGroup label="Full Name"><Input variant="bordered" size="sm" placeholder="e.g. name" {...inp('name')} onValueChange={v => setF(p => ({ ...p, name: v }))} /></FormGroup>
 //                         <FormGroup label="Role / Team"><Input variant="bordered" size="sm" placeholder="e.g. Engineer" {...inp('role')} onValueChange={v => setF(p => ({ ...p, role: v }))} /></FormGroup>
@@ -1455,10 +1455,10 @@
 //                         </FormGroup>
 //                     </div>
 
-//                     <hr style={{ border: 'none', borderTop: '1px solid #ddd9d0', margin: '24px 0' }} />
+//                     <hr style={{ border: 'none', borderTop: '1px solid #e4e4e7', margin: '24px 0' }} />
 
 //                     {/* Story Points */}
-//                     <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-[#9b9892] mb-4">Story Points</div>
+//                     <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-ink-400 mb-4">Story Points</div>
 //                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18, marginBottom: 20 }}>
 //                         <FormGroup label="Story Points Committed"><Input variant="bordered" size="sm" type="number" placeholder="e.g. 20" {...inp('committed')} onValueChange={v => setF(p => ({ ...p, committed: v }))} /></FormGroup>
 //                         <FormGroup label="Story Points Completed"><Input variant="bordered" size="sm" type="number" placeholder="e.g. 17" {...inp('completed')} onValueChange={v => setF(p => ({ ...p, completed: v }))} /></FormGroup>
@@ -1470,8 +1470,8 @@
 
 //                     {/* Live Preview */}
 //                     {live && (
-//                         <div style={{ border: '1px solid #ddd9d0', borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
-//                             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#9b9892', marginBottom: 12 }}>⚡ Live Auto-Calculation</div>
+//                         <div style={{ border: '1px solid #e4e4e7', borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
+//                             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#8a8a8a', marginBottom: 12 }}>⚡ Live Auto-Calculation</div>
 //                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
 //                                 {[
 //                                     { k: 'Completion Rate', v: live.completion + '%', c: lc(live.completion), l: ll(live.completion) },
@@ -1479,8 +1479,8 @@
 //                                     { k: 'Quality Score', v: live.qualityScore + '/100', c: lc(live.qualityScore), l: ll(live.qualityScore) },
 //                                     { k: 'Efficiency Score', v: live.efficiency + '/100', c: lc(live.efficiency), l: ll(live.efficiency) },
 //                                 ].map(m => (
-//                                     <div key={m.k} style={{ background: '#ffffff', border: '1px solid #ddd9d0', borderRadius: 8, padding: '12px 14px' }}>
-//                                         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#9b9892', marginBottom: 6 }}>{m.k}</div>
+//                                     <div key={m.k} style={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: 8, padding: '12px 14px' }}>
+//                                         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#8a8a8a', marginBottom: 6 }}>{m.k}</div>
 //                                         <div style={{ fontSize: 22, fontWeight: 800, color: m.c, lineHeight: 1 }}>{m.v}</div>
 //                                         <div style={{ fontSize: 11, color: m.c, marginTop: 4, fontWeight: 600 }}>{m.l}</div>
 //                                     </div>
@@ -1489,10 +1489,10 @@
 //                         </div>
 //                     )}
 
-//                     <hr style={{ border: 'none', borderTop: '1px solid #ddd9d0', margin: '24px 0' }} />
+//                     <hr style={{ border: 'none', borderTop: '1px solid #e4e4e7', margin: '24px 0' }} />
 
 //                     {/* Tasks */}
-//                     <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-[#9b9892] mb-4">Tasks Worked This Week</div>
+//                     <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-ink-400 mb-4">Tasks Worked This Week</div>
 //                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
 //                         {tasks.map(t => (
 //                             <TaskRowInput key={t.id} task={t} onChange={(k, v) => updateTask(t.id, k, v)} onRemove={() => removeTask(t.id)} />
@@ -1500,11 +1500,11 @@
 //                     </div>
 //                     <AddBtn onClick={addTask}>＋ Add Task</AddBtn>
 
-//                     <hr style={{ border: 'none', borderTop: '1px solid #ddd9d0', margin: '24px 0' }} />
+//                     <hr style={{ border: 'none', borderTop: '1px solid #e4e4e7', margin: '24px 0' }} />
 
 //                     {/* Goals */}
-//                     <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-[#9b9892] mb-4">
-//                         Weekly Goals <span style={{ fontSize: 10, color: '#9b9892', textTransform: 'none', letterSpacing: 0, fontWeight: 400, marginLeft: 6 }}>Set targets and track what you achieved</span>
+//                     <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-ink-400 mb-4">
+//                         Weekly Goals <span style={{ fontSize: 10, color: '#8a8a8a', textTransform: 'none', letterSpacing: 0, fontWeight: 400, marginLeft: 6 }}>Set targets and track what you achieved</span>
 //                     </div>
 //                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
 //                         {goals.map(g => (
@@ -1513,10 +1513,10 @@
 //                     </div>
 //                     <AddBtn onClick={addGoal}>＋ Add Goal</AddBtn>
 
-//                     <hr style={{ border: 'none', borderTop: '1px solid #ddd9d0', margin: '24px 0' }} />
+//                     <hr style={{ border: 'none', borderTop: '1px solid #e4e4e7', margin: '24px 0' }} />
 
 //                     {/* Reflection */}
-//                     <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-[#9b9892] mb-4">Self Reflection</div>
+//                     <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-ink-400 mb-4">Self Reflection</div>
 //                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18 }}>
 //                         <FormGroup label="Key Achievements This Week" full>
 //                             <textarea className="wp-textarea" placeholder="What did you accomplish? What are you proud of?" {...inp('achievements')} />
@@ -1536,20 +1536,20 @@
 //                     <div className="flex items-center gap-3.5 mt-6">
 //                         <button onClick={handleSubmit}
 //                             className="flex items-center gap-2.5 px-8 py-3 text-white text-[15px] font-bold rounded-[10px] cursor-pointer transition-all border-none"
-//                             style={{ background: isEdit ? '#1a1814' : '#e8530a' }}
+//                             style={{ background: isEdit ? '#0b0b0b' : '#ff6a1f' }}
 //                         >
 //                             <span>{isEdit ? 'Save Changes' : 'Submit Sprint Entry'}</span>
 //                             <span>{isEdit ? '✓' : '→'}</span>
 //                         </button>
-//                         <button onClick={handleReset} className="px-5 py-3 bg-transparent border-[1.5px] border-[#ccc8be] rounded-[10px] text-sm font-semibold text-[#6b6760] cursor-pointer transition-all">
+//                         <button onClick={handleReset} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 rounded-[10px] text-sm font-semibold text-ink-500 cursor-pointer transition-all">
 //                             Reset
 //                         </button>
 //                         {isEdit && (
-//                             <button onClick={onSwitchDashboard} className="px-5 py-3 bg-transparent border-[1.5px] border-[#ccc8be] rounded-[10px] text-sm font-semibold text-[#9b9892] cursor-pointer transition-all">
+//                             <button onClick={onSwitchDashboard} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 rounded-[10px] text-sm font-semibold text-ink-400 cursor-pointer transition-all">
 //                                 Cancel
 //                             </button>
 //                         )}
-//                         <span className="text-xs text-[#9b9892] ml-auto">
+//                         <span className="text-xs text-ink-400 ml-auto">
 //                             {isEdit ? `Editing entry ID: ${initialEntry.id}` : 'All fields with auto-calc will update your dashboard instantly'}
 //                         </span>
 //                     </div>
@@ -1713,7 +1713,7 @@
 
 //     useEffect(() => { setManagerNote(cur?.managerNote || ''); }, [cur?.id]);
 
-//     if (loading) return <div style={{ margin: '0 auto', padding: '80px 40px', textAlign: 'center', color: '#9b9892', fontSize: 14 }}>Loading dashboard...</div>;
+//     if (loading) return <div style={{ margin: '0 auto', padding: '80px 40px', textAlign: 'center', color: '#8a8a8a', fontSize: 14 }}>Loading dashboard...</div>;
 //     if (!displayEntries.length) return (
 //         <div style={{ margin: '0 auto', padding: '36px 40px 60px' }}>
 //             <div className="flex gap-3">
@@ -1763,23 +1763,23 @@
 //         ? [radar.utilisation, radar.velocity, radar.reviews, radar.quality, radar.goals, radar.self]
 //         : [m.utilisation, m.completion, Math.min(100, cur.reviews * 20), m.qualityScore, goalsMet > 0 ? Math.round((goalsMet / Math.max(cur.goals.length, 1)) * 100) : 0, Math.min(100, cur.selfRating * 10)];
 //     const radarLabels = ['Util', 'Velocity', 'Reviews', 'Quality', 'Goals', 'Self'];
-//     const radarColors = ['#2563eb', '#e8530a', '#16a34a', '#7c3aed', '#ca8a04', '#0891b2'];
+//     const radarColors = ['#2563eb', '#ff6a1f', '#059669', '#7c3aed', '#ca8a04', '#0891b2'];
 //     const score = m.overall || m.efficiency;
 //     const scoreColor = metricColor(score);
 //     const scoreLabel = score >= 85 ? 'EXCELLENT' : score >= 70 ? 'GOOD' : score >= 55 ? 'FAIR' : 'NEEDS FOCUS';
 //     const circumference = 2 * Math.PI * 36;
 //     const dashOffset = circumference * (1 - score / 100);
 //     const statusTag = { done: { lbl: '✓ Done' }, partial: { lbl: '◑ Partial' }, missed: { lbl: '✗ Missed' }, carry: { lbl: '→ Carry' } };
-//     const tagStyle = { done: { background: 'rgba(22,163,74,.1)', color: '#16a34a' }, partial: { background: 'rgba(202,138,4,.1)', color: '#ca8a04' }, missed: { background: 'rgba(220,38,38,.1)', color: '#dc2626' }, carry: { background: 'rgba(107,114,128,.1)', color: '#6b7280' } };
+//     const tagStyle = { done: { background: 'rgba(22,163,74,.1)', color: '#059669' }, partial: { background: 'rgba(202,138,4,.1)', color: '#ca8a04' }, missed: { background: 'rgba(220,38,38,.1)', color: '#ff4b2b' }, carry: { background: 'rgba(107,114,128,.1)', color: '#6b7280' } };
 
 //     return (
 //         <div style={{ margin: '0 auto', padding: '36px 40px 60px' }}>
 //             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
-//                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#ffffff', border: '1px solid #ddd9d0', borderRadius: 30, padding: '8px 18px 8px 10px', boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)' }}>
-//                     <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#e8530a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#fff' }}>
+//                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: 30, padding: '8px 18px 8px 10px', boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)' }}>
+//                     <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#ff6a1f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#fff' }}>
 //                         {selectedDev.split(' ').map(w => w[0]).join('').slice(0, 2)}
 //                     </div>
-//                     <div><div style={{ fontSize: 15, fontWeight: 700 }}>{selectedDev}</div><div style={{ fontSize: 11, color: '#9b9892' }}>{cur.role || 'Developer'}</div></div>
+//                     <div><div style={{ fontSize: 15, fontWeight: 700 }}>{selectedDev}</div><div style={{ fontSize: 11, color: '#8a8a8a' }}>{cur.role || 'Developer'}</div></div>
 //                 </div>
 //                 <div >
 //                     <DateRangePicker
@@ -1818,26 +1818,26 @@
 //                     </Select>
 //                 </div>
 //             </div>
-//             <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-[#9b9892] mb-3.5">Performance Overview · {cur.sprint} ({cur.weekStart} → {cur.weekEnd})</div>
+//             <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-ink-400 mb-3.5">Performance Overview · {cur.sprint} ({cur.weekStart} → {cur.weekEnd})</div>
 //             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 14, marginBottom: 24 }}>
 //                 {[
 //                     { label: 'Completion Rate', val: `${m.completion}%`, sub: `${cur.completed}/${cur.committed} SP`, c: metricColor(m.completion), badge: trendIcon(m.completion) + ' ' + (m.completion >= 85 ? 'On Target' : m.completion >= 65 ? 'Moderate' : 'Below') },
 //                     { label: 'Utilisation', val: `${m.utilisation}%`, sub: `${cur.days}/5 days logged`, c: metricColor(m.utilisation), badge: trendIcon(m.utilisation) + ' Capacity' },
 //                     { label: 'Quality Score', val: `${m.qualityScore}`, sub: `${cur.bugs} bug${cur.bugs !== 1 ? 's' : ''} introduced`, c: metricColor(m.qualityScore), badge: trendIcon(m.qualityScore) + ' ' + (m.qualityScore >= 85 ? 'Clean' : 'Review needed') },
 //                     { label: 'Efficiency Score', val: `${m.efficiency}`, sub: 'Composite /100', c: metricColor(m.efficiency), badge: trendIcon(m.efficiency) + ' Efficiency' },
-//                     { label: 'Goals Met', val: `${goalsMet}/${cur.goals.length}`, sub: `${tasksDone}/${tasksTotal} tasks done`, c: metricColor(goalsMet / Math.max(cur.goals.length, 1) * 100), badge: goalsMet === cur.goals.length && cur.goals.length > 0 ? 'All met' : goalsMet > 0 ? 'Partial' : 'Missed', badgeColor: 'rgba(22,163,74,.1)', badgeTextColor: '#16a34a' },
+//                     { label: 'Goals Met', val: `${goalsMet}/${cur.goals.length}`, sub: `${tasksDone}/${tasksTotal} tasks done`, c: metricColor(goalsMet / Math.max(cur.goals.length, 1) * 100), badge: goalsMet === cur.goals.length && cur.goals.length > 0 ? 'All met' : goalsMet > 0 ? 'Partial' : 'Missed', badgeColor: 'rgba(22,163,74,.1)', badgeTextColor: '#059669' },
 //                 ].map((k, i) => (
-//                     <div key={i} className="wp-kpi relative overflow-hidden rounded-xl p-5 bg-white border border-[#ddd9d0]" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', '--kpi-color': k.c } as React.CSSProperties}>
-//                         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#9b9892', marginBottom: 8 }}>{k.label}</div>
+//                     <div key={i} className="wp-kpi relative overflow-hidden rounded-xl p-5 bg-white border border-ink-200" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', '--kpi-color': k.c } as React.CSSProperties}>
+//                         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#8a8a8a', marginBottom: 8 }}>{k.label}</div>
 //                         <div style={{ fontSize: 30, fontWeight: 900, lineHeight: 1, color: k.c, marginBottom: 4 }}>{k.val}</div>
-//                         <div style={{ fontSize: 11, color: '#9b9892', fontFamily: 'monospace' }}>{k.sub}</div>
+//                         <div style={{ fontSize: 11, color: '#8a8a8a', fontFamily: 'monospace' }}>{k.sub}</div>
 //                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 12, marginTop: 8, background: k.badgeColor || `${k.c}22`, color: k.badgeTextColor || k.c }}>{k.badge}</div>
 //                     </div>
 //                 ))}
 //             </div>
 //             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 18 }}>
 //                 <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
-//                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>Sprint Velocity Trend <span style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 10, color: '#9b9892', fontWeight: 500 }}>{devEntries.length} weeks</span></div>
+//                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>Sprint Velocity Trend <span style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 10, color: '#8a8a8a', fontWeight: 500 }}>{devEntries.length} weeks</span></div>
 //                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 140 }}>
 //                         {devEntries.map(e => {
 //                             const cH = Math.round((e.committed / maxSP) * 100);
@@ -1846,65 +1846,65 @@
 //                             return (
 //                                 <div key={e.sprint} className="flex-1 flex flex-col items-center gap-1">
 //                                     <div className="flex-1 flex items-end gap-[3px] w-full">
-//                                         <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative bg-[#ede9e1] border border-[#ddd9d0]" style={{ height: `${cH}%` }} data-tip={`Committed: ${e.committed}SP`} />
+//                                         <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative bg-ink-100 border border-ink-200" style={{ height: `${cH}%` }} data-tip={`Committed: ${e.committed}SP`} />
 //                                         <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative" style={{ height: `${dH}%`, background: 'linear-gradient(180deg,#2563eb,#1d4ed8)' }} data-tip={`Done: ${e.completed}SP (${pct}%)`} />
 //                                     </div>
-//                                     <div style={{ fontSize: 10, color: '#9b9892', fontFamily: 'monospace' }}>{e.sprint}</div>
+//                                     <div style={{ fontSize: 10, color: '#8a8a8a', fontFamily: 'monospace' }}>{e.sprint}</div>
 //                                 </div>
 //                             );
 //                         })}
 //                     </div>
 //                     <div style={{ display: 'flex', gap: 16, marginTop: 14 }}>
-//                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#9b9892' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#ede9e1', border: '1px solid #ddd9d0', display: 'inline-block' }} /> Committed</div>
-//                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#9b9892' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#2563eb', display: 'inline-block' }} /> Completed</div>
+//                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#8a8a8a' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#f4f4f5', border: '1px solid #e4e4e7', display: 'inline-block' }} /> Committed</div>
+//                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#8a8a8a' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#2563eb', display: 'inline-block' }} /> Completed</div>
 //                     </div>
 //                 </div>
 //                 <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
-//                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>Goal Achievement <span style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 10, color: '#9b9892', fontWeight: 500 }}>{goalsMet}/{cur.goals.length} met</span></div>
+//                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>Goal Achievement <span style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 10, color: '#8a8a8a', fontWeight: 500 }}>{goalsMet}/{cur.goals.length} met</span></div>
 //                     {cur.goals.length ? cur.goals.map((g, i) => {
 //                         const pct = Math.min(100, Math.round((g.achieved / g.target) * 100));
-//                         const c = g.achieved >= g.target ? '#16a34a' : g.achieved >= g.target * .7 ? '#ca8a04' : '#dc2626';
+//                         const c = g.achieved >= g.target ? '#059669' : g.achieved >= g.target * .7 ? '#ca8a04' : '#ff4b2b';
 //                         return (
 //                             <div key={i} style={{ marginBottom: 14 }}>
 //                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
 //                                     <div style={{ fontSize: 13, fontWeight: 600 }}>{g.name}</div>
 //                                     <div style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 700, color: c }}>{g.achieved}%</div>
 //                                 </div>
-//                                 <div style={{ height: 7, background: '#ede9e1', borderRadius: 20, overflow: 'hidden' }}>
+//                                 <div style={{ height: 7, background: '#f4f4f5', borderRadius: 20, overflow: 'hidden' }}>
 //                                     <div style={{ width: `${pct}%`, background: c, height: '100%', borderRadius: 20 }} />
 //                                 </div>
 //                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-//                                     <div style={{ fontSize: 10, fontFamily: 'monospace', color: '#9b9892' }}>Target: {g.target}%</div>
+//                                     <div style={{ fontSize: 10, fontFamily: 'monospace', color: '#8a8a8a' }}>Target: {g.target}%</div>
 //                                     <div style={{ fontSize: 10, fontFamily: 'monospace', color: c }}>{g.achieved >= g.target ? '✓ Achieved' : '✗ Not met'}</div>
 //                                 </div>
 //                             </div>
 //                         );
-//                     }) : <div style={{ color: '#9b9892', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>No goals set for this week</div>}
+//                     }) : <div style={{ color: '#8a8a8a', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>No goals set for this week</div>}
 //                 </div>
 //             </div>
 //             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18, marginBottom: 18 }}>
-//                 <div style={{ background: '#ffffff', border: '1px solid #ddd9d0', borderRadius: 14, padding: '22px 24px', boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', gridColumn: 'span 2' }}>
+//                 <div style={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: 14, padding: '22px 24px', boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', gridColumn: 'span 2' }}>
 //                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Tasks This Week</div>
 //                     <table className="w-full border-collapse">
-//                         <thead><tr style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: '#9b9892' }}>
+//                         <thead><tr style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: '#8a8a8a' }}>
 //                             <th style={{ padding: '4px 8px', textAlign: 'center' }}>Jira ID</th><th style={{ padding: '4px 8px' }}>Task</th><th style={{ padding: '4px 8px', textAlign: 'center' }}>SP</th><th style={{ padding: '4px 8px', textAlign: 'center' }}>Product</th><th style={{ padding: '4px 8px', textAlign: 'center' }}>Module</th><th style={{ padding: '4px 8px', textAlign: 'center' }}>Type</th><th style={{ padding: '4px 8px', textAlign: 'center' }}>Status</th>
 //                         </tr></thead>
 //                         <tbody>
 //                             {cur.tasks.length ? cur.tasks.map((t, i) => (
 //                                 <tr key={i} style={{ borderTop: '1px solid #f0ede8' }}>
-//                                     <td style={{ padding: '8px', textAlign: 'center' }}>{t.jiraId ? <a href={`https://tapminds.atlassian.net/browse/${t.jiraId}`} target="_blank" rel="noreferrer" style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#2563eb', textDecoration: 'none', background: 'rgba(37,99,235,.08)', padding: '2px 8px', borderRadius: 5 }}>{t.jiraId} ↗</a> : <span style={{ color: '#9b9892', fontSize: 11 }}>—</span>}</td>
+//                                     <td style={{ padding: '8px', textAlign: 'center' }}>{t.jiraId ? <a href={`https://tapminds.atlassian.net/browse/${t.jiraId}`} target="_blank" rel="noreferrer" style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#2563eb', textDecoration: 'none', background: 'rgba(37,99,235,.08)', padding: '2px 8px', borderRadius: 5 }}>{t.jiraId} ↗</a> : <span style={{ color: '#8a8a8a', fontSize: 11 }}>—</span>}</td>
 //                                     <td style={{ padding: '8px', textAlign: 'center', fontWeight: 500, fontSize: 13 }}>{t.name}</td>
 //                                     <td style={{ padding: '8px', textAlign: 'center' }}><span style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563eb' }}>{t.sp}</span></td>
-//                                     <td style={{ padding: '8px', textAlign: 'center' }}><span style={{ fontSize: 11, color: '#6b6760' }}>{t.product || '—'}</span></td>
+//                                     <td style={{ padding: '8px', textAlign: 'center' }}><span style={{ fontSize: 11, color: '#6a6a6a' }}>{t.product || '—'}</span></td>
 //                                     <td style={{ padding: '8px', textAlign: 'center' }}><span style={{ fontSize: 11, color: '#7c3aed', background: 'rgba(124,58,237,.07)', padding: '2px 8px', borderRadius: 5 }}>{t.module || '—'}</span></td>
-//                                     <td style={{ padding: '8px', textAlign: 'center', fontSize: 11, color: '#9b9892' }}>{t.type}</td>
+//                                     <td style={{ padding: '8px', textAlign: 'center', fontSize: 11, color: '#8a8a8a' }}>{t.type}</td>
 //                                     <td style={{ padding: '8px', textAlign: 'center' }}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, ...tagStyle[t.status] }}>{statusTag[t.status]?.lbl}</span></td>
 //                                 </tr>
-//                             )) : <tr><td colSpan={7} style={{ textAlign: 'center', color: '#9b9892', padding: 20 }}>No tasks logged</td></tr>}
+//                             )) : <tr><td colSpan={7} style={{ textAlign: 'center', color: '#8a8a8a', padding: 20 }}>No tasks logged</td></tr>}
 //                         </tbody>
 //                     </table>
 //                 </div>
-//                 <div style={{ background: '#ffffff', border: '1px solid #ddd9d0', borderRadius: 14, padding: '22px 24px', boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', display: 'flex', flexDirection: 'column' }}>
+//                 <div style={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: 14, padding: '22px 24px', boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', display: 'flex', flexDirection: 'column' }}>
 //                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Performance Radar</div>
 //                     <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
 //                         <svg width="200" height="200" viewBox="0 0 200 200" style={{ overflow: 'visible' }} dangerouslySetInnerHTML={{ __html: buildRadar(radarVals, radarLabels, radarColors) }} />
@@ -1912,14 +1912,14 @@
 //                     <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 8 }}>
 //                         {radarLabels.map((l, i) => (
 //                             <div key={l} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-//                                 <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#9b9892' }}><span style={{ width: 8, height: 8, borderRadius: 2, background: radarColors[i], display: 'inline-block' }} />{l}</span>
+//                                 <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#8a8a8a' }}><span style={{ width: 8, height: 8, borderRadius: 2, background: radarColors[i], display: 'inline-block' }} />{l}</span>
 //                                 <span style={{ fontFamily: 'monospace', fontSize: 11, color: radarColors[i], fontWeight: 600 }}>{radarVals[i]}</span>
 //                             </div>
 //                         ))}
 //                     </div>
 //                     <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
 //                         <svg width="88" height="88" viewBox="0 0 88 88">
-//                             <circle cx="44" cy="44" r="36" fill="none" stroke="#ede9e1" strokeWidth="8" />
+//                             <circle cx="44" cy="44" r="36" fill="none" stroke="#f4f4f5" strokeWidth="8" />
 //                             <circle cx="44" cy="44" r="36" fill="none" stroke={scoreColor} strokeWidth="8" strokeDasharray={circumference} strokeDashoffset={dashOffset} strokeLinecap="round" transform="rotate(-90 44 44)" style={{ transition: '.6s' }} />
 //                             <text x="44" y="50" textAnchor="middle" fontFamily="Outfit,sans-serif" fontSize="18" fontWeight="900" fill={scoreColor}>{score}</text>
 //                         </svg>
@@ -1930,25 +1930,25 @@
 //             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
 //                 <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
 //                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Developer Reflection</div>
-//                     {cur.achievements && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#16a34a', marginBottom: 6 }}>✓ Achievements</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6b6760' }}>{cur.achievements}</div></div>}
-//                     {cur.challenges && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#dc2626', marginBottom: 6 }}>⚠ Blockers</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6b6760' }}>{cur.challenges}</div></div>}
-//                     {cur.nextFocus && <div><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#2563eb', marginBottom: 6 }}>→ Next Week Focus</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6b6760' }}>{cur.nextFocus}</div></div>}
-//                     {!cur.achievements && !cur.challenges && !cur.nextFocus && <div style={{ textAlign: 'center', color: '#9b9892', padding: 20, fontSize: 13 }}>No reflection notes added</div>}
+//                     {cur.achievements && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#059669', marginBottom: 6 }}>✓ Achievements</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6a6a6a' }}>{cur.achievements}</div></div>}
+//                     {cur.challenges && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#ff4b2b', marginBottom: 6 }}>⚠ Blockers</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6a6a6a' }}>{cur.challenges}</div></div>}
+//                     {cur.nextFocus && <div><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#2563eb', marginBottom: 6 }}>→ Next Week Focus</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6a6a6a' }}>{cur.nextFocus}</div></div>}
+//                     {!cur.achievements && !cur.challenges && !cur.nextFocus && <div style={{ textAlign: 'center', color: '#8a8a8a', padding: 20, fontSize: 13 }}>No reflection notes added</div>}
 //                 </div>
 //                 <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
 //                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Manager Review Note</div>
 //                     <textarea value={managerNote} onChange={e => setManagerNote(e.target.value)} placeholder="Add manager feedback, coaching notes, or observations for this sprint…" className="wp-textarea" style={{ minHeight: 64 }} />
-//                     <button onClick={() => showToastGlobal('📝 Manager note saved!')} className="mt-2 px-4 py-2 bg-[#1a1814] text-white text-xs font-bold rounded-[7px] cursor-pointer border-none">Save Note</button>
-//                     <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #ddd9d0' }}>
+//                     <button onClick={() => showToastGlobal('📝 Manager note saved!')} className="mt-2 px-4 py-2 bg-ink-900 text-white text-xs font-bold rounded-[7px] cursor-pointer border-none">Save Note</button>
+//                     <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e4e4e7' }}>
 //                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
 //                             {[
 //                                 { label: 'Reviews Done', val: cur.reviews, color: '#2563eb' },
 //                                 { label: 'Carry-over SP', val: cur.carryover, color: '#ca8a04' },
-//                                 { label: 'Blockers', val: cur.blockers, color: '#dc2626' },
+//                                 { label: 'Blockers', val: cur.blockers, color: '#ff4b2b' },
 //                                 { label: 'Self Rating', val: `${cur.selfRating}/10`, color: '#7c3aed' },
 //                             ].map(x => (
 //                                 <div key={x.label} style={{ borderRadius: 8, padding: 12 }} className="shadow-md">
-//                                     <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#9b9892', marginBottom: 4 }}>{x.label}</div>
+//                                     <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#8a8a8a', marginBottom: 4 }}>{x.label}</div>
 //                                     <div style={{ fontSize: 20, fontWeight: 800, color: x.color }}>{x.val}</div>
 //                                 </div>
 //                             ))}
@@ -2052,7 +2052,7 @@
 
 //     }, [weekRange, selectedUser]);
 
-//     if (loading) return <div style={{ margin: '0 auto', padding: '80px 40px', textAlign: 'center', color: '#9b9892', fontSize: 14 }}>Loading history...</div>;
+//     if (loading) return <div style={{ margin: '0 auto', padding: '80px 40px', textAlign: 'center', color: '#8a8a8a', fontSize: 14 }}>Loading history...</div>;
 //     if (!newData.length) return (
 //         <div style={{ margin: '0 auto', padding: '36px 40px 60px' }}>
 //             <div className="flex gap-3">
@@ -2091,7 +2091,7 @@
 //     );
 
 //     const sorted = [...newData].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-//     const color = v => v >= 85 ? '#16a34a' : v >= 65 ? '#ca8a04' : '#dc2626';
+//     const color = v => v >= 85 ? '#059669' : v >= 65 ? '#ca8a04' : '#ff4b2b';
 
 //     return (
 //         <div style={{ margin: '0 auto', padding: '36px 40px 60px' }}>
@@ -2126,8 +2126,8 @@
 //                     ))}
 //                 </Select>
 //             </div>
-//             <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-[#9b9892] mb-4 mt-3">
-//                 All Sprint Entries <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: 11, marginLeft: 6, color: '#9b9892' }}>{newData.length} total</span>
+//             <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-ink-400 mb-4 mt-3">
+//                 All Sprint Entries <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: 11, marginLeft: 6, color: '#8a8a8a' }}>{newData.length} total</span>
 //             </div>
 
 //             <div className="bg-surface border border-border rounded-xl p-6 shadow-sm overflow-x-auto">
@@ -2138,7 +2138,7 @@
 //                         <col style={{ width: 70 }} /><col style={{ width: 80 }} /><col style={{ width: 120 }} />
 //                     </colgroup>
 //                     <thead>
-//                         <tr style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: '#9b9892', textAlign: 'left' }}>
+//                         <tr style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: '#8a8a8a', textAlign: 'left' }}>
 //                             <th style={{ paddingBottom: 8 }}>Developer</th><th style={{ paddingBottom: 8 }}>Sprint</th><th style={{ paddingBottom: 8 }}>Week</th>
 //                             <th style={{ paddingBottom: 8 }}>Jira IDs</th><th style={{ paddingBottom: 8, textAlign: 'center' }}>SP</th>
 //                             <th style={{ paddingBottom: 8, textAlign: 'center' }}>Completion</th><th style={{ paddingBottom: 8, textAlign: 'center' }}>Utilisation</th>
@@ -2157,24 +2157,24 @@
 //                                 <tr key={e.id} style={{ borderTop: '1px solid #eee', transition: 'background .15s' }}>
 //                                     <td style={{ padding: '8px 4px' }}><div style={{ fontWeight: 600 }}>{e.name}</div></td>
 //                                     <td style={{ padding: '8px 4px' }}><span style={{ fontFamily: 'monospace', fontSize: 12, padding: '2px 8px', borderRadius: 4, background: '#f5f5f5' }}>{e.sprint}</span></td>
-//                                     <td style={{ padding: '8px 4px', fontSize: 12, color: '#9b9892', fontFamily: 'monospace' }}>{e.weekStart || ''}</td>
+//                                     <td style={{ padding: '8px 4px', fontSize: 12, color: '#8a8a8a', fontFamily: 'monospace' }}>{e.weekStart || ''}</td>
 //                                     <td style={{ padding: '8px 4px' }}>
 //                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 160 }}>
 //                                             {e.tasks.filter(t => t.jiraId).length
 //                                                 ? e.tasks.filter(t => t.jiraId).map((t, i) => <span key={i} style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: 700, color: '#2563eb', background: 'rgba(37,99,235,.07)', padding: '2px 8px', borderRadius: 4, whiteSpace: 'nowrap' }}>{t.jiraId}</span>)
-//                                                 : <span style={{ color: '#9b9892', fontSize: 12 }}>—</span>}
+//                                                 : <span style={{ color: '#8a8a8a', fontSize: 12 }}>—</span>}
 //                                         </div>
 //                                     </td>
 //                                     <td style={{ textAlign: 'center', fontWeight: 600, color: '#2563eb' }}>{e.completed}/{e.committed}</td>
 //                                     <td style={{ textAlign: 'center', fontWeight: 600 }}><span style={{ color: color(e.metrics.completion) }}>{e.metrics.completion}%</span></td>
 //                                     <td style={{ textAlign: 'center', fontWeight: 600 }}><span style={{ color: color(e.metrics.utilisation) }}>{e.metrics.utilisation}%</span></td>
 //                                     <td style={{ textAlign: 'center', fontWeight: 600 }}><span style={{ color: color(e.metrics.efficiency) }}>{e.metrics.efficiency}/100</span></td>
-//                                     <td style={{ textAlign: 'center', fontWeight: 600 }}><span style={{ color: e.bugs <= 1 ? '#16a34a' : e.bugs <= 3 ? '#ca8a04' : '#dc2626' }}>{e.bugs}</span></td>
+//                                     <td style={{ textAlign: 'center', fontWeight: 600 }}><span style={{ color: e.bugs <= 1 ? '#059669' : e.bugs <= 3 ? '#ca8a04' : '#ff4b2b' }}>{e.bugs}</span></td>
 //                                     <td style={{ textAlign: 'center', fontWeight: 600 }}>{goalsMet}/{e.goals.length}</td>
 //                                     {user.userID != 1 && (
 //                                         <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-//                                             <button onClick={() => onEdit(e)} style={{ border: '1px solid #ddd9d0', borderRadius: 4, padding: '3px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer', background: 'transparent' }}>Edit</button>
-//                                             <button onClick={() => onDelete(e.id)} style={{ marginLeft: 4, border: '1px solid #fecaca', borderRadius: 4, padding: '3px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer', background: '#fef2f2', color: '#dc2626' }}>Del</button>
+//                                             <button onClick={() => onEdit(e)} style={{ border: '1px solid #e4e4e7', borderRadius: 4, padding: '3px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer', background: 'transparent' }}>Edit</button>
+//                                             <button onClick={() => onDelete(e.id)} style={{ marginLeft: 4, border: '1px solid #fecaca', borderRadius: 4, padding: '3px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer', background: '#fef2f2', color: '#ff4b2b' }}>Del</button>
 //                                         </td>
 //                                     )}
 
@@ -2201,7 +2201,7 @@
 //     }, []);
 //     return (
 //         <div className={`fixed bottom-7 left-1/2 -translate-x-1/2 flex items-center gap-2.5 px-6 py-3.5 rounded-xl text-sm font-semibold text-white z-[9999] transition-all duration-300 ${state.show ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20 pointer-events-none'}`}
-//             style={{ background: state.bg || '#1a1814', boxShadow: '0 4px 20px rgba(0,0,0,.1)' }}>
+//             style={{ background: state.bg || '#0b0b0b', boxShadow: '0 4px 20px rgba(0,0,0,.1)' }}>
 //             <span className="text-lg">{state.msg.slice(0, 2)}</span>
 //             <span>{state.msg.slice(2)}</span>
 //         </div>
@@ -2299,7 +2299,7 @@
 //             setTimeout(() => setTab('dashboard'), 900);
 //         } catch (err) {
 //             console.error('Save error:', err);
-//             showToastGlobal('❌ Failed to save entry', '#dc2626');
+//             showToastGlobal('❌ Failed to save entry', '#ff4b2b');
 //         }
 //     }
 
@@ -2330,7 +2330,7 @@
 //     }
 
 //     return (
-//         <div className="relative min-h-screen isolate text-[#1a1814]">
+//         <div className="relative min-h-screen isolate text-ink-900">
 //             <style>{GLOBAL_STYLE}</style>
 //             <header className="px-10 flex items-center justify-between h-16">
 //                 <Tabs
@@ -2370,9 +2370,9 @@
 
 
 import { useState, useEffect, useRef } from "react";
-import { Tabs, Tab, Input, Select, SelectItem } from "@heroui/react";
+import { Tabs, Tab, Input, Select, SelectItem } from "@/components/ui";
 import axios from "axios";
-import { DateRangePicker } from "@heroui/react";
+import { DateRangePicker } from "@/components/ui";
 import { parseDate } from "@internationalized/date";
 
 // ─── CSS ───────────────────────────────────────────────────────────────────────
@@ -2383,15 +2383,15 @@ const GLOBAL_STYLE = `
     opacity:.4;
   }
   .wp-bar:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
-    background:#1a1814;color:#fff;font-size:10px;padding:3px 8px;border-radius:5px;white-space:nowrap;pointer-events:none;z-index:10;}
-  .wp-section-title::after{content:'';flex:1;height:1px;background:#ddd9d0;}
-  .wp-kpi::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--kpi-color,#e8530a);}
-  .wp-textarea{resize:vertical;min-height:72px;line-height:1.5;width:100%;border:1.5px solid #ccc8be;border-radius:8px;padding:10px 14px;font-size:14px;color:#1a1814;outline:none;transition:.15s;}
-  .wp-textarea:focus{border-color:#e8530a;background:#fff;box-shadow:0 0 0 3px rgba(232,83,10,.1);}
+    background:#0b0b0b;color:#fff;font-size:10px;padding:3px 8px;border-radius:5px;white-space:nowrap;pointer-events:none;z-index:10;}
+  .wp-section-title::after{content:'';flex:1;height:1px;background:#e4e4e7;}
+  .wp-kpi::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--kpi-color,#ff6a1f);}
+  .wp-textarea{resize:vertical;min-height:72px;line-height:1.5;width:100%;border:1.5px solid #d4d4d8;border-radius:8px;padding:10px 14px;font-size:14px;color:#0b0b0b;outline:none;transition:.15s;}
+  .wp-textarea:focus{border-color:#ff6a1f;background:#fff;box-shadow:0 0 0 3px rgba(232,83,10,.1);}
   .wp-tabs [data-slot="tabList"]{background:transparent!important;padding:0!important;gap:4px!important;border-radius:0!important;}
-  .wp-tabs [data-slot="tab"]{padding:7px 18px!important;border-radius:6px!important;font-size:13px!important;font-weight:600!important;color:#9b9892!important;background:transparent!important;transition:background .15s,color .15s!important;height:auto!important;min-height:0!important;}
+  .wp-tabs [data-slot="tab"]{padding:7px 18px!important;border-radius:6px!important;font-size:13px!important;font-weight:600!important;color:#8a8a8a!important;background:transparent!important;transition:background .15s,color .15s!important;height:auto!important;min-height:0!important;}
   .wp-tabs [data-slot="tab"]:hover{background:rgba(255,255,255,.08)!important;color:#fff!important;}
-  .wp-tabs [aria-selected="true"][data-slot="tab"],.wp-tabs [data-selected="true"][data-slot="tab"]{background:#e8530a!important;color:#fff!important;}
+  .wp-tabs [aria-selected="true"][data-slot="tab"],.wp-tabs [data-selected="true"][data-slot="tab"]{background:#ff6a1f!important;color:#fff!important;}
   .wp-tabs [data-slot="tabContent"]{font-size:13px!important;font-weight:600!important;}
   .wp-tabs [data-slot="cursor"]{display:none!important;}
   .wp-tabs [data-slot="panel"]{padding:0!important;outline:none!important;}
@@ -2420,7 +2420,7 @@ function calcMetrics(committed, completed, days, bugs, selfRating) {
     return { completion, utilisation, qualityScore, efficiency, overall };
 }
 function metricColor(v) {
-    return v >= 85 ? '#16a34a' : v >= 65 ? '#ca8a04' : '#dc2626';
+    return v >= 85 ? '#059669' : v >= 65 ? '#ca8a04' : '#ff4b2b';
 }
 function trendIcon(v) { return v >= 85 ? '▲' : v >= 65 ? '●' : '▼'; }
 
@@ -2432,16 +2432,16 @@ function buildRadar(values, labels, colors) {
     let h = '';
     [.25, .5, .75, 1].forEach(f => {
         const pts = Array.from({ length: n }, (_, i) => pt(i, r * f)).map(p => p.join(',')).join(' ');
-        h += `<polygon points="${pts}" fill="none" stroke="#ddd9d0" stroke-width="1"/>`;
+        h += `<polygon points="${pts}" fill="none" stroke="#e4e4e7" stroke-width="1"/>`;
     });
-    for (let i = 0; i < n; i++) { const [x, y] = pt(i, r); h += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#ddd9d0" stroke-width="1"/>`; }
+    for (let i = 0; i < n; i++) { const [x, y] = pt(i, r); h += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#e4e4e7" stroke-width="1"/>`; }
     const dpts = values.map((v, i) => pt(i, r * (v / 100))).map(p => p.join(',')).join(' ');
     h += `<polygon points="${dpts}" fill="rgba(37,99,235,.12)" stroke="#2563eb" stroke-width="2"/>`;
     values.forEach((v, i) => { const [x, y] = pt(i, r * (v / 100)); h += `<circle cx="${x}" cy="${y}" r="4" fill="${colors[i]}" stroke="#fff" stroke-width="2"/>`; });
     for (let i = 0; i < n; i++) {
         const [x, y] = pt(i, r + 16);
         const anchor = x < cx - 5 ? 'end' : x > cx + 5 ? 'start' : 'middle';
-        h += `<text x="${x}" y="${y}" text-anchor="${anchor}" fill="#9b9892" font-size="9" font-weight="700">${labels[i].toUpperCase()}</text>`;
+        h += `<text x="${x}" y="${y}" text-anchor="${anchor}" fill="#8a8a8a" font-size="9" font-weight="700">${labels[i].toUpperCase()}</text>`;
     }
     return h;
 }
@@ -2576,12 +2576,12 @@ function JiraCsvImportBtn({ onImport, nextId }) {
                 Import Jira CSV
             </button>
             {importStatus === 'ok' && (
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#16a34a', background: 'rgba(22,163,74,.09)', border: '1px solid rgba(22,163,74,.2)', borderRadius: 20, padding: '3px 12px' }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#059669', background: 'rgba(22,163,74,.09)', border: '1px solid rgba(22,163,74,.2)', borderRadius: 20, padding: '3px 12px' }}>
                     ✓ {importCount} task{importCount !== 1 ? 's' : ''} imported
                 </span>
             )}
             {importStatus === 'err' && (
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#dc2626', background: 'rgba(220,38,38,.08)', border: '1px solid rgba(220,38,38,.2)', borderRadius: 20, padding: '3px 12px' }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#ff4b2b', background: 'rgba(220,38,38,.08)', border: '1px solid rgba(220,38,38,.2)', borderRadius: 20, padding: '3px 12px' }}>
                     ✗ Invalid CSV or no tasks found
                 </span>
             )}
@@ -2594,9 +2594,9 @@ function EmptyState({ icon, title, sub, btnLabel, onBtn }) {
     return (
         <div className="text-center py-16 px-5 flex flex-col items-center gap-3.5">
             <div className="text-5xl opacity-30">{icon}</div>
-            <div className="text-lg font-bold text-[#6b6760]">{title}</div>
-            <div className="text-sm text-[#9b9892]">{sub}</div>
-            <button onClick={onBtn} className="mt-1.5 px-6 py-2.5 bg-[#e8530a] text-white text-sm font-bold rounded-[9px] cursor-pointer border-none hover:bg-[#c94408] transition-all">
+            <div className="text-lg font-bold text-ink-500">{title}</div>
+            <div className="text-sm text-ink-400">{sub}</div>
+            <button onClick={onBtn} className="mt-1.5 px-6 py-2.5 bg-brand-600 text-white text-sm font-bold rounded-[9px] cursor-pointer border-none hover:bg-brand-700 transition-all">
                 {btnLabel}
             </button>
         </div>
@@ -2608,28 +2608,28 @@ function TaskRowInput({ task, onChange, onRemove }) {
     const TASK_TYPES = ['Feature', 'Bug', 'Refactor', 'Test', 'Docs', 'Review', 'Infra', 'Research'];
     const TASK_STATUSES = [{ key: 'done', label: 'Done' }, { key: 'partial', label: 'Partial' }, { key: 'missed', label: 'Missed' }, { key: 'carry', label: 'Carry' }];
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: '90px 2fr 80px 1fr 1fr 1.5fr 36px', gap: 10, alignItems: 'center' }} className="border border-[#ddd9d0] rounded-[10px] px-3.5 py-2.5 transition-all">
+        <div style={{ display: 'grid', gridTemplateColumns: '90px 2fr 80px 1fr 1fr 1.5fr 36px', gap: 10, alignItems: 'center' }} className="border border-ink-200 rounded-[10px] px-3.5 py-2.5 transition-all">
             <Input size="sm" placeholder="TP-50" label="Jira ID" labelPlacement="outside"
                 value={task.jiraId || ''} onValueChange={v => onChange('jiraId', v.toUpperCase())}
-                classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }} />
+                classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
             <Input size="sm" placeholder="e.g. Fix AdMob adapter crash" label="Task Name" labelPlacement="outside"
                 value={task.name || ''} onValueChange={v => onChange('name', v)}
-                classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }} />
+                classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
             <Input size="sm" type="number" placeholder="3" label="SP" labelPlacement="outside"
                 value={task.sp || ''} onValueChange={v => onChange('sp', v)}
-                classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }} />
+                classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
             <Select size="sm" label="Product" labelPlacement="outside"
                 selectedKeys={[task.product || PRODUCTS[0]]} onSelectionChange={keys => onChange('product', Array.from(keys)[0])}
-                classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }}>
+                classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }}>
                 {PRODUCTS.map(p => <SelectItem key={p}>{p}</SelectItem>)}
             </Select>
             <Select size="sm" label="Module" labelPlacement="outside"
                 selectedKeys={[task.module || MODULES[0]]} onSelectionChange={keys => onChange('module', Array.from(keys)[0])}
-                classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }}>
+                classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }}>
                 {MODULES.map(m => <SelectItem key={m}>{m}</SelectItem>)}
             </Select>
             <div className="flex flex-col gap-1">
-                <div className="text-[10px] font-bold tracking-wide uppercase text-[#9b9892]">Type &amp; Status</div>
+                <div className="text-[10px] font-bold tracking-wide uppercase text-ink-400">Type &amp; Status</div>
                 <div style={{ display: 'flex', gap: 4 }}>
                     <Select size="sm" aria-label="Type"
                         selectedKeys={[task.type || 'Feature']} onSelectionChange={keys => onChange('type', Array.from(keys)[0])}
@@ -2643,7 +2643,7 @@ function TaskRowInput({ task, onChange, onRemove }) {
                     </Select>
                 </div>
             </div>
-            <button onClick={onRemove} className="w-7 h-7 rounded-md border border-[#ccc8be] bg-transparent text-[#9b9892] cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-[#dc2626] hover:border-[#dc2626] hover:text-white">×</button>
+            <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">×</button>
         </div>
     );
 }
@@ -2651,17 +2651,17 @@ function TaskRowInput({ task, onChange, onRemove }) {
 // ─── GOAL ROW COMPONENT ────────────────────────────────────────────────────────
 function GoalRowInput({ goal, onChange, onRemove }) {
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 36px', gap: 10, alignItems: 'center' }} className="border border-[#ddd9d0] rounded-[10px] px-3.5 py-2.5">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 36px', gap: 10, alignItems: 'center' }} className="border border-ink-200 rounded-[10px] px-3.5 py-2.5">
             <Input size="sm" placeholder="e.g. Zero crashes in prod" label="Goal Description" labelPlacement="outside"
                 value={goal.name || ''} onValueChange={v => onChange('name', v)}
-                classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }} />
+                classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
             <Input size="sm" type="number" placeholder="100" label="Target %" labelPlacement="outside"
                 value={goal.target || ''} onValueChange={v => onChange('target', v)}
-                classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }} />
+                classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
             <Input size="sm" type="number" placeholder="85" label="Achieved %" labelPlacement="outside"
                 value={goal.achieved || ''} onValueChange={v => onChange('achieved', v)}
-                classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-[#9b9892]' }} />
-            <button onClick={onRemove} className="w-7 h-7 rounded-md border border-[#ccc8be] bg-transparent text-[#9b9892] cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-[#dc2626] hover:border-[#dc2626] hover:text-white">×</button>
+                classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
+            <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">×</button>
         </div>
     );
 }
@@ -2670,8 +2670,8 @@ function GoalRowInput({ goal, onChange, onRemove }) {
 function FormGroup({ label, hint, children, full, half }) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, gridColumn: full ? '1/-1' : half ? 'span 2' : undefined }}>
-            <label className="text-[11px] font-bold tracking-[1.2px] uppercase text-[#6b6760]">
-                {label}{hint && <span className="text-[10px] font-normal text-[#9b9892] tracking-normal ml-1.5 normal-case">{hint}</span>}
+            <label className="text-[11px] font-bold tracking-[1.2px] uppercase text-ink-500">
+                {label}{hint && <span className="text-[10px] font-normal text-ink-400 tracking-normal ml-1.5 normal-case">{hint}</span>}
             </label>
             {children}
         </div>
@@ -2681,7 +2681,7 @@ function FormGroup({ label, hint, children, full, half }) {
 function AddBtn({ onClick, children }) {
     return (
         <button onClick={onClick}
-            className="mt-2.5 px-4 py-2 bg-transparent border-[1.5px] border-dashed border-[#ccc8be] rounded-lg text-sm font-semibold text-[#6b6760] cursor-pointer flex items-center gap-2 transition-all hover:border-[#e8530a] hover:text-[#e8530a] hover:bg-[rgba(232,83,10,.04)]">
+            className="mt-2.5 px-4 py-2 bg-transparent border-[1.5px] border-dashed border-ink-300 rounded-lg text-sm font-semibold text-ink-500 cursor-pointer flex items-center gap-2 transition-all hover:border-brand-600 hover:text-brand-600 hover:bg-[rgba(232,83,10,.04)]">
             {children}
         </button>
     );
@@ -2760,7 +2760,7 @@ function FormTab({ initialEntry, onSubmit, onSwitchDashboard }) {
     });
 
     const live = (f.committed || f.completed) ? calcMetrics(f.committed, f.completed, f.days, f.bugs, f.selfRating) : null;
-    const lc = v => v >= 85 ? '#16a34a' : v >= 65 ? '#ca8a04' : '#dc2626';
+    const lc = v => v >= 85 ? '#059669' : v >= 65 ? '#ca8a04' : '#ff4b2b';
     const ll = v => v >= 85 ? '▲ On Target' : v >= 65 ? '● Moderate' : '▼ Below';
 
     function addTask() { const id = taskId.current++; setTasks(t => [...t, { id, jiraId: '', name: '', sp: '', product: PRODUCTS[0], module: MODULES[0], type: 'Feature', status: 'done' }]); }
@@ -2780,8 +2780,8 @@ function FormTab({ initialEntry, onSubmit, onSwitchDashboard }) {
     }
 
     function handleSubmit() {
-        if (!f.name.trim()) { showToastGlobal('⚠️ Please enter your name!', '#e8530a'); return; }
-        if (!f.sprint.trim()) { showToastGlobal('⚠️ Please enter the sprint/week label!', '#e8530a'); return; }
+        if (!f.name.trim()) { showToastGlobal('⚠️ Please enter your name!', '#ff6a1f'); return; }
+        if (!f.sprint.trim()) { showToastGlobal('⚠️ Please enter the sprint/week label!', '#ff6a1f'); return; }
         const metrics = calcMetrics(f.committed, f.completed, f.days, f.bugs, f.selfRating);
         const entry = {
             id: initialEntry?.id ?? Date.now(),
@@ -2813,19 +2813,19 @@ function FormTab({ initialEntry, onSubmit, onSwitchDashboard }) {
 
     return (
         <div style={{ margin: '0 auto', padding: '36px 40px 60px' }}>
-            <div style={{ background: '#ffffff', border: '1px solid #ddd9d0', borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', overflow: 'hidden', marginBottom: 28 }}>
+            <div style={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', overflow: 'hidden', marginBottom: 28 }}>
                 {/* Header */}
                 <div style={{ padding: '24px 30px', display: 'flex', alignItems: 'center', gap: 16 }}>
                     <div>
-                        <h2 style={{ fontSize: 20, fontWeight: 800, color: '#1a1814', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0b0b0b', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 10 }}>
                             {isEdit ? 'Edit Sprint Entry' : 'Weekly Sprint Entry'}
                             {isEdit && (
-                                <span style={{ fontSize: 12, fontWeight: 700, background: '#fff3e0', color: '#e8530a', border: '1px solid #fdd8b5', borderRadius: 20, padding: '2px 10px', letterSpacing: 1 }}>
+                                <span style={{ fontSize: 12, fontWeight: 700, background: '#fff3e0', color: '#ff6a1f', border: '1px solid #fdd8b5', borderRadius: 20, padding: '2px 10px', letterSpacing: 1 }}>
                                     EDITING · {initialEntry.sprint}
                                 </span>
                             )}
                         </h2>
-                        <p style={{ fontSize: 13, color: '#9b9892' }}>
+                        <p style={{ fontSize: 13, color: '#8a8a8a' }}>
                             {isEdit ? 'Update your sprint details — changes will be saved via PUT' : 'Fill in your sprint details — all metrics are calculated automatically'}
                         </p>
                     </div>
@@ -2833,7 +2833,7 @@ function FormTab({ initialEntry, onSubmit, onSwitchDashboard }) {
 
                 <div style={{ padding: '28px 30px' }}>
                     {/* Identity */}
-                    <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-[#9b9892] mb-4">Developer Identity</div>
+                    <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-ink-400 mb-4">Developer Identity</div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18, marginBottom: 20 }}>
                         <FormGroup label="Full Name">
                             <Input variant="bordered" size="sm" placeholder="e.g. name" {...inp('name')} onValueChange={v => setF(p => ({ ...p, name: v }))} />
@@ -2867,10 +2867,10 @@ function FormTab({ initialEntry, onSubmit, onSwitchDashboard }) {
                         </FormGroup>
                     </div>
 
-                    <hr style={{ border: 'none', borderTop: '1px solid #ddd9d0', margin: '24px 0' }} />
+                    <hr style={{ border: 'none', borderTop: '1px solid #e4e4e7', margin: '24px 0' }} />
 
                     {/* Story Points */}
-                    <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-[#9b9892] mb-4">Story Points</div>
+                    <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-ink-400 mb-4">Story Points</div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18, marginBottom: 20 }}>
                         <FormGroup label="Story Points Committed">
                             <Input variant="bordered" size="sm" type="number" placeholder="e.g. 20" {...inp('committed')} onValueChange={v => setF(p => ({ ...p, committed: v }))} />
@@ -2894,8 +2894,8 @@ function FormTab({ initialEntry, onSubmit, onSwitchDashboard }) {
 
                     {/* Live Preview */}
                     {live && (
-                        <div style={{ border: '1px solid #ddd9d0', borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
-                            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#9b9892', marginBottom: 12 }}>⚡ Live Auto-Calculation</div>
+                        <div style={{ border: '1px solid #e4e4e7', borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#8a8a8a', marginBottom: 12 }}>⚡ Live Auto-Calculation</div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
                                 {[
                                     { k: 'Completion Rate', v: live.completion + '%', c: lc(live.completion), l: ll(live.completion) },
@@ -2903,8 +2903,8 @@ function FormTab({ initialEntry, onSubmit, onSwitchDashboard }) {
                                     { k: 'Quality Score', v: live.qualityScore + '/100', c: lc(live.qualityScore), l: ll(live.qualityScore) },
                                     { k: 'Efficiency Score', v: live.efficiency + '/100', c: lc(live.efficiency), l: ll(live.efficiency) },
                                 ].map(m => (
-                                    <div key={m.k} style={{ background: '#ffffff', border: '1px solid #ddd9d0', borderRadius: 8, padding: '12px 14px' }}>
-                                        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#9b9892', marginBottom: 6 }}>{m.k}</div>
+                                    <div key={m.k} style={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: 8, padding: '12px 14px' }}>
+                                        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#8a8a8a', marginBottom: 6 }}>{m.k}</div>
                                         <div style={{ fontSize: 22, fontWeight: 800, color: m.c, lineHeight: 1 }}>{m.v}</div>
                                         <div style={{ fontSize: 11, color: m.c, marginTop: 4, fontWeight: 600 }}>{m.l}</div>
                                     </div>
@@ -2913,10 +2913,10 @@ function FormTab({ initialEntry, onSubmit, onSwitchDashboard }) {
                         </div>
                     )}
 
-                    <hr style={{ border: 'none', borderTop: '1px solid #ddd9d0', margin: '24px 0' }} />
+                    <hr style={{ border: 'none', borderTop: '1px solid #e4e4e7', margin: '24px 0' }} />
 
                     {/* Tasks */}
-                    <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-[#9b9892] mb-4">Tasks Worked This Week</div>
+                    <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-ink-400 mb-4">Tasks Worked This Week</div>
 
                     {/* ── Jira CSV import info banner ── */}
                     <div style={{
@@ -2932,7 +2932,7 @@ function FormTab({ initialEntry, onSubmit, onSwitchDashboard }) {
                             <span style={{ fontSize: 12, color: '#4f46e5', fontWeight: 600 }}>
                                 Have a Jira export? Import your tasks directly from a CSV file.
                             </span>
-                            <span style={{ fontSize: 11, color: '#9b9892' }}>
+                            <span style={{ fontSize: 11, color: '#8a8a8a' }}>
                                 Maps: Issue Key → Jira ID · Summary → Task Name · Story Points · Issue Type → Type · Status
                             </span>
                         </div>
@@ -2946,11 +2946,11 @@ function FormTab({ initialEntry, onSubmit, onSwitchDashboard }) {
                     </div>
                     <AddBtn onClick={addTask}>＋ Add Task</AddBtn>
 
-                    <hr style={{ border: 'none', borderTop: '1px solid #ddd9d0', margin: '24px 0' }} />
+                    <hr style={{ border: 'none', borderTop: '1px solid #e4e4e7', margin: '24px 0' }} />
 
                     {/* Goals */}
-                    <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-[#9b9892] mb-4">
-                        Weekly Goals <span style={{ fontSize: 10, color: '#9b9892', textTransform: 'none', letterSpacing: 0, fontWeight: 400, marginLeft: 6 }}>Set targets and track what you achieved</span>
+                    <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-ink-400 mb-4">
+                        Weekly Goals <span style={{ fontSize: 10, color: '#8a8a8a', textTransform: 'none', letterSpacing: 0, fontWeight: 400, marginLeft: 6 }}>Set targets and track what you achieved</span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
                         {goals.map(g => (
@@ -2959,10 +2959,10 @@ function FormTab({ initialEntry, onSubmit, onSwitchDashboard }) {
                     </div>
                     <AddBtn onClick={addGoal}>＋ Add Goal</AddBtn>
 
-                    <hr style={{ border: 'none', borderTop: '1px solid #ddd9d0', margin: '24px 0' }} />
+                    <hr style={{ border: 'none', borderTop: '1px solid #e4e4e7', margin: '24px 0' }} />
 
                     {/* Reflection */}
-                    <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-[#9b9892] mb-4">Self Reflection</div>
+                    <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-ink-400 mb-4">Self Reflection</div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18 }}>
                         <FormGroup label="Key Achievements This Week" full>
                             <textarea className="wp-textarea" placeholder="What did you accomplish? What are you proud of?" {...inp('achievements')} />
@@ -2982,20 +2982,20 @@ function FormTab({ initialEntry, onSubmit, onSwitchDashboard }) {
                     <div className="flex items-center gap-3.5 mt-6">
                         <button onClick={handleSubmit}
                             className="flex items-center gap-2.5 px-8 py-3 text-white text-[15px] font-bold rounded-[10px] cursor-pointer transition-all border-none"
-                            style={{ background: isEdit ? '#1a1814' : '#e8530a' }}
+                            style={{ background: isEdit ? '#0b0b0b' : '#ff6a1f' }}
                         >
                             <span>{isEdit ? 'Save Changes' : 'Submit Sprint Entry'}</span>
                             <span>{isEdit ? '✓' : '→'}</span>
                         </button>
-                        <button onClick={handleReset} className="px-5 py-3 bg-transparent border-[1.5px] border-[#ccc8be] rounded-[10px] text-sm font-semibold text-[#6b6760] cursor-pointer transition-all">
+                        <button onClick={handleReset} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 rounded-[10px] text-sm font-semibold text-ink-500 cursor-pointer transition-all">
                             Reset
                         </button>
                         {isEdit && (
-                            <button onClick={onSwitchDashboard} className="px-5 py-3 bg-transparent border-[1.5px] border-[#ccc8be] rounded-[10px] text-sm font-semibold text-[#9b9892] cursor-pointer transition-all">
+                            <button onClick={onSwitchDashboard} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 rounded-[10px] text-sm font-semibold text-ink-400 cursor-pointer transition-all">
                                 Cancel
                             </button>
                         )}
-                        <span className="text-xs text-[#9b9892] ml-auto">
+                        <span className="text-xs text-ink-400 ml-auto">
                             {isEdit ? `Editing entry ID: ${initialEntry.id}` : 'All fields with auto-calc will update your dashboard instantly'}
                         </span>
                     </div>
@@ -3112,7 +3112,7 @@ function DashboardTab({ entries, onSwitchForm }) {
 
     useEffect(() => { setManagerNote(cur?.managerNote || ''); }, [cur?.id]);
 
-    if (loading) return <div style={{ margin: '0 auto', padding: '80px 40px', textAlign: 'center', color: '#9b9892', fontSize: 14 }}>Loading dashboard...</div>;
+    if (loading) return <div style={{ margin: '0 auto', padding: '80px 40px', textAlign: 'center', color: '#8a8a8a', fontSize: 14 }}>Loading dashboard...</div>;
 
     if (!displayEntries.length) return (
         <div style={{ margin: '0 auto', padding: '36px 40px 60px' }}>
@@ -3141,23 +3141,23 @@ function DashboardTab({ entries, onSwitchForm }) {
         ? [radar.utilisation, radar.velocity, radar.reviews, radar.quality, radar.goals, radar.self]
         : [m.utilisation, m.completion, Math.min(100, cur.reviews * 20), m.qualityScore, goalsMet > 0 ? Math.round((goalsMet / Math.max(cur.goals.length, 1)) * 100) : 0, Math.min(100, cur.selfRating * 10)];
     const radarLabels = ['Util', 'Velocity', 'Reviews', 'Quality', 'Goals', 'Self'];
-    const radarColors = ['#2563eb', '#e8530a', '#16a34a', '#7c3aed', '#ca8a04', '#0891b2'];
+    const radarColors = ['#2563eb', '#ff6a1f', '#059669', '#7c3aed', '#ca8a04', '#0891b2'];
     const score = m.overall || m.efficiency;
     const scoreColor = metricColor(score);
     const scoreLabel = score >= 85 ? 'EXCELLENT' : score >= 70 ? 'GOOD' : score >= 55 ? 'FAIR' : 'NEEDS FOCUS';
     const circumference = 2 * Math.PI * 36;
     const dashOffset = circumference * (1 - score / 100);
     const statusTag = { done: { lbl: '✓ Done' }, partial: { lbl: '◑ Partial' }, missed: { lbl: '✗ Missed' }, carry: { lbl: '→ Carry' } };
-    const tagStyle = { done: { background: 'rgba(22,163,74,.1)', color: '#16a34a' }, partial: { background: 'rgba(202,138,4,.1)', color: '#ca8a04' }, missed: { background: 'rgba(220,38,38,.1)', color: '#dc2626' }, carry: { background: 'rgba(107,114,128,.1)', color: '#6b7280' } };
+    const tagStyle = { done: { background: 'rgba(22,163,74,.1)', color: '#059669' }, partial: { background: 'rgba(202,138,4,.1)', color: '#ca8a04' }, missed: { background: 'rgba(220,38,38,.1)', color: '#ff4b2b' }, carry: { background: 'rgba(107,114,128,.1)', color: '#6b7280' } };
 
     return (
         <div style={{ margin: '0 auto', padding: '36px 40px 60px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#ffffff', border: '1px solid #ddd9d0', borderRadius: 30, padding: '8px 18px 8px 10px', boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)' }}>
-                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#e8530a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#fff' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: 30, padding: '8px 18px 8px 10px', boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#ff6a1f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#fff' }}>
                         {selectedDev?.split(' ').map(w => w[0]).join('').slice(0, 2)}
                     </div>
-                    <div><div style={{ fontSize: 15, fontWeight: 700 }}>{selectedDev}</div><div style={{ fontSize: 11, color: '#9b9892' }}>{cur.role || 'Developer'}</div></div>
+                    <div><div style={{ fontSize: 15, fontWeight: 700 }}>{selectedDev}</div><div style={{ fontSize: 11, color: '#8a8a8a' }}>{cur.role || 'Developer'}</div></div>
                 </div>
                 <DateRangePicker variant="bordered" size="md"
                     value={{ start: parseDate(weekRange.start.toISOString().slice(0, 10)), end: parseDate(weekRange.end.toISOString().slice(0, 10)) }}
@@ -3171,11 +3171,11 @@ function DashboardTab({ entries, onSwitchForm }) {
                     </Select>
                 </div>
                 <div style={{ marginLeft: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-                    <div style={{ fontSize: 11, color: '#9b9892', fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' }}>Filter by Week</div>
+                    <div style={{ fontSize: 11, color: '#8a8a8a', fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' }}>Filter by Week</div>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         {['all', ...sprints].map(s => (
                             <button key={s} onClick={() => setWeekFilter(s)}
-                                style={{ padding: '6px 14px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: '.15s', border: '1px solid', borderColor: weekFilter === s ? '#1a1814' : '#ddd9d0', background: weekFilter === s ? '#1a1814' : '#ffffff', color: weekFilter === s ? '#fff' : '#6b6760' }}>
+                                style={{ padding: '6px 14px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: '.15s', border: '1px solid', borderColor: weekFilter === s ? '#0b0b0b' : '#e4e4e7', background: weekFilter === s ? '#0b0b0b' : '#ffffff', color: weekFilter === s ? '#fff' : '#6a6a6a' }}>
                                 {s === 'all' ? 'Latest' : s}
                             </button>
                         ))}
@@ -3183,7 +3183,7 @@ function DashboardTab({ entries, onSwitchForm }) {
                 </div>
             </div>
 
-            <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-[#9b9892] mb-3.5">
+            <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-ink-400 mb-3.5">
                 Performance Overview · {cur.sprint} ({cur.weekStart} → {cur.weekEnd})
             </div>
 
@@ -3193,13 +3193,13 @@ function DashboardTab({ entries, onSwitchForm }) {
                     { label: 'Utilisation', val: `${m.utilisation}%`, sub: `${cur.days}/5 days logged`, c: metricColor(m.utilisation), badge: trendIcon(m.utilisation) + ' Capacity' },
                     { label: 'Quality Score', val: `${m.qualityScore}`, sub: `${cur.bugs} bug${cur.bugs !== 1 ? 's' : ''} introduced`, c: metricColor(m.qualityScore), badge: trendIcon(m.qualityScore) + ' ' + (m.qualityScore >= 85 ? 'Clean' : 'Review needed') },
                     { label: 'Efficiency Score', val: `${m.efficiency}`, sub: 'Composite /100', c: metricColor(m.efficiency), badge: trendIcon(m.efficiency) + ' Efficiency' },
-                    { label: 'Goals Met', val: `${goalsMet}/${cur.goals.length}`, sub: `${tasksDone}/${tasksTotal} tasks done`, c: metricColor(goalsMet / Math.max(cur.goals.length, 1) * 100), badge: goalsMet === cur.goals.length && cur.goals.length > 0 ? 'All met' : goalsMet > 0 ? 'Partial' : 'Missed', badgeColor: 'rgba(22,163,74,.1)', badgeTextColor: '#16a34a' },
+                    { label: 'Goals Met', val: `${goalsMet}/${cur.goals.length}`, sub: `${tasksDone}/${tasksTotal} tasks done`, c: metricColor(goalsMet / Math.max(cur.goals.length, 1) * 100), badge: goalsMet === cur.goals.length && cur.goals.length > 0 ? 'All met' : goalsMet > 0 ? 'Partial' : 'Missed', badgeColor: 'rgba(22,163,74,.1)', badgeTextColor: '#059669' },
                 ].map((k, i) => (
-                    <div key={i} className="wp-kpi relative overflow-hidden rounded-xl p-5 bg-white border border-[#ddd9d0]"
+                    <div key={i} className="wp-kpi relative overflow-hidden rounded-xl p-5 bg-white border border-ink-200"
                         style={{ boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', '--kpi-color': k.c }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#9b9892', marginBottom: 8 }}>{k.label}</div>
+                        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#8a8a8a', marginBottom: 8 }}>{k.label}</div>
                         <div style={{ fontSize: 30, fontWeight: 900, lineHeight: 1, color: k.c, marginBottom: 4 }}>{k.val}</div>
-                        <div style={{ fontSize: 11, color: '#9b9892', fontFamily: 'monospace' }}>{k.sub}</div>
+                        <div style={{ fontSize: 11, color: '#8a8a8a', fontFamily: 'monospace' }}>{k.sub}</div>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 12, marginTop: 8, background: k.badgeColor || `${k.c}22`, color: k.badgeTextColor || k.c }}>{k.badge}</div>
                     </div>
                 ))}
@@ -3208,7 +3208,7 @@ function DashboardTab({ entries, onSwitchForm }) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 18 }}>
                 <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        Sprint Velocity Trend <span style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 10, color: '#9b9892', fontWeight: 500 }}>{devEntries.length} weeks</span>
+                        Sprint Velocity Trend <span style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 10, color: '#8a8a8a', fontWeight: 500 }}>{devEntries.length} weeks</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 140 }}>
                         {devEntries.map(e => {
@@ -3218,51 +3218,51 @@ function DashboardTab({ entries, onSwitchForm }) {
                             return (
                                 <div key={e.sprint} className="flex-1 flex flex-col items-center gap-1">
                                     <div className="flex-1 flex items-end gap-[3px] w-full">
-                                        <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative bg-[#ede9e1] border border-[#ddd9d0]" style={{ height: `${cH}%` }} data-tip={`Committed: ${e.committed}SP`} />
+                                        <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative bg-ink-100 border border-ink-200" style={{ height: `${cH}%` }} data-tip={`Committed: ${e.committed}SP`} />
                                         <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative" style={{ height: `${dH}%`, background: 'linear-gradient(180deg,#2563eb,#1d4ed8)' }} data-tip={`Done: ${e.completed}SP (${pct}%)`} />
                                     </div>
-                                    <div style={{ fontSize: 10, color: '#9b9892', fontFamily: 'monospace' }}>{e.sprint}</div>
+                                    <div style={{ fontSize: 10, color: '#8a8a8a', fontFamily: 'monospace' }}>{e.sprint}</div>
                                 </div>
                             );
                         })}
                     </div>
                     <div style={{ display: 'flex', gap: 16, marginTop: 14 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#9b9892' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#ede9e1', border: '1px solid #ddd9d0', display: 'inline-block' }} /> Committed</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#9b9892' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#2563eb', display: 'inline-block' }} /> Completed</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#8a8a8a' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#f4f4f5', border: '1px solid #e4e4e7', display: 'inline-block' }} /> Committed</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#8a8a8a' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#2563eb', display: 'inline-block' }} /> Completed</div>
                     </div>
                 </div>
                 <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        Goal Achievement <span style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 10, color: '#9b9892', fontWeight: 500 }}>{goalsMet}/{cur.goals.length} met</span>
+                        Goal Achievement <span style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 10, color: '#8a8a8a', fontWeight: 500 }}>{goalsMet}/{cur.goals.length} met</span>
                     </div>
                     {cur.goals.length ? cur.goals.map((g, i) => {
                         const pct = Math.min(100, Math.round((g.achieved / g.target) * 100));
-                        const c = g.achieved >= g.target ? '#16a34a' : g.achieved >= g.target * .7 ? '#ca8a04' : '#dc2626';
+                        const c = g.achieved >= g.target ? '#059669' : g.achieved >= g.target * .7 ? '#ca8a04' : '#ff4b2b';
                         return (
                             <div key={i} style={{ marginBottom: 14 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
                                     <div style={{ fontSize: 13, fontWeight: 600 }}>{g.name}</div>
                                     <div style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 700, color: c }}>{g.achieved}%</div>
                                 </div>
-                                <div style={{ height: 7, background: '#ede9e1', borderRadius: 20, overflow: 'hidden' }}>
+                                <div style={{ height: 7, background: '#f4f4f5', borderRadius: 20, overflow: 'hidden' }}>
                                     <div style={{ width: `${pct}%`, background: c, height: '100%', borderRadius: 20 }} />
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-                                    <div style={{ fontSize: 10, fontFamily: 'monospace', color: '#9b9892' }}>Target: {g.target}%</div>
+                                    <div style={{ fontSize: 10, fontFamily: 'monospace', color: '#8a8a8a' }}>Target: {g.target}%</div>
                                     <div style={{ fontSize: 10, fontFamily: 'monospace', color: c }}>{g.achieved >= g.target ? '✓ Achieved' : '✗ Not met'}</div>
                                 </div>
                             </div>
                         );
-                    }) : <div style={{ color: '#9b9892', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>No goals set for this week</div>}
+                    }) : <div style={{ color: '#8a8a8a', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>No goals set for this week</div>}
                 </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18, marginBottom: 18 }}>
-                <div style={{ background: '#ffffff', border: '1px solid #ddd9d0', borderRadius: 14, padding: '22px 24px', boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', gridColumn: 'span 2' }}>
+                <div style={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: 14, padding: '22px 24px', boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', gridColumn: 'span 2' }}>
                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Tasks This Week</div>
                     <table className="w-full border-collapse">
                         <thead>
-                            <tr style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: '#9b9892' }}>
+                            <tr style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: '#8a8a8a' }}>
                                 <th style={{ padding: '4px 8px', textAlign: 'center' }}>Jira ID</th>
                                 <th style={{ padding: '4px 8px' }}>Task</th>
                                 <th style={{ padding: '4px 8px', textAlign: 'center' }}>SP</th>
@@ -3276,20 +3276,20 @@ function DashboardTab({ entries, onSwitchForm }) {
                             {cur.tasks.length ? cur.tasks.map((t, i) => (
                                 <tr key={i} style={{ borderTop: '1px solid #f0ede8' }}>
                                     <td style={{ padding: '8px', textAlign: 'center' }}>
-                                        {t.jiraId ? <a href={`https://tapminds.atlassian.net/browse/${t.jiraId}`} target="_blank" rel="noreferrer" style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#2563eb', textDecoration: 'none', background: 'rgba(37,99,235,.08)', padding: '2px 8px', borderRadius: 5 }}>{t.jiraId} ↗</a> : <span style={{ color: '#9b9892', fontSize: 11 }}>—</span>}
+                                        {t.jiraId ? <a href={`https://tapminds.atlassian.net/browse/${t.jiraId}`} target="_blank" rel="noreferrer" style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#2563eb', textDecoration: 'none', background: 'rgba(37,99,235,.08)', padding: '2px 8px', borderRadius: 5 }}>{t.jiraId} ↗</a> : <span style={{ color: '#8a8a8a', fontSize: 11 }}>—</span>}
                                     </td>
                                     <td style={{ padding: '8px', textAlign: 'center', fontWeight: 500, fontSize: 13 }}>{t.name}</td>
                                     <td style={{ padding: '8px', textAlign: 'center' }}><span style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563eb' }}>{t.sp}</span></td>
-                                    <td style={{ padding: '8px', textAlign: 'center' }}><span style={{ fontSize: 11, color: '#6b6760' }}>{t.product || '—'}</span></td>
+                                    <td style={{ padding: '8px', textAlign: 'center' }}><span style={{ fontSize: 11, color: '#6a6a6a' }}>{t.product || '—'}</span></td>
                                     <td style={{ padding: '8px', textAlign: 'center' }}><span style={{ fontSize: 11, color: '#7c3aed', background: 'rgba(124,58,237,.07)', padding: '2px 8px', borderRadius: 5 }}>{t.module || '—'}</span></td>
-                                    <td style={{ padding: '8px', textAlign: 'center', fontSize: 11, color: '#9b9892' }}>{t.type}</td>
+                                    <td style={{ padding: '8px', textAlign: 'center', fontSize: 11, color: '#8a8a8a' }}>{t.type}</td>
                                     <td style={{ padding: '8px', textAlign: 'center' }}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, ...tagStyle[t.status] }}>{statusTag[t.status]?.lbl}</span></td>
                                 </tr>
-                            )) : <tr><td colSpan={7} style={{ textAlign: 'center', color: '#9b9892', padding: 20 }}>No tasks logged</td></tr>}
+                            )) : <tr><td colSpan={7} style={{ textAlign: 'center', color: '#8a8a8a', padding: 20 }}>No tasks logged</td></tr>}
                         </tbody>
                     </table>
                 </div>
-                <div style={{ background: '#ffffff', border: '1px solid #ddd9d0', borderRadius: 14, padding: '22px 24px', boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: 14, padding: '22px 24px', boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', display: 'flex', flexDirection: 'column' }}>
                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Performance Radar</div>
                     <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
                         <svg width="200" height="200" viewBox="0 0 200 200" style={{ overflow: 'visible' }} dangerouslySetInnerHTML={{ __html: buildRadar(radarVals, radarLabels, radarColors) }} />
@@ -3297,14 +3297,14 @@ function DashboardTab({ entries, onSwitchForm }) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 8 }}>
                         {radarLabels.map((l, i) => (
                             <div key={l} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#9b9892' }}><span style={{ width: 8, height: 8, borderRadius: 2, background: radarColors[i], display: 'inline-block' }} />{l}</span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#8a8a8a' }}><span style={{ width: 8, height: 8, borderRadius: 2, background: radarColors[i], display: 'inline-block' }} />{l}</span>
                                 <span style={{ fontFamily: 'monospace', fontSize: 11, color: radarColors[i], fontWeight: 600 }}>{radarVals[i]}</span>
                             </div>
                         ))}
                     </div>
                     <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                         <svg width="88" height="88" viewBox="0 0 88 88">
-                            <circle cx="44" cy="44" r="36" fill="none" stroke="#ede9e1" strokeWidth="8" />
+                            <circle cx="44" cy="44" r="36" fill="none" stroke="#f4f4f5" strokeWidth="8" />
                             <circle cx="44" cy="44" r="36" fill="none" stroke={scoreColor} strokeWidth="8" strokeDasharray={circumference} strokeDashoffset={dashOffset} strokeLinecap="round" transform="rotate(-90 44 44)" style={{ transition: '.6s' }} />
                             <text x="44" y="50" textAnchor="middle" fontFamily="Outfit,sans-serif" fontSize="18" fontWeight="900" fill={scoreColor}>{score}</text>
                         </svg>
@@ -3316,25 +3316,25 @@ function DashboardTab({ entries, onSwitchForm }) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
                 <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Developer Reflection</div>
-                    {cur.achievements && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#16a34a', marginBottom: 6 }}>✓ Achievements</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6b6760' }}>{cur.achievements}</div></div>}
-                    {cur.challenges && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#dc2626', marginBottom: 6 }}>⚠ Blockers</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6b6760' }}>{cur.challenges}</div></div>}
-                    {cur.nextFocus && <div><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#2563eb', marginBottom: 6 }}>→ Next Week Focus</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6b6760' }}>{cur.nextFocus}</div></div>}
-                    {!cur.achievements && !cur.challenges && !cur.nextFocus && <div style={{ textAlign: 'center', color: '#9b9892', padding: 20, fontSize: 13 }}>No reflection notes added</div>}
+                    {cur.achievements && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#059669', marginBottom: 6 }}>✓ Achievements</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6a6a6a' }}>{cur.achievements}</div></div>}
+                    {cur.challenges && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#ff4b2b', marginBottom: 6 }}>⚠ Blockers</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6a6a6a' }}>{cur.challenges}</div></div>}
+                    {cur.nextFocus && <div><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#2563eb', marginBottom: 6 }}>→ Next Week Focus</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6a6a6a' }}>{cur.nextFocus}</div></div>}
+                    {!cur.achievements && !cur.challenges && !cur.nextFocus && <div style={{ textAlign: 'center', color: '#8a8a8a', padding: 20, fontSize: 13 }}>No reflection notes added</div>}
                 </div>
                 <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Manager Review Note</div>
                     <textarea value={managerNote} onChange={e => setManagerNote(e.target.value)} placeholder="Add manager feedback, coaching notes, or observations for this sprint…" className="wp-textarea" style={{ minHeight: 64 }} />
-                    <button onClick={() => showToastGlobal('📝 Manager note saved!')} className="mt-2 px-4 py-2 bg-[#1a1814] text-white text-xs font-bold rounded-[7px] cursor-pointer border-none">Save Note</button>
-                    <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #ddd9d0' }}>
+                    <button onClick={() => showToastGlobal('📝 Manager note saved!')} className="mt-2 px-4 py-2 bg-ink-900 text-white text-xs font-bold rounded-[7px] cursor-pointer border-none">Save Note</button>
+                    <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e4e4e7' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                             {[
                                 { label: 'Reviews Done', val: cur.reviews, color: '#2563eb' },
                                 { label: 'Carry-over SP', val: cur.carryover, color: '#ca8a04' },
-                                { label: 'Blockers', val: cur.blockers, color: '#dc2626' },
+                                { label: 'Blockers', val: cur.blockers, color: '#ff4b2b' },
                                 { label: 'Self Rating', val: `${cur.selfRating}/10`, color: '#7c3aed' },
                             ].map(x => (
                                 <div key={x.label} style={{ borderRadius: 8, padding: 12 }} className="shadow-md">
-                                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#9b9892', marginBottom: 4 }}>{x.label}</div>
+                                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#8a8a8a', marginBottom: 4 }}>{x.label}</div>
                                     <div style={{ fontSize: 20, fontWeight: 800, color: x.color }}>{x.val}</div>
                                 </div>
                             ))}
@@ -3408,7 +3408,7 @@ function HistoryTab({ entries, onDelete, onEdit, onSwitchForm }) {
         </div>
     );
 
-    if (loading) return <div style={{ margin: '0 auto', padding: '80px 40px', textAlign: 'center', color: '#9b9892', fontSize: 14 }}>Loading history...</div>;
+    if (loading) return <div style={{ margin: '0 auto', padding: '80px 40px', textAlign: 'center', color: '#8a8a8a', fontSize: 14 }}>Loading history...</div>;
     if (!newData.length) return (
         <div style={{ margin: '0 auto', padding: '36px 40px 60px' }}>
             <FilterBar />
@@ -3417,13 +3417,13 @@ function HistoryTab({ entries, onDelete, onEdit, onSwitchForm }) {
     );
 
     const sorted = [...newData].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-    const color = v => v >= 85 ? '#16a34a' : v >= 65 ? '#ca8a04' : '#dc2626';
+    const color = v => v >= 85 ? '#059669' : v >= 65 ? '#ca8a04' : '#ff4b2b';
 
     return (
         <div style={{ margin: '0 auto', padding: '36px 40px 60px' }}>
             <FilterBar />
-            <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-[#9b9892] mb-4">
-                All Sprint Entries <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: 11, marginLeft: 6, color: '#9b9892' }}>{newData.length} total</span>
+            <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-ink-400 mb-4">
+                All Sprint Entries <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: 11, marginLeft: 6, color: '#8a8a8a' }}>{newData.length} total</span>
             </div>
             <div className="bg-surface border border-border rounded-xl p-6 shadow-sm overflow-x-auto">
                 <table className="w-full table-fixed border-collapse text-sm">
@@ -3433,7 +3433,7 @@ function HistoryTab({ entries, onDelete, onEdit, onSwitchForm }) {
                         <col style={{ width: 70 }} /><col style={{ width: 80 }} /><col style={{ width: 120 }} />
                     </colgroup>
                     <thead>
-                        <tr style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: '#9b9892', textAlign: 'left' }}>
+                        <tr style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: '#8a8a8a', textAlign: 'left' }}>
                             <th style={{ paddingBottom: 8 }}>Developer</th><th style={{ paddingBottom: 8 }}>Sprint</th><th style={{ paddingBottom: 8 }}>Week</th>
                             <th style={{ paddingBottom: 8 }}>Jira IDs</th><th style={{ paddingBottom: 8, textAlign: 'center' }}>SP</th>
                             <th style={{ paddingBottom: 8, textAlign: 'center' }}>Completion</th><th style={{ paddingBottom: 8, textAlign: 'center' }}>Utilisation</th>
@@ -3449,24 +3449,24 @@ function HistoryTab({ entries, onDelete, onEdit, onSwitchForm }) {
                                 <tr key={e.id} style={{ borderTop: '1px solid #eee', transition: 'background .15s' }}>
                                     <td style={{ padding: '8px 4px' }}><div style={{ fontWeight: 600 }}>{e.name}</div></td>
                                     <td style={{ padding: '8px 4px' }}><span style={{ fontFamily: 'monospace', fontSize: 12, padding: '2px 8px', borderRadius: 4, background: '#f5f5f5' }}>{e.sprint}</span></td>
-                                    <td style={{ padding: '8px 4px', fontSize: 12, color: '#9b9892', fontFamily: 'monospace' }}>{e.weekStart || ''}</td>
+                                    <td style={{ padding: '8px 4px', fontSize: 12, color: '#8a8a8a', fontFamily: 'monospace' }}>{e.weekStart || ''}</td>
                                     <td style={{ padding: '8px 4px' }}>
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 160 }}>
                                             {e.tasks.filter(t => t.jiraId).length
                                                 ? e.tasks.filter(t => t.jiraId).map((t, i) => <span key={i} style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: 700, color: '#2563eb', background: 'rgba(37,99,235,.07)', padding: '2px 8px', borderRadius: 4, whiteSpace: 'nowrap' }}>{t.jiraId}</span>)
-                                                : <span style={{ color: '#9b9892', fontSize: 12 }}>—</span>}
+                                                : <span style={{ color: '#8a8a8a', fontSize: 12 }}>—</span>}
                                         </div>
                                     </td>
                                     <td style={{ textAlign: 'center', fontWeight: 600, color: '#2563eb' }}>{e.completed}/{e.committed}</td>
                                     <td style={{ textAlign: 'center', fontWeight: 600 }}><span style={{ color: color(e.metrics.completion) }}>{e.metrics.completion}%</span></td>
                                     <td style={{ textAlign: 'center', fontWeight: 600 }}><span style={{ color: color(e.metrics.utilisation) }}>{e.metrics.utilisation}%</span></td>
                                     <td style={{ textAlign: 'center', fontWeight: 600 }}><span style={{ color: color(e.metrics.efficiency) }}>{e.metrics.efficiency}/100</span></td>
-                                    <td style={{ textAlign: 'center', fontWeight: 600 }}><span style={{ color: e.bugs <= 1 ? '#16a34a' : e.bugs <= 3 ? '#ca8a04' : '#dc2626' }}>{e.bugs}</span></td>
+                                    <td style={{ textAlign: 'center', fontWeight: 600 }}><span style={{ color: e.bugs <= 1 ? '#059669' : e.bugs <= 3 ? '#ca8a04' : '#ff4b2b' }}>{e.bugs}</span></td>
                                     <td style={{ textAlign: 'center', fontWeight: 600 }}>{goalsMet}/{e.goals.length}</td>
                                     {user?.userID != 1 && (
                                         <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                                            <button onClick={() => onEdit(e)} style={{ border: '1px solid #ddd9d0', borderRadius: 4, padding: '3px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer', background: 'transparent' }}>Edit</button>
-                                            <button onClick={() => onDelete(e.id)} style={{ marginLeft: 4, border: '1px solid #fecaca', borderRadius: 4, padding: '3px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer', background: '#fef2f2', color: '#dc2626' }}>Del</button>
+                                            <button onClick={() => onEdit(e)} style={{ border: '1px solid #e4e4e7', borderRadius: 4, padding: '3px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer', background: 'transparent' }}>Edit</button>
+                                            <button onClick={() => onDelete(e.id)} style={{ marginLeft: 4, border: '1px solid #fecaca', borderRadius: 4, padding: '3px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer', background: '#fef2f2', color: '#ff4b2b' }}>Del</button>
                                         </td>
                                     )}
                                 </tr>
@@ -3492,7 +3492,7 @@ function Toast() {
     }, []);
     return (
         <div className={`fixed bottom-7 left-1/2 -translate-x-1/2 flex items-center gap-2.5 px-6 py-3.5 rounded-xl text-sm font-semibold text-white z-[9999] transition-all duration-300 ${state.show ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20 pointer-events-none'}`}
-            style={{ background: state.bg || '#1a1814', boxShadow: '0 4px 20px rgba(0,0,0,.1)' }}>
+            style={{ background: state.bg || '#0b0b0b', boxShadow: '0 4px 20px rgba(0,0,0,.1)' }}>
             <span className="text-lg">{state.msg.slice(0, 2)}</span>
             <span>{state.msg.slice(2)}</span>
         </div>
@@ -3575,7 +3575,7 @@ export default function WeeklyPulse() {
             setTimeout(() => setTab('dashboard'), 900);
         } catch (err) {
             console.error('Save error:', err);
-            showToastGlobal('❌ Failed to save entry', '#dc2626');
+            showToastGlobal('❌ Failed to save entry', '#ff4b2b');
         }
     }
 
@@ -3594,7 +3594,7 @@ export default function WeeklyPulse() {
     }
 
     return (
-        <div className="relative min-h-screen isolate text-[#1a1814]">
+        <div className="relative min-h-screen isolate text-ink-900">
             <style>{GLOBAL_STYLE}</style>
             <header className="px-10 flex items-center justify-between h-16">
                 <Tabs

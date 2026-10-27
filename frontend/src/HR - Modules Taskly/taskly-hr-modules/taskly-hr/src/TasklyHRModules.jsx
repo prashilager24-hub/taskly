@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Mail, X, Users } from "lucide-react";
-import { Button, Card, CardBody, Chip, Tabs, Tab } from "@heroui/react";
+import { Button, Card, CardBody, Chip, Tabs, Tab } from "../../../../components/ui";
 
 import OnboardingEmployee from "./modules/onboarding/OnboardingEmployee";
 import OnboardingHR from "./modules/onboarding/OnboardingHR";

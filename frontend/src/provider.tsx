@@ -2,7 +2,7 @@ import type { NavigateOptions } from "react-router-dom";
 
 import { HeroUIProvider } from "@heroui/system";
 import { useHref, useNavigate } from "react-router-dom";
-import { ToastProvider } from "@heroui/toast";
+import { ToastProvider } from "@/components/ui";
 
 declare module "@react-types/shared" {
   interface RouterConfig {
@@ -15,7 +15,17 @@ export function Provider({ children }: { children: React.ReactNode }) {
 
   return (
     <HeroUIProvider navigate={navigate} useHref={useHref}>
-      <ToastProvider />
+      {/* TapMind toasts: 500px, top-center, 7s */}
+      <ToastProvider
+        placement="top-center"
+        toastProps={{
+          timeout: 7000,
+          classNames: {
+            base: "w-[500px] max-w-[calc(100vw-2rem)] border border-ink-200 shadow-pop animate-[fadeIn_.15s_ease-out]",
+            title: "font-bold",
+          },
+        }}
+      />
       {children}
     </HeroUIProvider>
   );

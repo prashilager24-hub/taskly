@@ -1,4 +1,4 @@
-import { Card, CardBody, Chip, Button, Divider } from "@heroui/react";
+import { Card, CardBody, Chip, Button, Divider } from "@/components/ui";
 
 interface ActivityEntry {
     id: string;

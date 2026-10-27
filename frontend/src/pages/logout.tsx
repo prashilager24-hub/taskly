@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Spinner } from "@heroui/react";
+import { Spinner } from "@/components/ui";
 
 const Logout = () => {
     useEffect(() => {

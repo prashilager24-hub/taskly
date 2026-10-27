@@ -1,10 +1,10 @@
 
 import { useState, useEffect } from "react";
-import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
+import { Button } from "@/components/ui";
+import { Input } from "@/components/ui";
+import { Select, SelectItem } from "@/components/ui";
 import AddNewRoleModal from "../components/accessRole";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Autocomplete, addToast, AutocompleteItem } from "@heroui/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Autocomplete, addToast, AutocompleteItem } from "@/components/ui";
 import { title } from "@/components/primitives";
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";

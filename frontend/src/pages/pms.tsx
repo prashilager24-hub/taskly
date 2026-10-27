@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tabs, Tab } from "@heroui/react";
+import { Tabs, Tab } from "@/components/ui";
 
 import GoalSetting from '@/components/goalSetting';
 import QuarterlyReview from '@/components/quarterlyReview';

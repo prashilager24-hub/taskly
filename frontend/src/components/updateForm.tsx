@@ -1,21 +1,21 @@
 import { useState, useEffect, useRef } from "react";
-import { Button } from "@heroui/button";
-import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Button } from "@/components/ui";
+import { Card, CardBody, CardHeader } from "@/components/ui";
 import { parseZonedDateTime, parseAbsoluteToLocal } from "@internationalized/date";
-import { Input } from "@heroui/input";
+import { Input } from "@/components/ui";
 import WeeklyPulse from "./WeeklyPulse";
 import { useLocation } from "react-router-dom";
-import { Select, SelectItem, addToast, DatePicker, Autocomplete, Modal, ModalHeader, ModalContent, ModalBody, ModalFooter, AutocompleteItem, Switch, Checkbox, DateRangePicker, user, RadioGroup, Radio, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
+import { Select, SelectItem, addToast, DatePicker, Autocomplete, Modal, ModalHeader, ModalContent, ModalBody, ModalFooter, AutocompleteItem, Switch, Checkbox, DateRangePicker, user, RadioGroup, Radio, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@/components/ui";
 import { CalendarDate, parseDate } from "@internationalized/date";
 import { today } from "@internationalized/date";
 import CustomDatePicker from "../components/customDatePicker"
-import { Textarea } from "@heroui/input";
+import { Textarea } from "@/components/ui";
 import { Divider } from "@heroui/divider";
 import axios from "axios";
 import EmptyContainer from "./EmptyContainer";
 import { de } from "date-fns/locale";
 import ReusableTable, { TableColumn, TableAction } from "@/components/table"
-import { Tabs, Tab } from "@heroui/react";
+import { Tabs, Tab } from "@/components/ui";
 import EfficiencyTable from "@/components/table2";
 import { deprecationHandler } from "moment";
 interface ActivityEntry {

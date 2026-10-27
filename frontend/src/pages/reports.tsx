@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Select, SelectItem } from "@heroui/select";
-import { DateRangePicker, Autocomplete, AutocompleteItem } from "@heroui/react";
+import { Select, SelectItem } from "@/components/ui";
+import { DateRangePicker, Autocomplete, AutocompleteItem } from "@/components/ui";
 import { title } from "@/components/primitives";
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";

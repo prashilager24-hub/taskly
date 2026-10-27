@@ -9,7 +9,7 @@ import {
     Select,
     SelectItem,
     Alert
-} from "@heroui/react";
+} from "@/components/ui";
 
 const MODULES = [
     { id: "dashboard", label: "Dashboard", rootRequired: false, children: [] },

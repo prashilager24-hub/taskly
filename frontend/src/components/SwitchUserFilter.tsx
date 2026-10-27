@@ -9,7 +9,7 @@
 //     AutocompleteItem,
 //     Button,
 //     addToast,
-// } from "@heroui/react";
+// } from "@/components/ui";
 // import { switchToUser } from "./userSwitch";
 
 // /* ─── Types ─────────────────────────────────────────────────────────────────── */
@@ -477,7 +477,7 @@ import {
     AutocompleteItem,
     Button,
     addToast,
-} from "@heroui/react";
+} from "@/components/ui";
 import { switchToUser } from "./userSwitch";
 
 /* ─── Types ─────────────────────────────────────────────────────────────────── */

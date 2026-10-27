@@ -18,7 +18,7 @@ import {
   ModalFooter,
   useDisclosure,
   addToast
-} from "@heroui/react";
+} from "@/components/ui";
 import { format } from "date-fns";
 import CustomDateRangePicker from "../components/CustomDateRangePicker";
 

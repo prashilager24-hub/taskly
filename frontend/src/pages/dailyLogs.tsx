@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Autocomplete, AutocompleteItem, Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Chip } from "@heroui/react";
+import { Autocomplete, AutocompleteItem, Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Chip } from "@/components/ui";
 import { title } from "@/components/primitives";
 import { Sidebar } from "@/components/sidebar";
 import { today, getLocalTimeZone } from "@internationalized/date";

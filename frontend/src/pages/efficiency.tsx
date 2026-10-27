@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 
-import { addToast, Dropdown, DropdownTrigger, Button, DropdownMenu, DropdownItem } from "@heroui/react";
+import { addToast, Dropdown, DropdownTrigger, Button, DropdownMenu, DropdownItem } from "@/components/ui";
 
 
 import { title } from "@/components/primitives";

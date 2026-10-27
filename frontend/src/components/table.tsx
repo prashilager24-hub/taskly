@@ -15,7 +15,7 @@ import {
     Chip,
     Pagination,
     Select, SelectItem
-} from "@heroui/react";
+} from "@/components/ui";
 
 // Generic interfaces for reusable table
 // export interface TableColumn {

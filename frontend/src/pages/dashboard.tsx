@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState, useMemo, useCallback, memo, lazy, Suspense } from "react";
 import { useDashboardStore } from "./../store/commonStore";
-import { Card, CardBody } from "@heroui/card";
-import { Switch } from "@heroui/react";
+import { Card, CardBody } from "@/components/ui";
+import { Switch } from "@/components/ui";
 import SwitchUserFilter from "@/components/SwitchUserFilter";
 import SwitchedUserBanner from "@/components/SwitchedUserBanner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -27,7 +27,7 @@ import {
     DrawerFooter,
     Button,
     Select, SelectItem
-} from "@heroui/react";
+} from "@/components/ui";
 
 import { title } from "@/components/primitives";
 import axios from "axios";
@@ -1391,9 +1391,9 @@ export default function DashboardPage() {
 
                                                                 const color =
                                                                     metric.color === "red"
-                                                                        ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#dc2626"]
+                                                                        ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
                                                                         : metric.color === "green"
-                                                                            ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#16a34a"]
+                                                                            ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                             : metric.color === "yellow"
                                                                                 ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
                                                                                 : metric.color === "purple"
@@ -1672,9 +1672,9 @@ export default function DashboardPage() {
 
                                                                                     const color =
                                                                                         item.color === "red"
-                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#dc2626"]
+                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
                                                                                             : item.color === "green"
-                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#16a34a"]
+                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                                 : item.color === "yellow"
                                                                                                     ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
                                                                                                     : item.color === "purple"
@@ -1797,9 +1797,9 @@ export default function DashboardPage() {
 
                                                                                     const color =
                                                                                         item.color === "red"
-                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#dc2626"]
+                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
                                                                                             : item.color === "green"
-                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#16a34a"]
+                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                                 : item.color === "yellow"
                                                                                                     ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
                                                                                                     : item.color === "purple"
@@ -2126,9 +2126,9 @@ export default function DashboardPage() {
 
                                                                                     const color =
                                                                                         item.color === "red"
-                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#dc2626"]
+                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
                                                                                             : item.color === "green"
-                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#16a34a"]
+                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                                 : item.color === "yellow"
                                                                                                     ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
                                                                                                     : item.color === "purple"
@@ -2251,9 +2251,9 @@ export default function DashboardPage() {
 
                                                                                     const color =
                                                                                         item.color === "red"
-                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#dc2626"]
+                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
                                                                                             : item.color === "green"
-                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#16a34a"]
+                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                                 : item.color === "yellow"
                                                                                                     ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
                                                                                                     : item.color === "purple"
@@ -2580,9 +2580,9 @@ export default function DashboardPage() {
 
                                                                                     const color =
                                                                                         item.color === "red"
-                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#dc2626"]
+                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
                                                                                             : item.color === "green"
-                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#16a34a"]
+                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                                 : item.color === "yellow"
                                                                                                     ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
                                                                                                     : item.color === "purple"
@@ -2705,9 +2705,9 @@ export default function DashboardPage() {
 
                                                                                     const color =
                                                                                         item.color === "red"
-                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#dc2626"]
+                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
                                                                                             : item.color === "green"
-                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#16a34a"]
+                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                                 : item.color === "yellow"
                                                                                                     ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
                                                                                                     : item.color === "purple"
@@ -3035,9 +3035,9 @@ export default function DashboardPage() {
 
                                                                             const color =
                                                                                 item.color === "red"
-                                                                                    ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#dc2626"]
+                                                                                    ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
                                                                                     : item.color === "green"
-                                                                                        ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#16a34a"]
+                                                                                        ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                         : item.color === "yellow"
                                                                                             ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
                                                                                             : item.color === "purple"
@@ -3160,9 +3160,9 @@ export default function DashboardPage() {
 
                                                                             const color =
                                                                                 item.color === "red"
-                                                                                    ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#dc2626"]
+                                                                                    ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
                                                                                     : item.color === "green"
-                                                                                        ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#16a34a"]
+                                                                                        ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                         : item.color === "yellow"
                                                                                             ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
                                                                                             : item.color === "purple"

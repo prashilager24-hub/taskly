@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Select, SelectItem } from "@heroui/select";
+import { Select, SelectItem } from "@/components/ui";
 import { DateRangePicker, Autocomplete, addToast, Spinner,  Modal,
   ModalContent,
   ModalHeader,
@@ -9,7 +9,7 @@ import { DateRangePicker, Autocomplete, addToast, Spinner,  Modal,
   TableColumn,
   TableBody,
   TableRow,
-  TableCell, Chip,AutocompleteItem, Dropdown, DropdownTrigger, Button, DropdownMenu, Card, CardBody, CardHeader, Tabs, Tab, DropdownItem, } from "@heroui/react";
+  TableCell, Chip,AutocompleteItem, Dropdown, DropdownTrigger, Button, DropdownMenu, Card, CardBody, CardHeader, Tabs, Tab, DropdownItem, } from "@/components/ui";
 import { today, getLocalTimeZone } from "@internationalized/date";
 
 import { title } from "@/components/primitives";

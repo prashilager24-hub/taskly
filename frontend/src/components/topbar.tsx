@@ -1,7 +1,7 @@
-import { Button } from "@heroui/button";
-import { Avatar } from "@heroui/avatar";
+import { Button } from "@/components/ui";
+import { Avatar } from "@/components/ui";
 import { useEffect, useState, useRef } from "react";
-import { Dropdown, DropdownMenu, DropdownTrigger, DropdownItem } from "@heroui/react";
+import { Dropdown, DropdownMenu, DropdownTrigger, DropdownItem } from "@/components/ui";
 import { formatDistanceToNow } from "date-fns";
 
 // Custom Icons
@@ -136,12 +136,13 @@ export const Topbar: React.FC<TopbarProps> = ({ toggleSidebar, title }) => {
                 load();
             }
         };
-        navigator.serviceWorker.addEventListener("message", onMessage);
+        // serviceWorker is undefined on insecure origins (e.g. http://<LAN IP>)
+        navigator.serviceWorker?.addEventListener("message", onMessage);
 
         return () => {
             window.removeEventListener("storage", onStorage);
             clearInterval(interval);
-            navigator.serviceWorker.removeEventListener("message", onMessage);
+            navigator.serviceWorker?.removeEventListener("message", onMessage);
         };
     }, []);
 

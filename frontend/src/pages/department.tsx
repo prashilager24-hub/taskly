@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { Button } from "@heroui/button";
-import { Tabs, Tab, Card, CardBody, Listbox, ListboxItem, addToast, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Autocomplete, AutocompleteItem } from "@heroui/react";
-import { Input } from "@heroui/input";
+import { Button } from "@/components/ui";
+import { Tabs, Tab, Card, CardBody, Listbox, ListboxItem, addToast, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Autocomplete, AutocompleteItem } from "@/components/ui";
+import { Input } from "@/components/ui";
 import EmptyContainer from "@/components/EmptyContainer";
-import { Select, SelectItem } from "@heroui/select";
+import { Select, SelectItem } from "@/components/ui";
 import { DailyActivityLog } from "@/components";
 import {
     Modal,
@@ -12,7 +12,7 @@ import {
     ModalBody,
     ModalFooter,
     useDisclosure,
-} from "@heroui/modal";
+} from "@/components/ui";
 import axios from "axios";
 import { title } from "@/components/primitives";
 import { Sidebar } from "@/components/sidebar";

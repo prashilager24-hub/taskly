@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from "@heroui/button";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, addToast } from "@heroui/react";
-import { Input } from "@heroui/input";
+import { Button } from "@/components/ui";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, addToast } from "@/components/ui";
+import { Input } from "@/components/ui";
 import axios from "axios";
-import { Select, SelectItem } from "@heroui/select";
-// import { addToast } from "@heroui/react" // Commented out
-import { Textarea } from "@heroui/input";
+import { Select, SelectItem } from "@/components/ui";
+// import { addToast } from "@/components/ui" // Commented out
+import { Textarea } from "@/components/ui";
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import ReusableTable, { TableColumn, TableAction } from "@/components/table"

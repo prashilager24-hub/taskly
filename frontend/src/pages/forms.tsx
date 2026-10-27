@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
-import { Button } from "@heroui/button";
-import { Autocomplete, AutocompleteItem } from "@heroui/react";
+import { Button } from "@/components/ui";
+import { Autocomplete, AutocompleteItem } from "@/components/ui";
 import EmptyContainer from "@/components/EmptyContainer";
 import { DailyActivityLog } from "@/components";
 import {
@@ -10,7 +10,7 @@ import {
     ModalBody,
     ModalFooter,
 
-} from "@heroui/modal";
+} from "@/components/ui";
 import axios from "axios";
 import { title } from "@/components/primitives";
 

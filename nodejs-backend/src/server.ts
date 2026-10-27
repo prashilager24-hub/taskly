@@ -2,12 +2,16 @@ import { env } from './config/env';
 import { logger } from './config/logger';
 import { testConnection } from './config/db';
 import app from './app';
+import { scheduleDailyAudit } from './jobs/dailyTaskAudit';
 
 const server = app.listen(env.PORT, async () => {
   try {
     await testConnection();
     logger.info({ port: env.PORT }, '✅  Database connection OK');
     logger.info({ port: env.PORT }, `🚀  Taskly API listening on port ${env.PORT}`);
+
+    // ── Scheduled jobs ───────────────────────────────────────────────────────
+    scheduleDailyAudit();   // Daily task entry audit at 10:00 AM IST
   } catch (err) {
     logger.fatal({ err }, '❌  Database connection failed — shutting down');
     process.exit(1);

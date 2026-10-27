@@ -20,6 +20,8 @@ import hrRouter from './modules/hr/hr.routes';
 import salesRouter from './modules/sales/sales.routes';
 import pushRouter from './modules/push/push.routes';
 import adminRouter from './modules/admin/admin.routes';
+import reportsRouter from './modules/reports/reports.routes';
+import metaRouter from './modules/users/users.routes';
 
 const app = express();
 
@@ -75,6 +77,8 @@ app.use('/t2.0/hr', hrRouter);
 app.use('/t2.0/sales', salesRouter);
 app.use('/t2.0/push', pushRouter);
 app.use('/t2.0/admin', adminRouter);
+app.use('/t2.0/reports', reportsRouter);
+app.use('/api/meta', metaRouter);
 
 // ── 404 + global error handler ────────────────────────────────────────────────
 app.use(notFoundHandler);

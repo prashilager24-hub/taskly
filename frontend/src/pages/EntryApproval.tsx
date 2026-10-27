@@ -112,7 +112,7 @@ const getPriorityChip = (priority) => {
             return (
                 <Chip
                     size="sm"
-                    className="bg-gray-100 text-gray-600 font-medium"
+                    className="bg-ink-100 dark:bg-ink-800 text-ink-600 dark:text-ink-300 font-medium"
                     radius="sm"
                 >
                     Low
@@ -125,8 +125,8 @@ const getStatusChip = (status) => {
     switch (status) {
         case "Pending":
             return (
-                <div className="flex items-center gap-2 text-orange-500 text-sm font-medium">
-                    <span className="h-2 w-2 rounded-full bg-orange-500"></span>
+                <div className="flex items-center gap-2 text-brand-500 text-sm font-medium">
+                    <span className="h-2 w-2 rounded-full bg-brand-500"></span>
                     Pending
                 </div>
             );
@@ -781,7 +781,7 @@ export default function EntryApproval() {
 
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
+        <div className="min-h-screen bg-ink-50 dark:bg-ink-950 p-6">
             {/* Header */}
             <Modal
                 isOpen={rejectModalOpen}
@@ -798,7 +798,7 @@ export default function EntryApproval() {
                             <ModalBody>
                                 {selectedRows.length > 0 && (
                                     <div className="space-y-3">
-                                        <div className="bg-gray-100 rounded p-3 text-sm">
+                                        <div className="bg-ink-100 dark:bg-ink-800 rounded p-3 text-sm">
                                             <p>
                                                 <span className="font-semibold">
                                                     ID:
@@ -908,10 +908,10 @@ export default function EntryApproval() {
             </Modal>
             <div className="mb-6 flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">
+                    <h1 className="text-2xl font-bold text-ink-800 dark:text-white">
                         Task Approval Management
                     </h1>
-                    <p className="mt-1 text-sm text-gray-500">
+                    <p className="mt-1 text-sm text-ink-500 dark:text-ink-400">
                         Review and manage organizational task requests
                     </p>
                 </div>
@@ -923,7 +923,7 @@ export default function EntryApproval() {
                                     <Button
                                         variant="flat"
                                         size="sm"
-                                        className="w-[260px] justify-between bg-gray-200"
+                                        className="w-[260px] justify-between bg-ink-200 dark:bg-ink-700"
                                     >
                                         {dateRange?.startDate && dateRange?.endDate
                                             ? `${format(new Date(dateRange.startDate), "dd MMM yyyy")} → ${format(
@@ -1041,9 +1041,9 @@ export default function EntryApproval() {
                     )}
                 </div>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden p-6">
+            <div className="bg-white dark:bg-ink-800 rounded-lg shadow overflow-hidden p-6">
                 {selectedRows.length > 0 && user.userRole !== 2 && (
-                    <div className="flex justify-between items-center bg-gray-100 p-3 rounded mb-3 shadow">
+                    <div className="flex justify-between items-center bg-ink-100 dark:bg-ink-800 p-3 rounded mb-3 shadow">
                         <span className="font-semibold">
                             {selectedRows.length} item(s) selected
                         </span>

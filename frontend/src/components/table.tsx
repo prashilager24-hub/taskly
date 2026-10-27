@@ -589,9 +589,6 @@ export default function ReusableTable({
                     </label> */}
                     <Pagination
                         showControls
-                        classNames={{
-                            cursor: "bg-foreground text-background",
-                        }}
                         color="default"
                         page={page}
                         onChange={(newPage) => {

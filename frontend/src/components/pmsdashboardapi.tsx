@@ -508,7 +508,7 @@ export default function DashboardFilters({
         ({ value, onChange }: { value: DateRange; onChange: (r: DateRange) => void }) => (
             <Dropdown placement="bottom-start">
                 <DropdownTrigger>
-                    <Button variant="flat" size="sm" className="w-[100%] justify-between bg-gray-200 h-[57px]">
+                    <Button variant="flat" size="sm" className="w-[100%] justify-between bg-ink-200 dark:bg-ink-700 h-[57px]">
                         {value.startDate && value.endDate
                             ? `${format(new Date(value.startDate), "dd MMM yyyy")} → ${format(new Date(value.endDate), "dd MMM yyyy")}`
                             : "Select Date Range"}

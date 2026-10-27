@@ -96,23 +96,23 @@ export default function CustomDateRangePicker({ datePick }: Props) {
 
             <PopoverContent className="p-0 w-60 shadow-md rounded-lg text-sm">
                 <div className="flex flex-col">
-                    <button className="hover:bg-gray-100 p-3 text-left" onClick={yesterday}>
+                    <button className="hover:bg-ink-100 dark:hover:bg-ink-800 p-3 text-left" onClick={yesterday}>
                         Yesterday
                     </button>
 
-                    <button className="hover:bg-gray-100 p-3 text-left" onClick={last7Days}>
+                    <button className="hover:bg-ink-100 dark:hover:bg-ink-800 p-3 text-left" onClick={last7Days}>
                         Last 7 Days
                     </button>
 
-                    <button className="hover:bg-gray-100 p-3 text-left" onClick={last30Days}>
+                    <button className="hover:bg-ink-100 dark:hover:bg-ink-800 p-3 text-left" onClick={last30Days}>
                         Last 30 Days
                     </button>
 
-                    <button className="hover:bg-gray-100 p-3 text-left" onClick={thisMonth}>
+                    <button className="hover:bg-ink-100 dark:hover:bg-ink-800 p-3 text-left" onClick={thisMonth}>
                         This Month
                     </button>
 
-                    <button className="hover:bg-gray-100 p-3 text-left" onClick={lastMonth}>
+                    <button className="hover:bg-ink-100 dark:hover:bg-ink-800 p-3 text-left" onClick={lastMonth}>
                         Last Month
                     </button>
 

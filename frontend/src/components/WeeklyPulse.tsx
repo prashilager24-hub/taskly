@@ -85,7 +85,7 @@
 // //     return (
 // //         <div className="text-center py-16 px-5 flex flex-col items-center gap-3.5">
 // //             <div className="text-5xl opacity-30">{icon}</div>
-// //             <div className="text-lg font-bold text-ink-500">{title}</div>
+// //             <div className="text-lg font-bold text-ink-500 dark:text-ink-400">{title}</div>
 // //             <div className="text-sm text-ink-400">{sub}</div>
 // //             <button onClick={onBtn} className="mt-1.5 px-6 py-2.5 bg-brand-600 text-white text-sm font-bold rounded-[9px] cursor-pointer border-none hover:bg-brand-700 transition-all">
 // //                 {btnLabel}
@@ -99,7 +99,7 @@
 // //     const TASK_TYPES = ['Feature', 'Bug', 'Refactor', 'Test', 'Docs', 'Review', 'Infra', 'Research'];
 // //     const TASK_STATUSES = [{ key: 'done', label: 'Done' }, { key: 'partial', label: 'Partial' }, { key: 'missed', label: 'Missed' }, { key: 'carry', label: 'Carry' }];
 // //     return (
-// //         <div style={{ display: 'grid', gridTemplateColumns: '90px 2fr 80px 1fr 1fr 1.5fr 36px', gap: 10, alignItems: 'center' }} className=" border border-ink-200 rounded-[10px] px-3.5 py-2.5 transition-all">
+// //         <div style={{ display: 'grid', gridTemplateColumns: '90px 2fr 80px 1fr 1fr 1.5fr 36px', gap: 10, alignItems: 'center' }} className=" border border-ink-200 dark:border-white/10 rounded-[10px] px-3.5 py-2.5 transition-all">
 // //             <Input size="sm" placeholder="TP-50" label="Jira ID" labelPlacement="outside"
 // //                 value={task.jiraId || ''} onValueChange={v => onChange('jiraId', v.toUpperCase())}
 // //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
@@ -134,7 +134,7 @@
 // //                     </Select>
 // //                 </div>
 // //             </div>
-// //             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">
+// //             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 dark:border-white/15 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">
 // //                 ×
 // //             </button>
 // //         </div>
@@ -144,7 +144,7 @@
 // // // ─── GOAL ROW COMPONENT ────────────────────────────────────────────────────────
 // // function GoalRowInput({ goal, onChange, onRemove }) {
 // //     return (
-// //         <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 36px', gap: 10, alignItems: 'center' }} className=" border border-ink-200 rounded-[10px] px-3.5 py-2.5">
+// //         <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 36px', gap: 10, alignItems: 'center' }} className=" border border-ink-200 dark:border-white/10 rounded-[10px] px-3.5 py-2.5">
 // //             <Input size="sm" placeholder="e.g. Zero crashes in prod" label="Goal Description" labelPlacement="outside"
 // //                 value={goal.name || ''} onValueChange={v => onChange('name', v)}
 // //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
@@ -154,7 +154,7 @@
 // //             <Input size="sm" type="number" placeholder="85" label="Achieved %" labelPlacement="outside"
 // //                 value={goal.achieved || ''} onValueChange={v => onChange('achieved', v)}
 // //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
-// //             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">
+// //             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 dark:border-white/15 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">
 // //                 ×
 // //             </button>
 // //         </div>
@@ -165,7 +165,7 @@
 // // function FormGroup({ label, hint, children, full, half }) {
 // //     return (
 // //         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, gridColumn: full ? '1/-1' : half ? 'span 2' : undefined }}>
-// //             <label className="text-[11px] font-bold tracking-[1.2px] uppercase text-ink-500">
+// //             <label className="text-[11px] font-bold tracking-[1.2px] uppercase text-ink-500 dark:text-ink-400">
 // //                 {label}{hint && <span className="text-[10px] font-normal text-ink-400 tracking-normal ml-1.5 normal-case">{hint}</span>}
 // //             </label>
 // //             {children}
@@ -352,7 +352,7 @@
 // //                         <button onClick={handleSubmit} className="flex items-center gap-2.5 px-8 py-3 bg-brand-600 text-white text-[15px] font-bold rounded-[10px] cursor-pointer transition-all hover:bg-brand-700 border-none">
 // //                             <span>Submit Sprint Entry</span><span>→</span>
 // //                         </button>
-// //                         <button onClick={handleReset} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 rounded-[10px] text-sm font-semibold text-ink-500 cursor-pointer transition-all">
+// //                         <button onClick={handleReset} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 dark:border-white/15 rounded-[10px] text-sm font-semibold text-ink-500 dark:text-ink-400 cursor-pointer transition-all">
 // //                             Reset
 // //                         </button>
 // //                         <span className="text-xs text-ink-400 ml-auto">All fields with auto-calc will update your dashboard instantly</span>
@@ -366,7 +366,7 @@
 // // function AddBtn({ onClick, children }) {
 // //     return (
 // //         <button onClick={onClick}
-// //             className="mt-2.5 px-4 py-2 bg-transparent border-[1.5px] border-dashed border-ink-300 rounded-lg text-sm font-semibold text-ink-500 cursor-pointer flex items-center gap-2 transition-all hover:border-brand-600 hover:text-brand-600 hover:bg-[rgba(232,83,10,.04)]">
+// //             className="mt-2.5 px-4 py-2 bg-transparent border-[1.5px] border-dashed border-ink-300 dark:border-white/15 rounded-lg text-sm font-semibold text-ink-500 dark:text-ink-400 cursor-pointer flex items-center gap-2 transition-all hover:border-brand-600 hover:text-brand-600 hover:bg-[rgba(232,83,10,.04)]">
 // //             {children}
 // //         </button>
 // //     );
@@ -606,7 +606,7 @@
 // //                     { label: 'Efficiency Score', val: `${m.efficiency}`, sub: 'Composite /100', c: metricColor(m.efficiency), badge: trendIcon(m.efficiency) + ' Efficiency' },
 // //                     { label: 'Goals Met', val: `${goalsMet}/${cur.goals.length}`, sub: `${tasksDone}/${tasksTotal} tasks done`, c: metricColor(goalsMet / Math.max(cur.goals.length, 1) * 100), badge: goalsMet === cur.goals.length && cur.goals.length > 0 ? 'All met' : goalsMet > 0 ? 'Partial' : 'Missed', badgeColor: 'rgba(22,163,74,.1)', badgeTextColor: '#059669' },
 // //                 ].map((k, i) => (
-// //                     <div key={i} className="wp-kpi relative overflow-hidden rounded-xl p-5 bg-white border border-ink-200" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', '--kpi-color': k.c } as React.CSSProperties}>
+// //                     <div key={i} className="wp-kpi relative overflow-hidden rounded-xl p-5 bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', '--kpi-color': k.c } as React.CSSProperties}>
 // //                         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#8a8a8a', marginBottom: 8 }}>{k.label}</div>
 // //                         <div style={{ fontSize: 30, fontWeight: 900, lineHeight: 1, color: k.c, marginBottom: 4 }}>{k.val}</div>
 // //                         <div style={{ fontSize: 11, color: '#8a8a8a', fontFamily: 'monospace' }}>{k.sub}</div>
@@ -629,7 +629,7 @@
 // //                             return (
 // //                                 <div key={e.sprint} className="flex-1 flex flex-col items-center gap-1">
 // //                                     <div className="flex-1 flex items-end gap-[3px] w-full">
-// //                                         <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative bg-ink-100 border border-ink-200 transition-[height] duration-[400ms] ease-[cubic-bezier(.4,0,.2,1)]" style={{ height: `${cH}%` }} data-tip={`Committed: ${e.committed}SP`} />
+// //                                         <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative bg-ink-100 dark:bg-ink-800 border border-ink-200 dark:border-white/10 transition-[height] duration-[400ms] ease-[cubic-bezier(.4,0,.2,1)]" style={{ height: `${cH}%` }} data-tip={`Committed: ${e.committed}SP`} />
 // //                                         <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative transition-[height] duration-[400ms] ease-[cubic-bezier(.4,0,.2,1)]" style={{ height: `${dH}%`, background: 'linear-gradient(180deg,#2563eb,#1d4ed8)' }} data-tip={`Done: ${e.completed}SP (${pct}%)`} />
 // //                                     </div>
 // //                                     <div style={{ fontSize: 10, color: '#8a8a8a', fontFamily: 'monospace' }}>{e.sprint}</div>
@@ -928,7 +928,7 @@
 // //                                     <td className="text-center whitespace-nowrap">
 // //                                         <button
 // //                                             onClick={() => onEdit(e)}
-// //                                             className="border border-ink-200 rounded px-2 py-1 text-xs font-semibold hover:bg-gray-100"
+// //                                             className="border border-ink-200 dark:border-white/10 rounded px-2 py-1 text-xs font-semibold hover:bg-ink-100 dark:hover:bg-ink-800"
 // //                                         >
 // //                                             Edit
 // //                                         </button>
@@ -1071,7 +1071,7 @@
 // //     }
 
 // //     return (
-// //         <div className="relative min-h-screen isolate text-ink-900 ">
+// //         <div className="relative min-h-screen isolate text-ink-900 dark:text-white ">
 // //             <style>{GLOBAL_STYLE}</style>
 
 // //             {/* ── HEADER ── */}
@@ -1194,7 +1194,7 @@
 //     return (
 //         <div className="text-center py-16 px-5 flex flex-col items-center gap-3.5">
 //             <div className="text-5xl opacity-30">{icon}</div>
-//             <div className="text-lg font-bold text-ink-500">{title}</div>
+//             <div className="text-lg font-bold text-ink-500 dark:text-ink-400">{title}</div>
 //             <div className="text-sm text-ink-400">{sub}</div>
 //             <button onClick={onBtn} className="mt-1.5 px-6 py-2.5 bg-brand-600 text-white text-sm font-bold rounded-[9px] cursor-pointer border-none hover:bg-brand-700 transition-all">
 //                 {btnLabel}
@@ -1208,7 +1208,7 @@
 //     const TASK_TYPES = ['Feature', 'Bug', 'Refactor', 'Test', 'Docs', 'Review', 'Infra', 'Research'];
 //     const TASK_STATUSES = [{ key: 'done', label: 'Done' }, { key: 'partial', label: 'Partial' }, { key: 'missed', label: 'Missed' }, { key: 'carry', label: 'Carry' }];
 //     return (
-//         <div style={{ display: 'grid', gridTemplateColumns: '90px 2fr 80px 1fr 1fr 1.5fr 36px', gap: 10, alignItems: 'center' }} className="border border-ink-200 rounded-[10px] px-3.5 py-2.5 transition-all">
+//         <div style={{ display: 'grid', gridTemplateColumns: '90px 2fr 80px 1fr 1fr 1.5fr 36px', gap: 10, alignItems: 'center' }} className="border border-ink-200 dark:border-white/10 rounded-[10px] px-3.5 py-2.5 transition-all">
 //             <Input size="sm" placeholder="TP-50" label="Jira ID" labelPlacement="outside"
 //                 value={task.jiraId || ''} onValueChange={v => onChange('jiraId', v.toUpperCase())}
 //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
@@ -1243,7 +1243,7 @@
 //                     </Select>
 //                 </div>
 //             </div>
-//             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">×</button>
+//             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 dark:border-white/15 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">×</button>
 //         </div>
 //     );
 // }
@@ -1251,7 +1251,7 @@
 // // ─── GOAL ROW COMPONENT ────────────────────────────────────────────────────────
 // function GoalRowInput({ goal, onChange, onRemove }) {
 //     return (
-//         <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 36px', gap: 10, alignItems: 'center' }} className="border border-ink-200 rounded-[10px] px-3.5 py-2.5">
+//         <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 36px', gap: 10, alignItems: 'center' }} className="border border-ink-200 dark:border-white/10 rounded-[10px] px-3.5 py-2.5">
 //             <Input size="sm" placeholder="e.g. Zero crashes in prod" label="Goal Description" labelPlacement="outside"
 //                 value={goal.name || ''} onValueChange={v => onChange('name', v)}
 //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
@@ -1261,7 +1261,7 @@
 //             <Input size="sm" type="number" placeholder="85" label="Achieved %" labelPlacement="outside"
 //                 value={goal.achieved || ''} onValueChange={v => onChange('achieved', v)}
 //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
-//             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">×</button>
+//             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 dark:border-white/15 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">×</button>
 //         </div>
 //     );
 // }
@@ -1270,7 +1270,7 @@
 // function FormGroup({ label, hint, children, full, half }) {
 //     return (
 //         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, gridColumn: full ? '1/-1' : half ? 'span 2' : undefined }}>
-//             <label className="text-[11px] font-bold tracking-[1.2px] uppercase text-ink-500">
+//             <label className="text-[11px] font-bold tracking-[1.2px] uppercase text-ink-500 dark:text-ink-400">
 //                 {label}{hint && <span className="text-[10px] font-normal text-ink-400 tracking-normal ml-1.5 normal-case">{hint}</span>}
 //             </label>
 //             {children}
@@ -1281,7 +1281,7 @@
 // function AddBtn({ onClick, children }) {
 //     return (
 //         <button onClick={onClick}
-//             className="mt-2.5 px-4 py-2 bg-transparent border-[1.5px] border-dashed border-ink-300 rounded-lg text-sm font-semibold text-ink-500 cursor-pointer flex items-center gap-2 transition-all hover:border-brand-600 hover:text-brand-600 hover:bg-[rgba(232,83,10,.04)]">
+//             className="mt-2.5 px-4 py-2 bg-transparent border-[1.5px] border-dashed border-ink-300 dark:border-white/15 rounded-lg text-sm font-semibold text-ink-500 dark:text-ink-400 cursor-pointer flex items-center gap-2 transition-all hover:border-brand-600 hover:text-brand-600 hover:bg-[rgba(232,83,10,.04)]">
 //             {children}
 //         </button>
 //     );
@@ -1541,11 +1541,11 @@
 //                             <span>{isEdit ? 'Save Changes' : 'Submit Sprint Entry'}</span>
 //                             <span>{isEdit ? '✓' : '→'}</span>
 //                         </button>
-//                         <button onClick={handleReset} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 rounded-[10px] text-sm font-semibold text-ink-500 cursor-pointer transition-all">
+//                         <button onClick={handleReset} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 dark:border-white/15 rounded-[10px] text-sm font-semibold text-ink-500 dark:text-ink-400 cursor-pointer transition-all">
 //                             Reset
 //                         </button>
 //                         {isEdit && (
-//                             <button onClick={onSwitchDashboard} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 rounded-[10px] text-sm font-semibold text-ink-400 cursor-pointer transition-all">
+//                             <button onClick={onSwitchDashboard} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 dark:border-white/15 rounded-[10px] text-sm font-semibold text-ink-400 cursor-pointer transition-all">
 //                                 Cancel
 //                             </button>
 //                         )}
@@ -1827,7 +1827,7 @@
 //                     { label: 'Efficiency Score', val: `${m.efficiency}`, sub: 'Composite /100', c: metricColor(m.efficiency), badge: trendIcon(m.efficiency) + ' Efficiency' },
 //                     { label: 'Goals Met', val: `${goalsMet}/${cur.goals.length}`, sub: `${tasksDone}/${tasksTotal} tasks done`, c: metricColor(goalsMet / Math.max(cur.goals.length, 1) * 100), badge: goalsMet === cur.goals.length && cur.goals.length > 0 ? 'All met' : goalsMet > 0 ? 'Partial' : 'Missed', badgeColor: 'rgba(22,163,74,.1)', badgeTextColor: '#059669' },
 //                 ].map((k, i) => (
-//                     <div key={i} className="wp-kpi relative overflow-hidden rounded-xl p-5 bg-white border border-ink-200" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', '--kpi-color': k.c } as React.CSSProperties}>
+//                     <div key={i} className="wp-kpi relative overflow-hidden rounded-xl p-5 bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', '--kpi-color': k.c } as React.CSSProperties}>
 //                         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#8a8a8a', marginBottom: 8 }}>{k.label}</div>
 //                         <div style={{ fontSize: 30, fontWeight: 900, lineHeight: 1, color: k.c, marginBottom: 4 }}>{k.val}</div>
 //                         <div style={{ fontSize: 11, color: '#8a8a8a', fontFamily: 'monospace' }}>{k.sub}</div>
@@ -1846,7 +1846,7 @@
 //                             return (
 //                                 <div key={e.sprint} className="flex-1 flex flex-col items-center gap-1">
 //                                     <div className="flex-1 flex items-end gap-[3px] w-full">
-//                                         <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative bg-ink-100 border border-ink-200" style={{ height: `${cH}%` }} data-tip={`Committed: ${e.committed}SP`} />
+//                                         <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative bg-ink-100 dark:bg-ink-800 border border-ink-200 dark:border-white/10" style={{ height: `${cH}%` }} data-tip={`Committed: ${e.committed}SP`} />
 //                                         <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative" style={{ height: `${dH}%`, background: 'linear-gradient(180deg,#2563eb,#1d4ed8)' }} data-tip={`Done: ${e.completed}SP (${pct}%)`} />
 //                                     </div>
 //                                     <div style={{ fontSize: 10, color: '#8a8a8a', fontFamily: 'monospace' }}>{e.sprint}</div>
@@ -2330,7 +2330,7 @@
 //     }
 
 //     return (
-//         <div className="relative min-h-screen isolate text-ink-900">
+//         <div className="relative min-h-screen isolate text-ink-900 dark:text-white">
 //             <style>{GLOBAL_STYLE}</style>
 //             <header className="px-10 flex items-center justify-between h-16">
 //                 <Tabs
@@ -2594,7 +2594,7 @@ function EmptyState({ icon, title, sub, btnLabel, onBtn }) {
     return (
         <div className="text-center py-16 px-5 flex flex-col items-center gap-3.5">
             <div className="text-5xl opacity-30">{icon}</div>
-            <div className="text-lg font-bold text-ink-500">{title}</div>
+            <div className="text-lg font-bold text-ink-500 dark:text-ink-400">{title}</div>
             <div className="text-sm text-ink-400">{sub}</div>
             <button onClick={onBtn} className="mt-1.5 px-6 py-2.5 bg-brand-600 text-white text-sm font-bold rounded-[9px] cursor-pointer border-none hover:bg-brand-700 transition-all">
                 {btnLabel}
@@ -2608,7 +2608,7 @@ function TaskRowInput({ task, onChange, onRemove }) {
     const TASK_TYPES = ['Feature', 'Bug', 'Refactor', 'Test', 'Docs', 'Review', 'Infra', 'Research'];
     const TASK_STATUSES = [{ key: 'done', label: 'Done' }, { key: 'partial', label: 'Partial' }, { key: 'missed', label: 'Missed' }, { key: 'carry', label: 'Carry' }];
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: '90px 2fr 80px 1fr 1fr 1.5fr 36px', gap: 10, alignItems: 'center' }} className="border border-ink-200 rounded-[10px] px-3.5 py-2.5 transition-all">
+        <div style={{ display: 'grid', gridTemplateColumns: '90px 2fr 80px 1fr 1fr 1.5fr 36px', gap: 10, alignItems: 'center' }} className="border border-ink-200 dark:border-white/10 rounded-[10px] px-3.5 py-2.5 transition-all">
             <Input size="sm" placeholder="TP-50" label="Jira ID" labelPlacement="outside"
                 value={task.jiraId || ''} onValueChange={v => onChange('jiraId', v.toUpperCase())}
                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
@@ -2643,7 +2643,7 @@ function TaskRowInput({ task, onChange, onRemove }) {
                     </Select>
                 </div>
             </div>
-            <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">×</button>
+            <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 dark:border-white/15 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">×</button>
         </div>
     );
 }
@@ -2651,7 +2651,7 @@ function TaskRowInput({ task, onChange, onRemove }) {
 // ─── GOAL ROW COMPONENT ────────────────────────────────────────────────────────
 function GoalRowInput({ goal, onChange, onRemove }) {
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 36px', gap: 10, alignItems: 'center' }} className="border border-ink-200 rounded-[10px] px-3.5 py-2.5">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 36px', gap: 10, alignItems: 'center' }} className="border border-ink-200 dark:border-white/10 rounded-[10px] px-3.5 py-2.5">
             <Input size="sm" placeholder="e.g. Zero crashes in prod" label="Goal Description" labelPlacement="outside"
                 value={goal.name || ''} onValueChange={v => onChange('name', v)}
                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
@@ -2661,7 +2661,7 @@ function GoalRowInput({ goal, onChange, onRemove }) {
             <Input size="sm" type="number" placeholder="85" label="Achieved %" labelPlacement="outside"
                 value={goal.achieved || ''} onValueChange={v => onChange('achieved', v)}
                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
-            <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">×</button>
+            <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 dark:border-white/15 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">×</button>
         </div>
     );
 }
@@ -2670,7 +2670,7 @@ function GoalRowInput({ goal, onChange, onRemove }) {
 function FormGroup({ label, hint, children, full, half }) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, gridColumn: full ? '1/-1' : half ? 'span 2' : undefined }}>
-            <label className="text-[11px] font-bold tracking-[1.2px] uppercase text-ink-500">
+            <label className="text-[11px] font-bold tracking-[1.2px] uppercase text-ink-500 dark:text-ink-400">
                 {label}{hint && <span className="text-[10px] font-normal text-ink-400 tracking-normal ml-1.5 normal-case">{hint}</span>}
             </label>
             {children}
@@ -2681,7 +2681,7 @@ function FormGroup({ label, hint, children, full, half }) {
 function AddBtn({ onClick, children }) {
     return (
         <button onClick={onClick}
-            className="mt-2.5 px-4 py-2 bg-transparent border-[1.5px] border-dashed border-ink-300 rounded-lg text-sm font-semibold text-ink-500 cursor-pointer flex items-center gap-2 transition-all hover:border-brand-600 hover:text-brand-600 hover:bg-[rgba(232,83,10,.04)]">
+            className="mt-2.5 px-4 py-2 bg-transparent border-[1.5px] border-dashed border-ink-300 dark:border-white/15 rounded-lg text-sm font-semibold text-ink-500 dark:text-ink-400 cursor-pointer flex items-center gap-2 transition-all hover:border-brand-600 hover:text-brand-600 hover:bg-[rgba(232,83,10,.04)]">
             {children}
         </button>
     );
@@ -2987,11 +2987,11 @@ function FormTab({ initialEntry, onSubmit, onSwitchDashboard }) {
                             <span>{isEdit ? 'Save Changes' : 'Submit Sprint Entry'}</span>
                             <span>{isEdit ? '✓' : '→'}</span>
                         </button>
-                        <button onClick={handleReset} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 rounded-[10px] text-sm font-semibold text-ink-500 cursor-pointer transition-all">
+                        <button onClick={handleReset} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 dark:border-white/15 rounded-[10px] text-sm font-semibold text-ink-500 dark:text-ink-400 cursor-pointer transition-all">
                             Reset
                         </button>
                         {isEdit && (
-                            <button onClick={onSwitchDashboard} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 rounded-[10px] text-sm font-semibold text-ink-400 cursor-pointer transition-all">
+                            <button onClick={onSwitchDashboard} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 dark:border-white/15 rounded-[10px] text-sm font-semibold text-ink-400 cursor-pointer transition-all">
                                 Cancel
                             </button>
                         )}
@@ -3195,7 +3195,7 @@ function DashboardTab({ entries, onSwitchForm }) {
                     { label: 'Efficiency Score', val: `${m.efficiency}`, sub: 'Composite /100', c: metricColor(m.efficiency), badge: trendIcon(m.efficiency) + ' Efficiency' },
                     { label: 'Goals Met', val: `${goalsMet}/${cur.goals.length}`, sub: `${tasksDone}/${tasksTotal} tasks done`, c: metricColor(goalsMet / Math.max(cur.goals.length, 1) * 100), badge: goalsMet === cur.goals.length && cur.goals.length > 0 ? 'All met' : goalsMet > 0 ? 'Partial' : 'Missed', badgeColor: 'rgba(22,163,74,.1)', badgeTextColor: '#059669' },
                 ].map((k, i) => (
-                    <div key={i} className="wp-kpi relative overflow-hidden rounded-xl p-5 bg-white border border-ink-200"
+                    <div key={i} className="wp-kpi relative overflow-hidden rounded-xl p-5 bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10"
                         style={{ boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', '--kpi-color': k.c }}>
                         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#8a8a8a', marginBottom: 8 }}>{k.label}</div>
                         <div style={{ fontSize: 30, fontWeight: 900, lineHeight: 1, color: k.c, marginBottom: 4 }}>{k.val}</div>
@@ -3218,7 +3218,7 @@ function DashboardTab({ entries, onSwitchForm }) {
                             return (
                                 <div key={e.sprint} className="flex-1 flex flex-col items-center gap-1">
                                     <div className="flex-1 flex items-end gap-[3px] w-full">
-                                        <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative bg-ink-100 border border-ink-200" style={{ height: `${cH}%` }} data-tip={`Committed: ${e.committed}SP`} />
+                                        <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative bg-ink-100 dark:bg-ink-800 border border-ink-200 dark:border-white/10" style={{ height: `${cH}%` }} data-tip={`Committed: ${e.committed}SP`} />
                                         <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative" style={{ height: `${dH}%`, background: 'linear-gradient(180deg,#2563eb,#1d4ed8)' }} data-tip={`Done: ${e.completed}SP (${pct}%)`} />
                                     </div>
                                     <div style={{ fontSize: 10, color: '#8a8a8a', fontFamily: 'monospace' }}>{e.sprint}</div>
@@ -3594,7 +3594,7 @@ export default function WeeklyPulse() {
     }
 
     return (
-        <div className="relative min-h-screen isolate text-ink-900">
+        <div className="relative min-h-screen isolate text-ink-900 dark:text-white">
             <style>{GLOBAL_STYLE}</style>
             <header className="px-10 flex items-center justify-between h-16">
                 <Tabs

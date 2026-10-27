@@ -424,7 +424,7 @@ const TargetManagement: React.FC = () => {
                 <div>
 
                     <h1 className={title({ size: "20px" })}>Target Management</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">
                         Manage and monitor all company Target
                     </p>
                 </div>
@@ -456,7 +456,7 @@ const TargetManagement: React.FC = () => {
 
             {/* target Table */}
             {selectedRows.length > 0 && (
-                <div className="flex justify-between items-center bg-gray-100 p-3 rounded mb-3 shadow">
+                <div className="flex justify-between items-center bg-ink-100 dark:bg-ink-800 p-3 rounded mb-3 shadow">
                     <span className="font-semibold">
                         {selectedRows.length} task(s) selected
                     </span>
@@ -507,7 +507,7 @@ const TargetManagement: React.FC = () => {
                 </div>
             )}
 
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden p-6">
+            <div className="bg-white dark:bg-ink-800 rounded-lg shadow overflow-hidden p-6">
                 <ReusableTable
                     key={tableRefreshKey}
                     data={target}

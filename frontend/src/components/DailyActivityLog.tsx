@@ -1916,7 +1916,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                             <ModalHeader>{confirmTitle}</ModalHeader>
 
                             <ModalBody>
-                                <p className="text-sm text-gray-600">
+                                <p className="text-sm text-ink-600 dark:text-ink-300">
                                     {confirmMessage}
                                 </p>
                             </ModalBody>
@@ -1957,7 +1957,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                             <div className="flex items-center gap-4">
 
                                 {/* Title */}
-                                <p className="text-gray-900 dark:text-white text-sm font-medium">
+                                <p className="text-ink-900 dark:text-white text-sm font-medium">
                                     Daily Activity {getPrimaryDepartmentId(authUser) ? "" : "Log"}
                                 </p>
 
@@ -2216,7 +2216,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                 maxValue={Maxtoday}
 
                             /> */}
-                                        <h3 className=" text-gray-900 dark:text-white" style={{ size: "12px" }}>
+                                        <h3 className=" text-ink-900 dark:text-white" style={{ size: "12px" }}>
                                             Date
                                         </h3>
                                         <Dropdown
@@ -2252,7 +2252,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                                 </DropdownItem>
                                             </DropdownMenu>
                                         </Dropdown>
-                                        <h3 className=" text-gray-900 dark:text-white" style={{ size: "12px" }}>
+                                        <h3 className=" text-ink-900 dark:text-white" style={{ size: "12px" }}>
                                             Add Task Entry
                                         </h3>
                                         <div className="">
@@ -2634,7 +2634,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                     <div
                                     >
 
-                                        <h3 className="text-gray-900 dark:text-white mb-4 text-sm">
+                                        <h3 className="text-ink-900 dark:text-white mb-4 text-sm">
                                             Add Target Entry
                                             {showMessage && (
 
@@ -2955,7 +2955,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
 
                                     <div className="flex flex-col gap-4">
-                                        <h3 className="text-gray-900 dark:text-white text-sm">
+                                        <h3 className="text-ink-900 dark:text-white text-sm">
                                             Add Goal Entry
                                         </h3>
 
@@ -3312,7 +3312,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                     <div className="text-lg font-semibold space-y-1">
 
                                         <div>
-                                            <span className="text-gray-600 dark:text-gray-400">
+                                            <span className="text-ink-600 dark:text-ink-400">
                                                 Total Logged
                                             </span>
                                             <span className="text-blue-600 dark:text-blue-400 mx-2">
@@ -3337,7 +3337,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                         </div>
 
                                         <div>
-                                            <span className="text-gray-600 dark:text-gray-400">
+                                            <span className="text-ink-600 dark:text-ink-400">
                                                 Total Time Taken
                                             </span>
                                             <span className="text-green-600 dark:text-green-400 mx-2">
@@ -3400,11 +3400,11 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                 </Card >
                 {/* Activities/PR List */}
 
-                <Card className="lg:col-span-2 w-full shadow-md border border-gray-200 dark:border-gray-700 rounded-2xl overflow-x/y-auto;">
+                <Card className="lg:col-span-2 w-full shadow-md border border-ink-200 dark:border-ink-700 rounded-2xl overflow-x/y-auto;">
                     <CardBody className="px-6 pb-6" style={{ minHeight: "40pc", maxHeight: "40pc" }}>
                         <>
                             <div className="flex items-center justify-between">
-                                <h3 className="  text-gray-900 dark:text-white" style={{ size: "12px" }}>
+                                <h3 className="  text-ink-900 dark:text-white" style={{ size: "12px" }}>
                                     Today's Activities
                                 </h3>
                                 <Button
@@ -3472,35 +3472,35 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                             </div>
 
                             {/* Modern Table */}
-                            <div className="overflow-x-auto overflow-y-auto max-h-[34rem] rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
-                                <table className="min-w-full text-sm text-gray-800 dark:text-gray-200">
+                            <div className="overflow-x-auto overflow-y-auto max-h-[34rem] rounded-xl border border-ink-100 dark:border-ink-800 shadow-sm">
+                                <table className="min-w-full text-sm text-ink-800 dark:text-ink-200">
                                     <thead className="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900" style={{ position: "sticky", top: 0, }}>
                                         <tr className="text-left">
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                 No
                                             </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                 Date
                                             </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                 Name
                                             </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                 Type
                                             </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                 Frequency / Count
                                             </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                 Unit / Time
                                             </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                 Achieved / Time Taken
                                             </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                 Percentage / TAT
                                             </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-center text-gray-600 dark:text-gray-300">
+                                            <th className="px-4 py-3 font-semibold tracking-wide text-center text-ink-600 dark:text-ink-300">
                                                 Action
                                             </th>
                                         </tr>
@@ -3512,14 +3512,14 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                                 key={activity.id}
                                                 className={`transition-all duration-150 ${activity.targetName
                                                     ? "bg-blue-50/60 dark:bg-blue-900/30"
-                                                    : "bg-white dark:bg-gray-950"
+                                                    : "bg-white dark:bg-ink-950"
                                                     } `}
                                             >
-                                                <td className="px-4 py-3 font-semibold text-gray-700 dark:text-gray-100">
+                                                <td className="px-4 py-3 font-semibold text-ink-700 dark:text-ink-100">
                                                     {index + 1}.
                                                 </td>
 
-                                                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
+                                                <td className="px-4 py-3 whitespace-nowrap text-xs text-ink-500 dark:text-ink-400">
                                                     {activity.workDate ? formatDate(activity.workDate) : "—"}
                                                 </td>
 
@@ -3535,7 +3535,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                                         ? "bg-purple-100 text-purple-700"
                                                         : activity.targetName
                                                             ? "bg-blue-100 text-blue-700"
-                                                            : "bg-gray-100 text-gray-700"
+                                                            : "bg-ink-100 dark:bg-ink-800 text-ink-700 dark:text-ink-200"
                                                         }`}>
                                                         {activity.isGoal ? "Goal" : activity.targetName ? "Target" : "Task"}
                                                     </span>
@@ -3623,7 +3623,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                         </tr>)}
 
                                     </tbody>
-                                    <tfoot className="sticky bottom-0 bg-gray-50 dark:bg-gray-900  font-semibold">
+                                    <tfoot className="sticky bottom-0 bg-ink-50 dark:bg-ink-900  font-semibold">
                                         {/* <tr>
                                         <td colSpan="6" className="px-4 py-3 text-right">
                                             Average Percentage:
@@ -3648,10 +3648,10 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                             </th>
                                             <th className="px-4 py-3 font-semibold tracking-wide text-white-600 ">
                                             </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
 
                                             </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300 flex justify-center ">
+                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300 flex justify-center ">
                                                 Average Percentage: {averagePercentage} %
                                             </th>
                                             <th className="px-4 py-3 font-semibold tracking-wide text-center text-white-600 ">

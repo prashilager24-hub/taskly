@@ -568,7 +568,7 @@ export default function AccessManagementPage() {
             <div className="flex justify-between m-3 gap-3">
                 <div>
                     <h1 className={title({ size: "20px" })}>Access Management</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">
                         Manage user roles, permissions, and access control
                     </p>
                 </div>
@@ -602,7 +602,7 @@ export default function AccessManagementPage() {
             </div>
 
             {selectedRows.length === 1 && (
-                <div className="flex justify-between items-center bg-gray-100 p-3 rounded mb-3 shadow">
+                <div className="flex justify-between items-center bg-ink-100 dark:bg-ink-800 p-3 rounded mb-3 shadow">
                     <span className="font-semibold">{selectedRows.length} user selected</span>
                     <div className="flex gap-3">
                         <Button
@@ -628,7 +628,7 @@ export default function AccessManagementPage() {
                 </div>
             )}
 
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden p-6">
+            <div className="bg-white dark:bg-ink-800 rounded-lg shadow overflow-hidden p-6">
                 <ReusableTable
                     data={users}
                     columns={userColumns}

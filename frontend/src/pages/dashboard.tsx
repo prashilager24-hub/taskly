@@ -90,18 +90,18 @@ const ColumnChart = ({
     const trend = "+12.4%";
 
     return (
-        <div className="bg-white ">
+        <div className="bg-white dark:bg-ink-900 ">
             {/* Header */}
             {/* <div className="flex items-start justify-between mb-6">
                 <div>
-                    <p className="text-sm text-gray-500 mb-1">{title}</p>
+                    <p className="text-sm text-ink-500 dark:text-ink-400 mb-1">{title}</p>
                     <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-medium text-gray-900">{totalValue}</span>
+                        <span className="text-3xl font-medium text-ink-900 dark:text-white">{totalValue}</span>
                         <span className="text-sm text-emerald-500 font-medium">↑ {trend}</span>
                     </div>
                 </div>
                 {subtitle && (
-                    <span className="text-xs text-gray-400 bg-gray-50 px-3 py-1 rounded-full">
+                    <span className="text-xs text-ink-400 bg-ink-50 dark:bg-ink-950 px-3 py-1 rounded-full">
                         {subtitle}
                     </span>
                 )}
@@ -109,7 +109,7 @@ const ColumnChart = ({
 
             {/* Chart */}
             {totalValue === 0 && (
-                <p className="text-xs text-gray-400 text-center -mt-2 mb-2">No data</p>
+                <p className="text-xs text-ink-400 text-center -mt-2 mb-2">No data</p>
             )}
             <div className="relative flex items-end justify-around gap-3 h-48 mb-2">
                 {/* Grid lines */}
@@ -117,7 +117,7 @@ const ColumnChart = ({
                     {[0, 1, 2].map((i) => (
                         <div
                             key={i}
-                            className="w-full border-t border-dashed border-gray-100"
+                            className="w-full border-t border-dashed border-ink-100 dark:border-white/10"
                             style={{ marginTop: i === 0 ? 0 : "auto" }}
                         />
                     ))}
@@ -144,12 +144,12 @@ const ColumnChart = ({
                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                         exit={{ opacity: 0, y: 4, scale: 0.95 }}
                                         transition={{ duration: 0.12 }}
-                                        className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap z-10"
+                                        className="absolute -top-3 left-1/2 -translate-x-1/2 bg-ink-900 text-white text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap z-10"
                                     >
                                         <div className="flex flex-col items-center text-xs leading-tight">
                                             <span className="font-semibold">{labels[i]}</span>
                                             <span className="text-blue-300">Utilization: {values[i]}</span>
-                                            <span className="text-gray-300">Goal: {goals[i]}</span>
+                                            <span className="text-ink-300">Goal: {goals[i]}</span>
                                         </div>
                                     </motion.div>
                                 )}
@@ -198,14 +198,14 @@ const ColumnChart = ({
                             </motion.div>
 
                             {/* Label */}
-                            <span className="text-xs text-gray-500 mt-2 font-medium">{val}</span>
+                            <span className="text-xs text-ink-500 dark:text-ink-400 mt-2 font-medium">{val}</span>
                         </div>
                     );
                 })}
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-gray-100">
+            <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-ink-100 dark:border-white/10">
                 {
                     // [
                     //     { label: "Peak", value: `${maxValue} (${labels[peakIndex]})` },
@@ -219,8 +219,8 @@ const ColumnChart = ({
                     ]
                         .map(({ label, value }) => (
                             <div key={label} className="bg-blue-50 rounded-xl px-3 py-2.5">
-                                <p className="text-xs text-gray-400 uppercase tracking-wide mb-0.5">{label}</p>
-                                <p className="text-sm font-medium text-gray-900">{value}</p>
+                                <p className="text-xs text-ink-400 uppercase tracking-wide mb-0.5">{label}</p>
+                                <p className="text-sm font-medium text-ink-900 dark:text-white">{value}</p>
                             </div>
                         ))}
             </div>
@@ -369,12 +369,12 @@ const StatRow = memo(
         color: string;
         iconType: string;
     }) => (
-        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition">
+        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-ink-50 dark:hover:bg-ink-950 transition">
             <div className="flex items-center gap-2">
                 <div className={`p-2 rounded-lg bg-${color}-100 text-${color}-600`}>
                     <IconSet type={iconType} stroke="#101828" />
                 </div>
-                <h3 className="font-medium text-gray-800 text-xs">{label}</h3>
+                <h3 className="font-medium text-ink-800 dark:text-white text-xs">{label}</h3>
             </div>
             <span className={`font-bold text-${color}-600`}>{value}</span>
         </div>
@@ -383,17 +383,17 @@ const StatRow = memo(
 
 // Static – never changes, no props needed
 const EfficiencyRules = memo(() => (
-    <div className="bg-white rounded-xl p-4  flex flex-col gap-4 text-[12px]">
-        <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+    <div className="bg-white dark:bg-ink-900 rounded-xl p-4  flex flex-col gap-4 text-[12px]">
+        <h2 className="text-sm font-semibold text-ink-800 dark:text-white flex items-center gap-2">
             <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                 <path d="M3 17L9 11L13 15L21 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
             Efficiency &amp; Utilization Rules
         </h2>
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded leading-tight">
+        <div className="bg-yellow-50 dark:bg-yellow-500/10 border-l-4 border-yellow-400 p-3 rounded leading-tight">
             <strong>Note:</strong> Regular workday = 8 Hours. Half Day leave = 4 Hours.
         </div>
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded leading-tight">
+        <div className="bg-yellow-50 dark:bg-yellow-500/10 border-l-4 border-yellow-400 p-3 rounded leading-tight">
             <strong>Efficiency Calculation</strong>
             <ul className="list-disc pl-4 mt-1">
                 <li>
@@ -412,7 +412,7 @@ const EfficiencyRules = memo(() => (
                 </li>
             </ul>
         </div>
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded leading-tight">
+        <div className="bg-yellow-50 dark:bg-yellow-500/10 border-l-4 border-yellow-400 p-3 rounded leading-tight">
             <strong>Utilization Calculation</strong>
             <ul className="list-disc pl-4 mt-1">
                 <li>
@@ -432,7 +432,7 @@ const EfficiencyRules = memo(() => (
 // Skeleton loader for charts
 const RadialBarSkeleton = () => (
     <div className="flex justify-center items-center h-[230px]">
-        <div className="w-40 h-40 rounded-full border-8 border-gray-200 animate-pulse" />
+        <div className="w-40 h-40 rounded-full border-8 border-ink-200 dark:border-white/10 animate-pulse" />
     </div>
 );
 
@@ -669,12 +669,12 @@ const RadialSummaryCard = memo(({
     const safeValues = isEmpty ? [0, 0, 0, 0, 0] : values;
 
     return (
-        <div className="bg-white rounded-2xl p-6 flex flex-col items-center w-full relative">
+        <div className="bg-white dark:bg-ink-900 rounded-2xl p-6 flex flex-col items-center w-full relative">
             {loading ? (
                 <RadialBarSkeleton />
             ) : (
                 <>
-                    <h2 className="text-xs tracking-widest text-gray-400 mb-4">
+                    <h2 className="text-xs tracking-widest text-ink-400 mb-4">
                         {title}
                     </h2>
 
@@ -687,7 +687,7 @@ const RadialSummaryCard = memo(({
                         />
                         {isEmpty && (
                             <div className="absolute inset-0 flex items-center justify-center">
-                                <span className="text-xs text-gray-400 bg-white/80 px-2 py-1 rounded-full">
+                                <span className="text-xs text-ink-400 bg-white/80 dark:bg-ink-900/80 px-2 py-1 rounded-full">
                                     No data
                                 </span>
                             </div>
@@ -701,7 +701,7 @@ const RadialSummaryCard = memo(({
                                     className="w-3 h-3 rounded-full"
                                     style={{ background: RADIAL_LEGEND_COLORS[i] }}
                                 />
-                                <span className="text-gray-600">
+                                <span className="text-ink-600 dark:text-ink-300">
                                     {label}{!isEmpty ? ` - ${safeValues[i]}%` : ""}
                                 </span>
                             </div>
@@ -709,7 +709,7 @@ const RadialSummaryCard = memo(({
                     </div>
 
                     {!isEmpty && subtitle && (
-                        <p className="text-xs text-gray-400 mt-4 text-center">{subtitle}</p>
+                        <p className="text-xs text-ink-400 mt-4 text-center">{subtitle}</p>
                     )}
                 </>
             )}
@@ -1054,7 +1054,7 @@ export default function DashboardPage() {
         ({ value, onChange }: { value: DateRange; onChange: (r: DateRange) => void }) => (
             <Dropdown placement="bottom-start">
                 <DropdownTrigger>
-                    <Button variant="flat" size="sm" className="w-[260px] justify-between bg-gray-200">
+                    <Button variant="flat" size="sm" className="w-[260px] justify-between bg-ink-200 dark:bg-ink-700">
                         {value.startDate && value.endDate
                             ? `${format(new Date(value.startDate), "dd MMM yyyy")} → ${format(new Date(value.endDate), "dd MMM yyyy")}`
                             : "Select Date Range"}
@@ -1110,7 +1110,7 @@ export default function DashboardPage() {
                             <div
                                 key={i}
                                 className="
-                                bg-white
+                                bg-white dark:bg-ink-900
                                 rounded-2xl
                                 p-5
                                 flex-1
@@ -1137,17 +1137,17 @@ export default function DashboardPage() {
     min-w-[320px]
 ">                                        <div>
 
-                                            <h2 className="text-sm font-semibold text-gray-800 text-center">
+                                            <h2 className="text-sm font-semibold text-ink-800 dark:text-white text-center">
                                                 {item.title}
                                             </h2>
 
-                                            <p className="text-xs text-gray-400 mt-1">
+                                            <p className="text-xs text-ink-400 mt-1">
                                                 Efficiency Overview
                                             </p>
 
                                         </div>
                                         <div className="
-    bg-white
+    bg-white dark:bg-ink-900
     rounded-2xl
     p-6
     flex
@@ -1158,7 +1158,7 @@ export default function DashboardPage() {
                                             <h2 className="
         text-xs
         tracking-widest
-        text-gray-400
+        text-ink-400
         mb-4
     ">
                                                 {item.title?.toUpperCase()}
@@ -1216,7 +1216,7 @@ export default function DashboardPage() {
                                                                 }}
                                                             />
 
-                                                            <span className="text-gray-600">
+                                                            <span className="text-ink-600 dark:text-ink-300">
                                                                 {label}
                                                             </span>
 
@@ -1316,7 +1316,7 @@ export default function DashboardPage() {
                                                 <div
                                                     key={idx}
                                                     className="
-    bg-gray-50
+    bg-ink-50 dark:bg-ink-950
     rounded-xl
     p-4
     min-h-[120px]
@@ -1333,7 +1333,7 @@ export default function DashboardPage() {
                                                     text-[10px]
                                                     font-semibold
                                                     tracking-wide
-                                                    text-gray-500
+                                                    text-ink-500 dark:text-ink-400
                                                     uppercase
                                                 ">
                                                             {metric.label}
@@ -1356,7 +1356,7 @@ export default function DashboardPage() {
                                                         <h3 className="
                                                     text-lg
                                                     font-semibold
-                                                    text-gray-900
+                                                    text-ink-900 dark:text-white
                                                 ">
 
                                                             {typeof value === "number"
@@ -1481,7 +1481,7 @@ export default function DashboardPage() {
                                         {logUsers.map((u) => (
                                             <div key={u.userID} className="p-3 flex flex-col">
                                                 <span className="font-medium text-sm">{u.userName}</span>
-                                                <span className="text-xs text-gray-500">{u.userEmail}</span>
+                                                <span className="text-xs text-ink-500 dark:text-ink-400">{u.userEmail}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -1501,36 +1501,21 @@ export default function DashboardPage() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                 <div>
                     <h1 className={title({ size: "20px" })}>Dashboard</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-sm text-ink-500 dark:text-ink-400">
                         View detailed insights into your department's daily work
                     </p>
                 </div>
 
                 <div className="flex items-center gap-2 whitespace-nowrap">
-                    <div
-                        className="
-                            px-3 py-1.5
-                            text-xs font-medium
-                            text-blue-600
-                            bg-blue-50
-                            rounded-md
-                            shadow-sm
-                            transition-all duration-300
-                            cursor-pointer
-                            overflow-hidden
-                            before:absolute before:top-0 before:left-[-100%]
-                            before:h-full before:w-[50%]
-                            before:bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.9),transparent)]
-                            before:skew-x-[-20deg]
-                            before:animate-shine
-                            relative
-                        "
-                        onClick={() => {
+                    <Button
+                        size="sm"
+                        variant="bordered"
+                        onPress={() => {
                             window.open("https://docs.google.com/spreadsheets/d/1qoniokvvEugnYDyaISblNbrCoeH7cJrdt_HksaWT-Vs/edit?gid=1681648508#gid=1681648508");
                         }}
                     >
-                        view goal & target
-                    </div>
+                        View goal & target
+                    </Button>
 
                     <DateRangeDropdown
                         value={dateRange}
@@ -1556,7 +1541,7 @@ export default function DashboardPage() {
                     }}
                 >                    <Tab key="Overview" title="Overview" className="flex flex-col items-end">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                            <Card className="bg-white border border-gray-200 rounded-xl shadow-sm col-span-3">
+                            <Card className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10 rounded-xl shadow-sm col-span-3">
                                 <CardBody>
 
                                     {/* Admin / Employee top section */}
@@ -1620,7 +1605,7 @@ export default function DashboardPage() {
 
                                             {/* Col 2 – Stats panel (admin, no department) */}
                                             {!hasDepartment && companySummary && (
-                                                <div className="bg-white rounded-xl p-4  text-[12px] flex">
+                                                <div className="bg-white dark:bg-ink-900 rounded-xl p-4  text-[12px] flex">
                                                     <div className="w-full">
                                                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                                             {stats.map((item, i) => {
@@ -1629,12 +1614,12 @@ export default function DashboardPage() {
                                                                 return (
                                                                     <div
                                                                         key={i}
-                                                                        className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                        className="bg-ink-50 dark:bg-ink-950 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
                                                                     >
 
                                                                         {/* TOP ROW */}
                                                                         <div className="flex items-center justify-between">
-                                                                            <span className="text-[11px] font-semibold text-gray-500 tracking-wide">
+                                                                            <span className="text-[11px] font-semibold text-ink-500 dark:text-ink-400 tracking-wide">
                                                                                 {item.label.toUpperCase()}
                                                                             </span>
 
@@ -1645,7 +1630,7 @@ export default function DashboardPage() {
 
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
-                                                                            <h2 className="text-2xl font-semibold text-gray-900">
+                                                                            <h2 className="text-2xl font-semibold text-ink-900 dark:text-white">
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
                                                                                         ? `${value}%`
@@ -1695,7 +1680,7 @@ export default function DashboardPage() {
 
                                             {/* Col 2 – Employee stat card (with department) */}
                                             {hasDepartment && isEmployee && (
-                                                <div className="bg-white rounded-xl p-4 text-[12px] flex w-full">
+                                                <div className="bg-white dark:bg-ink-900 rounded-xl p-4 text-[12px] flex w-full">
 
                                                     <div className="w-full">
 
@@ -1739,13 +1724,13 @@ export default function DashboardPage() {
                                                                 return (
                                                                     <div
                                                                         key={i}
-                                                                        className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                        className="bg-ink-50 dark:bg-ink-950 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
                                                                     >
 
                                                                         {/* TOP ROW */}
                                                                         <div className="flex items-center justify-between">
 
-                                                                            <span className="text-[11px] font-semibold text-gray-500 tracking-wide">
+                                                                            <span className="text-[11px] font-semibold text-ink-500 dark:text-ink-400 tracking-wide">
                                                                                 {item.label.toUpperCase()}
                                                                             </span>
 
@@ -1761,7 +1746,7 @@ export default function DashboardPage() {
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
 
-                                                                            <h2 className="text-2xl font-semibold text-gray-900">
+                                                                            <h2 className="text-2xl font-semibold text-ink-900 dark:text-white">
 
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
@@ -1997,7 +1982,7 @@ export default function DashboardPage() {
                     </Tab>
                     <Tab key="Business" title="Business" className="flex flex-col items-end">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                            <Card className="bg-white border border-gray-200 rounded-xl shadow-sm col-span-3">
+                            <Card className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10 rounded-xl shadow-sm col-span-3">
                                 <CardBody>
 
                                     {/* Admin / Employee top section */}
@@ -2074,7 +2059,7 @@ export default function DashboardPage() {
 
                                             {/* Col 2 – Stats panel (admin, no department) */}
                                             {!hasDepartment && companySummary && (
-                                                <div className="bg-white rounded-xl p-4  text-[12px] flex">
+                                                <div className="bg-white dark:bg-ink-900 rounded-xl p-4  text-[12px] flex">
                                                     <div className="w-full">
                                                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                                             {stats.map((item, i) => {
@@ -2083,12 +2068,12 @@ export default function DashboardPage() {
                                                                 return (
                                                                     <div
                                                                         key={i}
-                                                                        className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                        className="bg-ink-50 dark:bg-ink-950 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
                                                                     >
 
                                                                         {/* TOP ROW */}
                                                                         <div className="flex items-center justify-between">
-                                                                            <span className="text-[11px] font-semibold text-gray-500 tracking-wide">
+                                                                            <span className="text-[11px] font-semibold text-ink-500 dark:text-ink-400 tracking-wide">
                                                                                 {item.label.toUpperCase()}
                                                                             </span>
 
@@ -2099,7 +2084,7 @@ export default function DashboardPage() {
 
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
-                                                                            <h2 className="text-2xl font-semibold text-gray-900">
+                                                                            <h2 className="text-2xl font-semibold text-ink-900 dark:text-white">
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
                                                                                         ? `${value}%`
@@ -2149,7 +2134,7 @@ export default function DashboardPage() {
 
                                             {/* Col 2 – Employee stat card (with department) */}
                                             {hasDepartment && isEmployee && (
-                                                <div className="bg-white rounded-xl p-4 text-[12px] flex w-full">
+                                                <div className="bg-white dark:bg-ink-900 rounded-xl p-4 text-[12px] flex w-full">
 
                                                     <div className="w-full">
 
@@ -2193,13 +2178,13 @@ export default function DashboardPage() {
                                                                 return (
                                                                     <div
                                                                         key={i}
-                                                                        className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                        className="bg-ink-50 dark:bg-ink-950 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
                                                                     >
 
                                                                         {/* TOP ROW */}
                                                                         <div className="flex items-center justify-between">
 
-                                                                            <span className="text-[11px] font-semibold text-gray-500 tracking-wide">
+                                                                            <span className="text-[11px] font-semibold text-ink-500 dark:text-ink-400 tracking-wide">
                                                                                 {item.label.toUpperCase()}
                                                                             </span>
 
@@ -2215,7 +2200,7 @@ export default function DashboardPage() {
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
 
-                                                                            <h2 className="text-2xl font-semibold text-gray-900">
+                                                                            <h2 className="text-2xl font-semibold text-ink-900 dark:text-white">
 
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
@@ -2451,7 +2436,7 @@ export default function DashboardPage() {
                     </Tab>
                     <Tab key="Support" title="Support Functions" className="flex flex-col items-end">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                            <Card className="bg-white border border-gray-200 rounded-xl shadow-sm col-span-3">
+                            <Card className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10 rounded-xl shadow-sm col-span-3">
                                 <CardBody>
 
                                     {/* Admin / Employee top section */}
@@ -2528,7 +2513,7 @@ export default function DashboardPage() {
 
                                             {/* Col 2 – Stats panel (admin, no department) */}
                                             {!hasDepartment && companySummary && (
-                                                <div className="bg-white rounded-xl p-4  text-[12px] flex">
+                                                <div className="bg-white dark:bg-ink-900 rounded-xl p-4  text-[12px] flex">
                                                     <div className="w-full">
                                                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                                             {stats.map((item, i) => {
@@ -2537,12 +2522,12 @@ export default function DashboardPage() {
                                                                 return (
                                                                     <div
                                                                         key={i}
-                                                                        className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                        className="bg-ink-50 dark:bg-ink-950 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
                                                                     >
 
                                                                         {/* TOP ROW */}
                                                                         <div className="flex items-center justify-between">
-                                                                            <span className="text-[11px] font-semibold text-gray-500 tracking-wide">
+                                                                            <span className="text-[11px] font-semibold text-ink-500 dark:text-ink-400 tracking-wide">
                                                                                 {item.label.toUpperCase()}
                                                                             </span>
 
@@ -2553,7 +2538,7 @@ export default function DashboardPage() {
 
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
-                                                                            <h2 className="text-2xl font-semibold text-gray-900">
+                                                                            <h2 className="text-2xl font-semibold text-ink-900 dark:text-white">
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
                                                                                         ? `${value}%`
@@ -2603,7 +2588,7 @@ export default function DashboardPage() {
 
                                             {/* Col 2 – Employee stat card (with department) */}
                                             {hasDepartment && isEmployee && (
-                                                <div className="bg-white rounded-xl p-4 text-[12px] flex w-full">
+                                                <div className="bg-white dark:bg-ink-900 rounded-xl p-4 text-[12px] flex w-full">
 
                                                     <div className="w-full">
 
@@ -2647,13 +2632,13 @@ export default function DashboardPage() {
                                                                 return (
                                                                     <div
                                                                         key={i}
-                                                                        className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                        className="bg-ink-50 dark:bg-ink-950 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
                                                                     >
 
                                                                         {/* TOP ROW */}
                                                                         <div className="flex items-center justify-between">
 
-                                                                            <span className="text-[11px] font-semibold text-gray-500 tracking-wide">
+                                                                            <span className="text-[11px] font-semibold text-ink-500 dark:text-ink-400 tracking-wide">
                                                                                 {item.label.toUpperCase()}
                                                                             </span>
 
@@ -2669,7 +2654,7 @@ export default function DashboardPage() {
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
 
-                                                                            <h2 className="text-2xl font-semibold text-gray-900">
+                                                                            <h2 className="text-2xl font-semibold text-ink-900 dark:text-white">
 
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
@@ -2907,7 +2892,7 @@ export default function DashboardPage() {
 
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <Card className="bg-white border border-gray-200 rounded-xl shadow-sm col-span-3">
+                    <Card className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10 rounded-xl shadow-sm col-span-3">
                         <CardBody>
 
                             {/* Admin / Employee top section */}
@@ -2983,7 +2968,7 @@ export default function DashboardPage() {
 
                                     {/* Col 2 – Stats panel (admin, no department) */}
                                     {!hasDepartment && companySummary && (
-                                        <div className="bg-white rounded-xl p-4  text-[12px] flex">
+                                        <div className="bg-white dark:bg-ink-900 rounded-xl p-4  text-[12px] flex">
                                             <div className="w-full">
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                                     {stats.map((item, i) => {
@@ -2992,12 +2977,12 @@ export default function DashboardPage() {
                                                         return (
                                                             <div
                                                                 key={i}
-                                                                className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                className="bg-ink-50 dark:bg-ink-950 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
                                                             >
 
                                                                 {/* TOP ROW */}
                                                                 <div className="flex items-center justify-between">
-                                                                    <span className="text-[11px] font-semibold text-gray-500 tracking-wide">
+                                                                    <span className="text-[11px] font-semibold text-ink-500 dark:text-ink-400 tracking-wide">
                                                                         {item.label.toUpperCase()}
                                                                     </span>
 
@@ -3008,7 +2993,7 @@ export default function DashboardPage() {
 
                                                                 {/* VALUE */}
                                                                 <div className="mt-2">
-                                                                    <h2 className="text-2xl font-semibold text-gray-900">
+                                                                    <h2 className="text-2xl font-semibold text-ink-900 dark:text-white">
                                                                         {typeof value === "number"
                                                                             ? item.label.includes("%")
                                                                                 ? `${value}%`
@@ -3058,7 +3043,7 @@ export default function DashboardPage() {
 
                                     {/* Col 2 – Employee stat card (with department) */}
                                     {hasDepartment && isEmployee && (
-                                        <div className="bg-white rounded-xl p-4 text-[12px] flex w-full">
+                                        <div className="bg-white dark:bg-ink-900 rounded-xl p-4 text-[12px] flex w-full">
 
                                             <div className="w-full">
 
@@ -3102,13 +3087,13 @@ export default function DashboardPage() {
                                                         return (
                                                             <div
                                                                 key={i}
-                                                                className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                className="bg-ink-50 dark:bg-ink-950 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
                                                             >
 
                                                                 {/* TOP ROW */}
                                                                 <div className="flex items-center justify-between">
 
-                                                                    <span className="text-[11px] font-semibold text-gray-500 tracking-wide">
+                                                                    <span className="text-[11px] font-semibold text-ink-500 dark:text-ink-400 tracking-wide">
                                                                         {item.label.toUpperCase()}
                                                                     </span>
 
@@ -3124,7 +3109,7 @@ export default function DashboardPage() {
                                                                 {/* VALUE */}
                                                                 <div className="mt-2">
 
-                                                                    <h2 className="text-2xl font-semibold text-gray-900">
+                                                                    <h2 className="text-2xl font-semibold text-ink-900 dark:text-white">
 
                                                                         {typeof value === "number"
                                                                             ? item.label.includes("%")

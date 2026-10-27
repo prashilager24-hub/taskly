@@ -181,7 +181,7 @@ export default function QueryReport() {
         switch (columnKey) {
             case 'DailyTaskLogID':
                 return (
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    <span className="text-sm font-medium text-ink-900 dark:text-white">
                         #{log.DailyTaskLogID}
                     </span>
                 );
@@ -194,7 +194,7 @@ export default function QueryReport() {
             case 'TaskName':
                 return (
                     <div className="max-w-xs">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate" title={log.TaskName}>
+                        <p className="text-sm font-medium text-ink-900 dark:text-white truncate" title={log.TaskName}>
                             {log.TaskName}
                         </p>
                     </div>
@@ -202,8 +202,8 @@ export default function QueryReport() {
             case 'UserName':
                 return (
                     <div className="flex flex-col">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{log.UserName}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">ID: {log.UserID}</p>
+                        <p className="text-sm font-medium text-ink-900 dark:text-white">{log.UserName}</p>
+                        <p className="text-xs text-ink-500 dark:text-ink-400">ID: {log.UserID}</p>
                     </div>
                 );
             case 'WorkDate':
@@ -217,7 +217,7 @@ export default function QueryReport() {
             case 'Remarks':
                 return (
                     <div className="max-w-xs">
-                        <p className="text-sm text-gray-600 dark:text-gray-400 truncate" title={log.Remarks}>
+                        <p className="text-sm text-ink-600 dark:text-ink-400 truncate" title={log.Remarks}>
                             {log.Remarks || 'No remarks'}
                         </p>
                     </div>
@@ -562,7 +562,7 @@ export default function QueryReport() {
                         Query Report
                     </h1>
 
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">
                         Analyze and filter performance data across departments and users.
                     </p>
                 </div>
@@ -586,7 +586,7 @@ export default function QueryReport() {
                                 <Button
                                     variant="flat"
                                     size="sm"
-                                    className="w-[260px] justify-between bg-gray-200"
+                                    className="w-[260px] justify-between bg-ink-200 dark:bg-ink-700"
                                 >
                                     {dateRange?.startDate && dateRange?.endDate
                                         ? `${format(new Date(dateRange.startDate), "dd MMM yyyy")} → ${format(
@@ -829,7 +829,7 @@ export default function QueryReport() {
                                 <Spinner />
                             </div>
                         ) : (
-                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden p-6">
+                            <div className="bg-white dark:bg-ink-800 rounded-lg shadow overflow-hidden p-6">
                                 <EfficiencyTable data={dashboard} type="user" />
                             </div>
                         )}

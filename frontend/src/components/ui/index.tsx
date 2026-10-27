@@ -21,6 +21,10 @@ import {
   Chip as HeroChip,
   Input as HeroInput,
   Modal as HeroModal,
+  Tabs as HeroTabs,
+  type TabsProps,
+  Pagination as HeroPagination,
+  type PaginationProps,
   Select as HeroSelect,
   Textarea as HeroTextarea,
   type ButtonProps,
@@ -187,6 +191,41 @@ export const DateRangePicker = forwardRef<HTMLDivElement, DateRangePickerProps>(
     />
   );
 }) as typeof HeroDateRangePicker;
+
+// ── Tabs ─────────────────────────────────────────────────────────────────────
+
+// One look for every tab bar: underlined, uppercase tracked labels, brand cursor.
+// (Some pages pass variant="full", which HeroUI doesn't have — it is ignored here.)
+function ThemedTabs({ classNames, variant: _variant, ...props }: TabsProps) {
+  return (
+    <HeroTabs
+      variant="underlined"
+      classNames={{
+        ...classNames,
+        tabList: cn("gap-4 border-b border-ink-200 dark:border-white/10 p-0", classNames?.tabList),
+        cursor: cn("bg-brand-600 h-0.5", classNames?.cursor),
+        tab: cn("h-10 px-1 text-xs font-medium uppercase tracking-wide", classNames?.tab),
+        tabContent: cn("text-ink-500 dark:text-ink-400 group-data-[selected=true]:text-ink-900 dark:group-data-[selected=true]:text-white", classNames?.tabContent),
+      }}
+      {...props}
+    />
+  );
+}
+// Tabs is generic over its items (render-function children); keep that typing
+export const Tabs = ThemedTabs as typeof HeroTabs;
+
+export function Pagination({ classNames, ...props }: PaginationProps) {
+  return (
+    <HeroPagination
+      classNames={{
+        ...classNames,
+        cursor: cn("bg-brand-600 text-white font-bold", classNames?.cursor),
+        item: cn("bg-transparent text-ink-700 dark:text-ink-200 data-[hover=true]:bg-ink-100 dark:data-[hover=true]:bg-ink-800", classNames?.item),
+      }}
+      {...props}
+    />
+  );
+}
 
 // ── Surfaces ─────────────────────────────────────────────────────────────────
 

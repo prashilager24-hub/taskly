@@ -39,12 +39,12 @@ interface ActivityCardProps {
 export default function ActivityCard({ activity, index, onRemove }: ActivityCardProps) {
     if (!activity) return null;
     return (
-        <Card className="border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all">
+        <Card className="border border-ink-200 dark:border-ink-700 shadow-sm hover:shadow-md transition-all">
             <CardBody>
                 <div className="flex justify-between items-start">
                     <div>
                         <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-ink-500 dark:text-ink-400">
                                 #{index + 1}
                             </span>
                             <Chip
@@ -85,13 +85,13 @@ export default function ActivityCard({ activity, index, onRemove }: ActivityCard
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
-                        <p className="text-gray-500">Frequency</p>
+                        <p className="text-ink-500 dark:text-ink-400">Frequency</p>
                         <p className="font-medium">
                             {activity.targetName ? activity.frequency || "-" : activity.setup || 1}
                         </p>
                     </div>
                     <div>
-                        <p className="text-gray-500">Expected</p>
+                        <p className="text-ink-500 dark:text-ink-400">Expected</p>
                         <p className="font-medium">
                             {activity.targetName
                                 ? activity.unit || "-"
@@ -101,7 +101,7 @@ export default function ActivityCard({ activity, index, onRemove }: ActivityCard
                         </p>
                     </div>
                     <div>
-                        <p className="text-gray-500">Achieved</p>
+                        <p className="text-ink-500 dark:text-ink-400">Achieved</p>
                         <p className="font-medium">
                             {activity.targetName
                                 ? activity.achievedUnit || 0
@@ -111,7 +111,7 @@ export default function ActivityCard({ activity, index, onRemove }: ActivityCard
                         </p>
                     </div>
                     <div>
-                        <p className="text-gray-500">status</p>
+                        <p className="text-ink-500 dark:text-ink-400">status</p>
                         <p className="font-medium">{activity.remark}</p>
                     </div>
                 </div>

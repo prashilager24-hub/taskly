@@ -1966,7 +1966,7 @@ export default function QuarterlyReview() {
         ({ value, onChange }) => (
             <Dropdown placement="bottom-start">
                 <DropdownTrigger>
-                    <Button variant="flat" size="sm" className="w-[260px] justify-between bg-gray-200">
+                    <Button variant="flat" size="sm" className="w-[260px] justify-between bg-ink-200 dark:bg-ink-700">
                         {value.startDate && value.endDate
                             ? `${format(new Date(value.startDate), "dd MMM yyyy")} → ${format(new Date(value.endDate), "dd MMM yyyy")}`
                             : "Select Date Range"}
@@ -2310,7 +2310,7 @@ export default function QuarterlyReview() {
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-4 items-start">
-                                    <div className="flex flex-col items-center justify-center gap-2 bg-white border border-divider rounded-xl p-3">
+                                    <div className="flex flex-col items-center justify-center gap-2 bg-white dark:bg-ink-900 border border-divider rounded-xl p-3">
                                         <p className="text-[10px] uppercase tracking-wider text-default-700">
                                             Star Rating
                                         </p>
@@ -2339,11 +2339,11 @@ export default function QuarterlyReview() {
                                         minRows={3}
                                         size="sm"
                                         radius="lg"
-                                        classNames={{ inputWrapper: "bg-white border-default-200" }}
+                                        classNames={{ inputWrapper: "bg-white dark:bg-ink-900 border-default-200" }}
                                     />
                                 </div>
 
-                                <div className="flex items-center justify-between bg-white border border-divider rounded-xl px-4 py-3">
+                                <div className="flex items-center justify-between bg-white dark:bg-ink-900 border border-divider rounded-xl px-4 py-3">
                                     <div>
                                         <p className="text-[10px] uppercase tracking-wider text-default-700">
                                             Final Grade
@@ -2866,7 +2866,7 @@ export default function QuarterlyReview() {
                                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
 
                                                         {/* Assessor 1 */}
-                                                        <div className="bg-white border border-divider rounded-xl p-3">
+                                                        <div className="bg-white dark:bg-ink-900 border border-divider rounded-xl p-3">
                                                             <div className="flex items-center justify-between mb-2">
                                                                 <p className="text-[11px] uppercase tracking-wider text-default-700">
                                                                     {assessorInfo.assessor1 && (
@@ -2910,7 +2910,7 @@ export default function QuarterlyReview() {
                                                         </div>
 
                                                         {/* Assessor 2 */}
-                                                        <div className="bg-white border border-divider rounded-xl p-3">
+                                                        <div className="bg-white dark:bg-ink-900 border border-divider rounded-xl p-3">
                                                             <div className="flex items-center justify-between mb-2">
                                                                 <p className="text-[11px] uppercase tracking-wider text-default-700">
                                                                     {assessorInfo.assessor2 && (

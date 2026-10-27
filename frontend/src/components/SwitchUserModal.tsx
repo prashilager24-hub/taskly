@@ -156,7 +156,7 @@ export default function SwitchUserModal() {
                             ))}
                         </Autocomplete>
                         {departmentId && !loadingUsers && users.length === 0 && (
-                            <p className="text-xs text-ink-500">No active users in this department.</p>
+                            <p className="text-xs text-ink-500 dark:text-ink-400">No active users in this department.</p>
                         )}
                     </ModalBody>
                     <ModalFooter>

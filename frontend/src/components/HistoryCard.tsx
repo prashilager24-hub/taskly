@@ -21,12 +21,12 @@ interface HistoryCardProps {
 
 export default function HistoryCard({ activity, index, onEdit }: HistoryCardProps) {
     return (
-        <Card className="border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md">
+        <Card className="border border-ink-200 dark:border-ink-700 shadow-sm hover:shadow-md">
             <CardBody>
                 <div className="flex justify-between">
                     <div>
                         <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-ink-500 dark:text-ink-400">
                                 #{index + 1}
                             </span>
                             <Chip size="sm" color={activity.isForTarget ? "primary" : "default"}>
@@ -51,22 +51,22 @@ export default function HistoryCard({ activity, index, onEdit }: HistoryCardProp
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
-                        <p className="text-gray-500">Work Date</p>
+                        <p className="text-ink-500 dark:text-ink-400">Work Date</p>
                         <p className="font-medium">{activity.workDate}</p>
                     </div>
 
                     <div>
-                        <p className="text-gray-500">Allocated</p>
+                        <p className="text-ink-500 dark:text-ink-400">Allocated</p>
                         <p className="font-medium">{activity.allocatedTime} mins</p>
                     </div>
 
                     <div>
-                        <p className="text-gray-500">Time Taken</p>
+                        <p className="text-ink-500 dark:text-ink-400">Time Taken</p>
                         <p className="font-medium">{activity.timeTakenToWork} mins</p>
                     </div>
 
                     <div>
-                        <p className="text-gray-500">Status</p>
+                        <p className="text-ink-500 dark:text-ink-400">Status</p>
                         <p className="font-medium">{activity.remarks}</p>
                     </div>
                 </div>

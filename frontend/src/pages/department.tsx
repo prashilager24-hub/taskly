@@ -483,7 +483,7 @@ export default function DepartmentPage() {
             <div className="flex justify-between items-center mb-4 h-12">
                 <div>
                     <h1 className={title({ size: "20px" })}>Department</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">
                         Manage and monitor all company departments
                     </p>
                 </div>
@@ -502,7 +502,7 @@ export default function DepartmentPage() {
                     .map((ele) => (
                         <div
                             key={ele.key}
-                            className="relative p-5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
+                            className="relative p-5 rounded-xl bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-700 shadow-sm hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
                         >
                             {/* Top Section */}
                             <div className="flex justify-between items-start">
@@ -515,7 +515,7 @@ export default function DepartmentPage() {
 
                                     <div>
                                         <div
-                                            className="text-sm font-semibold text-gray-800 dark:text-white break-all overflow-hidden"
+                                            className="text-sm font-semibold text-ink-800 dark:text-white break-all overflow-hidden"
                                             style={{
                                                 display: "-webkit-box",
                                                 WebkitLineClamp: 2,
@@ -524,7 +524,7 @@ export default function DepartmentPage() {
                                         >
                                             {ele.name}
                                         </div>
-                                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        <div className="text-xs text-ink-500 dark:text-ink-400">
                                             ID: {ele.key}
                                         </div>
                                     </div>
@@ -535,7 +535,7 @@ export default function DepartmentPage() {
                                     <DropdownTrigger>
                                         <button
                                             onClick={(e) => e.stopPropagation()}
-                                            className="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white text-lg"
+                                            className="text-ink-500 hover:text-ink-800 dark:text-ink-400 dark:hover:text-white text-lg"
                                         >
                                             ⋮
                                         </button>
@@ -595,7 +595,7 @@ export default function DepartmentPage() {
                                 </span>
 
                                 {/* Optional subtle indicator */}
-                                <div className="text-xs text-gray-400">
+                                <div className="text-xs text-ink-400">
                                     Dept
                                 </div>
                             </div>

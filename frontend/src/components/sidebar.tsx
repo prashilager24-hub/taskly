@@ -345,14 +345,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 bg-white dark:bg-gray-900 shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${isOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed inset-y-0 left-0 z-50 bg-white dark:bg-ink-900 shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${isOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         style={{ height: "100%", minWidth: "16rem" }}
       >
         <div className="flex items-center gap-2 px-4 py-4 justify-center cursor-pointer" onClick={() => {
           navigate("/dashboard")
         }}>
-          <img src="/Tapmind.ico" alt="Taskly Logo" /><h2 className="text-3xl font-bold">TASKLY</h2>
+          <img src="/Tapmind.ico" alt="Taskly Logo" /><h2 className="text-3xl font-bold dark:text-white">TASKLY</h2>
           <Button
             isIconOnly
             variant="light"
@@ -382,8 +382,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                         className={`flex items-center justify-between w-full px-4 py-2 rounded-lg transition-colors
     ${isExpanded || item.children?.some(c => isActiveHref(c.href))
-                            ? "bg-orange-50 text-orange-600"
-                            : "text-gray-700 hover:bg-gray-100"
+                            ? "bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400"
+                            : "text-ink-700 dark:text-ink-200 hover:bg-ink-100 dark:hover:bg-ink-800"
                           }`}
                       >
                         <div className="flex items-center">
@@ -407,8 +407,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 <Link
                                   to={`/${child.href}`}
                                   className={`flex items-center px-4 py-2 rounded-lg  transition-colors ${isChildActive
-                                    ? "bg-orange-50 text-orange-600"
-                                    : "text-gray-600 hover:bg-gray-50"
+                                    ? "bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400"
+                                    : "text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-950"
                                     }`}
                                 >
                                   {child.label}
@@ -428,8 +428,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         toggleSidebar();
                       }}
                       className={`flex items-center px-4 py-2 rounded-lg transition-colors ${isActive
-                        ? "bg-orange-50 text-orange-600"
-                        : "text-gray-700 hover:bg-gray-100"
+                        ? "bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400"
+                        : "text-ink-700 dark:text-ink-200 hover:bg-ink-100 dark:hover:bg-ink-800"
                         }`}
                     >
                       <item.icon className="w-5 h-5 mr-3" />
@@ -454,9 +454,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="h-[80px] flex items-center overflow-hidden">
               <div
                 key={currentNews}
-                className="w-full p-2.5 rounded-lg bg-white/80 shadow-sm animate-slideUp"
+                className="w-full p-2.5 rounded-lg bg-white/80 dark:bg-ink-900/80 shadow-sm animate-slideUp"
               >
-                <p className="text-xs font-medium text-gray-800 line-clamp-4">
+                <p className="text-xs font-medium text-ink-800 dark:text-white line-clamp-4">
                   {newsItems[currentNews].title}
                 </p>
                 <p className="text-[10px] text-primary mt-1 font-medium">

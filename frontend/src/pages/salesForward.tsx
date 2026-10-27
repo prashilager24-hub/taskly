@@ -196,10 +196,10 @@ const SalesForward: React.FC = () => {
                     COMPLETED: "bg-green-500",
                     NO_SHOW: "bg-purple-500",
                     CANCELLED_BY_PUBLISHER: "bg-red-500",
-                    CANCELLED_BY_INTERNAL: "bg-gray-600",
+                    CANCELLED_BY_INTERNAL: "bg-ink-600",
                 };
 
-                const dotColor = colorMap[row.status] || "bg-gray-400";
+                const dotColor = colorMap[row.status] || "bg-ink-400";
 
                 return (
                     <div className="flex items-center gap-2">
@@ -320,7 +320,7 @@ const SalesForward: React.FC = () => {
 
             {/* Tasks Table */}
             {selectedRows.length > 0 && (
-                <div className="flex justify-between items-center bg-gray-100 p-3 rounded mb-3 shadow">
+                <div className="flex justify-between items-center bg-ink-100 dark:bg-ink-800 p-3 rounded mb-3 shadow">
                     <span className="font-semibold">
                         {selectedRows.length} task(s) selected
                     </span>
@@ -330,7 +330,7 @@ const SalesForward: React.FC = () => {
                 </div>
             )}
 
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden p-6">
+            <div className="bg-white dark:bg-ink-800 rounded-lg shadow overflow-hidden p-6">
                 <ReusableTable
                     data={salesData}
                     columns={salesColumns}

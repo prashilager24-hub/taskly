@@ -223,7 +223,7 @@ export default function EfficiencyTable({ data, type, onEdit, dashboard = false 
         switch (columnKey) {
             case "achievedPerct":
                 return (
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    <span className="text-sm font-medium text-ink-900 dark:text-white">
                         {Number(cellValue || 0).toFixed(2)}%
                     </span>
                 );
@@ -242,7 +242,7 @@ export default function EfficiencyTable({ data, type, onEdit, dashboard = false 
                 }
             case "openDate":
                 return (
-                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                    <span className="text-sm text-ink-700 dark:text-ink-300">
                         {cellValue ? sampleData(cellValue) : "—"}
                     </span>
                 );
@@ -261,7 +261,7 @@ export default function EfficiencyTable({ data, type, onEdit, dashboard = false 
             case "ELID":
             case "DepartmentID":
                 return (
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    <span className="text-sm font-medium text-ink-900 dark:text-white">
                         {cellValue}
                     </span>
                 );
@@ -270,7 +270,7 @@ export default function EfficiencyTable({ data, type, onEdit, dashboard = false 
             case "ELName":
             case "DepartmentName":
                 return (
-                    <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                    <span className="text-sm font-semibold text-ink-900 dark:text-white">
                         {cellValue}
                     </span>
                 );
@@ -278,7 +278,7 @@ export default function EfficiencyTable({ data, type, onEdit, dashboard = false 
             case "WorkDate":
             case "workDate":
                 return (
-                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                    <span className="text-sm text-ink-700 dark:text-ink-300">
                         {cellValue
                             ? sampleData(cellValue)
                             : "—"}
@@ -288,7 +288,7 @@ export default function EfficiencyTable({ data, type, onEdit, dashboard = false 
             case "TargetAchievedPercent":
             case "AvgTargetPercent":
                 return (
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    <span className="text-sm font-medium text-ink-900 dark:text-white">
                         {cellValue?.toFixed(2)}%
                     </span>
                 );
@@ -306,11 +306,11 @@ export default function EfficiencyTable({ data, type, onEdit, dashboard = false 
             case "AvgUtilizationPercent":
                 return (
                     <div className="flex flex-col gap-1">
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        <span className="text-sm font-medium text-ink-900 dark:text-white">
                             {cellValue?.toFixed(2)}%
                         </span>
 
-                        <div className="w-full bg-gray-200 rounded-full h-1.5 dark:bg-gray-700">
+                        <div className="w-full bg-ink-200 rounded-full h-1.5 dark:bg-ink-700">
                             <div
                                 className={`h-1.5 rounded-full ${cellValue >= 80
                                     ? "bg-green-500"
@@ -423,7 +423,7 @@ export default function EfficiencyTable({ data, type, onEdit, dashboard = false 
                     </Select>
                 </label> */}
                 <Pagination showControls
-                    classNames={{ cursor: "bg-foreground text-background" }}
+
                     color="default"
                     page={page}
                     total={pages}
@@ -443,7 +443,7 @@ export default function EfficiencyTable({ data, type, onEdit, dashboard = false 
                 bottomContentPlacement="outside"
                 classNames={{
                     wrapper: dashboard ? "" : "min-h-[400px]",
-                    th: ["bg-gray-100", "dark:bg-gray-800", "text-default-500", "border-divider"],
+                    th: ["bg-ink-100", "dark:bg-ink-800", "text-default-500", "border-divider"],
                     td: ["py-3"],
                 }}
                 sortDescriptor={sortDescriptor}

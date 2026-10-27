@@ -86,14 +86,14 @@ export default function ELDashboard({ data }) {
 
 
     return (
-        <div className="p-6 space-y-4 bg-gray-100 overflow-x-auto">
+        <div className="p-6 space-y-4 bg-ink-100 dark:bg-ink-800 overflow-x-auto">
 
             <Accordion variant="splitted" selectionMode="single" openItems={openEL} onOpenChange={setOpenEL}>
                 {data.map((el) => (
                     <AccordionItem
                         key={el.ELID}
                         aria-label={el.ELName}
-                        className="bg-white rounded-2xl shadow px-4"
+                        className="bg-white dark:bg-ink-900 rounded-2xl shadow px-4"
                         title={
                             // Fix 2 — min-w-0 + overflow-x-auto on the row
                             <div className="flex items-center justify-between w-full min-w-0 overflow-x-auto">
@@ -106,30 +106,30 @@ export default function ELDashboard({ data }) {
                                     <div>
                                         <h2 className="font-semibold whitespace-pre-line">
                                             {el.ELName?.replace(/ /g, "\n")}
-                                        </h2>                                        <p className="text-xs text-gray-500">Executive Leader</p>
+                                        </h2>                                        <p className="text-xs text-ink-500 dark:text-ink-400">Executive Leader</p>
                                     </div>
                                 </div>
 
                                 {/* CENTER — Fix 2: flex-wrap + reduced gap */}
                                 <div className="flex items-center gap-6 flex-1 justify-center text-sm flex-wrap">
                                     <div className="text-center">
-                                        <p className="text-gray-400 text-xs">Target</p>
+                                        <p className="text-ink-400 text-xs">Target</p>
                                         <p className="font-semibold">{el.AvgTargetPercent}%</p>
                                     </div>
                                     {/* <div className="text-center">
-                                        <p className="text-gray-400 text-xs">Utilization</p>
+                                        <p className="text-ink-400 text-xs">Utilization</p>
                                         <p className="font-semibold">{el.AvgUtilizationPercent}%</p>
                                     </div> */}
                                     <div className="text-center">
-                                        <p className="text-gray-400 text-xs">Allocated</p>
+                                        <p className="text-ink-400 text-xs">Allocated</p>
                                         <p className="font-semibold">{el.AvgAllocatedHrs}h</p>
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-gray-400 text-xs">Work</p>
+                                        <p className="text-ink-400 text-xs">Work</p>
                                         <p className="font-semibold">{el.AvgTotalWork}h</p>
                                     </div>
                                     <div className="text-center" style={{ marginLeft: "120px" }}>
-                                        <p className="text-gray-400 text-xs">Monthly Goal</p>
+                                        <p className="text-ink-400 text-xs">Monthly Goal</p>
                                         <p className="font-semibold">{el.AvgGoalEfficiency}</p>
                                     </div>
                                 </div>
@@ -151,7 +151,7 @@ export default function ELDashboard({ data }) {
                                     <AccordionItem
                                         key={dept.DepartmentID}
                                         aria-label={dept.DepartmentName}
-                                        className="bg-gray-50 rounded-xl px-3"
+                                        className="bg-ink-50 dark:bg-ink-950 rounded-xl px-3"
                                         title={
                                             // Fix 3 — min-w-0 + overflow-x-auto + gap-2
                                             <div className="flex items-center justify-between w-full min-w-0 gap-2 overflow-x-auto">
@@ -160,7 +160,7 @@ export default function ELDashboard({ data }) {
                                                 <div className="min-w-[160px] shrink-0">
                                                     <h3 className="font-medium whitespace-pre-line">
                                                         {dept.DepartmentName.replace(/ /g, "\n")}
-                                                    </h3>                                                    <p className="text-xs text-gray-400">
+                                                    </h3>                                                    <p className="text-xs text-ink-400">
                                                         {dept.users.length} team members
                                                     </p>
                                                 </div>
@@ -169,24 +169,24 @@ export default function ELDashboard({ data }) {
                                                 <div className="flex items-center justify-center gap-4 flex-1 flex-wrap">
 
                                                     <div className="flex flex-col items-center w-[100px]">
-                                                        <span className="text-gray-400 text-xs mb-1">Avg Target</span>
+                                                        <span className="text-ink-400 text-xs mb-1">Avg Target</span>
                                                         <CircularProgress value={dept.AvgTargetPercent} />
                                                     </div>
 
                                                     {/* <div className="flex flex-col items-center w-[100px]">
-                                                        <span className="text-gray-400 text-xs mb-1">Avg Utilization</span>
+                                                        <span className="text-ink-400 text-xs mb-1">Avg Utilization</span>
                                                         <CircularProgress value={dept.AvgUtilizationPercent} />
                                                     </div>
 
                                                     <div className="flex flex-col items-center w-[120px]">
-                                                        <span className="text-gray-400 text-xs mb-1">Efficiency</span>
+                                                        <span className="text-ink-400 text-xs mb-1">Efficiency</span>
                                                         <span className={`px-3 py-1 text-xs rounded-full ${getBadgeColor(dept.EfficiencyLevel)}`}>
                                                             {dept.EfficiencyLevel}
                                                         </span>
                                                     </div> */}
 
                                                     <div className="flex flex-col items-center w-[120px]">
-                                                        <span className="text-gray-400 text-xs mb-1">Goal</span>
+                                                        <span className="text-ink-400 text-xs mb-1">Goal</span>
                                                         <span className="px-3 py-1 text-xs">
                                                             {dept.AvgGoalEfficiency}
                                                         </span>

@@ -32,7 +32,7 @@ export default function EngagementAdmin({ surveys = [], notifyTo = "admin@tapmin
         <THead cols={["Quarter", "Responses", "Rate", "Activities", "Planning", "Approachability"]} />
         <tbody>
           {surveys.map((s) => (
-            <tr key={s.id} className="border-b border-gray-100 last:border-0">
+            <tr key={s.id} className="border-b border-ink-100 dark:border-white/10 last:border-0">
               <td className="py-3">{s.quarter}</td>
               <td className="py-3">{s.responses.length}</td>
               <td className="py-3">{pct(s.responses.length, s.sentTo)}%</td>

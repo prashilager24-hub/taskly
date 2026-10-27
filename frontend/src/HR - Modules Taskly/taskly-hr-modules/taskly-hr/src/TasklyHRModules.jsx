@@ -272,7 +272,7 @@ export default function TasklyHRModules({ section } = {}) {
     if (loading || !role) {
       return (
         <div className="flex items-center justify-center py-20">
-          <div className="text-sm text-gray-400">Loading…</div>
+          <div className="text-sm text-ink-400">Loading…</div>
         </div>
       );
     }
@@ -293,15 +293,15 @@ export default function TasklyHRModules({ section } = {}) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 text-gray-900">
+    <div className="min-h-screen bg-ink-100 dark:bg-ink-800 text-ink-900 dark:text-white">
 
       {routed ? (
-        <div className="bg-white px-5 pt-4 pb-1">
+        <div className="bg-white dark:bg-ink-900 px-5 pt-4 pb-1">
           <span className="eyebrow">Support</span>
-          <h1 className="text-lg font-bold text-ink-900">{modules.find((m) => m.id === mod)?.label}</h1>
+          <h1 className="text-lg font-bold text-ink-900 dark:text-white">{modules.find((m) => m.id === mod)?.label}</h1>
         </div>
       ) : (
-        <div className="bg-white px-5 overflow-x-auto">
+        <div className="bg-white dark:bg-ink-900 px-5 overflow-x-auto">
           <Tabs
             selectedKey={mod}
             onSelectionChange={(k) => setMod(String(k))}
@@ -315,7 +315,7 @@ export default function TasklyHRModules({ section } = {}) {
         </div>
       )}
 
-      <div className="bg-white px-5 py-2.5 flex items-center gap-3 flex-wrap">
+      <div className="bg-white dark:bg-ink-900 px-5 py-2.5 flex items-center gap-3 flex-wrap">
         {/* <span className=" text-[10px] uppercase tracking-widest text-primary">Viewing as</span> */}
         {roles.length > 1 && (
           <Tabs
@@ -365,11 +365,11 @@ export default function TasklyHRModules({ section } = {}) {
 
       {toast && (
         <div className="fixed bottom-5 left-1/2 z-30 w-11/12 max-w-md" style={{ transform: "translateX(-50%)" }}>
-          <Card shadow="lg" className="bg-gray-900">
+          <Card shadow="lg" className="bg-ink-900">
             <CardBody className="p-3 flex items-start gap-2.5">
               <Mail size={15} className="text-primary-400 mt-0.5 shrink-0" />
               <div className=" text-white flex-1">{toast}</div>
-              <button onClick={() => setToast(null)} className="text-gray-500 hover:text-white"><X size={14} /></button>
+              <button onClick={() => setToast(null)} className="text-ink-500 dark:text-ink-400 hover:text-white"><X size={14} /></button>
             </CardBody>
           </Card>
         </div>

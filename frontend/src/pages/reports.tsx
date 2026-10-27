@@ -106,7 +106,7 @@ export default function ReportsPage() {
         switch (columnKey) {
             case 'DailyTaskLogID':
                 return (
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    <span className="text-sm font-medium text-ink-900 dark:text-white">
                         #{log.DailyTaskLogID}
                     </span>
                 );
@@ -119,7 +119,7 @@ export default function ReportsPage() {
             case 'TaskName':
                 return (
                     <div className="max-w-xs">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate" title={log.TaskName}>
+                        <p className="text-sm font-medium text-ink-900 dark:text-white truncate" title={log.TaskName}>
                             {log.TaskName}
                         </p>
                     </div>
@@ -127,8 +127,8 @@ export default function ReportsPage() {
             case 'UserName':
                 return (
                     <div className="flex flex-col">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{log.UserName}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">ID: {log.UserID}</p>
+                        <p className="text-sm font-medium text-ink-900 dark:text-white">{log.UserName}</p>
+                        <p className="text-xs text-ink-500 dark:text-ink-400">ID: {log.UserID}</p>
                     </div>
                 );
             case 'WorkDate':
@@ -142,7 +142,7 @@ export default function ReportsPage() {
             case 'Remarks':
                 return (
                     <div className="max-w-xs">
-                        <p className="text-sm text-gray-600 dark:text-gray-400 truncate" title={log.Remarks}>
+                        <p className="text-sm text-ink-600 dark:text-ink-400 truncate" title={log.Remarks}>
                             {log.Remarks || 'No remarks'}
                         </p>
                     </div>
@@ -349,7 +349,7 @@ export default function ReportsPage() {
             </div>
 
             {/* Reports Table */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden p-6">
+            <div className="bg-white dark:bg-ink-800 rounded-lg shadow overflow-hidden p-6">
                 <ReusableTable
                     data={reportData}
                     columns={reportColumns}

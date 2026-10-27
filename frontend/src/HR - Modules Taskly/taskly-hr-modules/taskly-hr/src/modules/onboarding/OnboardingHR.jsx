@@ -77,25 +77,25 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
           <THead cols={["Employee", "Joined", "Sent", "Status", "Overall", "HR block"]} />
           <tbody>
             {surveys.map((s) => (
-              <tr key={s.id} className="border-b border-gray-100 last:border-0 align-top hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => s.status === "submitted" && setDetailSurvey(s)}>
+              <tr key={s.id} className="border-b border-ink-100 dark:border-white/10 last:border-0 align-top hover:bg-ink-50 dark:hover:bg-ink-950 cursor-pointer transition-colors" onClick={() => s.status === "submitted" && setDetailSurvey(s)}>
                 <td className="py-3">
                   <div>{s.employee}</div>
-                  <div className="text-[11.5px] text-gray-500">{s.dept}</div>
+                  <div className="text-[11.5px] text-ink-500 dark:text-ink-400">{s.dept}</div>
                 </td>
-                <td className="py-3 text-gray-500 text-[13px]">{s.joined}</td>
-                <td className="py-3 text-gray-500 text-[13px]">{s.sentOn}</td>
+                <td className="py-3 text-ink-500 dark:text-ink-400 text-[13px]">{s.joined}</td>
+                <td className="py-3 text-ink-500 dark:text-ink-400 text-[13px]">{s.sentOn}</td>
                 <td className="py-3">
                   {s.status === "pending" && <Pill tone="open">Pending</Pill>}
                   {s.status === "submitted" && <Pill tone="done">Submitted</Pill>}
                   {s.status === "no_response" && <Pill tone="warn">No response</Pill>}
                 </td>
                 <td className="py-3 font-semibold">
-                  {s.status === "submitted" ? one(surveyScore(s)) : <span className="text-gray-400 font-normal">—</span>}
+                  {s.status === "submitted" ? one(surveyScore(s)) : <span className="text-ink-400 font-normal">—</span>}
                 </td>
                 <td className="py-3 font-semibold">
                   {s.status === "submitted"
                     ? one(avg(s.answers.slice(ONB_HR_BLOCK_START)))
-                    : <span className="text-gray-400 font-normal">—</span>}
+                    : <span className="text-ink-400 font-normal">—</span>}
                 </td>
               </tr>
             ))}
@@ -107,27 +107,27 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
         <Screen id="1.3.1" title={`Survey detail — ${detailSurvey.employee}`} sub={`Submitted on ${detailSurvey.sentOn}`}>
           <button
             onClick={() => setDetailSurvey(null)}
-            className="text-xs text-gray-500 hover:text-gray-800 mb-4 flex items-center gap-1"
+            className="text-xs text-ink-500 dark:text-ink-400 hover:text-ink-800 dark:hover:text-white mb-4 flex items-center gap-1"
           >
             <ArrowLeft size={12} /> Back to list
           </button>
 
           <div className="grid gap-4 mb-5" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))" }}>
             <div className="space-y-1.5">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-gray-500">Employee</div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-ink-500 dark:text-ink-400">Employee</div>
               <div className="text-sm font-semibold">{detailSurvey.employee}</div>
-              <div className="text-[12px] text-gray-500">{detailSurvey.dept}</div>
+              <div className="text-[12px] text-ink-500 dark:text-ink-400">{detailSurvey.dept}</div>
             </div>
             <div className="space-y-1.5">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-gray-500">Joined</div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-ink-500 dark:text-ink-400">Joined</div>
               <div className="text-sm">{detailSurvey.joined}</div>
             </div>
             <div className="space-y-1.5">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-gray-500">Due</div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-ink-500 dark:text-ink-400">Due</div>
               <div className="text-sm">{detailSurvey.due}</div>
             </div>
             <div className="space-y-1.5">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-gray-500">Status</div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-ink-500 dark:text-ink-400">Status</div>
               <div>{detailSurvey.status === "submitted" ? <Pill tone="done">Submitted</Pill> : <Pill tone="open">{detailSurvey.status}</Pill>}</div>
             </div>
           </div>
@@ -142,11 +142,11 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
           <div className="space-y-3">
             {ONB_QUESTIONS.map((q, i) => (
               <div key={i} className="flex items-center gap-3">
-                <div className="text-xs text-gray-600 flex-1 min-w-0" title={q}>
-                  <span className="font-mono text-gray-400 mr-1.5">Q{i + 1}.</span>
+                <div className="text-xs text-ink-600 dark:text-ink-300 flex-1 min-w-0" title={q}>
+                  <span className="font-mono text-ink-400 mr-1.5">Q{i + 1}.</span>
                   {q}
                 </div>
-                <div className="w-36 h-2 bg-gray-100 rounded overflow-hidden">
+                <div className="w-36 h-2 bg-ink-100 dark:bg-ink-800 rounded overflow-hidden">
                   <div
                     className={`h-full rounded ${detailSurvey.answers[i] < 7 ? "bg-red-400" : "bg-primary"}`}
                     style={{ width: `${(detailSurvey.answers[i] / 10) * 100}%` }}
@@ -160,11 +160,11 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
           {detailSurvey.feedback && (
             <>
               <Section>Open feedback</Section>
-              <div className="border border-gray-200 rounded p-3 flex gap-3">
+              <div className="border border-ink-200 dark:border-white/10 rounded p-3 flex gap-3">
                 <div className="text-sm font-bold text-primary-600 w-8">{one(surveyScore(detailSurvey))}</div>
                 <div>
-                  <div className="text-[13px] text-gray-700">{detailSurvey.feedback}</div>
-                  <div className="text-[11px] text-gray-400 mt-1">{detailSurvey.employee} · {detailSurvey.dept}</div>
+                  <div className="text-[13px] text-ink-700 dark:text-ink-200">{detailSurvey.feedback}</div>
+                  <div className="text-[11px] text-ink-400 mt-1">{detailSurvey.employee} · {detailSurvey.dept}</div>
                 </div>
               </div>
             </>
@@ -177,9 +177,9 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
           <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))" }}>
             <div>
               <Field label="Recipients (new joiners)">
-                <div className="border border-gray-300 rounded-md bg-white">
-                  <div className="flex items-center gap-2 px-2.5 py-1.5 border-b border-gray-200">
-                    <Search size={14} className="text-gray-400 shrink-0" />
+                <div className="border border-ink-300 dark:border-white/15 rounded-md bg-white dark:bg-ink-900">
+                  <div className="flex items-center gap-2 px-2.5 py-1.5 border-b border-ink-200 dark:border-white/10">
+                    <Search size={14} className="text-ink-400 shrink-0" />
                     <input
                       className="flex-1 text-sm outline-none bg-transparent placeholder:text-gray-400"
                       placeholder={loadingUsers ? "Loading users…" : "Search by name…"}
@@ -188,13 +188,13 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
                       disabled={loadingUsers}
                     />
                     {userSearch && (
-                      <button onClick={() => setUserSearch("")} className="text-gray-400 hover:text-gray-600">
+                      <button onClick={() => setUserSearch("")} className="text-ink-400 hover:text-ink-600 dark:hover:text-ink-300">
                         <X size={13} />
                       </button>
                     )}
                   </div>
                   {selectedUsers.length > 0 && (
-                    <div className="flex flex-wrap gap-1 px-2.5 py-1.5 border-b border-gray-100">
+                    <div className="flex flex-wrap gap-1 px-2.5 py-1.5 border-b border-ink-100 dark:border-white/10">
                       {selectedUsers.map((u) => (
                         <Chip
                           key={u.userID}
@@ -214,24 +214,24 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
                   )}
                   <div className="max-h-48 overflow-y-auto">
                     {filteredUsers.length === 0 && !loadingUsers && (
-                      <div className="px-3 py-2.5 text-xs text-gray-400">No users found.</div>
+                      <div className="px-3 py-2.5 text-xs text-ink-400">No users found.</div>
                     )}
                     {filteredUsers.map((u) => {
                       const selected = selectedUsers.some((s) => s.userID === u.userID);
                       return (
                         <button
                           key={u.userID}
-                          className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 ${selected ? "bg-primary-50" : ""}`}
+                          className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-ink-50 dark:hover:bg-ink-950 ${selected ? "bg-primary-50" : ""}`}
                           onClick={() => toggleUser(u)}
                         >
-                          <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${selected ? "bg-primary border-primary" : "border-gray-300"}`}>
+                          <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${selected ? "bg-primary border-primary" : "border-ink-300 dark:border-white/15"}`}>
                             {selected && (
                               <svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6L8 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="truncate">{u.userName}</div>
-                            <div className="text-[11px] text-gray-400 truncate">{u.departmentName || u.userEmail}</div>
+                            <div className="text-[11px] text-ink-400 truncate">{u.departmentName || u.userEmail}</div>
                           </div>
                         </button>
                       );
@@ -239,7 +239,7 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
                   </div>
                 </div>
                 {selectedUsers.length > 0 && (
-                  <div className="text-[11px] text-gray-400 mt-1">{selectedUsers.length} recipient{selectedUsers.length > 1 ? "s" : ""} selected</div>
+                  <div className="text-[11px] text-ink-400 mt-1">{selectedUsers.length} recipient{selectedUsers.length > 1 ? "s" : ""} selected</div>
                 )}
               </Field>
               <Field label="Survey">
@@ -251,7 +251,7 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
                 <Dropdown>
                   <DropdownTrigger>
                     <Button variant="bordered" className="w-full justify-between">
-                      {dueDate ? format(dueDate, "dd MMM yyyy") : <span className="text-gray-400">Pick a date</span>}
+                      {dueDate ? format(dueDate, "dd MMM yyyy") : <span className="text-ink-400">Pick a date</span>}
                     </Button>
                   </DropdownTrigger>
                   <DropdownMenu aria-label="Due date picker" className="p-0" itemClasses={{ base: "p-0 cursor-default" }}>
@@ -310,11 +310,11 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
         <Section>Q8 — what to improve</Section>
         <div className="space-y-2.5">
           {submitted.filter((s) => s.feedback).map((s) => (
-            <div key={s.id} className="border border-gray-200 rounded p-3 flex gap-3">
+            <div key={s.id} className="border border-ink-200 dark:border-white/10 rounded p-3 flex gap-3">
               <div className="text-sm font-bold text-primary-600 w-8">{one(surveyScore(s))}</div>
               <div>
-                <div className="text-[13px] text-gray-700">{s.feedback}</div>
-                <div className="text-[11px] text-gray-400 mt-1">{s.employee} · {s.dept}</div>
+                <div className="text-[13px] text-ink-700 dark:text-ink-200">{s.feedback}</div>
+                <div className="text-[11px] text-ink-400 mt-1">{s.employee} · {s.dept}</div>
               </div>
             </div>
           ))}

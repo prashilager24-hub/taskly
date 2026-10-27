@@ -344,7 +344,7 @@ export default function PrimaryDepartmentPage() {
                     <div className="flex justify-between items-center mb-4 h-12">
                         <div>
                             <h1 className={title({ size: "20px" })}>Department Management</h1>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">
                                 Manage top-level departments used to group departments
                             </p>
                         </div>
@@ -381,13 +381,13 @@ export default function PrimaryDepartmentPage() {
                     />
                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 p-4">
                         {!loading && filteredList.length === 0 && (
-                            <div className="col-span-full text-center text-sm text-gray-500 dark:text-gray-400 py-10">
+                            <div className="col-span-full text-center text-sm text-ink-500 dark:text-ink-400 py-10">
                                 No departments found.
                             </div>
                         )}
 
                         {filteredList.map((pd) => (
-                            <div className="relative p-6 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
+                            <div className="relative p-6 rounded-xl bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-700 shadow-sm hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
                                 {/* Header */}
                                 <div className="flex justify-between items-start mb-5">
                                     <div className="flex items-center gap-3 min-w-0">
@@ -399,7 +399,7 @@ export default function PrimaryDepartmentPage() {
                                         {/* Name */}
                                         <div className="min-w-0">
                                             <h3
-                                                className="text-sm font-semibold text-gray-900 dark:text-white"
+                                                className="text-sm font-semibold text-ink-900 dark:text-white"
                                                 style={{
                                                     display: "-webkit-box",
                                                     WebkitLineClamp: 2,
@@ -410,7 +410,7 @@ export default function PrimaryDepartmentPage() {
                                                 {pd.name}
                                             </h3>
 
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            <p className="text-xs text-ink-500 dark:text-ink-400">
                                                 ID: {pd.key}
                                             </p>
                                         </div>
@@ -421,7 +421,7 @@ export default function PrimaryDepartmentPage() {
                                         <DropdownTrigger>
                                             <button
                                                 onClick={(e) => e.stopPropagation()}
-                                                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
+                                                className="p-2 rounded-lg hover:bg-ink-100 dark:hover:bg-ink-800 text-ink-500 dark:text-ink-400"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ellipsis-vertical-icon lucide-ellipsis-vertical"><circle cx="12" cy="12" r="1" /><circle cx="12" cy="5" r="1" /><circle cx="12" cy="19" r="1" /></svg>
                                             </button>
@@ -468,12 +468,12 @@ export default function PrimaryDepartmentPage() {
                                         {pd.active ? "Active" : "Inactive"}
                                     </span>
 
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                                    <span className="text-xs text-ink-500 dark:text-ink-400">
                                         Department
                                     </span>
                                 </div>
 
-                                <div className="border-t border-gray-200 dark:border-gray-700 my-4" />
+                                <div className="border-t border-ink-200 dark:border-ink-700 my-4" />
 
                                 {/* Info Chips */}
                                 <div className="flex flex-wrap gap-2">
@@ -500,19 +500,19 @@ export default function PrimaryDepartmentPage() {
                 <Tab key="hierarchy" title="Hierarchy">
                     <div className="mt-4" style={{ height: "75vh" }}>
                         {hierarchyLoading && (
-                            <div className="text-center text-sm text-gray-500 dark:text-gray-400 py-10">
+                            <div className="text-center text-sm text-ink-500 dark:text-ink-400 py-10">
                                 Loading hierarchy...
                             </div>
                         )}
 
                         {!hierarchyLoading && hierarchyData.length === 0 && (
-                            <div className="text-center text-sm text-gray-500 dark:text-gray-400 py-10">
+                            <div className="text-center text-sm text-ink-500 dark:text-ink-400 py-10">
                                 No hierarchy data found.
                             </div>
                         )}
 
                         {!hierarchyLoading && hierarchyData.length > 0 && (
-                            <div className="w-full h-full rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                            <div className="w-full h-full rounded-xl border border-ink-200 dark:border-ink-700 overflow-hidden">
                                 <ReactFlow
                                     nodes={nodes}
                                     edges={edges}

@@ -667,7 +667,7 @@ export default function Goals() {
                         Goals Report
                     </h1>
 
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">
                         Track goal progress and performance over time
                     </p>
 
@@ -679,7 +679,7 @@ export default function Goals() {
                             <Button
                                 variant="flat"
                                 size="sm"
-                                className="w-[260px] justify-between bg-gray-200"
+                                className="w-[260px] justify-between bg-ink-200 dark:bg-ink-700"
                             >
                                 {dateRange?.startDate && dateRange?.endDate
                                     ? `${format(new Date(dateRange.startDate), "dd MMM yyyy")} → ${format(
@@ -857,17 +857,17 @@ export default function Goals() {
                 </div>
             </div>
             <div
-                className="flex flex-col gap-4 p-4 bg-white rounded-xl  my-2 border border-gray-100"
+                className="flex flex-col gap-4 p-4 bg-white dark:bg-ink-900 rounded-xl  my-2 border border-ink-100 dark:border-white/10"
 
             >
                 {/* Card Title */}
-                <h2 className="text-base font-semibold text-gray-700 tracking-wide">
+                <h2 className="text-base font-semibold text-ink-700 dark:text-ink-200 tracking-wide">
                     Summary
                 </h2>
                 <div className="flex">
                     {/* Avg Total Hours */}
                     <div className="flex items-center justify-between rounded-lg p-2">
-                        <span className="text-sm text-gray-600 font-medium">
+                        <span className="text-sm text-ink-600 dark:text-ink-300 font-medium">
                             Average Goal Achieved
                         </span>
 
@@ -880,7 +880,7 @@ export default function Goals() {
                 </div>
 
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-ink-800 rounded-lg shadow p-6">
                 <ReusableTable
                     data={reportData}
                     columns={reportColumns}

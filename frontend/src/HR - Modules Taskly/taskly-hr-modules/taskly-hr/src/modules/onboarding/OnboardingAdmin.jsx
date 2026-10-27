@@ -42,12 +42,12 @@ export default function OnboardingAdmin({ surveys = [], notifyTo = "admin@tapmin
         <THead cols={["Department", "Sent", "Responded", "Avg", "Below 6"]} />
         <tbody>
           {depts.map((d) => (
-            <tr key={d.dept} className="border-b border-gray-100 last:border-0">
+            <tr key={d.dept} className="border-b border-ink-100 dark:border-white/10 last:border-0">
               <td className="py-3">{d.dept}</td>
               <td className="py-3">{d.sent}</td>
               <td className="py-3">{d.responded}</td>
               <td className="py-3 font-semibold">
-                {d.scores.length ? one(d.avg) : <span className="text-gray-400 font-normal">—</span>}
+                {d.scores.length ? one(d.avg) : <span className="text-ink-400 font-normal">—</span>}
               </td>
               <td className="py-3">{d.low}</td>
             </tr>

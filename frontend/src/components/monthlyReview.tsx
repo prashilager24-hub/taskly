@@ -1299,7 +1299,7 @@ export default function MonthlyReview() {
     ({ value, onChange }: { value: DateRange; onChange: (r: DateRange) => void }) => (
       <Dropdown placement="bottom-start" >
         <DropdownTrigger>
-          <Button variant="flat" size="sm" className="w-[260px] justify-between bg-gray-200">
+          <Button variant="flat" size="sm" className="w-[260px] justify-between bg-ink-200 dark:bg-ink-700">
             {value.startDate && value.endDate
               ? `${format(new Date(value.startDate), "dd MMM yyyy")}-${format(new Date(value.endDate), "dd MMM yyyy")}`
 

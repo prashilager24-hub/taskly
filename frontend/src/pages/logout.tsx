@@ -21,11 +21,11 @@ const Logout = () => {
 
             <Spinner color="warning" size="lg" />
 
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+            <h2 className="text-lg font-semibold text-ink-800 dark:text-ink-200">
                 Logging Out…
             </h2>
 
-            <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+            <p className="text-sm text-ink-500 dark:text-ink-400 text-center">
                 Ending your session securely.
             </p>
         </div>

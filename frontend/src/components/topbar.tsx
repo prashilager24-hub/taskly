@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { Dropdown, DropdownMenu, DropdownTrigger, DropdownItem } from "@/components/ui";
 import { formatDistanceToNow } from "date-fns";
 import SwitchUserModal from "./SwitchUserModal";
+import ThemeToggle from "./ThemeToggle";
 
 // Custom Icons
 const BellIcon = (props: any) => (
@@ -177,7 +178,7 @@ export const Topbar: React.FC<TopbarProps> = ({ toggleSidebar, title }) => {
     const unread = notifications.filter((n) => !n.read).length;
 
     return (
-        <header className="bg-white dark:bg-gray-900 px-4 py-3 flex items-center justify-between" style={{ height: "45px" }}>
+        <header className="bg-white dark:bg-ink-900 px-4 py-3 flex items-center justify-between" style={{ height: "45px" }}>
             <div className="flex items-center">
                 <Button
                     isIconOnly
@@ -193,15 +194,16 @@ export const Topbar: React.FC<TopbarProps> = ({ toggleSidebar, title }) => {
 
             <div className="flex items-center space-x-3">
                 <SwitchUserModal />
+                <ThemeToggle />
 
                 {/* Notifications */}
                 <div className="relative" ref={notifRef}>
                     <button
                         onClick={() => setNotifOpen((o) => !o)}
-                        className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                        className="relative p-2 rounded-full hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
                         aria-label="Notifications"
                     >
-                        <BellIcon className="w-[20px] h-[20px] text-gray-600 dark:text-gray-300" />
+                        <BellIcon className="w-[20px] h-[20px] text-ink-600 dark:text-ink-300" />
                         {unread > 0 && (
                             <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
                                 {unread > 9 ? "9+" : unread}
@@ -210,14 +212,14 @@ export const Topbar: React.FC<TopbarProps> = ({ toggleSidebar, title }) => {
                     </button>
 
                     {notifOpen && (
-                        <div className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 overflow-hidden">
-                            <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 dark:border-gray-700">
-                                <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Notifications</span>
+                        <div className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-700 rounded-lg shadow-lg z-50 overflow-hidden">
+                            <div className="flex items-center justify-between px-4 py-2.5 border-b border-ink-100 dark:border-ink-700">
+                                <span className="text-sm font-semibold text-ink-900 dark:text-ink-100">Notifications</span>
                                 <div className="flex items-center gap-1">
                                     {notifications.length > 0 && (
                                         <button
                                             onClick={markAllRead}
-                                            className="text-[11px] text-primary hover:underline flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+                                            className="text-[11px] text-primary hover:underline flex items-center gap-1 px-2 py-1 rounded hover:bg-ink-100 dark:hover:bg-ink-800"
                                         >
                                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L7 17l-4-4" /><path d="M22 12l-7.5 7.5L13 18" /></svg>
                                             Mark all read
@@ -225,13 +227,13 @@ export const Topbar: React.FC<TopbarProps> = ({ toggleSidebar, title }) => {
                                     )}
                                     <button
                                         onClick={clearNotifications}
-                                        className="text-[11px] text-gray-400 hover:text-red-600 flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+                                        className="text-[11px] text-ink-400 hover:text-red-600 flex items-center gap-1 px-2 py-1 rounded hover:bg-ink-100 dark:hover:bg-ink-800"
                                         aria-label="Clear all"
                                     >
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
                                         Clear
                                     </button>
-                                    <button onClick={() => setNotifOpen(false)} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Close">
+                                    <button onClick={() => setNotifOpen(false)} className="p-1 rounded hover:bg-ink-100 dark:hover:bg-ink-800" aria-label="Close">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
                                     </button>
                                 </div>
@@ -239,7 +241,7 @@ export const Topbar: React.FC<TopbarProps> = ({ toggleSidebar, title }) => {
 
                             <div className="max-h-96 overflow-y-auto">
                                 {notifications.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center py-10 text-gray-400">
+                                    <div className="flex flex-col items-center justify-center py-10 text-ink-400">
                                         <BellIcon className="w-6 h-6 mb-2" />
                                         <span className="text-xs">No notifications yet</span>
                                     </div>
@@ -247,13 +249,13 @@ export const Topbar: React.FC<TopbarProps> = ({ toggleSidebar, title }) => {
                                     notifications.map((n) => (
                                         <div
                                             key={n.id}
-                                            className={`px-4 py-3 border-b border-gray-50 dark:border-gray-800 last:border-0 ${n.read ? "opacity-70" : "bg-blue-50/40 dark:bg-blue-900/20"}`}
+                                            className={`px-4 py-3 border-b border-ink-50 dark:border-ink-800 last:border-0 ${n.read ? "opacity-70" : "bg-blue-50/40 dark:bg-blue-900/20"}`}
                                         >
                                             <div className="flex items-start gap-2">
                                                 {!n.read && <span className="mt-1.5 w-2 h-2 rounded-full bg-primary-600 shrink-0" />}
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-[13px] text-gray-800 dark:text-gray-200 leading-snug">{n.message}</p>
-                                                    <p className="text-[11px] text-gray-400 mt-0.5">
+                                                    <p className="text-[13px] text-ink-800 dark:text-ink-200 leading-snug">{n.message}</p>
+                                                    <p className="text-[11px] text-ink-400 mt-0.5">
                                                         {formatDistanceToNow(new Date(n.time), { addSuffix: true })}
                                                     </p>
                                                 </div>
@@ -270,7 +272,7 @@ export const Topbar: React.FC<TopbarProps> = ({ toggleSidebar, title }) => {
                     <DropdownTrigger>
                         <div className="flex items-center gap-2 cursor-pointer">
                             <div className="hidden sm:block text-right">
-                                <p className="text-sm font-medium text-gray-900 dark:text-white">{authUserLD && JSON.parse(authUserLD).name}</p>
+                                <p className="text-sm font-medium text-ink-900 dark:text-white">{authUserLD && JSON.parse(authUserLD).name}</p>
 
                                 {authUserLD && JSON.parse(authUserLD).departmentName && (
                                     <p className="text-xs text-primary">

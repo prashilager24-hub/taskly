@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui";
 import { Autocomplete, AutocompleteItem } from "@/components/ui";
 import EmptyContainer from "@/components/EmptyContainer";
+import PastEntries from "@/components/PastEntries";
+import { Tab, Tabs } from "@/components/ui";
 import { DailyActivityLog } from "@/components";
 import {
     Modal,
@@ -60,6 +62,9 @@ export default function FormPage() {
     const [departmentList, setDepartmentList] = useState([]);
     const [filterStatus, setFilterStatus] = useState<number | null>(null);
     const [departmentInput, setDepartmentInput] = useState("");
+    // Opens on past entries (DA-02); "Log activity" shows the entry form, filtered by frequency (DA-03)
+    const [view, setView] = useState<"entries" | "log">("entries");
+    const [frequency, setFrequency] = useState<"daily" | "weekly">("daily");
 
     useEffect(() => {
         if (filterStatus !== null) return;
@@ -261,6 +266,12 @@ export default function FormPage() {
     }, [filterStatus])
 
 
+    // Weekly → weekly and monthly items; Daily → everything else (daily, dynamic, "not daily")
+    const isWeekly = (f?: string) => f === "Weekly" || f === "Monthly";
+    const frequencyTasks = Array.isArray(taskList)
+        ? taskList.filter((t: any) => (frequency === "weekly") === isWeekly(t?.frequency))
+        : taskList;
+
     return (
         <div>
             <div className="flex justify-between items-center mb-4" style={{ height: "48px" }}>
@@ -347,9 +358,34 @@ export default function FormPage() {
 
 
 
+            <Tabs
+                aria-label="Daily Activity views"
+                selectedKey={view}
+                onSelectionChange={(k) => setView(k as "entries" | "log")}
+                className="mb-4"
+            >
+                <Tab key="entries" title={selectedUserId === user.userID ? "My entries" : "Entries"} />
+                <Tab key="log" title="Log activity" />
+            </Tabs>
+
+            {view === "entries" ? (
+                <PastEntries userId={selectedUserId} departmentId={filterStatus} onLogActivity={() => setView("log")} />
+            ) : (
             <div>
+                <div className="mb-4 flex items-center gap-3">
+                    <span className="label-base mb-0">Frequency</span>
+                    <Tabs
+                        aria-label="Frequency"
+                        size="sm"
+                        selectedKey={frequency}
+                        onSelectionChange={(k) => setFrequency(k as "daily" | "weekly")}
+                    >
+                        <Tab key="daily" title="Daily" />
+                        <Tab key="weekly" title="Weekly" />
+                    </Tabs>
+                </div>
                 {filterStatus ? (
-                    <DailyActivityLog task={taskList} DeptId={filterStatus} selectedUserId={selectedUserId} selectedUserRole={
+                    <DailyActivityLog task={frequencyTasks} DeptId={filterStatus} selectedUserId={selectedUserId} selectedUserRole={
                         [1, 3, 4].includes(user.userRole)
                             ? (users.find((u) => u.userID === selectedUserId)?.roleID ?? null)
                             : user.userRole
@@ -362,6 +398,7 @@ export default function FormPage() {
                     />
                 )}
             </div>
+            )}
 
 
         </div>

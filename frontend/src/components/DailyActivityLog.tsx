@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui";
 import { Divider } from "@heroui/divider";
 import axios from "axios";
 import EmptyContainer from "./EmptyContainer";
+import { EntrySteps, useEntryPreview } from "./EntryPreview";
 import { generateExcelTemplate, parseUploadedExcel } from "../lib/excelUtils";
 interface ActivityEntry {
     id: string;
@@ -885,6 +886,67 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
         setSelectedSubTasks([]);
 
     }, [currentActivity, selectedtask, workDate, tat, isHistoryEdit, DeptId, selectedSubTasks]);
+
+    // ── Fill → Preview → Save (DA-05 – DA-07) ──────────────────────────────────
+    // Preview shows what will be added; "Yes" runs the existing add, "No" keeps the form as filled.
+    const { openPreview, previewOpen, previewModal } = useEntryPreview();
+    const entryDateLabel = (() => {
+        try { return toYYYYMMDD(workDate); } catch { return String(workDate); }
+    })();
+
+    const requestAddActivity = () => {
+        const isTarget = (selectedtask as any)?.isForTarget;
+        const missing: string[] = [];
+        if (!currentActivity.task || (currentActivity.task === "custom" && !currentActivity.customTask)) missing.push("Task");
+        if (!isTarget && DeptId !== 42) {
+            if (!currentActivity.customTime && !currentActivity.timeType) missing.push("Time per setup");
+            if (!currentActivity.timeTaken) missing.push("Time taken");
+            if (!currentActivity.remark) missing.push("Remark");
+        }
+        if (missing.length) {
+            addToast({ title: "Missing details", description: `Fill in: ${missing.join(", ")}`, color: "danger" });
+            return;
+        }
+        openPreview(isTarget ? "Target task entry" : "Task entry", [
+            { label: "Date", value: entryDateLabel },
+            { label: "Task", value: currentActivity.task === "custom" ? currentActivity.customTask : currentActivity.taskName },
+            { label: "Type", value: isTarget ? "Target" : (selectedtask as any)?.isDynamic ? "Dynamic task" : "Task" },
+            ...(isTarget ? [] : [
+                { label: "Time per setup", value: currentActivity.customTime || currentActivity.timeType },
+                { label: "Setups", value: currentActivity.setup },
+                { label: "Time taken", value: currentActivity.timeTaken },
+            ]),
+            { label: "Remark", value: currentActivity.remark },
+        ], handleAddActivity);
+    };
+
+    const isActivityDirty = () =>
+        !!(currentActivity.task || currentActivity.timeTaken || currentActivity.remark || currentActivity.targetName || currentActivity.achievedUnit);
+    const cancelActivity = () => {
+        if (isActivityDirty() && !window.confirm("Discard this entry?")) return;
+        setCurrentActivity({
+            id: "",
+            task: "",
+            taskName: "",
+            customTask: "",
+            timeType: "",
+            customTime: "0",
+            timeTaken: "",
+            remark: "",
+            setup: "1",
+            targetName: "",
+            targetID: "",
+            unit: "",
+            frequency: "",
+            achievedUnit: "",
+        } as ActivityEntry);
+        setSelectedSubTasks([]);
+    };
+    const cancelGoal = () => {
+        if ((goalEntry.goalID || goalEntry.achievedUnit) && !window.confirm("Discard this goal entry?")) return;
+        setGoalEntry({ goalID: "", goalName: "", unit: "", frequency: "", achievedUnit: "", expectedUnit: "", companyName: "", networkType: "", tier: "", networkEntries: [] } as any);
+    };
+    const entryStepNumber: 1 | 2 | 3 = previewOpen ? 2 : activities.length > 0 ? 3 : 1;
 
     const handleDownloadTemplate = async () => {
         const dateStr = toDDMMYYYY(workDate);
@@ -1905,6 +1967,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
     return (
         <div className={`${DeptId == 24 ? "" : "grid grid-cols-1 xl:grid-cols-3 lg:grid-cols-1 md:grid-cols-1 gap-6"}`}>
+            {previewModal}
             <Modal
                 isOpen={showDateConfirm}
                 onOpenChange={setShowDateConfirm}
@@ -1954,12 +2017,13 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                     <CardHeader className="pb-4">
                         <div className="flex flex-col space-y-2">
 
-                            <div className="flex items-center gap-4">
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
 
                                 {/* Title */}
                                 <p className="text-ink-900 dark:text-white text-sm font-medium">
                                     Daily Activity {getPrimaryDepartmentId(authUser) ? "" : "Log"}
                                 </p>
+                                <div className="w-full"><EntrySteps step={entryStepNumber} /></div>
 
                                 {/* Half-Day Switch */}
 
@@ -2572,9 +2636,12 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                     >
                                         Cancel
                                     </Button> */}
+                                            <Button size="sm" variant="bordered" onPress={cancelActivity}>
+                                                Cancel
+                                            </Button>
                                             <Button
                                                 color="primary"
-                                                onClick={handleAddActivity}
+                                                onClick={requestAddActivity}
                                                 size="sm"
 
                                                 isDisabled={
@@ -2622,7 +2689,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
 
                                             >
-                                                Add Activity
+                                                Preview
                                             </Button>
 
                                         </div>
@@ -2866,6 +2933,9 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                         <div className="flex justify-end gap-3" style={{ marginBottom: "100px" }}>
 
 
+                                            <Button size="sm" variant="bordered" onPress={cancelActivity}>
+                                                Cancel
+                                            </Button>
                                             {/* Add Target button */}
                                             <Button
                                                 color="primary"
@@ -2907,6 +2977,13 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                                         });
                                                         return;
                                                     }
+                                                    openPreview("Target entry", [
+                                                        { label: "Date", value: entryDateLabel },
+                                                        { label: "Target", value: currentActivity.targetName },
+                                                        { label: "Unit", value: currentActivity.unit },
+                                                        { label: "Achieved", value: currentActivity.achievedUnit },
+                                                        { label: "Remark", value: currentActivity.remark },
+                                                    ], () => {
                                                     let calculatedUnit =
                                                         String(currentActivity.targetID) === "78"
                                                             ? getUnitValue()
@@ -2940,10 +3017,11 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                                         frequency: "",
                                                         achievedUnit: "",
                                                     });
+                                                    });
                                                 }}
                                                 isDisabled={DeptId == 42 || (currentActivity.targetName && currentActivity.frequency ? !validateTargetFrequency(currentActivity.frequency, workDate).isValid : false)}
                                             >
-                                                Add Target
+                                                Preview
                                             </Button>
                                         </div>
 
@@ -3220,10 +3298,14 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                             </>
                                         )}
 
+                                        <div className="flex justify-end gap-2">
+                                        <Button size="sm" variant="bordered" onPress={cancelGoal}>
+                                            Cancel
+                                        </Button>
                                         <Button
                                             color="primary"
                                             size="sm"
-                                            className="w-30 self-end"
+                                            className="w-30"
                                             onClick={() => {
 
                                                 if (!goalEntry.goalID || !goalEntry.achievedUnit) {
@@ -3236,6 +3318,14 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                                     });
                                                     return;
                                                 }
+                                                openPreview("Goal entry", [
+                                                    { label: "Date", value: entryDateLabel },
+                                                    { label: "Goal", value: goalEntry.goalName },
+                                                    { label: "Unit", value: goalEntry.unit },
+                                                    { label: "Expected", value: goalEntry.expectedUnit },
+                                                    { label: "Achieved", value: goalEntry.achievedUnit },
+                                                    { label: "Comment", value: (goalEntry as any).comment },
+                                                ], () => {
                                                 const totalAchievedUnit = activities
                                                     .filter(a => a.targetID)
                                                     .reduce(
@@ -3289,10 +3379,12 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                                 });
 
 
+                                                });
                                             }}
                                         >
-                                            Add Goal
+                                            Preview
                                         </Button>
+                                        </div>
 
                                     </div>
                                 )

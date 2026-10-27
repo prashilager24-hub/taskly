@@ -1,0 +1,1911 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeeklyPulse · Sprint Tracker</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f4f1eb;
+            --bg2: #ede9e1;
+            --surface: #ffffff;
+            --border: #ddd9d0;
+            --border2: #ccc8be;
+            --ink: #1a1814;
+            --ink2: #6b6760;
+            --ink3: #9b9892;
+            --accent: #e8530a;
+            --accent2: #2563eb;
+            --green: #16a34a;
+            --yellow: #ca8a04;
+            --red: #dc2626;
+            --purple: #7c3aed;
+            --font: 'Outfit', sans-serif;
+            --mono: 'JetBrains Mono', monospace;
+            --shadow: 0 1px 3px rgba(0, 0, 0, .08), 0 4px 12px rgba(0, 0, 0, .05);
+            --shadow-lg: 0 4px 20px rgba(0, 0, 0, .1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--ink);
+            font-family: var(--font);
+            min-height: 100vh;
+        }
+
+        /* ── NOISE TEXTURE OVERLAY ── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 999;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+            opacity: .4;
+        }
+
+        /* ── HEADER ── */
+        header {
+            background: var(--ink);
+            padding: 0 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-mark {
+            width: 34px;
+            height: 34px;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            font-weight: 900;
+            color: #fff;
+            clip-path: polygon(0 0, 85% 0, 100% 15%, 100% 100%, 15% 100%, 0 85%);
+        }
+
+        .logo-name {
+            font-size: 16px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -.3px;
+        }
+
+        .logo-name span {
+            color: var(--accent);
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 4px;
+        }
+
+        .nav-tab {
+            padding: 7px 18px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: .15s;
+            border: none;
+            background: transparent;
+            color: #9b9892;
+        }
+
+        .nav-tab.active {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .nav-tab:hover:not(.active) {
+            background: rgba(255, 255, 255, .08);
+            color: #fff;
+        }
+
+        .week-chip {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: #6b6760;
+            background: #2a2826;
+            padding: 5px 12px;
+            border-radius: 20px;
+        }
+
+        /* ── TABS ── */
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        /* ── PAGE WRAPPER ── */
+        .page {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 36px 40px 60px;
+        }
+
+        /* ── SECTION TITLE ── */
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--ink3);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ── FORM CARD ── */
+        .form-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-bottom: 28px;
+        }
+
+        .form-header {
+            background: linear-gradient(135deg, var(--ink) 0%, #2a2826 100%);
+            padding: 24px 30px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .form-header-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--accent);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+
+        .form-header-text h2 {
+            font-size: 20px;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .form-header-text p {
+            font-size: 13px;
+            color: #9b9892;
+        }
+
+        .form-body {
+            padding: 28px 30px;
+        }
+
+        /* ── FORM GRID ── */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 18px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group.full {
+            grid-column: 1/-1;
+        }
+
+        .form-group.half {
+            grid-column: span 2;
+        }
+
+        label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: var(--ink2);
+        }
+
+        .label-hint {
+            font-size: 10px;
+            font-weight: 400;
+            color: var(--ink3);
+            letter-spacing: 0;
+            margin-left: 6px;
+            text-transform: none;
+        }
+
+        input[type=text],
+        input[type=number],
+        select,
+        textarea {
+            background: var(--bg);
+            border: 1.5px solid var(--border2);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-family: var(--font);
+            font-size: 14px;
+            color: var(--ink);
+            outline: none;
+            transition: .15s;
+            width: 100%;
+        }
+
+        input[type=text]:focus,
+        input[type=number]:focus,
+        select:focus,
+        textarea:focus {
+            border-color: var(--accent);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(232, 83, 10, .1);
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 72px;
+            line-height: 1.5;
+        }
+
+        /* TASK ROWS */
+        .task-rows {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 4px;
+        }
+
+        .task-row {
+            display: grid;
+            grid-template-columns: 90px 1fr 100px 110px 120px 120px 36px;
+            gap: 10px;
+            align-items: center;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 14px;
+            transition: .15s;
+        }
+
+        .task-row:hover {
+            border-color: var(--border2);
+        }
+
+        .task-row input,
+        .task-row select {
+            background: transparent;
+            border: none;
+            padding: 4px 6px;
+            font-size: 13px;
+            border-bottom: 1px solid var(--border2);
+        }
+
+        .task-row input:focus,
+        .task-row select:focus {
+            border-bottom-color: var(--accent);
+            box-shadow: none;
+            background: transparent;
+        }
+
+        .task-row-label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--ink3);
+            margin-bottom: 3px;
+        }
+
+        .remove-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: 1px solid var(--border2);
+            background: transparent;
+            color: var(--ink3);
+            cursor: pointer;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: .15s;
+        }
+
+        .remove-btn:hover {
+            background: var(--red);
+            border-color: var(--red);
+            color: #fff;
+        }
+
+        .add-task-btn {
+            margin-top: 10px;
+            padding: 9px 18px;
+            background: transparent;
+            border: 1.5px dashed var(--border2);
+            border-radius: 8px;
+            font-family: var(--font);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--ink2);
+            cursor: pointer;
+            transition: .15s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .add-task-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(232, 83, 10, .04);
+        }
+
+        /* GOALS */
+        .goal-rows {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .goal-row {
+            display: grid;
+            grid-template-columns: 1fr 90px 90px 36px;
+            gap: 10px;
+            align-items: center;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 14px;
+        }
+
+        .goal-row input,
+        .goal-row select {
+            background: transparent;
+            border: none;
+            padding: 4px 6px;
+            font-size: 13px;
+            border-bottom: 1px solid var(--border2);
+        }
+
+        .goal-row input:focus,
+        .goal-row select:focus {
+            border-bottom-color: var(--accent);
+            box-shadow: none;
+            background: transparent;
+        }
+
+        /* DIVIDER */
+        .form-divider {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 24px 0;
+        }
+
+        /* SUBMIT */
+        .submit-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-top: 24px;
+        }
+
+        .submit-btn {
+            padding: 13px 32px;
+            background: var(--accent);
+            border: none;
+            border-radius: 10px;
+            font-family: var(--font);
+            font-size: 15px;
+            font-weight: 700;
+            color: #fff;
+            cursor: pointer;
+            transition: .15s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .submit-btn:hover {
+            background: #c94408;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(232, 83, 10, .3);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .reset-btn {
+            padding: 13px 22px;
+            background: transparent;
+            border: 1.5px solid var(--border2);
+            border-radius: 10px;
+            font-family: var(--font);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ink2);
+            cursor: pointer;
+            transition: .15s;
+        }
+
+        .reset-btn:hover {
+            border-color: var(--ink2);
+            color: var(--ink);
+        }
+
+        .form-note {
+            font-size: 12px;
+            color: var(--ink3);
+            margin-left: auto;
+        }
+
+        /* ── DASHBOARD ── */
+        .dash-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .dash-dev-pill {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            padding: 8px 18px 8px 10px;
+            box-shadow: var(--shadow);
+        }
+
+        .dev-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .dev-info .dev-name {
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .dev-info .dev-role {
+            font-size: 11px;
+            color: var(--ink3);
+        }
+
+        .week-filter {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .week-btn {
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-family: var(--font);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: .15s;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--ink2);
+        }
+
+        .week-btn.active {
+            background: var(--ink);
+            color: #fff;
+            border-color: var(--ink);
+        }
+
+        .week-btn:hover:not(.active) {
+            border-color: var(--ink2);
+            color: var(--ink);
+        }
+
+        /* KPI CARDS */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        .kpi {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px 20px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--kpi-color, var(--accent));
+        }
+
+        .kpi-label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--ink3);
+            margin-bottom: 8px;
+        }
+
+        .kpi-val {
+            font-size: 30px;
+            font-weight: 900;
+            line-height: 1;
+            color: var(--kpi-color, var(--ink));
+            margin-bottom: 4px;
+        }
+
+        .kpi-sub {
+            font-size: 11px;
+            color: var(--ink3);
+            font-family: var(--mono);
+        }
+
+        .kpi-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-top: 8px;
+        }
+
+        /* GRID PANELS */
+        .dash-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            margin-bottom: 18px;
+        }
+
+        .dash-grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 18px;
+            margin-bottom: 18px;
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 22px 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .panel-title {
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-title .count {
+            font-family: var(--mono);
+            font-size: 11px;
+            background: var(--bg);
+            padding: 2px 8px;
+            border-radius: 10px;
+            color: var(--ink3);
+            font-weight: 500;
+        }
+
+        /* WEEKLY BAR CHART */
+        .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            height: 140px;
+        }
+
+        .bar-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .bars {
+            flex: 1;
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            width: 100%;
+        }
+
+        .bar {
+            flex: 1;
+            border-radius: 4px 4px 0 0;
+            min-height: 3px;
+            transition: height .4s cubic-bezier(.4, 0, .2, 1);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .bar:hover::after {
+            content: attr(data-tip);
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--ink);
+            color: #fff;
+            font-size: 10px;
+            font-family: var(--mono);
+            padding: 3px 8px;
+            border-radius: 5px;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .bar.committed {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+        }
+
+        .bar.completed {
+            background: linear-gradient(180deg, var(--accent2), #1d4ed8);
+        }
+
+        .bar-lbl {
+            font-size: 10px;
+            color: var(--ink3);
+            font-family: var(--mono);
+        }
+
+        /* TASKS TABLE */
+        .tasks-tbl {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .tasks-tbl th {
+            font-size: 9px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--ink3);
+            padding: 0 8px 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tasks-tbl td {
+            padding: 9px 8px;
+            font-size: 13px;
+            border-bottom: 1px solid var(--bg);
+            vertical-align: middle;
+        }
+
+        .tasks-tbl tr:last-child td {
+            border-bottom: none;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 20px;
+        }
+
+        .tag-done {
+            background: rgba(22, 163, 74, .1);
+            color: var(--green);
+        }
+
+        .tag-partial {
+            background: rgba(202, 138, 4, .1);
+            color: var(--yellow);
+        }
+
+        .tag-missed {
+            background: rgba(220, 38, 38, .1);
+            color: var(--red);
+        }
+
+        .tag-carry {
+            background: rgba(107, 114, 128, .1);
+            color: #6b7280;
+        }
+
+        .sp-chip {
+            font-family: var(--mono);
+            font-size: 11px;
+            background: var(--bg);
+            padding: 2px 8px;
+            border-radius: 6px;
+            color: var(--accent2);
+        }
+
+        /* GOALS */
+        .goal-entry {
+            margin-bottom: 14px;
+        }
+
+        .goal-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 5px;
+        }
+
+        .goal-name-d {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .goal-pct-d {
+            font-family: var(--mono);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .prog-track {
+            height: 7px;
+            background: var(--bg2);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .prog-fill {
+            height: 100%;
+            border-radius: 20px;
+            transition: width .6s cubic-bezier(.4, 0, .2, 1);
+        }
+
+        .goal-foot {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 4px;
+        }
+
+        .goal-meta-d {
+            font-size: 10px;
+            font-family: var(--mono);
+            color: var(--ink3);
+        }
+
+        /* RADAR */
+        .radar-wrap {
+            display: flex;
+            justify-content: center;
+            padding: 8px 0;
+        }
+
+        /* SCORE RING */
+        .score-ring-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .score-ring {
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .score-val {
+            font-size: 26px;
+            font-weight: 900;
+            position: relative;
+            z-index: 1;
+        }
+
+        .score-lbl {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* COMMENT */
+        .comment-box {
+            margin-top: 12px;
+        }
+
+        .comment-box textarea {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 13px;
+            min-height: 64px;
+            width: 100%;
+        }
+
+        .save-comment {
+            margin-top: 8px;
+            padding: 8px 18px;
+            background: var(--ink);
+            border: none;
+            border-radius: 7px;
+            font-family: var(--font);
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+            cursor: pointer;
+            transition: .15s;
+        }
+
+        .save-comment:hover {
+            background: var(--accent);
+        }
+
+        /* EMPTY STATE */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            opacity: .3;
+        }
+
+        .empty-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--ink2);
+        }
+
+        .empty-sub {
+            font-size: 13px;
+            color: var(--ink3);
+        }
+
+        .go-form-btn {
+            padding: 10px 24px;
+            background: var(--accent);
+            border: none;
+            border-radius: 9px;
+            font-family: var(--font);
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            cursor: pointer;
+            margin-top: 6px;
+            transition: .15s;
+        }
+
+        .go-form-btn:hover {
+            background: #c94408;
+        }
+
+        /* TOAST */
+        .toast {
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: var(--ink);
+            color: #fff;
+            border-radius: 12px;
+            padding: 14px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 9999;
+            transition: transform .35s cubic-bezier(.4, 0, .2, 1), opacity .35s;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .toast-icon {
+            font-size: 18px;
+        }
+
+        /* HISTORY TABLE */
+        .history-tbl {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .history-tbl th {
+            font-size: 9px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--ink3);
+            padding: 0 12px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .history-tbl td {
+            padding: 11px 12px;
+            font-size: 13px;
+            border-bottom: 1px solid var(--bg);
+        }
+
+        .history-tbl tr:last-child td {
+            border-bottom: none;
+        }
+
+        .history-tbl tr:hover td {
+            background: var(--bg);
+        }
+
+        /* RESPONSIVE */
+        @media(max-width:900px) {
+            .task-row {
+                grid-template-columns: 80px 1fr 60px 36px;
+            }
+
+            .task-row>div:nth-child(4),
+            .task-row>div:nth-child(5) {
+                display: none;
+            }
+
+            .kpi-row {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .dash-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .dash-grid-3 {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media(max-width:600px) {
+            header {
+                padding: 0 16px;
+            }
+
+            .page {
+                padding: 20px 16px 50px;
+            }
+
+            .kpi-row {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .task-row {
+                grid-template-columns: 1fr 60px 36px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div class="logo">
+            <div class="logo-mark">W</div>
+            <div class="logo-name">Weekly<span>Pulse</span></div>
+        </div>
+        <div class="header-nav">
+            <button class="nav-tab active" onclick="switchTab('form',this)">📝 Log Sprint</button>
+            <button class="nav-tab" onclick="switchTab('dashboard',this)">📊 Dashboard</button>
+            <button class="nav-tab" onclick="switchTab('history',this)">📋 History</button>
+        </div>
+        <div class="week-chip" id="weekChip">Loading…</div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════════════ FORM TAB -->
+    <div class="tab-panel active" id="tab-form">
+        <div class="page">
+
+            <div class="form-card">
+                <div class="form-header">
+                    <div class="form-header-icon">📝</div>
+                    <div class="form-header-text">
+                        <h2>Weekly Sprint Entry</h2>
+                        <p>Fill in your sprint details — all metrics are calculated automatically</p>
+                    </div>
+                </div>
+                <div class="form-body">
+
+                    <!-- ROW 1: Identity -->
+                    <div class="section-title">Developer Identity</div>
+                    <div class="form-grid" style="margin-bottom:20px;">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="f_name" placeholder="e.g. Ravi Kumar" oninput="liveCalc()">
+                        </div>
+                        <div class="form-group">
+                            <label>Role / Team</label>
+                            <input type="text" id="f_role" placeholder="e.g. Android SDK Engineer">
+                        </div>
+                        <div class="form-group">
+                            <label>Sprint / Week Label</label>
+                            <input type="text" id="f_sprint" placeholder="e.g. W-24 / Sprint 20">
+                        </div>
+                        <div class="form-group">
+                            <label>Week Start Date</label>
+                            <input type="text" id="f_weekstart" placeholder="e.g. 2025-06-02">
+                        </div>
+                        <div class="form-group">
+                            <label>Week End Date</label>
+                            <input type="text" id="f_weekend" placeholder="e.g. 2025-06-06">
+                        </div>
+                        <div class="form-group">
+                            <label>Days Present <span class="label-hint">(out of 5)</span></label>
+                            <input type="number" id="f_days" min="0" max="5" placeholder="5" oninput="liveCalc()">
+                        </div>
+                    </div>
+
+                    <hr class="form-divider">
+
+                    <!-- ROW 2: Story Points -->
+                    <div class="section-title">Story Points</div>
+                    <div class="form-grid" style="margin-bottom:20px;">
+                        <div class="form-group">
+                            <label>Story Points Committed</label>
+                            <input type="number" id="f_committed" min="0" placeholder="e.g. 20" oninput="liveCalc()">
+                        </div>
+                        <div class="form-group">
+                            <label>Story Points Completed</label>
+                            <input type="number" id="f_completed" min="0" placeholder="e.g. 17" oninput="liveCalc()">
+                        </div>
+                        <div class="form-group">
+                            <label>Bugs Introduced</label>
+                            <input type="number" id="f_bugs" min="0" placeholder="e.g. 2" oninput="liveCalc()">
+                        </div>
+                        <div class="form-group">
+                            <label>PRs / Code Reviews Done</label>
+                            <input type="number" id="f_reviews" min="0" placeholder="e.g. 4" oninput="liveCalc()">
+                        </div>
+                        <div class="form-group">
+                            <label>Carry-over SP from last week</label>
+                            <input type="number" id="f_carryover" min="0" placeholder="e.g. 3" oninput="liveCalc()">
+                        </div>
+                        <div class="form-group">
+                            <label>Blockers Encountered</label>
+                            <input type="number" id="f_blockers" min="0" placeholder="e.g. 1" oninput="liveCalc()">
+                        </div>
+                    </div>
+
+                    <!-- LIVE CALC PREVIEW -->
+                    <div id="livePreview"
+                        style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:20px;">
+                        <div
+                            style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:12px;">
+                            ⚡ Live Auto-Calculation</div>
+                        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;" id="liveCalcGrid"></div>
+                    </div>
+
+                    <hr class="form-divider">
+
+                    <!-- TASKS -->
+                    <div class="section-title">Tasks Worked This Week</div>
+                    <div class="task-rows" id="taskRows"></div>
+                    <button class="add-task-btn" onclick="addTaskRow()">＋ Add Task</button>
+
+                    <hr class="form-divider">
+
+                    <!-- GOALS -->
+                    <div class="section-title">Weekly Goals <span
+                            style="font-size:10px;color:var(--ink3);text-transform:none;letter-spacing:0;font-weight:400;margin-left:6px;">Set
+                            targets and track what you achieved</span></div>
+                    <div class="goal-rows" id="goalRows"></div>
+                    <button class="add-task-btn" onclick="addGoalRow()">＋ Add Goal</button>
+
+                    <hr class="form-divider">
+
+                    <!-- SELF REFLECTION -->
+                    <div class="section-title">Self Reflection</div>
+                    <div class="form-grid" style="margin-bottom:0;">
+                        <div class="form-group full">
+                            <label>Key Achievements This Week</label>
+                            <textarea id="f_achievements"
+                                placeholder="What did you accomplish? What are you proud of?"></textarea>
+                        </div>
+                        <div class="form-group full">
+                            <label>Blockers / Challenges</label>
+                            <textarea id="f_challenges"
+                                placeholder="What slowed you down? What do you need help with?"></textarea>
+                        </div>
+                        <div class="form-group half">
+                            <label>Focus Area Next Week</label>
+                            <textarea id="f_nextfocus" placeholder="What is your top priority next sprint?"
+                                style="min-height:54px;"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Self Rating <span class="label-hint">(1–10)</span></label>
+                            <input type="number" id="f_selfrating" min="1" max="10" placeholder="7"
+                                oninput="liveCalc()">
+                        </div>
+                    </div>
+
+                    <!-- SUBMIT -->
+                    <div class="submit-row">
+                        <button class="submit-btn" onclick="submitEntry()">
+                            <span>Submit Sprint Entry</span> <span>→</span>
+                        </button>
+                        <button class="reset-btn" onclick="resetForm()">Reset</button>
+                        <span class="form-note">All fields with auto-calc will update your dashboard instantly</span>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ DASHBOARD TAB -->
+    <div class="tab-panel" id="tab-dashboard">
+        <div class="page">
+            <div id="dashboardContent"></div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ HISTORY TAB -->
+    <div class="tab-panel" id="tab-history">
+        <div class="page">
+            <div id="historyContent"></div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast">
+        <span class="toast-icon">✅</span>
+        <span id="toastMsg">Sprint entry saved!</span>
+    </div>
+
+    <script>
+        // ────────────────────────────────────────────────────────────────────────────
+        // STORAGE
+        // ────────────────────────────────────────────────────────────────────────────
+        let entries = JSON.parse(localStorage.getItem('wp_entries') || '[]');
+        let currentWeekFilter = 'all';
+
+        function save() { localStorage.setItem('wp_entries', JSON.stringify(entries)); }
+
+        // ────────────────────────────────────────────────────────────────────────────
+        // TABS
+        // ────────────────────────────────────────────────────────────────────────────
+        function switchTab(id, btn) {
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + id).classList.add('active');
+            btn.classList.add('active');
+            if (id === 'dashboard') renderDashboard();
+            if (id === 'history') renderHistory();
+        }
+
+        // ────────────────────────────────────────────────────────────────────────────
+        // WEEK CHIP
+        // ────────────────────────────────────────────────────────────────────────────
+        (function () {
+            const now = new Date();
+            const start = new Date(now);
+            start.setDate(now.getDate() - now.getDay() + 1);
+            const end = new Date(start); end.setDate(start.getDate() + 4);
+            const fmt = d => d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+            document.getElementById('weekChip').textContent = `Week ${getWeekNum(now)} · ${fmt(start)} – ${fmt(end)}`;
+            document.getElementById('f_sprint').value = `W-${getWeekNum(now)}`;
+            document.getElementById('f_weekstart').value = start.toISOString().slice(0, 10);
+            document.getElementById('f_weekend').value = end.toISOString().slice(0, 10);
+        })();
+
+        function getWeekNum(d) {
+            const s = new Date(d.getFullYear(), 0, 1);
+            return Math.ceil(((d - s) / 86400000 + s.getDay() + 1) / 7);
+        }
+
+        // ────────────────────────────────────────────────────────────────────────────
+        // TASK ROWS
+        // ────────────────────────────────────────────────────────────────────────────
+        const PRODUCTS = ['TapMind SDK', 'Display Ad Server', 'Video Ad Server', 'Hads Server', 'Proxy Server', 'AdCache', 'Mediation Adapter', 'Publisher Dashboard', 'Internal Tools', 'Other'];
+        const MODULES = ['Android SDK', 'iOS SDK', 'Web SDK', 'Ad Refresh', 'Mediation', 'oRTB / Demand', 'GAM / AdMob', 'Unity LevelPlay', 'MAX (AppLovin)', 'Backend API', 'Pipeline / Kafka', 'Aerospike', 'ClickHouse', 'DevOps / Infra', 'Docs / QA', 'Other'];
+
+        let taskCount = 0;
+        function addTaskRow(task = {}) {
+            taskCount++;
+            const id = taskCount;
+            const div = document.createElement('div');
+            div.className = 'task-row';
+            div.id = 'tr_' + id;
+            div.innerHTML = `
+    <div>
+      <div class="task-row-label">Jira ID</div>
+      <input type="text" placeholder="TP-50" value="${task.jiraId || ''}" id="tjira_${id}"
+        style="font-family:var(--mono);font-size:12px;text-transform:uppercase;font-weight:600;letter-spacing:.5px;"
+        oninput="this.value=this.value.toUpperCase()">
+    </div>
+    <div>
+      <div class="task-row-label">Task Name</div>
+      <input type="text" placeholder="e.g. Fix AdMob adapter crash" value="${task.name || ''}" id="tn_${id}">
+    </div>
+    <div>
+      <div class="task-row-label">SP</div>
+      <input type="number" min="0" placeholder="3" value="${task.sp || ''}" id="tsp_${id}" style="width:100%">
+    </div>
+    <div>
+      <div class="task-row-label">Product</div>
+      <select id="tprod_${id}">
+        ${PRODUCTS.map(p => `<option value="${p}"${task.product === p ? ' selected' : ''}>${p}</option>`).join('')}
+      </select>
+    </div>
+    <div>
+      <div class="task-row-label">Module</div>
+      <select id="tmod_${id}">
+        ${MODULES.map(m => `<option value="${m}"${task.module === m ? ' selected' : ''}>${m}</option>`).join('')}
+      </select>
+    </div>
+    <div>
+      <div class="task-row-label">Type &amp; Status</div>
+      <div style="display:flex;gap:6px;">
+        <select id="ttype_${id}" style="flex:1;">
+          ${['Feature', 'Bug', 'Refactor', 'Test', 'Docs', 'Review', 'Infra', 'Research'].map(t => `<option${task.type === t ? ' selected' : ''}>${t}</option>`).join('')}
+        </select>
+        <select id="tstatus_${id}" style="flex:1;">
+          <option value="done"${task.status === 'done' ? ' selected' : ''}>&#10003; Done</option>
+          <option value="partial"${task.status === 'partial' ? ' selected' : ''}>&#9680; Partial</option>
+          <option value="missed"${task.status === 'missed' ? ' selected' : ''}>&#10007; Missed</option>
+          <option value="carry"${task.status === 'carry' ? ' selected' : ''}>&#8594; Carry</option>
+        </select>
+      </div>
+    </div>
+    <button class="remove-btn" onclick="removeRow('tr_${id}')">&#215;</button>`;
+            document.getElementById('taskRows').appendChild(div);
+        }
+        function removeRow(id) { document.getElementById(id)?.remove(); }
+
+        // ────────────────────────────────────────────────────────────────────────────
+        // GOAL ROWS
+        // ────────────────────────────────────────────────────────────────────────────
+        let goalCount = 0;
+        function addGoalRow(goal = {}) {
+            goalCount++;
+            const id = goalCount;
+            const div = document.createElement('div');
+            div.className = 'goal-row';
+            div.id = 'gr_' + id;
+            div.innerHTML = `
+    <div>
+      <div class="task-row-label">Goal Description</div>
+      <input type="text" placeholder="e.g. Zero crashes in prod" value="${goal.name || ''}" id="gn_${id}">
+    </div>
+    <div>
+      <div class="task-row-label">Target %</div>
+      <input type="number" min="0" max="100" placeholder="100" value="${goal.target || ''}" id="gt_${id}" style="width:100%">
+    </div>
+    <div>
+      <div class="task-row-label">Achieved %</div>
+      <input type="number" min="0" max="100" placeholder="85" value="${goal.achieved || ''}" id="ga_${id}" style="width:100%">
+    </div>
+    <button class="remove-btn" onclick="removeRow('gr_${id}')">×</button>`;
+            document.getElementById('goalRows').appendChild(div);
+        }
+
+        // init default rows
+        addTaskRow(); addTaskRow(); addGoalRow(); addGoalRow();
+
+        // ────────────────────────────────────────────────────────────────────────────
+        // LIVE CALCULATION
+        // ────────────────────────────────────────────────────────────────────────────
+        function calc(committed, completed, days, bugs, selfRating) {
+            committed = parseFloat(committed) || 0;
+            completed = parseFloat(completed) || 0;
+            days = parseFloat(days) || 0;
+            bugs = parseFloat(bugs) || 0;
+            selfRating = parseFloat(selfRating) || 0;
+
+            const completion = committed > 0 ? Math.round((completed / committed) * 100) : 0;
+            const utilisation = Math.round((days / 5) * 100);
+            const qualityScore = Math.max(0, Math.min(100, 100 - (bugs * 15)));
+            const efficiency = Math.round(
+                (completion * 0.40) + (utilisation * 0.35) + (qualityScore * 0.25)
+            );
+            const overall = Math.round(
+                (efficiency * 0.60) + ((selfRating * 10) * 0.40)
+            );
+            return { completion, utilisation, qualityScore, efficiency, overall };
+        }
+
+        function liveCalc() {
+            const committed = document.getElementById('f_committed').value;
+            const completed = document.getElementById('f_completed').value;
+            const days = document.getElementById('f_days').value;
+            const bugs = document.getElementById('f_bugs').value;
+            const selfRating = document.getElementById('f_selfrating').value;
+
+            if (!committed && !completed) { document.getElementById('livePreview').style.display = 'none'; return; }
+            document.getElementById('livePreview').style.display = 'block';
+
+            const r = calc(committed, completed, days, bugs, selfRating);
+            const color = v => v >= 85 ? 'var(--green)' : v >= 65 ? 'var(--yellow)' : 'var(--red)';
+            const label = v => v >= 85 ? '▲ On Target' : v >= 65 ? '● Moderate' : '▼ Below';
+
+            document.getElementById('liveCalcGrid').innerHTML = [
+                { k: 'Completion Rate', v: r.completion + '%', c: color(r.completion), l: label(r.completion) },
+                { k: 'Utilisation', v: r.utilisation + '%', c: color(r.utilisation), l: label(r.utilisation) },
+                { k: 'Quality Score', v: r.qualityScore + '/100', c: color(r.qualityScore), l: label(r.qualityScore) },
+                { k: 'Efficiency Score', v: r.efficiency + '/100', c: color(r.efficiency), l: label(r.efficiency) },
+            ].map(m => `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px;">${m.k}</div>
+      <div style="font-size:22px;font-weight:800;color:${m.c};line-height:1;">${m.v}</div>
+      <div style="font-size:11px;color:${m.c};margin-top:4px;font-weight:600;">${m.l}</div>
+    </div>`).join('');
+        }
+
+        // ────────────────────────────────────────────────────────────────────────────
+        // COLLECT TASKS & GOALS
+        // ────────────────────────────────────────────────────────────────────────────
+        function collectTasks() {
+            const tasks = [];
+            document.querySelectorAll('.task-row').forEach(row => {
+                const idNum = row.id.replace('tr_', '');
+                const name = document.getElementById('tn_' + idNum)?.value;
+                if (!name) return;
+                tasks.push({
+                    jiraId: document.getElementById('tjira_' + idNum)?.value?.trim() || '',
+                    name,
+                    sp: parseFloat(document.getElementById('tsp_' + idNum)?.value) || 0,
+                    product: document.getElementById('tprod_' + idNum)?.value || '',
+                    module: document.getElementById('tmod_' + idNum)?.value || '',
+                    type: document.getElementById('ttype_' + idNum)?.value,
+                    status: document.getElementById('tstatus_' + idNum)?.value,
+                });
+            });
+            return tasks;
+        }
+
+        function collectGoals() {
+            const goals = [];
+            document.querySelectorAll('.goal-row').forEach(row => {
+                const idNum = row.id.replace('gr_', '');
+                const name = document.getElementById('gn_' + idNum)?.value;
+                if (!name) return;
+                goals.push({
+                    name,
+                    target: parseFloat(document.getElementById('gt_' + idNum)?.value) || 100,
+                    achieved: parseFloat(document.getElementById('ga_' + idNum)?.value) || 0,
+                });
+            });
+            return goals;
+        }
+
+        // ────────────────────────────────────────────────────────────────────────────
+        // SUBMIT
+        // ────────────────────────────────────────────────────────────────────────────
+        function submitEntry() {
+            const name = document.getElementById('f_name').value.trim();
+            const sprint = document.getElementById('f_sprint').value.trim();
+            if (!name) { showToast('⚠️ Please enter your name!', '#e8530a'); return; }
+            if (!sprint) { showToast('⚠️ Please enter the sprint/week label!', '#e8530a'); return; }
+
+            const committed = parseFloat(document.getElementById('f_committed').value) || 0;
+            const completed = parseFloat(document.getElementById('f_completed').value) || 0;
+            const days = parseFloat(document.getElementById('f_days').value) || 5;
+            const bugs = parseFloat(document.getElementById('f_bugs').value) || 0;
+            const reviews = parseFloat(document.getElementById('f_reviews').value) || 0;
+            const carryover = parseFloat(document.getElementById('f_carryover').value) || 0;
+            const blockers = parseFloat(document.getElementById('f_blockers').value) || 0;
+            const selfRating = parseFloat(document.getElementById('f_selfrating').value) || 0;
+            const metrics = calc(committed, completed, days, bugs, selfRating);
+
+            const entry = {
+                id: Date.now(),
+                name,
+                role: document.getElementById('f_role').value,
+                sprint,
+                weekStart: document.getElementById('f_weekstart').value,
+                weekEnd: document.getElementById('f_weekend').value,
+                committed, completed, days, bugs, reviews, carryover, blockers, selfRating,
+                metrics,
+                tasks: collectTasks(),
+                goals: collectGoals(),
+                achievements: document.getElementById('f_achievements').value,
+                challenges: document.getElementById('f_challenges').value,
+                nextFocus: document.getElementById('f_nextfocus').value,
+                timestamp: new Date().toISOString(),
+                managerNote: '',
+            };
+
+            const existing = entries.findIndex(e => e.name.toLowerCase() === name.toLowerCase() && e.sprint === sprint);
+            if (existing >= 0) entries[existing] = entry; else entries.push(entry);
+            save();
+            showToast('✅ Sprint entry saved successfully!');
+            setTimeout(() => {
+                switchTab('dashboard', document.querySelectorAll('.nav-tab')[1]);
+            }, 900);
+        }
+
+        function resetForm() {
+            ['f_name', 'f_role', 'f_committed', 'f_completed', 'f_days', 'f_bugs', 'f_reviews',
+                'f_carryover', 'f_blockers', 'f_selfrating', 'f_achievements', 'f_challenges', 'f_nextfocus']
+                .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+            document.getElementById('taskRows').innerHTML = '';
+            document.getElementById('goalRows').innerHTML = '';
+            taskCount = 0; goalCount = 0;
+            addTaskRow(); addTaskRow(); addGoalRow(); addGoalRow();
+            document.getElementById('livePreview').style.display = 'none';
+        }
+
+        // ────────────────────────────────────────────────────────────────────────────
+        // DASHBOARD RENDER
+        // ────────────────────────────────────────────────────────────────────────────
+        function renderDashboard() {
+            const container = document.getElementById('dashboardContent');
+            if (!entries.length) {
+                container.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📊</div>
+      <div class="empty-title">No sprint data yet</div>
+      <div class="empty-sub">Submit your first weekly sprint entry to see your dashboard</div>
+      <button class="go-form-btn" onclick="switchTab('form', document.querySelectorAll('.nav-tab')[0])">Go to Sprint Entry →</button>
+    </div>`;
+                return;
+            }
+
+            // Get unique names and sprints
+            const names = [...new Set(entries.map(e => e.name))];
+            const sprints = [...new Set(entries.map(e => e.sprint))].sort();
+
+            // Dev filter state
+            const selectedDev = window._dashDev || entries[entries.length - 1].name;
+            window._dashDev = selectedDev;
+            const devEntries = entries.filter(e => e.name === selectedDev).sort((a, b) => a.sprint.localeCompare(b.sprint));
+            const cur = currentWeekFilter === 'all' ? devEntries[devEntries.length - 1] : devEntries.find(e => e.sprint === currentWeekFilter) || devEntries[devEntries.length - 1];
+            if (!cur) { container.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">No data for selected week</div></div>`; return; }
+
+            const m = cur.metrics;
+            const color = v => v >= 85 ? 'var(--green)' : v >= 65 ? 'var(--yellow)' : 'var(--red)';
+            const trendIcon = v => v >= 85 ? '▲' : v >= 65 ? '●' : '▼';
+
+            const goalsMet = cur.goals.filter(g => g.achieved >= g.target).length;
+            const tasksTotal = cur.tasks.length;
+            const tasksDone = cur.tasks.filter(t => t.status === 'done').length;
+
+            // WEEK FILTER BUTTONS
+            const wfBtns = ['all', ...sprints].map(s =>
+                `<button class="week-btn${(currentWeekFilter === s) ? ' active' : ''}" onclick="setWeekFilter('${s}')">${s === 'all' ? 'Latest' : s}</button>`
+            ).join('');
+
+            // VELOCITY DATA
+            const maxSP = Math.max(...devEntries.map(e => Math.max(e.committed, e.completed, 1)));
+            const velBars = devEntries.map(e => {
+                const cH = Math.round((e.committed / maxSP) * 100);
+                const dH = Math.round((e.completed / maxSP) * 100);
+                const pct = e.committed > 0 ? Math.round((e.completed / e.committed) * 100) : 0;
+                return `<div class="bar-group">
+      <div class="bars">
+        <div class="bar committed" style="height:${cH}%" data-tip="Committed: ${e.committed}SP"></div>
+        <div class="bar completed" style="height:${dH}%" data-tip="Done: ${e.completed}SP (${pct}%)"></div>
+      </div>
+      <div class="bar-lbl">${e.sprint}</div>
+    </div>`;
+            }).join('');
+
+            // GOALS HTML
+            const goalsHtml = cur.goals.length ? cur.goals.map(g => {
+                const pct = Math.min(100, Math.round((g.achieved / g.target) * 100));
+                const c = g.achieved >= g.target ? 'var(--green)' : g.achieved >= g.target * 0.7 ? 'var(--yellow)' : 'var(--red)';
+                return `<div class="goal-entry">
+      <div class="goal-head">
+        <div class="goal-name-d">${g.name}</div>
+        <div class="goal-pct-d" style="color:${c}">${g.achieved}%</div>
+      </div>
+      <div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${c}"></div></div>
+      <div class="goal-foot">
+        <div class="goal-meta-d">Target: ${g.target}%</div>
+        <div class="goal-meta-d" style="color:${c}">${g.achieved >= g.target ? '✓ Achieved' : '✗ Not met'}</div>
+      </div>
+    </div>`;
+            }).join('') : `<div style="color:var(--ink3);font-size:13px;padding:20px 0;text-align:center;">No goals set for this week</div>`;
+
+            // TASKS HTML
+            const tasksHtml = cur.tasks.length ? cur.tasks.map(t => {
+                const cls = { done: 'tag-done', partial: 'tag-partial', missed: 'tag-missed', carry: 'tag-carry' }[t.status];
+                const lbl = { done: '✓ Done', partial: '◑ Partial', missed: '✗ Missed', carry: '→ Carry' }[t.status];
+                return `<tr>
+      <td>${t.jiraId ? `<a href="https://tapminds.atlassian.net/browse/${t.jiraId}" target="_blank" style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent2);text-decoration:none;background:rgba(37,99,235,.08);padding:2px 8px;border-radius:5px;white-space:nowrap;">${t.jiraId} ↗</a>` : '<span style="color:var(--ink3);font-size:11px">—</span>'}</td>
+      <td style="font-weight:500">${t.name}</td>
+      <td><span class="sp-chip">${t.sp}</span></td>
+      <td><span style="font-size:11px;color:var(--ink2);background:var(--bg);padding:2px 8px;border-radius:5px;white-space:nowrap;">${t.product || '—'}</span></td>
+      <td><span style="font-size:11px;color:var(--purple);background:rgba(124,58,237,.07);padding:2px 8px;border-radius:5px;white-space:nowrap;">${t.module || '—'}</span></td>
+      <td style="font-size:11px;color:var(--ink3)">${t.type}</td>
+      <td><span class="tag ${cls}">${lbl}</span></td>
+    </tr>`;
+            }).join('') : `<tr><td colspan="7" style="text-align:center;color:var(--ink3);padding:20px">No tasks logged</td></tr>`;
+
+            // RADAR SVG
+            const radarVals = [m.utilisation, m.completion, Math.min(100, cur.reviews * 20), m.qualityScore,
+            goalsMet > 0 ? Math.round((goalsMet / Math.max(cur.goals.length, 1)) * 100) : 0,
+            Math.min(100, cur.selfRating * 10)];
+            const radarLabels = ['Util', 'Velocity', 'Reviews', 'Quality', 'Goals', 'Self'];
+            const radarColors = ['#2563eb', '#e8530a', '#16a34a', '#7c3aed', '#ca8a04', '#0891b2'];
+            const radarSvg = buildRadar(radarVals, radarLabels, radarColors);
+
+            // SCORE RING
+            const score = m.overall || m.efficiency;
+            const scoreColor = color(score);
+            const scoreLabel = score >= 85 ? 'EXCELLENT' : score >= 70 ? 'GOOD' : score >= 55 ? 'FAIR' : 'NEEDS FOCUS';
+            const ringPct = score;
+            const circumference = 2 * Math.PI * 36;
+            const dashOffset = circumference * (1 - ringPct / 100);
+
+            // DEV PICKER
+            const devPicker = names.map(n => `<option${n === selectedDev ? ' selected' : ''}>${n}</option>`).join('');
+
+            container.innerHTML = `
+    <div class="dash-header">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div class="dash-dev-pill">
+          <div class="dev-avatar">${selectedDev.split(' ').map(w => w[0]).join('').slice(0, 2)}</div>
+          <div class="dev-info">
+            <div class="dev-name">${selectedDev}</div>
+            <div class="dev-role">${cur.role || 'Developer'}</div>
+          </div>
+        </div>
+        <select style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-family:var(--font);font-size:13px;color:var(--ink);" onchange="setDashDev(this.value)">${devPicker}</select>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+        <div style="font-size:11px;color:var(--ink3);font-weight:600;letter-spacing:1px;text-transform:uppercase;">Filter by Week</div>
+        <div class="week-filter">${wfBtns}</div>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="section-title" style="margin-bottom:14px;">Performance Overview · ${cur.sprint} (${cur.weekStart} → ${cur.weekEnd})</div>
+    <div class="kpi-row">
+      <div class="kpi" style="--kpi-color:${color(m.completion)}">
+        <div class="kpi-label">Completion Rate</div>
+        <div class="kpi-val">${m.completion}%</div>
+        <div class="kpi-sub">${cur.completed}/${cur.committed} SP</div>
+        <div class="kpi-badge" style="background:${color(m.completion)}22;color:${color(m.completion)}">${trendIcon(m.completion)} ${m.completion >= 85 ? 'On Target' : m.completion >= 65 ? 'Moderate' : 'Below'}</div>
+      </div>
+      <div class="kpi" style="--kpi-color:${color(m.utilisation)}">
+        <div class="kpi-label">Utilisation</div>
+        <div class="kpi-val">${m.utilisation}%</div>
+        <div class="kpi-sub">${cur.days}/5 days logged</div>
+        <div class="kpi-badge" style="background:${color(m.utilisation)}22;color:${color(m.utilisation)}">${trendIcon(m.utilisation)} Capacity</div>
+      </div>
+      <div class="kpi" style="--kpi-color:${color(m.qualityScore)}">
+        <div class="kpi-label">Quality Score</div>
+        <div class="kpi-val">${m.qualityScore}</div>
+        <div class="kpi-sub">${cur.bugs} bug${cur.bugs !== 1 ? 's' : ''} introduced</div>
+        <div class="kpi-badge" style="background:${color(m.qualityScore)}22;color:${color(m.qualityScore)}">${trendIcon(m.qualityScore)} ${m.qualityScore >= 85 ? 'Clean' : 'Review needed'}</div>
+      </div>
+      <div class="kpi" style="--kpi-color:${color(m.efficiency)}">
+        <div class="kpi-label">Efficiency Score</div>
+        <div class="kpi-val">${m.efficiency}</div>
+        <div class="kpi-sub">Composite /100</div>
+        <div class="kpi-badge" style="background:${color(m.efficiency)}22;color:${color(m.efficiency)}">${trendIcon(m.efficiency)} Efficiency</div>
+      </div>
+      <div class="kpi" style="--kpi-color:${color(goalsMet / Math.max(cur.goals.length, 1) * 100)}">
+        <div class="kpi-label">Goals Met</div>
+        <div class="kpi-val">${goalsMet}/${cur.goals.length}</div>
+        <div class="kpi-sub">${tasksDone}/${tasksTotal} tasks done</div>
+        <div class="kpi-badge" style="background:rgba(22,163,74,.1);color:var(--green)">${goalsMet === cur.goals.length && cur.goals.length > 0 ? '✓ All met' : goalsMet > 0 ? '◑ Partial' : '✗ Missed'}</div>
+      </div>
+    </div>
+
+    <!-- VELOCITY + GOALS -->
+    <div class="dash-grid">
+      <div class="panel">
+        <div class="panel-title">Sprint Velocity Trend <span class="count">${devEntries.length} weeks</span></div>
+        <div class="bar-chart">${velBars}</div>
+        <div style="display:flex;gap:16px;margin-top:14px;">
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink3)"><div style="width:10px;height:10px;border-radius:3px;background:var(--bg2);border:1px solid var(--border);display:inline-block"></div>Committed</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink3)"><div style="width:10px;height:10px;border-radius:3px;background:var(--accent2);display:inline-block"></div>Completed</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Goal Achievement <span class="count">${goalsMet}/${cur.goals.length} met</span></div>
+        ${goalsHtml}
+      </div>
+    </div>
+
+    <!-- TASKS + RADAR + SCORE -->
+    <div class="dash-grid-3">
+      <div class="panel" style="grid-column:span 2">
+        <div class="panel-title">Tasks This Week <span class="count">${tasksTotal} tasks · ${cur.tasks.reduce((a, t) => a + t.sp, 0)} SP total</span></div>
+        <table class="tasks-tbl">
+          <thead><tr><th>Jira ID</th><th>Task</th><th>SP</th><th>Product</th><th>Module</th><th>Type</th><th>Status</th></tr></thead>
+          <tbody>${tasksHtml}</tbody>
+        </table>
+      </div>
+      <div class="panel" style="display:flex;flex-direction:column;gap:0;">
+        <div class="panel-title">Performance Radar</div>
+        <div class="radar-wrap">${radarSvg}</div>
+        <div style="display:flex;flex-direction:column;gap:5px;margin-top:8px;">
+          ${radarLabels.map((l, i) => `<div style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink3)">
+              <span style="width:8px;height:8px;border-radius:2px;background:${radarColors[i]};display:inline-block"></span>${l}
+            </span>
+            <span style="font-family:var(--mono);font-size:11px;color:${radarColors[i]};font-weight:600">${radarVals[i]}</span>
+          </div>`).join('')}
+        </div>
+        <div style="margin-top:16px;display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <svg width="88" height="88" viewBox="0 0 88 88">
+            <circle cx="44" cy="44" r="36" fill="none" stroke="var(--bg2)" stroke-width="8"/>
+            <circle cx="44" cy="44" r="36" fill="none" stroke="${scoreColor}" stroke-width="8"
+              stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}"
+              stroke-linecap="round" transform="rotate(-90 44 44)" style="transition:.6s"/>
+            <text x="44" y="50" text-anchor="middle" font-family="Outfit,sans-serif" font-size="18" font-weight="900" fill="${scoreColor}">${score}</text>
+          </svg>
+          <div style="font-size:12px;font-weight:700;letter-spacing:1px;color:${scoreColor}">${scoreLabel}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REFLECTION + MANAGER NOTE -->
+    <div class="dash-grid" style="margin-bottom:0">
+      <div class="panel">
+        <div class="panel-title">Developer Reflection</div>
+        ${cur.achievements ? `<div style="margin-bottom:14px;"><div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--green);margin-bottom:6px;">✓ Achievements</div><div style="font-size:13px;line-height:1.6;color:var(--ink2)">${cur.achievements}</div></div>` : ''}
+        ${cur.challenges ? `<div style="margin-bottom:14px;"><div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--red);margin-bottom:6px;">⚠ Blockers</div><div style="font-size:13px;line-height:1.6;color:var(--ink2)">${cur.challenges}</div></div>` : ''}
+        ${cur.nextFocus ? `<div><div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent2);margin-bottom:6px;">→ Next Week Focus</div><div style="font-size:13px;line-height:1.6;color:var(--ink2)">${cur.nextFocus}</div></div>` : ''}
+        ${!cur.achievements && !cur.challenges && !cur.nextFocus ? `<div style="text-align:center;color:var(--ink3);padding:20px;font-size:13px;">No reflection notes added</div>` : ''}
+      </div>
+      <div class="panel">
+        <div class="panel-title">Manager Review Note</div>
+        <div class="comment-box">
+          <textarea id="managerNoteInput" placeholder="Add manager feedback, coaching notes, or observations for this sprint…">${cur.managerNote || ''}</textarea>
+          <button class="save-comment" onclick="saveManagerNote('${cur.id}')">Save Note</button>
+        </div>
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="background:var(--bg);border-radius:8px;padding:12px;">
+              <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px;">Reviews Done</div>
+              <div style="font-size:20px;font-weight:800;color:var(--accent2)">${cur.reviews}</div>
+            </div>
+            <div style="background:var(--bg);border-radius:8px;padding:12px;">
+              <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px;">Carry-over SP</div>
+              <div style="font-size:20px;font-weight:800;color:var(--yellow)">${cur.carryover}</div>
+            </div>
+            <div style="background:var(--bg);border-radius:8px;padding:12px;">
+              <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px;">Blockers</div>
+              <div style="font-size:20px;font-weight:800;color:var(--red)">${cur.blockers}</div>
+            </div>
+            <div style="background:var(--bg);border-radius:8px;padding:12px;">
+              <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px;">Self Rating</div>
+              <div style="font-size:20px;font-weight:800;color:var(--purple)">${cur.selfRating}/10</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+        }
+
+        // ────────────────────────────────────────────────────────────────────────────
+        // RADAR SVG
+        // ────────────────────────────────────────────────────────────────────────────
+        function buildRadar(values, labels, colors) {
+            const cx = 100, cy = 100, r = 72, n = values.length;
+            const a = i => (Math.PI * 2 * i / n) - Math.PI / 2;
+            const pt = (i, rad) => [cx + rad * Math.cos(a(i)), cy + rad * Math.sin(a(i))];
+            let h = '';
+            [.25, .5, .75, 1].forEach(f => {
+                const pts = Array.from({ length: n }, (_, i) => pt(i, r * f)).map(p => p.join(',')).join(' ');
+                h += `<polygon points="${pts}" fill="none" stroke="#ddd9d0" stroke-width="1"/>`;
+            });
+            for (let i = 0; i < n; i++) { const [x, y] = pt(i, r); h += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#ddd9d0" stroke-width="1"/>`; }
+            const dpts = values.map((v, i) => pt(i, r * (v / 100))).map(p => p.join(',')).join(' ');
+            h += `<polygon points="${dpts}" fill="rgba(37,99,235,.12)" stroke="#2563eb" stroke-width="2"/>`;
+            values.forEach((v, i) => { const [x, y] = pt(i, r * (v / 100)); h += `<circle cx="${x}" cy="${y}" r="4" fill="${colors[i]}" stroke="#fff" stroke-width="2"/>`; });
+            for (let i = 0; i < n; i++) {
+                const [x, y] = pt(i, r + 16);
+                const anchor = x < cx - 5 ? 'end' : x > cx + 5 ? 'start' : 'middle';
+                h += `<text x="${x}" y="${y}" text-anchor="${anchor}" fill="#9b9892" font-size="9" font-family="Outfit,sans-serif" font-weight="700">${labels[i].toUpperCase()}</text>`;
+            }
+            return `<svg width="200" height="200" viewBox="0 0 200 200" style="overflow:visible">${h}</svg>`;
+        }
+
+        // ────────────────────────────────────────────────────────────────────────────
+        // HISTORY
+        // ────────────────────────────────────────────────────────────────────────────
+        function renderHistory() {
+            const container = document.getElementById('historyContent');
+            if (!entries.length) {
+                container.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <div class="empty-title">No entries yet</div>
+      <div class="empty-sub">Submit sprint entries to see your history here</div>
+      <button class="go-form-btn" onclick="switchTab('form', document.querySelectorAll('.nav-tab')[0])">Log First Sprint →</button>
+    </div>`;
+                return;
+            }
+            const color = v => v >= 85 ? 'var(--green)' : v >= 65 ? 'var(--yellow)' : 'var(--red)';
+            const sorted = [...entries].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+            container.innerHTML = `
+    <div class="section-title" style="margin-bottom:16px;">All Sprint Entries <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;margin-left:6px;color:var(--ink3)">${entries.length} total</span></div>
+    <div class="panel">
+      <table class="history-tbl">
+        <thead><tr>
+          <th>Developer</th><th>Sprint</th><th>Week</th><th>Jira IDs</th><th>SP Done</th><th>Completion</th><th>Utilisation</th><th>Efficiency</th><th>Bugs</th><th>Goals</th><th>Action</th>
+        </tr></thead>
+        <tbody>
+          ${sorted.map(e => {
+                const goalsMet = e.goals.filter(g => g.achieved >= g.target).length;
+                const jiraIds = e.tasks.filter(t => t.jiraId).map(t => `<span style="font-family:var(--mono);font-size:10px;font-weight:700;color:var(--accent2);background:rgba(37,99,235,.08);padding:1px 6px;border-radius:4px;white-space:nowrap;">${t.jiraId}</span>`).join(' ');
+                return `<tr>
+              <td><div style="font-weight:600">${e.name}</div><div style="font-size:11px;color:var(--ink3)">${e.role || ''}</div></td>
+              <td><span style="font-family:var(--mono);font-size:12px;background:var(--bg);padding:2px 8px;border-radius:6px">${e.sprint}</span></td>
+              <td style="font-size:12px;color:var(--ink3);font-family:var(--mono)">${e.weekStart || ''}</td>
+              <td style="max-width:160px"><div style="display:flex;flex-wrap:wrap;gap:3px;">${jiraIds || '<span style="color:var(--ink3);font-size:11px">—</span>'}</div></td>
+              <td><span style="font-weight:700;color:var(--accent2)">${e.completed}/${e.committed}</span></td>
+              <td><span style="font-weight:700;color:${color(e.metrics.completion)}">${e.metrics.completion}%</span></td>
+              <td><span style="font-weight:700;color:${color(e.metrics.utilisation)}">${e.metrics.utilisation}%</span></td>
+              <td><span style="font-weight:700;color:${color(e.metrics.efficiency)}">${e.metrics.efficiency}/100</span></td>
+              <td><span style="font-weight:700;color:${e.bugs <= 1 ? 'var(--green)' : e.bugs <= 3 ? 'var(--yellow)' : 'var(--red)'}">${e.bugs}</span></td>
+              <td>${goalsMet}/${e.goals.length}</td>
+              <td>
+                <button onclick="loadToForm(${e.id})" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font)">Edit</button>
+                <button onclick="deleteEntry(${e.id})" style="background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;color:var(--red);font-family:var(--font);margin-left:4px">Del</button>
+              </td>
+            </tr>`;
+            }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+        }
+
+        function deleteEntry(id) {
+            if (!confirm('Delete this sprint entry?')) return;
+            entries = entries.filter(e => e.id !== id);
+            save();
+            renderHistory();
+            showToast('🗑 Entry deleted');
+        }
+
+        function loadToForm(id) {
+            const e = entries.find(x => x.id === id);
+            if (!e) return;
+            switchTab('form', document.querySelectorAll('.nav-tab')[0]);
+            setTimeout(() => {
+                document.getElementById('f_name').value = e.name;
+                document.getElementById('f_role').value = e.role || '';
+                document.getElementById('f_sprint').value = e.sprint;
+                document.getElementById('f_weekstart').value = e.weekStart || '';
+                document.getElementById('f_weekend').value = e.weekEnd || '';
+                document.getElementById('f_committed').value = e.committed;
+                document.getElementById('f_completed').value = e.completed;
+                document.getElementById('f_days').value = e.days;
+                document.getElementById('f_bugs').value = e.bugs;
+                document.getElementById('f_reviews').value = e.reviews;
+                document.getElementById('f_carryover').value = e.carryover;
+                document.getElementById('f_blockers').value = e.blockers;
+                document.getElementById('f_selfrating').value = e.selfRating;
+                document.getElementById('f_achievements').value = e.achievements || '';
+                document.getElementById('f_challenges').value = e.challenges || '';
+                document.getElementById('f_nextfocus').value = e.nextFocus || '';
+                document.getElementById('taskRows').innerHTML = '';
+                document.getElementById('goalRows').innerHTML = '';
+                taskCount = 0; goalCount = 0;
+                e.tasks.forEach(t => addTaskRow(t)); e.goals.forEach(g => addGoalRow(g));
+                liveCalc();
+            }, 50);
+        }
+
+        function setWeekFilter(w) {
+            currentWeekFilter = w;
+            renderDashboard();
+        }
+        function setDashDev(name) {
+            window._dashDev = name;
+            currentWeekFilter = 'all';
+            renderDashboard();
+        }
+        function saveManagerNote(entryId) {
+            const note = document.getElementById('managerNoteInput').value;
+            const e = entries.find(x => x.id === parseInt(entryId));
+            if (e) { e.managerNote = note; save(); showToast('📝 Manager note saved!'); }
+        }
+
+        // ────────────────────────────────────────────────────────────────────────────
+        // TOAST
+        // ────────────────────────────────────────────────────────────────────────────
+        function showToast(msg, bg) {
+            const t = document.getElementById('toast');
+            const m = document.getElementById('toastMsg');
+            m.textContent = msg;
+            if (bg) t.style.background = bg;
+            t.classList.add('show');
+            setTimeout(() => { t.classList.remove('show'); if (bg) t.style.background = ''; }, 2800);
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,43 @@
+{
+  // ── TypeScript ──────────────────────────────────────────────────────────────
+  "typescript.tsdk": "nodejs-backend/node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  // ── Format on save ──────────────────────────────────────────────────────────
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // ── ESLint ──────────────────────────────────────────────────────────────────
+  "eslint.workingDirectories": [
+    { "directory": "nodejs-backend", "changeProcessCWD": true },
+    { "directory": "frontend", "changeProcessCWD": true }
+  ],
+
+  // ── File nesting (cleaner explorer) ─────────────────────────────────────────
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    "*.ts": "${capture}.js, ${capture}.d.ts",
+    "*.tsx": "${capture}.js",
+    "package.json": "package-lock.json, .npmrc, .nvmrc, .env*, .gitignore"
+  },
+
+  // ── Tailwind ────────────────────────────────────────────────────────────────
+  "tailwindCSS.experimental.classRegex": [
+    ["clsx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"],
+    ["cn\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"],
+    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
+  ],
+
+  // ── Hide noisy folders ──────────────────────────────────────────────────────
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/.git": false
+  }
+}

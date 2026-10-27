@@ -1,0 +1,41 @@
+# ── Dependencies ────────────────────────────────────────
+node_modules/
+**/node_modules/
+
+# ── Build outputs ────────────────────────────────────────
+dist/
+**/dist/
+build/
+**/build/
+
+# ── Environment — NEVER commit .env with real credentials
+.env
+**/.env
+# But DO commit example files:
+!.env.example
+!.env.local.example
+!**/.env.example
+!**/.env.local.example
+
+# ── Logs ─────────────────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+
+# ── OS / Editor ──────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+*.swo
+
+# ── Test coverage ────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ── Database dumps (don't commit these) ──────────────────
+*.sql
+*.dump
+
+# ── TypeScript cache ─────────────────────────────────────
+*.tsbuildinfo

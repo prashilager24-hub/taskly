@@ -97,47 +97,6 @@ export async function deleteAdminTask(taskId: number) {
 }
 
 // ── Job Positions ──────────────────────────────────────────────────────────────
-export async function getJobPositions(departmentId?: number) {
-  const where = departmentId ? 'WHERE DepartmentID = ?' : '';
-  const params = departmentId ? [departmentId] : [];
-  const [rows] = await pool.query<mysql.RowDataPacket[]>(
-    `SELECT jp.*, d.DepartmentName
-     FROM JobPositions jp LEFT JOIN Department d ON d.DepartmentID = jp.DepartmentID
-     ${where} ORDER BY jp.PositionName`,
-    params,
-  );
-  return rows;
-}
-
-export async function createJobPosition(input: {
-  PositionName: string;
-  DepartmentID?: number;
-  description?: string;
-}) {
-  const [r] = await pool.execute<mysql.ResultSetHeader>(
-    'INSERT INTO JobPositions (PositionName, DepartmentID, description) VALUES (?, ?, ?)',
-    [input.PositionName, input.DepartmentID ?? null, input.description ?? null],
-  );
-  return { PositionID: r.insertId, message: 'Job position created' };
-}
-
-export async function updateJobPosition(input: {
-  PositionID: number;
-  PositionName?: string;
-  DepartmentID?: number;
-  description?: string;
-}) {
-  const sets: string[] = [];
-  const values: (string | number | null)[] = [];
-  if (input.PositionName !== undefined) { sets.push('PositionName = ?'); values.push(input.PositionName); }
-  if (input.DepartmentID !== undefined) { sets.push('DepartmentID = ?'); values.push(input.DepartmentID); }
-  if (input.description !== undefined) { sets.push('description = ?'); values.push(input.description); }
-  if (!sets.length) throw AppError.badRequest('No fields to update');
-  values.push(input.PositionID);
-  await pool.execute(`UPDATE JobPositions SET ${sets.join(', ')} WHERE PositionID = ?`, values as string[]);
-  return { message: 'Job position updated' };
-}
-
 export async function deleteJobPosition(positionId: number) {
   const [r] = await pool.execute<mysql.ResultSetHeader>(
     'DELETE FROM JobPositions WHERE PositionID = ?', [positionId],

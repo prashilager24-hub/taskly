@@ -1,28 +1,6 @@
 import { pool } from '../../config/db';
 import type mysql from 'mysql2/promise';
 
-export async function getGoalsByDepartment(departmentId: number) {
-  const [rows] = await pool.execute<mysql.RowDataPacket[]>(
-    `SELECT GoalID, DepartmentID, GoalName, GoalMetric, Frequency, IsDynamic, approvedByEL
-     FROM DepartmentGoal WHERE DepartmentID = ? ORDER BY GoalName`,
-    [departmentId],
-  );
-  return rows;
-}
-
-export async function createGoal(input: {
-  DepartmentID: number; GoalName: string; GoalMetric: string;
-  Frequency: string; IsDynamic?: boolean; approvedByEL?: boolean;
-}) {
-  const [r] = await pool.execute<mysql.ResultSetHeader>(
-    `INSERT INTO DepartmentGoal (DepartmentID, GoalName, GoalMetric, Frequency, IsDynamic, approvedByEL)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [input.DepartmentID, input.GoalName, input.GoalMetric, input.Frequency,
-     input.IsDynamic ? 1 : 0, input.approvedByEL ? 1 : 0],
-  );
-  return { GoalID: r.insertId, message: 'Goal created' };
-}
-
 export async function logGoalData(input: {
   WorkDate: string; UserID: number; DepartmentID: number; GoalID: number;
   FixedGoal: number; AchievedGoal: number; metadata?: object; RevisedGoal?: number;
@@ -103,28 +81,3 @@ export async function updatePmsGoalStatus(id: number, status: string) {
   return { message: 'PMS goal status updated' };
 }
 
-export async function updateGoal(goalId: number, input: Record<string, unknown>) {
-  const allowed = ['GoalName', 'GoalType', 'TargetValue', 'StartDate', 'EndDate', 'Status'];
-  const fields: string[] = [];
-  const values: unknown[] = [];
-  for (const key of allowed) {
-    if (input[key] !== undefined) { fields.push(`${key} = ?`); values.push(input[key]); }
-  }
-  if (!fields.length) throw new Error('No fields to update');
-  values.push(goalId);
-  await pool.query(`UPDATE DepartmentGoal SET ${fields.join(', ')} WHERE GoalID = ?`, values);
-  return { message: 'Goal updated' };
-}
-
-export async function updateGoalStatus(goalId: number, status: string) {
-  await pool.execute('UPDATE DepartmentGoal SET Status = ? WHERE GoalID = ?', [status, goalId]);
-  return { message: 'Goal status updated' };
-}
-
-export async function approveGoal(input: { GoalID: number; ApprovedBy: number; Status: string }) {
-  await pool.execute(
-    'UPDATE DepartmentGoal SET Status = ?, ApprovedBy = ? WHERE GoalID = ?',
-    [input.Status, input.ApprovedBy, input.GoalID],
-  );
-  return { message: 'Goal approval updated' };
-}

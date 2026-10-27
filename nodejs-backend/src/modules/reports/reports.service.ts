@@ -25,15 +25,6 @@ export interface EfficiencySummaryFilter {
   isHeExecutiveLeader?: boolean;
 }
 
-// ── CombinedWork filter ───────────────────────────────────────────────────────
-export interface CombinedWorkFilter {
-  userID?: number;
-  departmentID?: number;
-  startDate?: string;
-  endDate?: string;
-  entryType?: 'TASK' | 'TARGET' | 'GOAL';
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Dashboard: /DashBoard  — flat efficiency summary by user/dept/company
 // ─────────────────────────────────────────────────────────────────────────────
@@ -250,108 +241,6 @@ async function listEfficiencySummaryEl(filter: EfficiencySummaryFilter) {
     [filter.startDate, filter.endDate, filter.elID],
   );
   return rows;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Combined work data: /combined/list — paginated task+target+goal entries
-// ─────────────────────────────────────────────────────────────────────────────
-export async function getCombinedWorkData(filter: CombinedWorkFilter, page: number, size: number) {
-  const pageSize   = size > 0 && size <= 100 ? size : 10;
-  const pageIndex  = Math.max(page - 1, 0);
-  const offset     = pageIndex * pageSize;
-
-  const conditions: string[] = [];
-  const params: (string | number)[] = [];
-
-  if (filter.userID)       { conditions.push('w.UserID = ?');       params.push(filter.userID); }
-  if (filter.departmentID) { conditions.push('w.DepartmentID = ?'); params.push(filter.departmentID); }
-  if (filter.startDate)    { conditions.push('DATE(w.WorkDate) >= ?'); params.push(filter.startDate); }
-  if (filter.endDate)      { conditions.push('DATE(w.WorkDate) <= ?'); params.push(filter.endDate); }
-
-  // entryType filter
-  if (filter.entryType === 'TASK')   { conditions.push('w.IsForTarget = 0'); }
-  if (filter.entryType === 'TARGET') { conditions.push('w.IsForTarget = 1'); }
-
-  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-
-  // Count total for pagination
-  const countParams = [...params];
-  const [[countRow]] = await pool.query<mysql.RowDataPacket[]>(
-    `SELECT COUNT(*) AS total FROM UserWorkData w ${where}`, countParams,
-  );
-  const totalRecords = Number((countRow as mysql.RowDataPacket)['total']);
-  const totalPages   = Math.ceil(totalRecords / pageSize);
-
-  params.push(pageSize, offset);
-
-  const [rows] = await pool.query<mysql.RowDataPacket[]>(
-    `SELECT w.*,
-            u.UserName,
-            dt.TaskName,
-            d.DepartmentName
-     FROM UserWorkData w
-     LEFT JOIN Users u      ON u.UserID = w.UserID
-     LEFT JOIN DepartmentTask dt ON dt.TaskID = w.TaskID
-     LEFT JOIN Department d  ON d.DepartmentID = w.DepartmentID
-     ${where}
-     ORDER BY w.WorkDate DESC
-     LIMIT ? OFFSET ?`,
-    params,
-  );
-
-  // If also fetching goals, include them for the dates on this page
-  let goalRows: mysql.RowDataPacket[] = [];
-  if (filter.entryType !== 'TASK' && filter.entryType !== 'TARGET') {
-    const dates = [...new Set(rows.map(r => r['WorkDate']))];
-    if (dates.length) {
-      const placeholders = dates.map(() => '?').join(',');
-      const goalParams: (string | number)[] = [];
-      const goalConds: string[] = [`DATE(g.WorkDate) IN (${placeholders})`];
-      dates.forEach(d => goalParams.push(d as string));
-      if (filter.userID)       { goalConds.push('g.UserID = ?');       goalParams.push(filter.userID); }
-      if (filter.departmentID) { goalConds.push('g.DepartmentID = ?'); goalParams.push(filter.departmentID); }
-
-      [goalRows] = await pool.query<mysql.RowDataPacket[]>(
-        `SELECT g.*, dg.GoalName, u.UserName
-         FROM UserGoalData g
-         LEFT JOIN DepartmentGoal dg ON dg.GoalID = g.GoalID
-         LEFT JOIN Users u ON u.UserID = g.UserID
-         WHERE ${goalConds.join(' AND ')}`,
-        goalParams,
-      );
-    }
-  }
-
-  return {
-    status: true,
-    statusCode: 200,
-    data: rows,
-    goals: goalRows,
-    pagination: {
-      currentPage: page,
-      pageSize,
-      totalPages,
-      totalRecords,
-    },
-  };
-}
-
-export async function approveWorkEntries(input: { entryIDs: number[]; approvedBy: number }) {
-  if (!input.entryIDs.length) return { message: 'No entries to approve' };
-  const placeholders = input.entryIDs.map(() => '?').join(',');
-  await pool.query(
-    `UPDATE UserWorkData SET ApprovalStatus = 'APPROVED', ApprovedBy = ?, ApprovedAt = NOW() WHERE WorkDataID IN (${placeholders})`,
-    [input.approvedBy, ...input.entryIDs],
-  );
-  return { status: true, message: 'Entries approved successfully' };
-}
-
-export async function rejectWorkEntry(input: { entryID: number; reason: string; rejectedBy: number }) {
-  await pool.execute(
-    `UPDATE UserWorkData SET ApprovalStatus = 'REJECTED', RejectionReason = ?, ApprovedBy = ?, ApprovedAt = NOW() WHERE WorkDataID = ?`,
-    [input.reason, input.rejectedBy, input.entryID],
-  );
-  return { status: true, message: 'Entry rejected successfully' };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

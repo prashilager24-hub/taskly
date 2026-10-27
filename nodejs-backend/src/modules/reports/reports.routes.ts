@@ -4,6 +4,8 @@ import { validate } from '../../middlewares/validate';
 import { z } from 'zod';
 import { sendSuccess } from '../../utils/response';
 import * as svc from './reports.service';
+import * as combined from './combined.service';
+import { sendJava } from '../../utils/javaCompat';
 
 const router = Router();
 router.use(authenticate);
@@ -29,23 +31,26 @@ const EfficiencySummaryFilterSchema = z.object({
   isHeExecutiveLeader: z.boolean().optional(),
 });
 
+// /combined bodies mirror Java's CombinedWorkFilterRequestDTO / BulkApprovalRequestDTO /
+// RejectEntryRequestDTO; the frontend sends null for unset filters.
 const CombinedWorkFilterSchema = z.object({
-  userID: z.number().int().optional(),
-  departmentID: z.number().int().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-  entryType: z.enum(['TASK', 'TARGET', 'GOAL']).optional(),
+  userID: z.coerce.number().int().nullish(),
+  departmentID: z.coerce.number().int().nullish(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
+  entryType: z.string().nullish(),
 });
 
 const BulkApprovalSchema = z.object({
-  entryIDs: z.array(z.number().int().positive()).min(1),
-  approvedBy: z.number().int().positive(),
+  departmentID: z.coerce.number().int().nullish(),
+  taskEntryIDs: z.array(z.coerce.number().int()).nullish(),
+  goalEntryIDs: z.array(z.coerce.number().int()).nullish(),
 });
 
 const RejectEntrySchema = z.object({
-  entryID: z.number().int().positive(),
-  reason: z.string().min(5),
-  rejectedBy: z.number().int().positive(),
+  id: z.coerce.number().int().nullish(),
+  type: z.string().nullish(),
+  comment: z.string().nullish(),
 });
 
 // ── Dashboard routes (same path as Java: /t2.0/authentificationUtilization/) ─
@@ -89,21 +94,31 @@ router.get('/calculateAll', async (_req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// ── Combined work data ────────────────────────────────────────────────────────
+// ── Combined work data (Entry Approval) — Java CombinedWorkDataController, responses unwrapped ──
 router.post('/combined/list', validate(CombinedWorkFilterSchema), async (req, res, next) => {
   try {
     const page = Number(req.query['page'] ?? 1);
     const size = Number(req.query['size'] ?? 10);
-    sendSuccess(res, await svc.getCombinedWorkData(req.body, page, size));
-  } catch (e) { next(e); }
+    sendJava(res, await combined.getCombinedData(req.body, page, size));
+  } catch (e) {
+    // Java caught everything here and answered 200 with statusCode 900
+    if (e instanceof Error) sendJava(res, { status: false, statusCode: 900, message: `Error: ${e.message}`, pagination: null, data: null });
+    else next(e);
+  }
 });
 
 router.post('/combined/approve', validate(BulkApprovalSchema), async (req, res, next) => {
-  try { sendSuccess(res, await svc.approveWorkEntries(req.body)); } catch (e) { next(e); }
+  try {
+    await combined.approveEntries(req.body);
+    sendJava(res, { status: true, message: 'Entries approved successfully' });
+  } catch (e) { next(e); }
 });
 
 router.post('/combined/reject', validate(RejectEntrySchema), async (req, res, next) => {
-  try { sendSuccess(res, await svc.rejectWorkEntry(req.body)); } catch (e) { next(e); }
+  try {
+    await combined.rejectEntry(req.body);
+    sendJava(res, { status: true, message: 'Entry rejected successfully' });
+  } catch (e) { next(e); }
 });
 
 export default router;

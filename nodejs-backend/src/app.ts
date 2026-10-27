@@ -10,7 +10,7 @@ import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 
 // Route imports
 import authRouter from './modules/auth/auth.routes';
-import departmentsRouter from './modules/departments/departments.routes';
+import { departmentsRouter, primaryDepartmentsRouter } from './modules/departments/departments.routes';
 import tasksRouter from './modules/tasks/tasks.routes';
 import goalsRouter from './modules/goals/goals.routes';
 import targetsRouter from './modules/targets/targets.routes';
@@ -76,6 +76,7 @@ app.use(BASE, authRouter);
 // ── Departments & PrimaryDepartments ─────────────────────────────────────────
 // Java: /t2.0/authentificationUtilization/Department
 app.use(`${BASE}/Department`, departmentsRouter);
+app.use(`${BASE}/PrimaryDepartment`, primaryDepartmentsRouter);
 
 // ── Department-scoped tasks / goals / targets ─────────────────────────────────
 // Java: /t2.0/authentificationUtilization/departmentTasks

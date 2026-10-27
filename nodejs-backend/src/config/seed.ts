@@ -11,15 +11,25 @@ async function seed() {
   console.log('🌱  Seeding database...');
 
   // ── Roles ──────────────────────────────────────────────────────────────────
+  // RolePrivileges is a JSON string { <module id>: [actions] } — the format the
+  // frontend sidebar and accessRole editor read. Module ids come from
+  // frontend/src/components/accessRole.tsx MODULES + sidebar.tsx.
+  const ALL_ACTIONS = ['read', 'create', 'update', 'delete'];
+  const MODULE_IDS = [
+    'dashboard', 'reports', 'perf', 'mydata', 'goals', 'entryApproval', 'userHistory', 'queryReport',
+    'dataentry', 'salesfwd', 'admin', 'accessmgmt', 'deptmgmt', 'taskmgmt', 'targetmgmt', 'goalmgmt',
+    'pms', 'hrfeedback',
+  ];
+  const rootPrivileges = JSON.stringify(Object.fromEntries(MODULE_IDS.map((m) => [m, ALL_ACTIONS])));
   await pool.execute(`
     INSERT IGNORE INTO AMRole (RoleID, RoleName, RolePrivileges, RoleStatus, IsRoleArchived)
     VALUES
-      (1, 'Super Admin', '["*"]', 'ACTIVE', 0),
-      (2, 'Manager',     '["read","write","manage_team"]', 'ACTIVE', 0),
-      (3, 'Employee',    '["read","write_own"]', 'ACTIVE', 0),
-      (4, 'HR',          '["read","hr_manage"]', 'ACTIVE', 0),
-      (5, 'Sales',       '["read","sales_manage"]', 'ACTIVE', 0)
-  `);
+      (1, 'Super Admin', ?, 1, 0),
+      (2, 'Manager',     '["read","write","manage_team"]', 1, 0),
+      (3, 'Employee',    '["read","write_own"]', 1, 0),
+      (4, 'HR',          '["read","hr_manage"]', 1, 0),
+      (5, 'Sales',       '["read","sales_manage"]', 1, 0)
+  `, [rootPrivileges]);
   console.log('  ✓ Roles');
 
   // ── Primary Departments ────────────────────────────────────────────────────
@@ -42,37 +52,56 @@ async function seed() {
     INSERT INTO Users
       (UserEmail, UserName, UserPassword, RoleID, UserStatus, IsUserArchived, EmployeeID)
     VALUES
-      ('admin@tapmind.com',   'admin',          ?, 1, 'ACTIVE', 0, 'EMP001'),
-      ('manager@tapmind.com', 'john_manager',   ?, 2, 'ACTIVE', 0, 'EMP002'),
-      ('emp1@tapmind.com',    'priya_sharma',   ?, 3, 'ACTIVE', 0, 'EMP003'),
-      ('emp2@tapmind.com',    'rahul_verma',    ?, 3, 'ACTIVE', 0, 'EMP004'),
-      ('emp3@tapmind.com',    'anjali_nair',    ?, 3, 'ACTIVE', 0, 'EMP005'),
-      ('hr@tapmind.com',      'meera_hr',       ?, 4, 'ACTIVE', 0, 'EMP006'),
-      ('sales1@tapmind.com',  'arjun_sales',    ?, 5, 'ACTIVE', 0, 'EMP007')
+      ('admin@tapmind.com',   'admin',          ?, 1, 1, 0, 'EMP001'),
+      ('manager@tapmind.com', 'john_manager',   ?, 2, 1, 0, 'EMP002'),
+      ('emp1@tapmind.com',    'priya_sharma',   ?, 3, 1, 0, 'EMP003'),
+      ('emp2@tapmind.com',    'rahul_verma',    ?, 3, 1, 0, 'EMP004'),
+      ('emp3@tapmind.com',    'anjali_nair',    ?, 3, 1, 0, 'EMP005'),
+      ('hr@tapmind.com',      'meera_hr',       ?, 4, 1, 0, 'EMP006'),
+      ('sales1@tapmind.com',  'arjun_sales',    ?, 5, 1, 0, 'EMP007')
     ON DUPLICATE KEY UPDATE UserPassword = VALUES(UserPassword)
   `, [adminHash, empHash, empHash, empHash, empHash, empHash, empHash]);
   console.log('  ✓ Users (admin@tapmind.com / Admin@123, emp1@tapmind.com / Employee@123)');
+
+  // Resolve actual UserIDs — the dump's AUTO_INCREMENT started well above 1,
+  // so hardcoding IDs 1-7 for FK references would silently fail (INSERT IGNORE
+  // swallows FK violations as warnings).
+  const [userRows] = await pool.query<import('mysql2').RowDataPacket[]>(
+    `SELECT UserID, UserEmail FROM Users WHERE UserEmail IN
+      ('admin@tapmind.com','manager@tapmind.com','emp1@tapmind.com','emp2@tapmind.com',
+       'emp3@tapmind.com','hr@tapmind.com','sales1@tapmind.com')`,
+  );
+  const idByEmail = new Map<string, number>(
+    userRows.map((r) => [r['UserEmail'] as string, r['UserID'] as number]),
+  );
+  const adminId = idByEmail.get('admin@tapmind.com')!;
+  const managerId = idByEmail.get('manager@tapmind.com')!;
+  const emp1Id = idByEmail.get('emp1@tapmind.com')!;
+  const emp2Id = idByEmail.get('emp2@tapmind.com')!;
+  const emp3Id = idByEmail.get('emp3@tapmind.com')!;
+  const hrId = idByEmail.get('hr@tapmind.com')!;
+  const salesId = idByEmail.get('sales1@tapmind.com')!;
 
   // ── Departments ────────────────────────────────────────────────────────────
   await pool.execute(`
     INSERT IGNORE INTO Department
       (DepartmentID, DepartmentName, ExecutiveLeaderID, FunctionalLeaderID, PrimaryDepartmentId)
     VALUES
-      (1, 'Backend Engineering', 1, 2, 1),
-      (2, 'Frontend Engineering', 1, 2, 1),
-      (3, 'Sales Team',           1, 7, 2),
-      (4, 'Human Resources',      1, 6, 3)
-  `);
+      (1, 'Backend Engineering', ?, ?, 1),
+      (2, 'Frontend Engineering', ?, ?, 1),
+      (3, 'Sales Team',           ?, ?, 2),
+      (4, 'Human Resources',      ?, ?, 3)
+  `, [adminId, managerId, adminId, managerId, adminId, salesId, adminId, hrId]);
   console.log('  ✓ Departments');
 
   // ── DepartmentUser mappings ────────────────────────────────────────────────
   await pool.execute(`
     INSERT IGNORE INTO DepartmentUser (DepartmentID, UserID) VALUES
-      (1, 3), (1, 4),
-      (2, 5),
-      (3, 7),
-      (4, 6)
-  `);
+      (1, ?), (1, ?),
+      (2, ?),
+      (3, ?),
+      (4, ?)
+  `, [emp1Id, emp2Id, emp3Id, salesId, hrId]);
   console.log('  ✓ DepartmentUser mappings');
 
   // ── Job Positions ──────────────────────────────────────────────────────────
@@ -142,12 +171,12 @@ async function seed() {
     INSERT IGNORE INTO UserWorkData
       (TaskID, UserID, WorkDate, AllocatedTime, TimeTakenToWork, DepartmentID, AchivedUnits)
     VALUES
-      (2, 3, ?, 480, 450, 1, 1),
-      (3, 3, ?, 120, 100, 1, 2),
-      (2, 4, ?, 480, 480, 1, 1),
-      (4, 5, ?, 480, 460, 2, 1),
-      (5, 7, ?, 240, 200, 3, 8)
-  `, [today, today, today, today, today]);
+      (2, ?, ?, 480, 450, 1, 1),
+      (3, ?, ?, 120, 100, 1, 2),
+      (2, ?, ?, 480, 480, 1, 1),
+      (4, ?, ?, 480, 460, 2, 1),
+      (5, ?, ?, 240, 200, 3, 8)
+  `, [emp1Id, today, emp1Id, today, emp2Id, today, emp3Id, today, salesId, today]);
   console.log('  ✓ UserWorkData (today)');
 
   // ── UserGoalData sample ────────────────────────────────────────────────────
@@ -155,10 +184,10 @@ async function seed() {
     INSERT IGNORE INTO UserGoalData
       (WorkDate, UserID, DepartmentID, GoalID, FixedGoal, AchievedGoal)
     VALUES
-      (?, 3, 1, 1, 100, 90),
-      (?, 4, 1, 1, 100, 95),
-      (?, 5, 2, 2, 100, 85)
-  `, [today, today, today]);
+      (?, ?, 1, 1, 100, 90),
+      (?, ?, 1, 1, 100, 95),
+      (?, ?, 2, 2, 100, 85)
+  `, [today, emp1Id, today, emp2Id, today, emp3Id]);
   console.log('  ✓ UserGoalData (today)');
 
   console.log('\n🎉  Seeding complete!\n');

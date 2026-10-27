@@ -2,10 +2,13 @@ import { Request, Response, NextFunction } from 'express';
 import * as authService from './auth.service';
 import { sendSuccess } from '../../utils/response';
 
+// Login, role lookup and user switch keep the Java response shapes (flat /
+// { status, statusCode, message, response }) because the frontend reads them
+// directly — they intentionally bypass sendSuccess().
 export async function loginHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const result = await authService.login(req.body);
-    sendSuccess(res, result);
+    res.status(200).json(result);
   } catch (err) { next(err); }
 }
 
@@ -13,7 +16,7 @@ export async function getRoleHandler(req: Request, res: Response, next: NextFunc
   try {
     const roleId = Number(req.params['roleId']);
     const result = await authService.getRole(roleId);
-    sendSuccess(res, result);
+    res.status(result.statusCode).json(result);
   } catch (err) { next(err); }
 }
 
@@ -33,7 +36,9 @@ export async function updateUserHandler(req: Request, res: Response, next: NextF
 
 export async function getUsersHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const result = await authService.getUsers(req.body);
+    const page = Number(req.query['page'] ?? 1) || 1;
+    const size = req.query['size'] !== undefined ? Number(req.query['size']) : 50;
+    const result = await authService.getUsers({ ...req.body, page, size });
     sendSuccess(res, result);
   } catch (err) { next(err); }
 }
@@ -68,7 +73,7 @@ export async function archiveUsersHandler(req: Request, res: Response, next: Nex
 
 export async function switchUserHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const result = await authService.switchUser(req.body.targetUserID, req.user!);
-    sendSuccess(res, result);
+    const result = await authService.switchUser(req.body.userID, req.user!);
+    res.status(200).json(result);
   } catch (err) { next(err); }
 }

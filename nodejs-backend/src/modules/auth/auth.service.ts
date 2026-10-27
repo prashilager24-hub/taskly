@@ -25,7 +25,7 @@ interface UserRow {
   UserPassword: string;
   RoleID: number;
   SecondaryRoleID: number | null;
-  UserStatus: string;
+  UserStatus: number;
   IsUserArchived: number;
   EmployeeID: string | null;
   ReportingManagerID: number | null;
@@ -51,63 +51,144 @@ function signToken(user: UserRow): string {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Session payload — mirrors Java JwtUserService.authenticationLog().
+// The frontend stores this object verbatim as `authUserLD`, so it is
+// returned flat (not wrapped in { success, response }).
+// Role 3 = Executive Leader, role 4 = Functional/Reporting Leader.
+// ─────────────────────────────────────────────────────────────
+const USER_SELECT = `
+  SELECT UserID, UserEmail, UserName, UserPassword, RoleID, SecondaryRoleID,
+         UserStatus, IsUserArchived, EmployeeID, ReportingManagerID,
+         ELManagerID, AppraisalCycle, FeedbackResolverTeam
+  FROM Users`;
+
+interface SessionDepartment {
+  departmentID: number;
+  departmentName: string;
+  executiveLeaderID: number | null;
+  functionalLeaderID: number | null;
+}
+
+async function departmentsWhereLeader(column: 'ExecutiveLeaderID' | 'FunctionalLeaderID', userId: number) {
+  const [rows] = await pool.execute<mysql.RowDataPacket[]>(
+    `SELECT DepartmentID, DepartmentName, ExecutiveLeaderID, FunctionalLeaderID
+     FROM Department
+     WHERE ${column} = ? AND IsDepartmentArchived = 0 AND DepartmentStatus = 1`,
+    [userId],
+  );
+  return rows.map((r): SessionDepartment => ({
+    departmentID: r['DepartmentID'] as number,
+    departmentName: r['DepartmentName'] as string,
+    executiveLeaderID: (r['ExecutiveLeaderID'] as number | null) ?? null,
+    functionalLeaderID: (r['FunctionalLeaderID'] as number | null) ?? null,
+  }));
+}
+
+async function departmentsOfMember(userId: number) {
+  const [rows] = await pool.execute<mysql.RowDataPacket[]>(
+    `SELECT d.DepartmentID, d.DepartmentName
+     FROM DepartmentUser du
+     JOIN Department d ON d.DepartmentID = du.DepartmentID
+     WHERE du.UserID = ? AND d.IsDepartmentArchived = 0 AND d.DepartmentStatus = 1`,
+    [userId],
+  );
+  return rows.map((r) => ({ departmentID: r['DepartmentID'] as number, departmentName: r['DepartmentName'] as string }));
+}
+
+async function buildSessionPayload(user: UserRow & { FeedbackResolverTeam?: string | null }, token: string) {
+  const session: Record<string, unknown> = {
+    username: user.UserEmail,
+    name: user.UserName,
+    token,
+    userID: user.UserID,
+    userRole: user.RoleID,
+    secondaryRoleID: user.SecondaryRoleID ?? null,
+    reportingManagerID: user.ReportingManagerID ?? null,
+    elManagerID: user.ELManagerID ?? null,
+    feedbackresolverteam: user.FeedbackResolverTeam ?? null,
+    isHeExecutiveLeader: false,
+    isHeFunctionalLeader: false,
+    // Node-only extras kept for callers written against the earlier Node shape
+    userName: user.UserName,
+    userEmail: user.UserEmail,
+    employeeID: user.EmployeeID,
+  };
+
+  if (user.RoleID === 3) {
+    session['departments'] = await departmentsWhereLeader('ExecutiveLeaderID', user.UserID);
+    session['isHeExecutiveLeader'] = true;
+  } else if (user.RoleID === 4) {
+    const departments = await departmentsWhereLeader('FunctionalLeaderID', user.UserID);
+    const seen = new Set(departments.map((d) => d.departmentID));
+    for (const d of await departmentsOfMember(user.UserID)) {
+      if (seen.has(d.departmentID)) continue;
+      departments.push({ ...d, executiveLeaderID: null, functionalLeaderID: null });
+      seen.add(d.departmentID);
+    }
+    session['departments'] = departments;
+    session['isHeFunctionalLeader'] = true;
+  } else {
+    const [first] = await departmentsOfMember(user.UserID);
+    if (first) {
+      session['departmentID'] = first.departmentID;
+      session['departmentName'] = first.departmentName;
+    }
+  }
+
+  return session;
+}
+
+// ─────────────────────────────────────────────────────────────
 // POST /authenticate
+// Like Java, a failed login is a 200 with { status: false, statusCode: 401 }:
+// the frontend treats a missing `token` as "Invalid Credentials".
 // ─────────────────────────────────────────────────────────────
 export async function login(input: LoginInput) {
   const [rows] = await pool.execute<mysql.RowDataPacket[]>(
-    `SELECT UserID, UserEmail, UserName, UserPassword, RoleID, SecondaryRoleID,
-            UserStatus, IsUserArchived, EmployeeID, ReportingManagerID,
-            ELManagerID, AppraisalCycle
-     FROM Users
+    `${USER_SELECT}
      WHERE (UserEmail = ? OR UserName = ?)
        AND IsUserArchived = 0
      LIMIT 1`,
     [input.username, input.username],
   );
 
-  const user = rows[0] as UserRow | undefined;
-  if (!user) throw AppError.unauthorized('Invalid credentials');
-  if (user.UserStatus !== 'ACTIVE') throw AppError.unauthorized('Account is inactive');
+  const failed = (authorization: string) => ({ authorization, status: false, statusCode: 401 });
+
+  const user = rows[0] as (UserRow & { FeedbackResolverTeam: string | null }) | undefined;
+  if (!user) return failed('Wrong Email');
+  if (user.UserStatus !== 1) return failed('Account is inactive');
 
   const match = await bcrypt.compare(input.password, user.UserPassword);
-  if (!match) throw AppError.unauthorized('Invalid credentials');
+  if (!match) return failed('Wrong Password');
 
-  const token = signToken(user);
-
-  return {
-    token,
-    userRole: user.RoleID,
-    secondaryRole: user.SecondaryRoleID,
-    userID: user.UserID,
-    userName: user.UserName,
-    userEmail: user.UserEmail,
-    employeeID: user.EmployeeID,
-    reportingManagerID: user.ReportingManagerID,
-    userStatus: user.UserStatus,
-  };
+  const session = await buildSessionPayload(user, signToken(user));
+  return { ...session, status: true, statusCode: 200 };
 }
 
 // ─────────────────────────────────────────────────────────────
-// GET /AMRole/:roleId  — fetch role privileges
+// GET /AMRole/:roleId  — mirrors Java AMRoleController.getRoleById().
+// rolePrivileges stays the raw JSON string: the frontend JSON.parse()s it.
 // ─────────────────────────────────────────────────────────────
 export async function getRole(roleId: number) {
   const [rows] = await pool.execute<mysql.RowDataPacket[]>(
-    `SELECT RoleID, RoleName, RolePrivileges, RoleStatus
+    `SELECT RoleID, RoleName, RoleDescription, RolePrivileges
      FROM AMRole WHERE RoleID = ? AND IsRoleArchived = 0 LIMIT 1`,
     [roleId],
   );
   const role = rows[0];
-  if (!role) throw AppError.notFound('Role not found');
+  if (!role) return { status: false, statusCode: 404, message: 'Role not found' };
 
-  // RolePrivileges stored as JSON string in DB
-  if (typeof role['RolePrivileges'] === 'string') {
-    try {
-      role['RolePrivileges'] = JSON.parse(role['RolePrivileges'] as string);
-    } catch {
-      // leave as-is
-    }
-  }
-  return role;
+  return {
+    status: true,
+    statusCode: 200,
+    message: 'Role fetched successfully',
+    response: {
+      roleId: role['RoleID'] as number,
+      roleName: role['RoleName'] as string,
+      roleDescription: (role['RoleDescription'] as string | null) ?? null,
+      rolePrivileges: (role['RolePrivileges'] as string | null) ?? null,
+    },
+  };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -117,34 +198,42 @@ export async function createUser(input: CreateUserInput, createdBy: number) {
   // Check duplicate email
   const [dup] = await pool.execute<mysql.RowDataPacket[]>(
     'SELECT UserID FROM Users WHERE UserEmail = ? LIMIT 1',
-    [input.UserEmail],
+    [input.userEmail],
   );
   if ((dup as mysql.RowDataPacket[]).length > 0) throw AppError.conflict('Email already in use');
 
-  const hashed = await bcrypt.hash(input.UserPassword, 12);
+  const hashed = await bcrypt.hash(input.password, 12);
 
   const [result] = await pool.execute<mysql.ResultSetHeader>(
     `INSERT INTO Users
        (UserEmail, UserName, UserPassword, RoleID, SecondaryRoleID,
         UserStatus, IsUserArchived, EmployeeID, ReportingManagerID,
-        ELManagerID, AppraisalCycle)
-     VALUES (?, ?, ?, ?, ?, 'ACTIVE', 0, ?, ?, ?, ?)`,
+        ELManagerID, AppraisalCycle, FeedbackResolverTeam)
+     VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?)`,
     [
-      input.UserEmail,
-      input.UserName,
+      input.userEmail,
+      input.userName,
       hashed,
-      input.RoleID,
-      input.SecondaryRoleID ?? null,
-      input.EmployeeID ?? null,
-      input.ReportingManagerID ?? null,
-      input.ELManagerID ?? null,
-      input.AppraisalCycle ?? null,
+      input.roleID,
+      input.secondaryRoleID ?? null,
+      input.employeeID ?? null,
+      input.reportingManagerId ?? null,
+      input.elManagerId ?? null,
+      input.appraisalCycle ?? null,
+      input.feedbackresolverteam ?? null,
     ],
   );
 
+  if (input.departmentID) {
+    await pool.execute(
+      'INSERT IGNORE INTO DepartmentUser (DepartmentID, UserID) VALUES (?, ?)',
+      [input.departmentID, result.insertId],
+    );
+  }
+
   void createdBy; // audit log can be added later
 
-  return { UserID: result.insertId, message: 'User created successfully' };
+  return { userID: result.insertId, message: 'User created successfully' };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -154,20 +243,29 @@ export async function updateUser(input: UpdateUserInput) {
   const fields: string[] = [];
   const values: (string | number | null)[] = [];
 
-  if (input.UserEmail !== undefined) { fields.push('UserEmail = ?'); values.push(input.UserEmail); }
-  if (input.UserName !== undefined) { fields.push('UserName = ?'); values.push(input.UserName); }
-  if (input.RoleID !== undefined) { fields.push('RoleID = ?'); values.push(input.RoleID); }
-  if (input.SecondaryRoleID !== undefined) { fields.push('SecondaryRoleID = ?'); values.push(input.SecondaryRoleID); }
-  if (input.EmployeeID !== undefined) { fields.push('EmployeeID = ?'); values.push(input.EmployeeID); }
-  if (input.ReportingManagerID !== undefined) { fields.push('ReportingManagerID = ?'); values.push(input.ReportingManagerID); }
-  if (input.ELManagerID !== undefined) { fields.push('ELManagerID = ?'); values.push(input.ELManagerID); }
-  if (input.AppraisalCycle !== undefined) { fields.push('AppraisalCycle = ?'); values.push(input.AppraisalCycle); }
+  if (input.userEmail !== undefined) { fields.push('UserEmail = ?'); values.push(input.userEmail); }
+  if (input.userName !== undefined) { fields.push('UserName = ?'); values.push(input.userName); }
+  if (input.roleID !== undefined) { fields.push('RoleID = ?'); values.push(input.roleID); }
+  if (input.secondaryRoleID !== undefined) { fields.push('SecondaryRoleID = ?'); values.push(input.secondaryRoleID); }
+  if (input.employeeID !== undefined) { fields.push('EmployeeID = ?'); values.push(input.employeeID); }
+  if (input.reportingManagerId !== undefined) { fields.push('ReportingManagerID = ?'); values.push(input.reportingManagerId); }
+  if (input.elManagerId !== undefined) { fields.push('ELManagerID = ?'); values.push(input.elManagerId); }
+  if (input.appraisalCycle !== undefined) { fields.push('AppraisalCycle = ?'); values.push(input.appraisalCycle); }
+  if (input.feedbackresolverteam !== undefined) { fields.push('FeedbackResolverTeam = ?'); values.push(input.feedbackresolverteam); }
 
-  if (fields.length === 0) throw AppError.badRequest('No fields to update');
+  if (fields.length > 0) {
+    values.push(input.userID);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await pool.execute(`UPDATE Users SET ${fields.join(', ')} WHERE UserID = ?`, values as any);
+  }
 
-  values.push(input.UserID);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await pool.execute(`UPDATE Users SET ${fields.join(', ')} WHERE UserID = ?`, values as any);
+  if (input.departmentID !== undefined && input.departmentID !== null) {
+    await pool.execute('DELETE FROM DepartmentUser WHERE UserID = ?', [input.userID]);
+    await pool.execute(
+      'INSERT IGNORE INTO DepartmentUser (DepartmentID, UserID) VALUES (?, ?)',
+      [input.departmentID, input.userID],
+    );
+  }
 
   return { message: 'User updated successfully' };
 }
@@ -176,48 +274,100 @@ export async function updateUser(input: UpdateUserInput) {
 // POST /users/read
 // ─────────────────────────────────────────────────────────────
 export async function getUsers(input: UsersReadInput) {
-  const conditions: string[] = [];
+  const conditions: string[] = ['u.IsUserArchived = 0'];
   const params: (string | number)[] = [];
 
-  if (input.search) {
+  if (input.searchText) {
     conditions.push('(u.UserName LIKE ? OR u.UserEmail LIKE ? OR u.EmployeeID LIKE ?)');
-    const like = `%${input.search}%`;
+    const like = `%${input.searchText}%`;
     params.push(like, like, like);
   }
-  if (input.RoleID !== undefined) {
+  if (input.roleID) {
     conditions.push('u.RoleID = ?');
-    params.push(input.RoleID);
+    params.push(input.roleID);
   }
-  if (input.IsUserArchived !== undefined) {
-    conditions.push('u.IsUserArchived = ?');
-    params.push(input.IsUserArchived ? 1 : 0);
-  } else {
-    conditions.push('u.IsUserArchived = 0');
+  if (input.departmentID) {
+    conditions.push('du.DepartmentID = ?');
+    params.push(input.departmentID);
+  }
+  if (input.filter === 'Active') {
+    conditions.push('u.UserStatus = 1');
+  } else if (input.filter === 'Inactive') {
+    conditions.push('u.UserStatus = 0');
   }
 
-  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-  const offset = (input.page - 1) * input.pageSize;
+  const where = `WHERE ${conditions.join(' AND ')}`;
+  const noLimit = !input.size;
 
   const [countRows] = await pool.query<mysql.RowDataPacket[]>(
-    `SELECT COUNT(*) AS total FROM Users u ${where}`,
+    `SELECT COUNT(DISTINCT u.UserID) AS total
+     FROM Users u
+     LEFT JOIN DepartmentUser du ON du.UserID = u.UserID
+     ${where}`,
     params,
   );
   const total = (countRows[0] as { total: number }).total;
 
+  const limitClause = noLimit ? '' : 'LIMIT ? OFFSET ?';
+  const limitParams = noLimit ? [] : [input.size, Math.max(0, (input.page - 1) * input.size)];
+
   const [rows] = await pool.query<mysql.RowDataPacket[]>(
-    `SELECT u.UserID, u.UserEmail, u.UserName, u.RoleID, u.SecondaryRoleID,
+    `SELECT DISTINCT u.UserID, u.UserEmail, u.UserName, u.RoleID, u.SecondaryRoleID,
             u.UserStatus, u.IsUserArchived, u.EmployeeID,
-            u.ReportingManagerID, u.ELManagerID, u.AppraisalCycle,
-            r.RoleName
+            u.ReportingManagerID, u.ELManagerID, u.AppraisalCycle, u.FeedbackResolverTeam,
+            u.UserCreateTime,
+            rm.UserName AS ReportingManagerName, elm.UserName AS ELManagerName
      FROM Users u
-     LEFT JOIN AMRole r ON r.RoleID = u.RoleID
+     LEFT JOIN DepartmentUser du ON du.UserID = u.UserID
+     LEFT JOIN Users rm ON rm.UserID = u.ReportingManagerID
+     LEFT JOIN Users elm ON elm.UserID = u.ELManagerID
      ${where}
      ORDER BY u.UserID DESC
-     LIMIT ? OFFSET ?`,
-    [...params, input.pageSize, offset],
+     ${limitClause}`,
+    [...params, ...limitParams],
   );
 
-  return { users: rows, total, page: input.page, pageSize: input.pageSize };
+  const userIds = rows.map((r) => r['UserID'] as number);
+  const departmentsByUser = new Map<number, { departmentID: number; departmentName: string }[]>();
+  if (userIds.length > 0) {
+    const [deptRows] = await pool.query<mysql.RowDataPacket[]>(
+      `SELECT du.UserID, d.DepartmentID, d.DepartmentName
+       FROM DepartmentUser du
+       JOIN Department d ON d.DepartmentID = du.DepartmentID
+       WHERE du.UserID IN (${userIds.map(() => '?').join(',')})`,
+      userIds,
+    );
+    for (const d of deptRows) {
+      const uid = d['UserID'] as number;
+      if (!departmentsByUser.has(uid)) departmentsByUser.set(uid, []);
+      departmentsByUser.get(uid)!.push({
+        departmentID: d['DepartmentID'] as number,
+        departmentName: d['DepartmentName'] as string,
+      });
+    }
+  }
+
+  const users = rows.map((u) => ({
+    userID: u['UserID'],
+    userEmail: u['UserEmail'],
+    userName: u['UserName'],
+    roleID: u['RoleID'],
+    secondaryRoleID: u['SecondaryRoleID'],
+    newStatus: u['UserStatus'] === 1 ? 'Active' : 'Inactive',
+    employeeID: u['EmployeeID'],
+    departments: departmentsByUser.get(u['UserID'] as number) ?? [],
+    reportingManagerId: u['ReportingManagerID'],
+    reportingManagerName: u['ReportingManagerName'],
+    elManagerId: u['ELManagerID'],
+    elManagerName: u['ELManagerName'],
+    appraisalCycle: u['AppraisalCycle'],
+    feedbackresolverteam: u['FeedbackResolverTeam'],
+    userCreateTime: u['UserCreateTime'] instanceof Date
+      ? u['UserCreateTime'].toISOString().slice(0, 19).replace('T', ' ')
+      : u['UserCreateTime'],
+  }));
+
+  return { users, totalRecords: total, page: input.page, size: input.size };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -293,7 +443,11 @@ export async function resetPassword(input: ResetPasswordInput) {
 // POST /updateUserStatus
 // ─────────────────────────────────────────────────────────────
 export async function updateUserStatus(input: UpdateUserStatusInput) {
-  await pool.execute('UPDATE Users SET UserStatus = ? WHERE UserID = ?', [input.UserStatus, input.UserID]);
+  const placeholders = input.userIdList.map(() => '?').join(',');
+  await pool.execute(
+    `UPDATE Users SET UserStatus = ? WHERE UserID IN (${placeholders})`,
+    [input.userStatus, ...input.userIdList],
+  );
   return { message: 'User status updated' };
 }
 
@@ -301,12 +455,12 @@ export async function updateUserStatus(input: UpdateUserStatusInput) {
 // POST /usersArchive
 // ─────────────────────────────────────────────────────────────
 export async function archiveUsers(input: ArchiveUsersInput) {
-  const placeholders = input.userIds.map(() => '?').join(',');
+  const placeholders = input.userIdList.map(() => '?').join(',');
   await pool.execute(
     `UPDATE Users SET IsUserArchived = ? WHERE UserID IN (${placeholders})`,
-    [input.archive ? 1 : 0, ...input.userIds],
+    [input.archive ? 1 : 0, ...input.userIdList],
   );
-  return { message: `${input.userIds.length} user(s) ${input.archive ? 'archived' : 'unarchived'}` };
+  return { message: `${input.userIdList.length} user(s) ${input.archive ? 'archived' : 'unarchived'}` };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -317,23 +471,17 @@ export async function switchUser(targetUserID: number, requestingUser: { role: n
   if (requestingUser.role !== 1) throw AppError.forbidden('Only admins can switch users');
 
   const [rows] = await pool.execute<mysql.RowDataPacket[]>(
-    `SELECT UserID, UserEmail, UserName, RoleID, SecondaryRoleID, UserStatus, IsUserArchived
-     FROM Users WHERE UserID = ? AND IsUserArchived = 0 LIMIT 1`,
+    `${USER_SELECT} WHERE UserID = ? AND IsUserArchived = 0 LIMIT 1`,
     [targetUserID],
   );
 
-  const target = rows[0] as UserRow | undefined;
+  const target = rows[0] as (UserRow & { FeedbackResolverTeam: string | null }) | undefined;
   if (!target) throw AppError.notFound('Target user not found');
-  if (target.UserStatus !== 'ACTIVE') throw AppError.badRequest('Target user is inactive');
+  if (target.UserStatus !== 1) throw AppError.badRequest('Target user is inactive');
 
-  const token = signToken(target);
-  return {
-    token,
-    userRole: target.RoleID,
-    userID: target.UserID,
-    userName: target.UserName,
-    userEmail: target.UserEmail,
-  };
+  // Same flat shape as /authenticate — the frontend swaps it in as authUserLD
+  const session = await buildSessionPayload(target, signToken(target));
+  return { ...session, status: true, statusCode: 200 };
 }
 
 // ── Import mysql2 types for intellisense ──────────────────────────────────────

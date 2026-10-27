@@ -6,35 +6,38 @@ export const LoginSchema = z.object({
 });
 
 export const CreateUserSchema = z.object({
-  UserEmail: z.string().email('Invalid email'),
-  UserName: z.string().min(2).max(100),
-  UserPassword: z.string().min(6, 'Password must be at least 6 characters'),
-  RoleID: z.number().int().positive(),
-  SecondaryRoleID: z.number().int().positive().optional().nullable(),
-  EmployeeID: z.string().optional().nullable(),
-  ReportingManagerID: z.number().int().positive().optional().nullable(),
-  ELManagerID: z.number().int().positive().optional().nullable(),
-  AppraisalCycle: z.string().optional().nullable(),
+  userEmail: z.string().email('Invalid email'),
+  userName: z.string().min(2).max(100),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  roleID: z.number().int().positive(),
+  secondaryRoleID: z.number().int().positive().optional().nullable(),
+  employeeID: z.string().optional().nullable(),
+  departmentID: z.number().int().positive().optional().nullable(),
+  reportingManagerId: z.number().int().positive().optional().nullable(),
+  elManagerId: z.number().int().positive().optional().nullable(),
+  appraisalCycle: z.string().optional().nullable(),
+  feedbackresolverteam: z.string().optional().nullable(),
 });
 
 export const UpdateUserSchema = z.object({
-  UserID: z.number().int().positive(),
-  UserEmail: z.string().email().optional(),
-  UserName: z.string().min(2).max(100).optional(),
-  RoleID: z.number().int().positive().optional(),
-  SecondaryRoleID: z.number().int().positive().optional().nullable(),
-  EmployeeID: z.string().optional().nullable(),
-  ReportingManagerID: z.number().int().positive().optional().nullable(),
-  ELManagerID: z.number().int().positive().optional().nullable(),
-  AppraisalCycle: z.string().optional().nullable(),
+  userID: z.number().int().positive(),
+  userEmail: z.string().email().optional(),
+  userName: z.string().min(2).max(100).optional(),
+  roleID: z.number().int().positive().optional(),
+  secondaryRoleID: z.number().int().positive().optional().nullable(),
+  employeeID: z.string().optional().nullable(),
+  departmentID: z.number().int().positive().optional().nullable(),
+  reportingManagerId: z.number().int().positive().optional().nullable(),
+  elManagerId: z.number().int().positive().optional().nullable(),
+  appraisalCycle: z.string().optional().nullable(),
+  feedbackresolverteam: z.string().optional().nullable(),
 });
 
 export const UsersReadSchema = z.object({
-  page: z.number().int().min(1).default(1),
-  pageSize: z.number().int().min(1).max(200).default(50),
-  search: z.string().optional(),
-  RoleID: z.number().int().positive().optional(),
-  IsUserArchived: z.boolean().optional(),
+  filter: z.string().optional(),
+  searchText: z.string().optional(),
+  departmentID: z.number().int().min(0).optional().nullable(), // 0 = all departments
+  roleID: z.number().int().min(0).optional().nullable(),
 });
 
 export const ForgotPasswordSchema = z.object({
@@ -47,17 +50,17 @@ export const ResetPasswordSchema = z.object({
 });
 
 export const UpdateUserStatusSchema = z.object({
-  UserID: z.number().int().positive(),
-  UserStatus: z.enum(['ACTIVE', 'INACTIVE']),
+  userIdList: z.array(z.number().int().positive()).min(1),
+  userStatus: z.union([z.literal(0), z.literal(1)]),
 });
 
 export const ArchiveUsersSchema = z.object({
-  userIds: z.array(z.number().int().positive()).min(1),
-  archive: z.boolean(),
+  userIdList: z.array(z.number().int().positive()).min(1),
+  archive: z.boolean().optional().default(true),
 });
 
 export const SwitchUserSchema = z.object({
-  targetUserID: z.number().int().positive(),
+  userID: z.number().int().positive(),
 });
 
 export const AMRoleReadSchema = z.object({
@@ -67,7 +70,7 @@ export const AMRoleReadSchema = z.object({
 export type LoginInput = z.infer<typeof LoginSchema>;
 export type CreateUserInput = z.infer<typeof CreateUserSchema>;
 export type UpdateUserInput = z.infer<typeof UpdateUserSchema>;
-export type UsersReadInput = z.infer<typeof UsersReadSchema>;
+export type UsersReadInput = z.infer<typeof UsersReadSchema> & { page: number; size: number };
 export type ForgotPasswordInput = z.infer<typeof ForgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof ResetPasswordSchema>;
 export type UpdateUserStatusInput = z.infer<typeof UpdateUserStatusSchema>;

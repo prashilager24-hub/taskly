@@ -21,6 +21,7 @@ import pushRouter from './modules/push/push.routes';
 import adminRouter, { adminTicketsRouter, positionsRouter } from './modules/admin/admin.routes';
 import reportsRouter from './modules/reports/reports.routes';
 import metaRouter from './modules/users/users.routes';
+import usersRouter from './modules/users/users.api.routes';
 import monthlyTargetsRouter from './modules/targets/monthlyTargets.routes';
 import formRouter from './modules/form/form.routes';
 import userGoalDataRouter from './modules/userGoalData/userGoalData.routes';
@@ -148,6 +149,10 @@ app.use(BASE, reportsRouter);
 
 // ── Meta/reference data ───────────────────────────────────────────────────────
 app.use('/api/meta', metaRouter);
+
+// ── Users (read-only) — Java: /api/users ─────────────────────────────────────
+// Port of UserController: GET /api/users, GET /api/users/:id
+app.use('/api/users', usersRouter);
 
 // ── 404 + global error handler ────────────────────────────────────────────────
 app.use(notFoundHandler);

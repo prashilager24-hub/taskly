@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: authentificationUtilization
+
+server:
+  port: 4032

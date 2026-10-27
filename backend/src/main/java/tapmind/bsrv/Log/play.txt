@@ -1,0 +1,104 @@
+1. Create Primary Department
+curl -X POST https://taskly.tapmind.io/t2.0/authentificationUtilization/PrimaryDepartment/create \
+  -H "Content-Type: application/json" \
+  -d '{
+    "primaryDepartmentName": "Engineering"
+  }'
+Expected Response:
+{
+  "status": true,
+  "statusCode": 200,
+  "message": "Primary Department created successfully",
+  "primaryDepartmentId": 1,
+  "primaryDepartmentName": "Engineering"
+}
+Test Cases:
+#	Input	Expected	Why
+1	{"primaryDepartmentName": "Engineering"}	200 OK	Valid creation
+2	{"primaryDepartmentName": "Engineering"} (duplicate)	409 Conflict	Name must be unique
+3	{"primaryDepartmentName": ""}	400 Bad Request	Name is required
+4	{}	400 Bad Request	Name is required
+5	{"primaryDepartmentName": "  "}	400 Bad Request	Blank name rejected
+2. List All Primary Departments
+curl -X POST https://taskly.tapmind.io/t2.0/authentificationUtilization/PrimaryDepartment/list
+Expected Response:
+{
+  "status": true,
+  "statusCode": 200,
+  "message": "Primary Departments retrieved successfully",
+  "data": [
+    {
+      "primaryDepartmentId": 1,
+      "primaryDepartmentName": "Engineering",
+      "active": true,
+      "createdAt": "2026-07-17T10:00:00.000+0000",
+      "updatedAt": "2026-07-17T10:00:00.000+0000"
+    }
+  ]
+}
+Test Cases:
+#	Input	Expected	Why
+1	No body	200 with data array	Returns all records
+2	After creating 3 departments	200 with 3 items	Count matches
+3	No departments exist	200 with empty array []	Empty but valid
+3. Update Primary Department
+curl -X POST https://taskly.tapmind.io/t2.0/authentificationUtilization/PrimaryDepartment/update/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "primaryDepartmentName": "Engineering & Tech",
+    "isActive": false
+  }'
+Expected Response:
+{
+  "status": true,
+  "statusCode": 200,
+  "message": "Primary Department updated successfully",
+  "primaryDepartmentId": 1,
+  "primaryDepartmentName": "Engineering & Tech"
+}
+Test Cases:
+#	Input	Expected	Why
+1	update/1 with valid name	200 OK	Valid update
+2	update/999 (non-existent ID)	404 Not Found	ID doesn't exist
+3	update/1 with {"primaryDepartmentName": ""}	200 OK (name unchanged)	Empty name is skipped
+4	update/1 with only {"isActive": false}	200 OK, active: false	Partial update works
+4. Toggle Status (Active/Inactive)
+# Deactivate
+curl -X POST https://taskly.tapmind.io/t2.0/authentificationUtilization/PrimaryDepartment/status \
+  -H "Content-Type: application/json" \
+  -d '{
+    "primaryDepartmentId": 1,
+    "isActive": false
+  }'
+
+# Activate
+curl -X POST https://taskly.tapmind.io/t2.0/authentificationUtilization/PrimaryDepartment/status \
+  -H "Content-Type: application/json" \
+  -d '{
+    "primaryDepartmentId": 1,
+    "isActive": true
+  }'
+Expected Response:
+{
+  "status": true,
+  "statusCode": 200,
+  "message": "Primary Department status updated successfully"
+}
+Test Cases:
+#	Input	Expected	Why
+1	{"primaryDepartmentId": 1, "isActive": false}	200 OK	Deactivate
+2	{"primaryDepartmentId": 999, "isActive": true}	404 Not Found	ID doesn't exist
+3	{"primaryDepartmentId": null, "isActive": true}	400 Bad Request	ID required
+4	{"primaryDepartmentId": 1}	400 Bad Request	isActive required
+5	{}	400 Bad Request	Both fields required
+5. Link PrimaryDepartment to Department (create/update)
+# Create department with PrimaryDepartmentId
+
+
+# Update existing department to assign PrimaryDepartment
+curl -X POST https://taskly.tapmind.io/t2.0/authentificationUtilization/Department/update/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "primaryDepartmentId": 1
+  }'
+

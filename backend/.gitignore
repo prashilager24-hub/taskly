@@ -1,0 +1,61 @@
+### Maven ###
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# Avoid accidentally ignoring nested target dirs inside src (should not normally exist)
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### Logs ###
+logs/
+*.log
+*.log.*
+
+### Operating System ###
+.DS_Store
+Thumbs.db
+
+### Java ###
+*.class
+*.jar
+*.war
+*.ear
+*.dll
+*.exe
+
+### Spring Boot ###
+# Spring Boot devtools file
+.spring-boot-devtools.properties
+
+### IDEs ###
+
+# STS / Eclipse
+.apt_generated/
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# VS Code
+.vscode/
+
+### Misc ###
+/*.orig

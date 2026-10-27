@@ -1,0 +1,19 @@
+stages:
+  - deploy
+
+deploy_backend:
+  stage: deploy
+
+  tags:
+    - taskly-akamai-production
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main-dev"'
+
+  before_script:
+    - mkdir -p ~/.ssh
+    - ssh-keyscan -H 172.236.179.235 >> ~/.ssh/known_hosts
+
+  script:
+    - echo "Starting deployment..."
+    - ssh ubuntu@172.236.179.235 "bash ~/tasklyDeploy.sh"

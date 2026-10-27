@@ -1,0 +1,21 @@
+
+package tapmind.bsrv;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.security.core.*;
+
+@ControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<String> handleUsernameNotFoundException(UsernameNotFoundException ex) {
+        return new ResponseEntity<>("Username not found", HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(IncorrectCredentialsException.class)
+    public ResponseEntity<String> handleIncorrectCredentialsException(IncorrectCredentialsException ex) {
+        return new ResponseEntity<>("Incorrect password", HttpStatus.UNAUTHORIZED);
+    }
+}

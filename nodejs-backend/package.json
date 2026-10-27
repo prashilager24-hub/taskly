@@ -7,7 +7,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "db:migrate": "node -r tsx/esm src/config/migrate.ts",
+    "db:migrate": "tsx src/config/migrate.ts",
     "db:seed": "tsx src/config/seed.ts",
     "lint": "eslint src --ext .ts",
     "test": "vitest run"

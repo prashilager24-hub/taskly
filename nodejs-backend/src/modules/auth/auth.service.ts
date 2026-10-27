@@ -4,6 +4,15 @@ import { v4 as uuidv4 } from 'uuid';
 import { pool } from '../../config/db';
 import { env } from '../../config/env';
 import { AppError } from '../../utils/AppError';
+import {
+  createChallenge,
+  logAuthEvent,
+  resendChallenge,
+  revokeSession,
+  startSession,
+  verifyChallenge,
+  type ClientInfo,
+} from './session.service';
 import type {
   LoginInput,
   CreateUserInput,
@@ -35,18 +44,20 @@ interface UserRow {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Helper: sign a JWT for a user row
+// Helper: sign a JWT for a user row, bound to a server-side session (sid).
+// The token lives exactly as long as its session; every request re-checks the session.
 // ─────────────────────────────────────────────────────────────
-function signToken(user: UserRow): string {
+function signToken(user: UserRow, sessionId: string, expiresInSeconds: number): string {
   return jwt.sign(
     {
       sub: String(user.UserID),
       email: user.UserEmail,
       username: user.UserName,
       role: user.RoleID,
+      sid: sessionId,
     },
     env.JWT_SECRET,
-    { expiresIn: env.JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'] },
+    { expiresIn: expiresInSeconds },
   );
 }
 
@@ -59,7 +70,7 @@ function signToken(user: UserRow): string {
 const USER_SELECT = `
   SELECT UserID, UserEmail, UserName, UserPassword, RoleID, SecondaryRoleID,
          UserStatus, IsUserArchived, EmployeeID, ReportingManagerID,
-         ELManagerID, AppraisalCycle, FeedbackResolverTeam
+         ELManagerID, AppraisalCycle, FeedbackResolverTeam, ThemePreference
   FROM Users`;
 
 interface SessionDepartment {
@@ -95,7 +106,9 @@ async function departmentsOfMember(userId: number) {
   return rows.map((r) => ({ departmentID: r['DepartmentID'] as number, departmentName: r['DepartmentName'] as string }));
 }
 
-async function buildSessionPayload(user: UserRow & { FeedbackResolverTeam?: string | null }, token: string) {
+type SessionUser = UserRow & { FeedbackResolverTeam?: string | null; ThemePreference?: string | null };
+
+async function buildSessionPayload(user: SessionUser, token: string) {
   const session: Record<string, unknown> = {
     username: user.UserEmail,
     name: user.UserName,
@@ -112,6 +125,8 @@ async function buildSessionPayload(user: UserRow & { FeedbackResolverTeam?: stri
     userName: user.UserName,
     userEmail: user.UserEmail,
     employeeID: user.EmployeeID,
+    // Saved Dark / Light choice; null until the user picks one at first sign-in (AUTH-11)
+    themePreference: user.ThemePreference ?? null,
   };
 
   if (user.RoleID === 3) {
@@ -139,11 +154,13 @@ async function buildSessionPayload(user: UserRow & { FeedbackResolverTeam?: stri
 }
 
 // ─────────────────────────────────────────────────────────────
-// POST /authenticate
-// Like Java, a failed login is a 200 with { status: false, statusCode: 401 }:
-// the frontend treats a missing `token` as "Invalid Credentials".
+// POST /authenticate — step 1 of sign-in: the password. A correct password emails a
+// 6-digit code and returns { otpRequired, challengeId, … }; no session exists until the
+// code is verified (AUTH-06). Like Java, a failed login is a 200 with
+// { status: false, statusCode: 401 } — and the same message for an unknown email or a
+// wrong password, so the response doesn't reveal which accounts exist.
 // ─────────────────────────────────────────────────────────────
-export async function login(input: LoginInput) {
+export async function login(input: LoginInput, client: ClientInfo) {
   const [rows] = await pool.execute<mysql.RowDataPacket[]>(
     `${USER_SELECT}
      WHERE (UserEmail = ? OR UserName = ?)
@@ -154,15 +171,54 @@ export async function login(input: LoginInput) {
 
   const failed = (authorization: string) => ({ authorization, status: false, statusCode: 401 });
 
-  const user = rows[0] as (UserRow & { FeedbackResolverTeam: string | null }) | undefined;
-  if (!user) return failed('Wrong Email');
+  const user = rows[0] as SessionUser | undefined;
+  if (!user) {
+    await logAuthEvent('PASSWORD_FAIL', { email: input.username }, client);
+    return failed('Wrong Credentials');
+  }
+  const match = await bcrypt.compare(input.password, user.UserPassword);
+  if (!match) {
+    await logAuthEvent('PASSWORD_FAIL', { userId: user.UserID, email: user.UserEmail }, client);
+    return failed('Wrong Credentials');
+  }
   if (user.UserStatus !== 1) return failed('Account is inactive');
 
-  const match = await bcrypt.compare(input.password, user.UserPassword);
-  if (!match) return failed('Wrong Password');
+  await logAuthEvent('PASSWORD_OK', { userId: user.UserID, email: user.UserEmail }, client);
+  const challenge = await createChallenge(user, input.keepSignedIn === true);
+  await logAuthEvent('OTP_SENT', { userId: user.UserID, email: user.UserEmail }, client);
+  return { status: true, statusCode: 200, otpRequired: true, ...challenge };
+}
 
-  const session = await buildSessionPayload(user, signToken(user));
-  return { ...session, status: true, statusCode: 200 };
+// ─────────────────────────────────────────────────────────────
+// POST /authenticate/verify-otp — step 2: the emailed code. Starts the session (ending any
+// session on another device) and returns the session payload the frontend stores.
+// ─────────────────────────────────────────────────────────────
+export async function verifyOtp(input: { challengeId: string; code: string }, client: ClientInfo) {
+  const { userId, keepSignedIn } = await verifyChallenge(input.challengeId, input.code, client);
+  const [rows] = await pool.execute<mysql.RowDataPacket[]>(`${USER_SELECT} WHERE UserID = ? LIMIT 1`, [userId]);
+  const user = rows[0] as SessionUser | undefined;
+  if (!user || user.UserStatus !== 1 || user.IsUserArchived) throw AppError.unauthorized('Account is inactive');
+
+  const { sessionId, expiresInSeconds } = await startSession(user.UserID, keepSignedIn, client);
+  await logAuthEvent('OTP_OK', { userId: user.UserID, email: user.UserEmail }, client, sessionId);
+  const session = await buildSessionPayload(user, signToken(user, sessionId, expiresInSeconds));
+  return { ...session, keepSignedIn, status: true, statusCode: 200 };
+}
+
+export async function resendOtp(input: { challengeId: string }, client: ClientInfo) {
+  return { status: true, statusCode: 200, ...(await resendChallenge(input.challengeId, client)) };
+}
+
+/** POST /logout — ends the session on the server, so its token stops working everywhere (AUTH-04) */
+export async function logout(user: { sub: string; sid?: string }, client: ClientInfo) {
+  if (user.sid) await revokeSession(user.sid, 'LOGOUT', { userId: Number(user.sub) }, client);
+  return { status: true, statusCode: 200, message: 'Signed out' };
+}
+
+/** PUT /user/theme — the Dark / Light choice follows the user to every device (AUTH-11, THEME-02) */
+export async function saveTheme(userId: number, theme: 'dark' | 'light') {
+  await pool.execute('UPDATE Users SET ThemePreference = ? WHERE UserID = ?', [theme, userId]);
+  return { status: true, statusCode: 200, themePreference: theme };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -466,7 +522,7 @@ export async function archiveUsers(input: ArchiveUsersInput) {
 // ─────────────────────────────────────────────────────────────
 // POST /user/switch — admin impersonation
 // ─────────────────────────────────────────────────────────────
-export async function switchUser(targetUserID: number, requestingUser: { role: number }) {
+export async function switchUser(targetUserID: number, requestingUser: { role: number; sid?: string; exp?: number }) {
   // Only admin role (e.g. RoleID = 1) can switch users — adjust as needed
   if (requestingUser.role !== 1) throw AppError.forbidden('Only admins can switch users');
 
@@ -475,12 +531,15 @@ export async function switchUser(targetUserID: number, requestingUser: { role: n
     [targetUserID],
   );
 
-  const target = rows[0] as (UserRow & { FeedbackResolverTeam: string | null }) | undefined;
+  const target = rows[0] as SessionUser | undefined;
   if (!target) throw AppError.notFound('Target user not found');
   if (target.UserStatus !== 1) throw AppError.badRequest('Target user is inactive');
 
   // Same flat shape as /authenticate — the frontend swaps it in as authUserLD
-  const session = await buildSessionPayload(target, signToken(target));
+  // Bound to the admin's session: signing the admin out (or replacing the session) ends this view too
+  if (!requestingUser.sid) throw AppError.unauthorized('Please sign in again', 'SESSION_INVALID');
+  const remaining = Math.max((requestingUser.exp ?? 0) - Math.floor(Date.now() / 1000), 60);
+  const session = await buildSessionPayload(target, signToken(target, requestingUser.sid, remaining));
   return { ...session, status: true, statusCode: 200 };
 }
 

@@ -1,6 +1,8 @@
 export class AppError extends Error {
   public readonly statusCode: number;
   public readonly isOperational: boolean;
+  /** Optional machine-readable reason sent to the client, e.g. SESSION_REPLACED */
+  public code?: string;
 
   constructor(message: string, statusCode = 500, isOperational = true) {
     super(message);
@@ -15,8 +17,10 @@ export class AppError extends Error {
     return new AppError(message, 400);
   }
 
-  static unauthorized(message = 'Unauthorized'): AppError {
-    return new AppError(message, 401);
+  static unauthorized(message = 'Unauthorized', code?: string): AppError {
+    const err = new AppError(message, 401);
+    err.code = code;
+    return err;
   }
 
   static forbidden(message = 'Forbidden'): AppError {

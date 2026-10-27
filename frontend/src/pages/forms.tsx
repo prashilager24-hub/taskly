@@ -266,7 +266,7 @@ export default function FormPage() {
             <div className="flex justify-between items-center mb-4" style={{ height: "48px" }}>
 
                 <div>
-                    <h1 className={title({ size: "20px" })}>Department Form</h1>
+                    <h1 className={title({ size: "20px" })}>Daily Activity</h1>
 
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         Submit your department's daily tasks and activity updates

@@ -55,7 +55,7 @@ const ConfirmToggleModal = ({
 }) => (
     <Modal isOpen={isOpen} onOpenChange={onClose} size="sm">
         <ModalContent>
-            <ModalHeader>{active ? "Deactivate Primary Department" : "Activate Primary Department"}</ModalHeader>
+            <ModalHeader>{active ? "Deactivate Department" : "Activate Department"}</ModalHeader>
             <ModalBody>
                 <p>
                     Are you sure you want to
@@ -178,10 +178,10 @@ export default function PrimaryDepartmentPage() {
 
             setPrimaryDepartmentList(formatted);
         } catch (err) {
-            console.error("Error fetching primary departments:", err);
+            console.error("Error fetching departments:", err);
             addToast({
                 title: "Error",
-                description: "Failed to load primary departments",
+                description: "Failed to load departments",
                 color: "danger",
             });
         } finally {
@@ -220,7 +220,7 @@ export default function PrimaryDepartmentPage() {
         if (!trimmedName) {
             addToast({
                 title: "Error",
-                description: "Primary department name is required",
+                description: "Department name is required",
                 color: "danger",
             });
             return;
@@ -240,7 +240,7 @@ export default function PrimaryDepartmentPage() {
 
             addToast({
                 title: "Success",
-                description: "Primary Department created successfully",
+                description: "Department created successfully",
                 color: "success",
             });
 
@@ -250,10 +250,10 @@ export default function PrimaryDepartmentPage() {
             const status = error?.response?.status;
             const message =
                 status === 409
-                    ? "A primary department with this name already exists"
-                    : "Failed to create primary department";
+                    ? "A department with this name already exists"
+                    : "Failed to create department";
 
-            console.error("Error creating primary department:", error);
+            console.error("Error creating department:", error);
             addToast({ title: "Error", description: message, color: "danger" });
         }
     };
@@ -276,7 +276,7 @@ export default function PrimaryDepartmentPage() {
 
             addToast({
                 title: "Success",
-                description: "Primary Department updated successfully",
+                description: "Department updated successfully",
                 color: "success",
             });
 
@@ -284,9 +284,9 @@ export default function PrimaryDepartmentPage() {
             fetchPrimaryDepartments();
         } catch (error: any) {
             const status = error?.response?.status;
-            const message = status === 404 ? "Primary department not found" : "Failed to update primary department";
+            const message = status === 404 ? "Department not found" : "Failed to update department";
 
-            console.error("Error updating primary department:", error);
+            console.error("Error updating department:", error);
             addToast({ title: "Error", description: message, color: "danger" });
         }
     };
@@ -301,7 +301,7 @@ export default function PrimaryDepartmentPage() {
 
             addToast({
                 title: "Success",
-                description: `Primary Department ${isActive ? "activated" : "deactivated"} successfully`,
+                description: `Department ${isActive ? "activated" : "deactivated"} successfully`,
                 color: isActive ? "success" : "warning",
             });
 
@@ -309,10 +309,10 @@ export default function PrimaryDepartmentPage() {
                 prev.map((pd) => (pd.key === id ? { ...pd, active: isActive } : pd))
             );
         } catch (error) {
-            console.error("Error toggling primary department status:", error);
+            console.error("Error toggling department status:", error);
             addToast({
                 title: "Error",
-                description: "Failed to update primary department status",
+                description: "Failed to update department status",
                 color: "danger",
             });
         }
@@ -329,7 +329,7 @@ export default function PrimaryDepartmentPage() {
     return (
         <div className="flex flex-col h-full">
             <Tabs
-                aria-label="Primary Department Views"
+                aria-label="Department Views"
                 color="primary"
                 variant="underlined"
                 className="mb-2"
@@ -339,25 +339,25 @@ export default function PrimaryDepartmentPage() {
                     }
                 }}
             >
-                <Tab key="list" title="Primary Departments">
+                <Tab key="list" title="Departments">
                     {/* HEADER */}
                     <div className="flex justify-between items-center mb-4 h-12">
                         <div>
-                            <h1 className={title({ size: "20px" })}>Primary Department</h1>
+                            <h1 className={title({ size: "20px" })}>Department Management</h1>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                Manage top-level primary departments used to group departments
+                                Manage top-level departments used to group departments
                             </p>
                         </div>
 
                         <Button size="sm" color="primary" onClick={handleOpenAddModal}>
-                            Add Primary Department
+                            Add Department
                         </Button>
                     </div>
 
                     {/* SEARCH */}
                     <Input
                         type="search"
-                        placeholder="Search primary departments..."
+                        placeholder="Search departments..."
                         value={term}
                         onValueChange={setTerm}
                         variant="bordered"
@@ -382,7 +382,7 @@ export default function PrimaryDepartmentPage() {
                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 p-4">
                         {!loading && filteredList.length === 0 && (
                             <div className="col-span-full text-center text-sm text-gray-500 dark:text-gray-400 py-10">
-                                No primary departments found.
+                                No departments found.
                             </div>
                         )}
 
@@ -469,7 +469,7 @@ export default function PrimaryDepartmentPage() {
                                     </span>
 
                                     <span className="text-xs text-gray-500 dark:text-gray-400">
-                                        Primary Dept
+                                        Department
                                     </span>
                                 </div>
 
@@ -539,14 +539,14 @@ export default function PrimaryDepartmentPage() {
                     {(onClose) => (
                         <>
                             <ModalHeader>
-                                {selectedId ? "Edit Primary Department" : "Add New Primary Department"}
+                                {selectedId ? "Edit Department" : "Add New Department"}
                             </ModalHeader>
 
                             <ModalBody>
                                 <div className="space-y-4">
                                     <Input
-                                        label="Primary Department Name"
-                                        placeholder="Enter primary department name"
+                                        label="Department Name"
+                                        placeholder="Enter department name"
                                         value={primaryDepartmentName}
                                         onChange={(e) => setPrimaryDepartmentName(e.target.value)}
                                         variant="bordered"
@@ -616,7 +616,7 @@ export default function PrimaryDepartmentPage() {
                                         onClose();
                                     }}
                                 >
-                                    {selectedId ? "Update Primary Department" : "Add Primary Department"}
+                                    {selectedId ? "Update Department" : "Add Department"}
                                 </Button>
                             </ModalFooter>
                         </>

@@ -4,8 +4,6 @@ import React, { useEffect, useState, useMemo, useCallback, memo, lazy, Suspense 
 import { useDashboardStore } from "./../store/commonStore";
 import { Card, CardBody } from "@/components/ui";
 import { Switch } from "@/components/ui";
-import SwitchUserFilter from "@/components/SwitchUserFilter";
-import SwitchedUserBanner from "@/components/SwitchedUserBanner";
 import { motion, AnimatePresence } from "framer-motion";
 const ReactApexChart = React.lazy(() => import("react-apexcharts"));
 import { format } from "date-fns";
@@ -1534,20 +1532,12 @@ export default function DashboardPage() {
                         view goal & target
                     </div>
 
-                    {(user?.userRole === 1 || user.userID === 144) && (
-                        <SwitchUserFilter
-                            currentUser={user}
-                            onSwitched={() => window.location.reload()}
-                        />
-                    )}
-
                     <DateRangeDropdown
                         value={dateRange}
                         onChange={setDateRange}
                     />
                 </div>
             </div>
-            <SwitchedUserBanner onSwitchBack={() => window.location.reload()} />
 
 
 
@@ -2459,7 +2449,7 @@ export default function DashboardPage() {
                             )} */}
                         </div>
                     </Tab>
-                    <Tab key="Support" title="Support" className="flex flex-col items-end">
+                    <Tab key="Support" title="Support Functions" className="flex flex-col items-end">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                             <Card className="bg-white border border-gray-200 rounded-xl shadow-sm col-span-3">
                                 <CardBody>

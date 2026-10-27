@@ -163,7 +163,7 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 flex-col">
             <img
-              src="./Tapmind.ico"
+              src="/Tapmind.ico"
               alt="Taskly logo"
               className="w-10 h-10 rounded-md"
             />

@@ -14,6 +14,7 @@ import {
   BarChart3,
   CheckCircle2,
   Settings,
+  LifeBuoy,
 } from "lucide-react";
 // Custom Icons
 
@@ -183,8 +184,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     {
       icon: ClipboardList,
-      label: "Department & Forms",
-      href: "department-forms",
+      label: "Daily Activity",
+      href: "daily-activity",
       module: "dataentry"
     },
 
@@ -288,18 +289,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ]
     },
 
+    // Support (formerly HR Feedback); PMS now lives on the Dashboard as a tab
     {
-      icon: ClipboardList,
-      label: "HR Feedback",
-      href: "hr-feedback",
-      module: "hrfeedback"
-    },
-
-    {
-      icon: FileText,
-      label: "PMS",
-      href: "pms",
-      module: "pms"
+      icon: LifeBuoy,
+      label: "Support",
+      href: "support",
+      module: "hrfeedback",
+      children: [
+        { icon: ClipboardList, label: "Onboarding Experience", href: "support/onboarding", module: "hrfeedback" },
+        { icon: ClipboardList, label: "Query & HR", href: "support/query", module: "hrfeedback" },
+        { icon: ClipboardList, label: "Employee Engagement", href: "support/engagement", module: "hrfeedback" },
+      ]
     }
   ];
 
@@ -309,6 +309,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       if (item.children) {
         const filteredChildren = item.children.filter((child) => {
           if (child.adminOnly) return authUserLD?.userRole === 1;
+          if (child.module === "hrfeedback") return true; // Support is open to every user
           return hasAccess(child.module);
         });
         return { ...item, children: filteredChildren };
@@ -330,6 +331,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }), [authUserLD, rolePermissions]);
 
   const activePage = useMemo(() => currentPage.replaceAll("/", ""), [currentPage]);
+  const isActiveHref = (href: string) => activePage === href.split("/").join("");
 
   return (
     <>
@@ -350,7 +352,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex items-center gap-2 px-4 py-4 justify-center cursor-pointer" onClick={() => {
           navigate("/dashboard")
         }}>
-          <img src={"./Tapmind.ico"} alt="Taskly Logo" /><h2 className="text-3xl font-bold">TASKLY</h2>
+          <img src="/Tapmind.ico" alt="Taskly Logo" /><h2 className="text-3xl font-bold">TASKLY</h2>
           <Button
             isIconOnly
             variant="light"
@@ -364,7 +366,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <nav className="mt-8">
           <ul className="space-y-2 px-4" style={{ fontSize: "12px" }}>
             {filteredMenu.map((item) => {
-              const isActive = activePage === item.href;
+              const isActive = isActiveHref(item.href);
               const isExpanded = expandedMenus.includes(item.label);
               const hasChildren = item.children && item.children.length > 0;
 
@@ -379,7 +381,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         }}
 
                         className={`flex items-center justify-between w-full px-4 py-2 rounded-lg transition-colors
-    ${isExpanded || item.children?.some(c => activePage === c.href)
+    ${isExpanded || item.children?.some(c => isActiveHref(c.href))
                             ? "bg-orange-50 text-orange-600"
                             : "text-gray-700 hover:bg-gray-100"
                           }`}
@@ -397,7 +399,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       {isExpanded && (
                         <ul className="mt-1 ml-8 space-y-1">
                           {item.children.map((child) => {
-                            const isChildActive = activePage === child.href;
+                            const isChildActive = isActiveHref(child.href);
                             return (
                               <li key={child.label} style={{ fontSize: "12px" }} onClick={() => {
                                 toggleSidebar();

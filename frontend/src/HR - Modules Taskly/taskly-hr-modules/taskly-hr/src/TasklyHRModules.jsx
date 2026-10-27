@@ -20,8 +20,14 @@ import { subscribeToPush, unsubscribeFromPush, isSubscribed } from "../../../../
 
 const NOTIFY_LIST = "hr@tapmind.com; admin@tapmind.com";
 
-export default function TasklyHRModules() {
-  const [mod, setMod] = useState("m1");
+// `section` comes from the Support routes (/support/onboarding|query|engagement). When given,
+// that section is shown and the in-page module tabs are hidden — the sidebar navigates instead.
+const SECTION_TO_MODULE = { onboarding: "m1", query: "m2", engagement: "m3" };
+
+export default function TasklyHRModules({ section } = {}) {
+  const routed = SECTION_TO_MODULE[section];
+  const [mod, setMod] = useState(routed ?? "m1");
+  useEffect(() => { if (routed) setMod(routed); }, [routed]);
   const [role, setRole] = useState(null);
 
   const [surveys, setSurveys] = useState([]);
@@ -231,7 +237,7 @@ export default function TasklyHRModules() {
   /* ── UI config ── */
   const modules = [
     { id: "m1", num: "01", label: "Onboarding Experience" },
-    { id: "m2", num: "02", label: "Query & HR Support" },
+    { id: "m2", num: "02", label: "Query & HR" },
     { id: "m3", num: "03", label: "Employee Engagement" },
   ];
 
@@ -289,18 +295,25 @@ export default function TasklyHRModules() {
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900">
 
-      <div className="bg-white px-5 overflow-x-auto">
-        <Tabs
-          selectedKey={mod}
-          onSelectionChange={(k) => setMod(String(k))}
-          variant="light"
-          aria-label="HR Modules"
-        >
-          {modules.map((m) => (
-            <Tab key={m.id} title={<span className=" mr-1">{m.label}</span>} />
-          ))}
-        </Tabs>
-      </div>
+      {routed ? (
+        <div className="bg-white px-5 pt-4 pb-1">
+          <span className="eyebrow">Support</span>
+          <h1 className="text-lg font-bold text-ink-900">{modules.find((m) => m.id === mod)?.label}</h1>
+        </div>
+      ) : (
+        <div className="bg-white px-5 overflow-x-auto">
+          <Tabs
+            selectedKey={mod}
+            onSelectionChange={(k) => setMod(String(k))}
+            variant="light"
+            aria-label="HR Modules"
+          >
+            {modules.map((m) => (
+              <Tab key={m.id} title={<span className=" mr-1">{m.label}</span>} />
+            ))}
+          </Tabs>
+        </div>
+      )}
 
       <div className="bg-white px-5 py-2.5 flex items-center gap-3 flex-wrap">
         {/* <span className=" text-[10px] uppercase tracking-widest text-primary">Viewing as</span> */}

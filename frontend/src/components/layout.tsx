@@ -1,6 +1,7 @@
 // Layout.tsx
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
+import SwitchedUserBanner from "@/components/SwitchedUserBanner";
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
 
@@ -11,7 +12,7 @@ export default function Layout({ children }) {
     const currentPage = location.pathname;
     return (
 
-        <div className="h-screen flex overflow-hidden bg-gray-50 dark:bg-gray-900">
+        <div className="h-screen flex overflow-hidden bg-ink-50 dark:bg-ink-950">
 
             {/* Sidebar */}
             <div className="h-full overflow-y-auto">
@@ -32,6 +33,8 @@ export default function Layout({ children }) {
 
                 {/* Content Scroll Area */}
                 <main className="flex-1 overflow-y-auto p-6">
+                    {/* "Viewing as … — Return" while an admin is switched into another user, on every page */}
+                    <SwitchedUserBanner onSwitchBack={() => window.location.reload()} />
                     {children}
                 </main>
 

@@ -32,7 +32,7 @@ const ConfirmDeleteModal = ({
 }) => (
     <Modal isOpen={isOpen} onOpenChange={onClose} size="sm">
         <ModalContent>
-            <ModalHeader>Delete Department</ModalHeader>
+            <ModalHeader>Delete Sub Department</ModalHeader>
             <ModalBody>
                 <p>
                     Are you sure you want to delete <strong>{departmentName}</strong>?
@@ -145,7 +145,7 @@ export default function DepartmentPage() {
 
             addToast({
                 title: "Success",
-                description: "Primary department linked successfully",
+                description: "Department linked successfully",
                 color: "success",
             });
 
@@ -159,7 +159,7 @@ export default function DepartmentPage() {
             console.error("Error linking primary department:", error);
             addToast({
                 title: "Error",
-                description: "Failed to link primary department",
+                description: "Failed to link department",
                 color: "danger",
             });
         }
@@ -345,7 +345,7 @@ export default function DepartmentPage() {
             console.log("Department Created:", response.data);
             addToast({
                 title: "Success",
-                description: "Department created successfully",
+                description: "Sub Department created successfully",
                 color: "success",
             });
 
@@ -390,7 +390,7 @@ export default function DepartmentPage() {
             console.error("Error creating department:", error);
             addToast({
                 title: "Error",
-                description: "Failed to create department",
+                description: "Failed to create sub department",
                 color: "danger",
             });
         }
@@ -420,7 +420,7 @@ export default function DepartmentPage() {
             console.log("Department Edited:", response.data);
             addToast({
                 title: "Success",
-                description: "Department updated successfully",
+                description: "Sub Department updated successfully",
                 color: "success",
             });
 
@@ -434,7 +434,7 @@ export default function DepartmentPage() {
             console.error("Error editing department:", error);
             addToast({
                 title: "Error",
-                description: "Failed to update department",
+                description: "Failed to update sub department",
                 color: "danger",
             });
         }
@@ -461,7 +461,7 @@ export default function DepartmentPage() {
             console.log("Department Deleted:", response.data);
             addToast({
                 title: "Success",
-                description: "Department deleted successfully",
+                description: "Sub Department deleted successfully",
                 color: "success",
             });
 
@@ -470,7 +470,7 @@ export default function DepartmentPage() {
             console.error("Error deleting department:", error);
             addToast({
                 title: "Error",
-                description: "Failed to delete department",
+                description: "Failed to delete sub department",
                 color: "danger",
             });
         }
@@ -510,7 +510,7 @@ export default function DepartmentPage() {
             console.error("Status change error:", error);
             addToast({
                 title: "Error",
-                description: "Failed to update department status",
+                description: "Failed to update sub department status",
                 color: "danger",
             });
         }
@@ -543,14 +543,14 @@ export default function DepartmentPage() {
         <div className="flex flex-col h-full">
             <Modal isOpen={linkModal.open} onOpenChange={() => setLinkModal({ open: false })} size="sm">
                 <ModalContent>
-                    <ModalHeader>Link Primary Department</ModalHeader>
+                    <ModalHeader>Link Department</ModalHeader>
                     <ModalBody>
                         <p className="text-sm text-default-500 mb-2">
                             Assign <b>{linkModal.name}</b> to a primary department.
                         </p>
                         <Select
-                            label="Primary Department"
-                            placeholder="Select Primary Department"
+                            label="Department"
+                            placeholder="Select Department"
                             selectedKeys={selectedPrimaryDepartmentId ? [selectedPrimaryDepartmentId] : []}
                             onSelectionChange={(keys) =>
                                 setSelectedPrimaryDepartmentId(Array.from(keys)[0] as string)
@@ -584,7 +584,7 @@ export default function DepartmentPage() {
             {/* HEADER */}
             <div className="flex justify-between items-center mb-4 h-12">
                 <div>
-                    <h1 className={title({ size: "20px" })}>Department</h1>
+                    <h1 className={title({ size: "20px" })}>Sub Department Management</h1>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         Manage and monitor all company departments
                     </p>
@@ -724,7 +724,7 @@ export default function DepartmentPage() {
                                                 setSelectedPrimaryDepartmentId(ele.primaryDepartmentId || "");
                                             }}
                                         >
-                                            Link Primary Department
+                                            Link Department
                                         </DropdownItem>
                                     </DropdownMenu>
                                 </Dropdown>
@@ -760,14 +760,14 @@ export default function DepartmentPage() {
                     {(onClose) => (
                         <>
                             <ModalHeader>
-                                {selectedDepartmentId ? "Edit Department" : "Add New Department"}
+                                {selectedDepartmentId ? "Edit Sub Department" : "Add New Sub Department"}
                             </ModalHeader>
 
                             <ModalBody>
                                 <div className="space-y-4">
                                     <Input
-                                        label="Department"
-                                        placeholder="Enter department name"
+                                        label="Sub Department"
+                                        placeholder="Enter sub department name"
                                         value={department}
                                         onChange={(e) => setDepartment(e.target.value)}
                                         variant="bordered"
@@ -775,7 +775,7 @@ export default function DepartmentPage() {
                                     />
 
                                     <Input
-                                        label="Department Description"
+                                        label="Sub Department Description"
                                         placeholder="Enter department description"
                                         value={departmentDescription}
                                         onChange={(e) => setDepartmentDescription(e.target.value)}
@@ -836,7 +836,7 @@ export default function DepartmentPage() {
                                     }}
 
                                 >
-                                    {selectedDepartmentId ? "Update Department" : "Add Department"}
+                                    {selectedDepartmentId ? "Update Sub Department" : "Add Sub Department"}
                                 </Button>
                             </ModalFooter>
                         </>
@@ -855,7 +855,7 @@ export default function DepartmentPage() {
             >
                 <ModalContent>
                     <ModalHeader>
-                        {toggleConfirm.departmentStatus ? "Deactivate Department" : "Activate Department"}
+                        {toggleConfirm.departmentStatus ? "Deactivate Sub Department" : "Activate Sub Department"}
                     </ModalHeader>
 
                     <ModalBody>

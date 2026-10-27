@@ -3,6 +3,7 @@ import { Avatar } from "@/components/ui";
 import { useEffect, useState, useRef } from "react";
 import { Dropdown, DropdownMenu, DropdownTrigger, DropdownItem } from "@/components/ui";
 import { formatDistanceToNow } from "date-fns";
+import SwitchUserModal from "./SwitchUserModal";
 
 // Custom Icons
 const BellIcon = (props: any) => (
@@ -191,6 +192,8 @@ export const Topbar: React.FC<TopbarProps> = ({ toggleSidebar, title }) => {
             </div>
 
             <div className="flex items-center space-x-3">
+                <SwitchUserModal />
+
                 {/* Notifications */}
                 <div className="relative" ref={notifRef}>
                     <button

@@ -86,3 +86,31 @@ export async function getOnboardingSurveys(userId: number) {
   );
   return rows;
 }
+
+export async function rateQuery(queryId: number, input: { rating: number; comment?: string }) {
+  await pool.execute(
+    'UPDATE HRQuery SET rating = ?, rating_comment = ? WHERE id = ?',
+    [input.rating, input.comment ?? null, queryId],
+  );
+  const [[row]] = await pool.execute<mysql.RowDataPacket[]>('SELECT * FROM HRQuery WHERE id = ?', [queryId]);
+  return row ?? null;
+}
+
+export async function reassignQuery(queryId: number, input: { assigned_to: number; reason?: string }) {
+  await pool.execute(
+    'UPDATE HRQuery SET assigned_to = ?, status = \'OPEN\', reassign_reason = ? WHERE id = ?',
+    [input.assigned_to, input.reason ?? null, queryId],
+  );
+  const [[row]] = await pool.execute<mysql.RowDataPacket[]>('SELECT * FROM HRQuery WHERE id = ?', [queryId]);
+  return row ?? null;
+}
+
+export async function rolloutSurvey(input: {
+  survey_id: number;
+  department_ids?: number[];
+  user_ids?: number[];
+}) {
+  // Mark survey as rolled out / active
+  await pool.execute('UPDATE Survey SET status = \'ACTIVE\' WHERE id = ?', [input.survey_id]);
+  return { message: 'Survey rolled out', survey_id: input.survey_id };
+}

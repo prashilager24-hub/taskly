@@ -103,3 +103,66 @@ export async function getPrimaryDepartments() {
   );
   return rows;
 }
+
+export async function updateDepartmentStatus(departmentId: number, isActive: boolean) {
+  await pool.execute('UPDATE Department SET IsActive = ? WHERE DepartmentID = ?', [isActive ? 1 : 0, departmentId]);
+  return { message: 'Department status updated' };
+}
+
+export async function archiveDepartment(departmentId: number, isArchive: boolean) {
+  await pool.execute('UPDATE Department SET IsArchived = ? WHERE DepartmentID = ?', [isArchive ? 1 : 0, departmentId]);
+  return { message: 'Department archive updated' };
+}
+
+export async function getDepartmentTaskTarget(departmentId: number) {
+  const [rows] = await pool.execute<mysql.RowDataPacket[]>(
+    `SELECT t.TaskID, t.TaskName, t.StandardTimeMins, t.Frequency, t.IsForTarget,
+            tg.TargetID, tg.TargetName, tg.TargetType
+     FROM DepartmentTask t
+     LEFT JOIN DepartmentTarget tg ON tg.DepartmentID = t.DepartmentID
+     WHERE t.DepartmentID = ?`,
+    [departmentId],
+  );
+  return rows;
+}
+
+export async function getDepartmentHierarchy() {
+  const [rows] = await pool.execute<mysql.RowDataPacket[]>(
+    `SELECT pd.PrimaryDepartmentId, pd.PrimaryDepartmentName, pd.Type,
+            d.DepartmentID, d.DepartmentName,
+            el.UserID AS ElID, el.UserName AS ElName,
+            fl.UserID AS FlID, fl.UserName AS FlName
+     FROM PrimaryDepartment pd
+     LEFT JOIN Department d ON d.PrimaryDepartmentId = pd.PrimaryDepartmentId
+     LEFT JOIN Users el ON el.UserID = d.ExecutiveLeaderID
+     LEFT JOIN Users fl ON fl.UserID = d.FunctionalLeaderID
+     WHERE pd.IsActive = 1
+     ORDER BY pd.PrimaryDepartmentName, d.DepartmentName`,
+  );
+  return rows;
+}
+
+export async function createPrimaryDepartment(input: { PrimaryDepartmentName: string; Type?: string }) {
+  const [result] = await pool.execute<mysql.ResultSetHeader>(
+    'INSERT INTO PrimaryDepartment (PrimaryDepartmentName, Type, IsActive) VALUES (?, ?, 1)',
+    [input.PrimaryDepartmentName, input.Type ?? null],
+  );
+  return { PrimaryDepartmentId: result.insertId, message: 'Primary department created' };
+}
+
+export async function updatePrimaryDepartment(id: number, input: { PrimaryDepartmentName?: string; Type?: string }) {
+  const fields: string[] = [];
+  const values: (string | number | null)[] = [];
+  if (input.PrimaryDepartmentName) { fields.push('PrimaryDepartmentName = ?'); values.push(input.PrimaryDepartmentName); }
+  if (input.Type) { fields.push('Type = ?'); values.push(input.Type); }
+  if (!fields.length) throw AppError.badRequest('No fields to update');
+  values.push(id);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await pool.execute(`UPDATE PrimaryDepartment SET ${fields.join(', ')} WHERE PrimaryDepartmentId = ?`, values as any);
+  return { message: 'Primary department updated' };
+}
+
+export async function updatePrimaryDepartmentStatus(id: number, isActive: boolean) {
+  await pool.execute('UPDATE PrimaryDepartment SET IsActive = ? WHERE PrimaryDepartmentId = ?', [isActive ? 1 : 0, id]);
+  return { message: 'Status updated' };
+}

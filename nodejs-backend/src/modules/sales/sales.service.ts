@@ -101,3 +101,63 @@ export async function getTAMAccounts(status?: string) {
   );
   return rows;
 }
+
+export async function rescheduleTACall(input: {
+  CallID: number;
+  NewDatetime: string;
+  Reason: string;
+  UserID: number;
+}) {
+  await pool.execute(
+    `UPDATE TACall SET ScheduledDatetime = ?, RescheduleReason = ?,
+     Status = 'RESCHEDULED', UpdatedBy = ? WHERE CallID = ?`,
+    [input.NewDatetime, input.Reason, input.UserID, input.CallID],
+  );
+  const [[row]] = await pool.execute<mysql.RowDataPacket[]>(
+    'SELECT * FROM TACall WHERE CallID = ?', [input.CallID],
+  );
+  return row ?? null;
+}
+
+export async function createTAMAccount(input: {
+  AccountName: string;
+  ContactPerson?: string;
+  ContactEmail?: string;
+  TAMUserID?: number;
+  Status?: string;
+}) {
+  const [r] = await pool.execute<mysql.ResultSetHeader>(
+    `INSERT INTO TAMAccount (AccountName, ContactPerson, ContactEmail, TAMUserID, Status)
+     VALUES (?, ?, ?, ?, ?)`,
+    [input.AccountName, input.ContactPerson ?? null, input.ContactEmail ?? null,
+     input.TAMUserID ?? null, input.Status ?? 'ACTIVE'],
+  );
+  const [[row]] = await pool.execute<mysql.RowDataPacket[]>(
+    'SELECT * FROM TAMAccount WHERE AccountID = ?', [r.insertId],
+  );
+  return row;
+}
+
+export async function updateTAMAccount(input: {
+  AccountID: number;
+  AccountName?: string;
+  ContactPerson?: string;
+  ContactEmail?: string;
+  TAMUserID?: number;
+  Status?: string;
+}) {
+  const fields: string[] = [];
+  const values: unknown[] = [];
+  if (input.AccountName !== undefined) { fields.push('AccountName = ?'); values.push(input.AccountName); }
+  if (input.ContactPerson !== undefined) { fields.push('ContactPerson = ?'); values.push(input.ContactPerson); }
+  if (input.ContactEmail !== undefined) { fields.push('ContactEmail = ?'); values.push(input.ContactEmail); }
+  if (input.TAMUserID !== undefined) { fields.push('TAMUserID = ?'); values.push(input.TAMUserID); }
+  if (input.Status !== undefined) { fields.push('Status = ?'); values.push(input.Status); }
+  if (!fields.length) throw new Error('No fields to update');
+  values.push(input.AccountID);
+  await pool.query(`UPDATE TAMAccount SET ${fields.join(', ')} WHERE AccountID = ?`, values);
+  const [[row]] = await pool.execute<mysql.RowDataPacket[]>(
+    'SELECT * FROM TAMAccount WHERE AccountID = ?', [input.AccountID],
+  );
+  return row ?? null;
+}

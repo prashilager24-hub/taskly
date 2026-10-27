@@ -64,3 +64,22 @@ export async function getEfficiencySummary(filters: {
   );
   return rows;
 }
+
+
+export async function updateTarget(targetId: number, input: Record<string, unknown>) {
+  const allowed = ['TargetName', 'TargetType', 'TargetValue', 'StartDate', 'EndDate'];
+  const fields: string[] = [];
+  const values: unknown[] = [];
+  for (const key of allowed) {
+    if (input[key] !== undefined) { fields.push(`${key} = ?`); values.push(input[key]); }
+  }
+  if (!fields.length) throw new Error('No fields to update');
+  values.push(targetId);
+  await pool.query(`UPDATE DepartmentTarget SET ${fields.join(', ')} WHERE TargetID = ?`, values);
+  return { message: 'Target updated' };
+}
+
+export async function updateTargetStatus(targetId: number, status: string) {
+  await pool.execute('UPDATE DepartmentTarget SET Status = ? WHERE TargetID = ?', [status, targetId]);
+  return { message: 'Target status updated' };
+}

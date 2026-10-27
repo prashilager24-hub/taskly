@@ -1,3 +1,11 @@
+/**
+ * Reviews routes — ports of:
+ *   MonthlyReviewController  → /t2.0/authentificationUtilization/monthly-reviews
+ *   QuarterlyReviewController→ /t2.0/authentificationUtilization/quarterly-review
+ *   GoalEfficiencyController → /t2.0/authentificationUtilization/goal-efficiency
+ *
+ * All three routers are exported; app.ts mounts each at its own sub-path.
+ */
 import { Router } from 'express';
 import { authenticate } from '../../middlewares/auth';
 import { validate } from '../../middlewares/validate';
@@ -5,8 +13,9 @@ import { z } from 'zod';
 import { sendSuccess } from '../../utils/response';
 import * as svc from './reviews.service';
 
-const router = Router();
-router.use(authenticate);
+// ── Monthly Reviews ──────────────────────────────────────────────────────────
+const monthlyRouter = Router();
+monthlyRouter.use(authenticate);
 
 const MonthlyReviewSchema = z.object({
   emp_id: z.number().int().positive(),
@@ -19,6 +28,30 @@ const MonthlyReviewSchema = z.object({
   feedback: z.record(z.unknown()).optional(),
   accessor: z.record(z.unknown()).optional(),
 });
+
+// POST  /monthly-reviews          → upsert
+monthlyRouter.post('/', validate(MonthlyReviewSchema), async (req, res, next) => {
+  try { sendSuccess(res, await svc.upsertMonthlyReview(req.body)); } catch (e) { next(e); }
+});
+
+// GET   /monthly-reviews/:empId/:year
+monthlyRouter.get('/:empId/:year', async (req, res, next) => {
+  try {
+    sendSuccess(res, await svc.getMonthlyReviews({
+      emp_id: Number(req.params['empId']),
+      year: Number(req.params['year']),
+    }));
+  } catch (e) { next(e); }
+});
+
+// DELETE /monthly-reviews/:id
+monthlyRouter.delete('/:id', async (req, res, next) => {
+  try { sendSuccess(res, await svc.deleteMonthlyReview(Number(req.params['id']))); } catch (e) { next(e); }
+});
+
+// ── Quarterly Reviews ────────────────────────────────────────────────────────
+const quarterlyRouter = Router();
+quarterlyRouter.use(authenticate);
 
 const QuarterlyReviewSchema = z.object({
   emp_id: z.number().int().positive(),
@@ -34,40 +67,49 @@ const QuarterlyReviewSchema = z.object({
   grade: z.record(z.unknown()).optional(),
 });
 
-router.get('/monthly', async (req, res, next) => {
+const QuarterlyUpdateSchema = QuarterlyReviewSchema.partial().extend({
+  id: z.number().int().positive(),
+});
+
+// POST  /quarterly-review/create
+quarterlyRouter.post('/create', validate(QuarterlyReviewSchema), async (req, res, next) => {
+  try { sendSuccess(res, await svc.upsertQuarterlyReview(req.body), 201); } catch (e) { next(e); }
+});
+
+// GET   /quarterly-review/all
+quarterlyRouter.get('/all', async (_req, res, next) => {
+  try { sendSuccess(res, await svc.getQuarterlyReviews({})); } catch (e) { next(e); }
+});
+
+// GET   /quarterly-review/employee/:empId
+quarterlyRouter.get('/employee/:empId', async (req, res, next) => {
   try {
-    const { emp_id, month, year } = req.query as Record<string, string>;
-    sendSuccess(res, await svc.getMonthlyReviews({
-      emp_id: emp_id ? Number(emp_id) : undefined,
-      month: month ? Number(month) : undefined,
-      year: year ? Number(year) : undefined,
-    }));
-  } catch (e) { next(e); }
-});
-router.post('/monthly', validate(MonthlyReviewSchema), async (req, res, next) => {
-  try { sendSuccess(res, await svc.upsertMonthlyReview(req.body)); } catch (e) { next(e); }
-});
-router.get('/quarterly', async (req, res, next) => {
-  try {
-    const { emp_id, quarter, year } = req.query as Record<string, string>;
-    sendSuccess(res, await svc.getQuarterlyReviews({
-      emp_id: emp_id ? Number(emp_id) : undefined,
-      quarter,
-      year: year ? Number(year) : undefined,
-    }));
-  } catch (e) { next(e); }
-});
-router.post('/quarterly', validate(QuarterlyReviewSchema), async (req, res, next) => {
-  try { sendSuccess(res, await svc.upsertQuarterlyReview(req.body)); } catch (e) { next(e); }
-});
-router.get('/goal-efficiency', async (req, res, next) => {
-  try {
-    const { UserID, DepartmentID } = req.query as Record<string, string>;
-    sendSuccess(res, await svc.getGoalEfficiency({
-      UserID: UserID ? Number(UserID) : undefined,
-      DepartmentID: DepartmentID ? Number(DepartmentID) : undefined,
-    }));
+    sendSuccess(res, await svc.getQuarterlyReviews({ emp_id: Number(req.params['empId']) }));
   } catch (e) { next(e); }
 });
 
-export default router;
+// PUT   /quarterly-review/update/:id
+quarterlyRouter.put('/update/:id', validate(QuarterlyUpdateSchema), async (req, res, next) => {
+  try {
+    sendSuccess(res, await svc.upsertQuarterlyReview({ ...req.body, id: Number(req.params['id']) }));
+  } catch (e) { next(e); }
+});
+
+// ── Goal Efficiency ──────────────────────────────────────────────────────────
+const goalEfficiencyRouter = Router();
+goalEfficiencyRouter.use(authenticate);
+
+// POST  /goal-efficiency/calculate
+goalEfficiencyRouter.post('/calculate', async (req, res, next) => {
+  try { sendSuccess(res, await svc.calculateGoalEfficiency(req.body)); } catch (e) { next(e); }
+});
+
+// POST  /goal-efficiency/list
+goalEfficiencyRouter.post('/list', async (req, res, next) => {
+  try { sendSuccess(res, await svc.getGoalEfficiency(req.body)); } catch (e) { next(e); }
+});
+
+export { monthlyRouter, quarterlyRouter, goalEfficiencyRouter };
+
+// Default export for backward-compat (not used when app.ts imports named)
+export default monthlyRouter;

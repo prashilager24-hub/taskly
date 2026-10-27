@@ -102,3 +102,29 @@ export async function updatePmsGoalStatus(id: number, status: string) {
   await pool.execute('UPDATE PmsGoals SET Status = ? WHERE id = ?', [status, id]);
   return { message: 'PMS goal status updated' };
 }
+
+export async function updateGoal(goalId: number, input: Record<string, unknown>) {
+  const allowed = ['GoalName', 'GoalType', 'TargetValue', 'StartDate', 'EndDate', 'Status'];
+  const fields: string[] = [];
+  const values: unknown[] = [];
+  for (const key of allowed) {
+    if (input[key] !== undefined) { fields.push(`${key} = ?`); values.push(input[key]); }
+  }
+  if (!fields.length) throw new Error('No fields to update');
+  values.push(goalId);
+  await pool.query(`UPDATE DepartmentGoal SET ${fields.join(', ')} WHERE GoalID = ?`, values);
+  return { message: 'Goal updated' };
+}
+
+export async function updateGoalStatus(goalId: number, status: string) {
+  await pool.execute('UPDATE DepartmentGoal SET Status = ? WHERE GoalID = ?', [status, goalId]);
+  return { message: 'Goal status updated' };
+}
+
+export async function approveGoal(input: { GoalID: number; ApprovedBy: number; Status: string }) {
+  await pool.execute(
+    'UPDATE DepartmentGoal SET Status = ?, ApprovedBy = ? WHERE GoalID = ?',
+    [input.Status, input.ApprovedBy, input.GoalID],
+  );
+  return { message: 'Goal approval updated' };
+}

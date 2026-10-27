@@ -102,3 +102,8 @@ export async function logLeave(input: { UserID: number; WorkDate: string; LeaveT
   );
   return { LeaveID: r.insertId, message: 'Leave logged' };
 }
+
+export async function updateTaskStatus(taskId: number, status: string) {
+  await pool.execute('UPDATE DepartmentTask SET Status = ? WHERE TaskID = ?', [status, taskId]);
+  return { message: 'Task status updated' };
+}

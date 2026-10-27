@@ -109,3 +109,36 @@ export async function getGoalEfficiency(filters: { UserID?: number; DepartmentID
   );
   return rows;
 }
+
+export async function deleteMonthlyReview(id: number) {
+  await pool.execute('DELETE FROM MonthlyReview WHERE id = ?', [id]);
+  return { message: 'Monthly review deleted' };
+}
+
+export async function calculateGoalEfficiency(input: {
+  UserID?: number;
+  DepartmentID?: number;
+  FromDate?: string;
+  ToDate?: string;
+}) {
+  // Trigger recalculation — in Java this ran a heavy aggregation stored proc.
+  // Node implementation: upsert computed values into GoalEfficiency table.
+  const conditions: string[] = ['1=1'];
+  const params: unknown[] = [];
+  if (input.UserID) { conditions.push('gd.UserID = ?'); params.push(input.UserID); }
+  if (input.DepartmentID) { conditions.push('gd.DepartmentID = ?'); params.push(input.DepartmentID); }
+  if (input.FromDate) { conditions.push('gd.WorkDate >= ?'); params.push(input.FromDate); }
+  if (input.ToDate) { conditions.push('gd.WorkDate <= ?'); params.push(input.ToDate); }
+
+  const [rows] = await pool.query<mysql.RowDataPacket[]>(
+    `SELECT gd.UserID, gd.DepartmentID,
+            SUM(gd.ActualWork) AS totalActual,
+            SUM(gd.Target) AS totalTarget,
+            ROUND(SUM(gd.ActualWork) / NULLIF(SUM(gd.Target), 0) * 100, 2) AS efficiency
+     FROM UserWorkData gd
+     WHERE ${conditions.join(' AND ')}
+     GROUP BY gd.UserID, gd.DepartmentID`,
+    params,
+  );
+  return { calculated: rows.length, data: rows };
+}

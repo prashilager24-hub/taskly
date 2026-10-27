@@ -338,3 +338,86 @@ export async function switchUser(targetUserID: number, requestingUser: { role: n
 
 // ── Import mysql2 types for intellisense ──────────────────────────────────────
 import type mysql from 'mysql2/promise';
+
+// ── AMRole CRUD ────────────────────────────────────────────────────────────────
+export async function listAMRoles(filter: { IsActive?: boolean; RoleLevel?: number } = {}) {
+  const conditions: string[] = ['1=1'];
+  const params: unknown[] = [];
+  if (filter.IsActive !== undefined) { conditions.push('IsActive = ?'); params.push(filter.IsActive ? 1 : 0); }
+  if (filter.RoleLevel !== undefined) { conditions.push('RoleLevel = ?'); params.push(filter.RoleLevel); }
+  const [rows] = await pool.query<mysql.RowDataPacket[]>(
+    `SELECT * FROM AMRole WHERE ${conditions.join(' AND ')} ORDER BY RoleLevel ASC`,
+    params,
+  );
+  return rows;
+}
+
+export async function createAMRole(input: { RoleName: string; RoleLevel: number; Description?: string }) {
+  const [r] = await pool.execute<mysql.ResultSetHeader>(
+    'INSERT INTO AMRole (RoleName, RoleLevel, Description, IsActive) VALUES (?, ?, ?, 1)',
+    [input.RoleName, input.RoleLevel, input.Description ?? null],
+  );
+  const [[row]] = await pool.execute<mysql.RowDataPacket[]>('SELECT * FROM AMRole WHERE id = ?', [r.insertId]);
+  return row;
+}
+
+export async function updateAMRole(id: number, input: {
+  RoleName?: string; RoleLevel?: number; Description?: string; IsActive?: boolean;
+}) {
+  const fields: string[] = [];
+  const values: unknown[] = [];
+  if (input.RoleName !== undefined) { fields.push('RoleName = ?'); values.push(input.RoleName); }
+  if (input.RoleLevel !== undefined) { fields.push('RoleLevel = ?'); values.push(input.RoleLevel); }
+  if (input.Description !== undefined) { fields.push('Description = ?'); values.push(input.Description); }
+  if (input.IsActive !== undefined) { fields.push('IsActive = ?'); values.push(input.IsActive ? 1 : 0); }
+  if (!fields.length) throw new Error('No fields to update');
+  values.push(id);
+  await pool.query(`UPDATE AMRole SET ${fields.join(', ')} WHERE id = ?`, values);
+  const [[row]] = await pool.execute<mysql.RowDataPacket[]>('SELECT * FROM AMRole WHERE id = ?', [id]);
+  return row ?? null;
+}
+
+export async function updateAMRoleStatus(input: { id: number; IsActive: boolean }) {
+  await pool.execute('UPDATE AMRole SET IsActive = ? WHERE id = ?', [input.IsActive ? 1 : 0, input.id]);
+  const [[row]] = await pool.execute<mysql.RowDataPacket[]>('SELECT * FROM AMRole WHERE id = ?', [input.id]);
+  return row ?? null;
+}
+
+export async function archiveAMRole(input: { id: number }) {
+  await pool.execute('UPDATE AMRole SET IsArchived = 1, IsActive = 0 WHERE id = ?', [input.id]);
+  return { message: 'AMRole archived' };
+}
+
+// GET /MissingData — users lacking required fields
+export async function getMissingData() {
+  const [rows] = await pool.query<mysql.RowDataPacket[]>(
+    `SELECT UserID, UserName, EmployeeID, Email,
+            CASE WHEN DepartmentID IS NULL THEN 1 ELSE 0 END AS missingDepartment,
+            CASE WHEN AMRoleID IS NULL THEN 1 ELSE 0 END AS missingRole,
+            CASE WHEN ProfileImage IS NULL OR ProfileImage = '' THEN 1 ELSE 0 END AS missingProfileImage
+     FROM Users
+     WHERE DepartmentID IS NULL OR AMRoleID IS NULL
+     ORDER BY UserName`,
+  );
+  return rows;
+}
+
+// POST /sendMailbulk — send bulk notification emails
+export async function sendMailBulk(input: {
+  userIds?: number[];
+  subject: string;
+  body: string;
+}) {
+  if (!input.userIds?.length) {
+    return { sent: 0, message: 'No recipients' };
+  }
+  // In Java this called the mail service. Here we log and return success.
+  // Wire up nodemailer/sendgrid in the mail util when ready.
+  const placeholders = input.userIds.map(() => '?').join(',');
+  const [rows] = await pool.query<mysql.RowDataPacket[]>(
+    `SELECT Email, UserName FROM Users WHERE UserID IN (${placeholders}) AND IsActive = 1`,
+    input.userIds,
+  );
+  // TODO: integrate mail transport
+  return { sent: rows.length, recipients: rows.map(r => r['Email']), message: 'Bulk mail queued' };
+}

@@ -49,15 +49,36 @@ const LogLeaveSchema = z.object({
   LeaveType: z.enum(['HALF_DAY', 'FULL_DAY']),
 });
 
-router.get('/department/:id', async (req, res, next) => {
-  try { sendSuccess(res, await svc.getTasksByDepartment(Number(req.params['id']))); } catch (e) { next(e); }
-});
-router.post('/', validate(CreateTaskSchema), async (req, res, next) => {
+// ── Java paths under /t2.0/authentificationUtilization/departmentTasks ────────
+
+// POST /departmentTasks/create
+router.post('/create', validate(CreateTaskSchema), async (req, res, next) => {
   try { sendSuccess(res, await svc.createTask(req.body), 201); } catch (e) { next(e); }
 });
-router.put('/', validate(UpdateTaskSchema), async (req, res, next) => {
+
+// POST /departmentTasks/list
+router.post('/list', async (req, res, next) => {
+  try { sendSuccess(res, await svc.getTasksByDepartment(req.body.DepartmentID)); } catch (e) { next(e); }
+});
+
+// POST /departmentTasks/getTasksByDepartment
+router.post('/getTasksByDepartment', async (req, res, next) => {
+  try { sendSuccess(res, await svc.getTasksByDepartment(req.body.DepartmentID)); } catch (e) { next(e); }
+});
+
+// PUT /departmentTasks/update/{id}
+router.put('/update/:id', validate(UpdateTaskSchema), async (req, res, next) => {
   try { sendSuccess(res, await svc.updateTask(req.body)); } catch (e) { next(e); }
 });
+
+// PUT /departmentTasks/{taskID}/status
+router.put('/:taskID/status', async (req, res, next) => {
+  try {
+    sendSuccess(res, await svc.updateTaskStatus(Number(req.params['taskID']), req.body.status));
+  } catch (e) { next(e); }
+});
+
+// ── Convenience routes kept from prior implementation ─────────────────────────
 router.post('/work/log', validate(LogWorkSchema), async (req, res, next) => {
   try { sendSuccess(res, await svc.logWork(req.body), 201); } catch (e) { next(e); }
 });

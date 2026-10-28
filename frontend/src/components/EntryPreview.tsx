@@ -17,7 +17,9 @@ interface PendingPreview {
     onConfirm: () => void;
 }
 
-export function useEntryPreview() {
+export interface AddedSummary { kind: string; name: string; detail: string }
+
+export function useEntryPreview(getAdded?: () => AddedSummary[]) {
     const [pending, setPending] = useState<PendingPreview | null>(null);
     const confirmRef = useRef<(() => void) | null>(null);
 
@@ -32,31 +34,49 @@ export function useEntryPreview() {
         setPending(null);
     };
 
+    const added = pending ? getAdded?.() ?? [] : [];
     const modal = (
-        <Modal isOpen={!!pending} onOpenChange={(open) => { if (!open) close(); }} size="md">
+        <Modal isOpen={!!pending} onOpenChange={(open) => { if (!open) close(); }} size="lg" scrollBehavior="inside">
             <ModalContent>
                 <ModalHeader className="flex flex-col gap-1">
-                    <span className="eyebrow">Step 2 of 3 · Preview</span>
+                    <span className="eyebrow">Preview</span>
                     <span className="text-base font-bold">{pending?.title}</span>
                 </ModalHeader>
-                <ModalBody>
-                    <dl className="divide-y divide-ink-200 dark:divide-white/10 border border-ink-200 dark:border-white/10">
-                        {pending?.rows.map((r) => (
-                            <div key={r.label} className="grid grid-cols-[40%_60%] gap-2 px-3 py-2 text-sm">
-                                <dt className="label-base mb-0 self-center">{r.label}</dt>
-                                <dd className="text-ink-900 dark:text-white break-words">
-                                    {r.value === "" || r.value == null ? <span className="text-ink-400">—</span> : r.value}
-                                </dd>
-                            </div>
-                        ))}
-                    </dl>
+                <ModalBody className="gap-5">
+                    <section>
+                        <h4 className="eyebrow mb-2">This entry</h4>
+                        <dl className="divide-y divide-ink-200 border border-ink-200 dark:divide-white/10 dark:border-white/10">
+                            {pending?.rows.map((r) => (
+                                <div key={r.label} className="grid grid-cols-[40%_60%] gap-2 px-3 py-2 text-sm">
+                                    <dt className="label-base mb-0 self-center">{r.label}</dt>
+                                    <dd className="break-words text-ink-900 dark:text-white">
+                                        {r.value === "" || r.value == null ? <span className="text-ink-400">—</span> : r.value}
+                                    </dd>
+                                </div>
+                            ))}
+                        </dl>
+                    </section>
+                    {added.length > 0 && (
+                        <section>
+                            <h4 className="eyebrow mb-2">Already in today's log · {added.length}</h4>
+                            <ul className="divide-y divide-ink-200 border border-ink-200 dark:divide-white/10 dark:border-white/10">
+                                {added.map((a, i) => (
+                                    <li key={i} className="flex items-center gap-3 px-3 py-2 text-sm">
+                                        <span className="w-14 shrink-0 text-[10.5px] font-bold uppercase tracking-wide text-ink-500 dark:text-ink-400">{a.kind}</span>
+                                        <span className="min-w-0 flex-1 truncate text-ink-900 dark:text-white">{a.name}</span>
+                                        <span className="shrink-0 text-ink-600 dark:text-ink-300">{a.detail}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </section>
+                    )}
                     <p className="text-xs text-ink-500 dark:text-ink-400">
-                        Add this entry to Today's Activities? It is saved to Taskly when you press Submit Log.
+                        Save adds this entry to today's log. Nothing is sent to Taskly until you submit the log. Choose Keep editing to change anything first.
                     </p>
                 </ModalBody>
                 <ModalFooter>
-                    <Button variant="bordered" onPress={close}>No, keep editing</Button>
-                    <Button color="primary" startContent={<Check size={14} />} onPress={confirm}>Yes, add</Button>
+                    <Button variant="bordered" onPress={close}>Keep editing</Button>
+                    <Button color="primary" startContent={<Check size={14} />} onPress={confirm}>Save entry</Button>
                 </ModalFooter>
             </ModalContent>
         </Modal>

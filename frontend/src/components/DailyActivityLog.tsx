@@ -5,6 +5,7 @@ import { parseZonedDateTime } from "@internationalized/date";
 import { Input } from "@/components/ui";
 import WeeklyPulse from "./WeeklyPulse";
 import { useLocation } from "react-router-dom";
+import { createPortal } from "react-dom";
 import { Select, SelectItem, addToast, DatePicker, Autocomplete, Chip, CheckboxGroup, Modal, ModalHeader, ModalContent, ModalBody, ModalFooter, AutocompleteItem, Checkbox, RadioGroup, Radio, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@/components/ui";
 import { CalendarDate } from "@internationalized/date";
 import CustomDatePicker from "../components/customDatePicker"
@@ -261,6 +262,11 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
     const [showMessage, setShowMessage] = useState(false);
     const [entryStep, setEntryStep] = useState<EntryStep>("TASK");
     const [activities, setActivities] = useState<ActivityEntry[]>([]);
+    // The last stepper step: every entry added so far, grouped, with totals and the Submit button
+    const [reviewMode, setReviewMode] = useState(false);
+    // Import / Export template live in the page toolbar (forms.tsx), shared by every step
+    const [toolbarSlot, setToolbarSlot] = useState<HTMLElement | null>(null);
+    useEffect(() => { setToolbarSlot(document.getElementById("da-toolbar-slot")); });
 
     useEffect(() => {
         const authUserLD = localStorage.getItem("authUserLD");
@@ -889,7 +895,16 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
     // ── Fill → Preview → Save (DA-05 – DA-07) ──────────────────────────────────
     // Preview shows what will be added; "Yes" runs the existing add, "No" keeps the form as filled.
-    const { openPreview, previewOpen, previewModal } = useEntryPreview();
+    const summaryOf = () => {
+        const kind = (a: ActivityEntry) => (a.isGoal ? "Goal" : a.targetName ? "Target" : "Task");
+        const mins = (a: ActivityEntry) => (a.isDynamic ? Number(a.timeTaken || 0) : Number(a.customTime || 0) * Number(a.setup || 1));
+        return activities.map((a) => ({
+            kind: kind(a),
+            name: a.goalName || a.targetName || a.taskName || "—",
+            detail: a.targetName || a.goalID ? `${a.achievedUnit || 0}${a.unit ? ` of ${a.unit}` : ""}` : `${mins(a).toFixed(0)} mins`,
+        }));
+    };
+    const { openPreview, previewOpen, previewModal } = useEntryPreview(summaryOf);
     const entryDateLabel = (() => {
         try { return toYYYYMMDD(workDate); } catch { return String(workDate); }
     })();
@@ -2013,6 +2028,19 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
             </Modal>
 
 
+
+            {toolbarSlot && DeptId != 24 && createPortal(
+                <>
+                    <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleUploadExcel} />
+                    <Button variant="bordered" size="sm" isLoading={isUploading} onPress={() => fileInputRef.current?.click()}>
+                        {isUploading ? "Uploading..." : "Import"}
+                    </Button>
+                    <Button variant="bordered" size="sm" onPress={handleDownloadTemplate}>
+                        Export template
+                    </Button>
+                </>,
+                toolbarSlot,
+            )}
             {DeptId != 24 && (() => {
                 const kindOf = (a: ActivityEntry): EntryStep => (a.isGoal ? "GOAL" : a.targetID || a.targetName ? "TARGET" : "TASK");
                 const count = (k: EntryStep) => activities.filter((a) => kindOf(a) === k).length;
@@ -2026,13 +2054,13 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                     <nav aria-label="Entry steps" className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900">
                         <ol className="grid" style={{ gridTemplateColumns: `repeat(${steps.length + 1}, minmax(0, 1fr))` }}>
                             {steps.map((st, i) => {
-                                const on = st.key === entryStep;
+                                const on = !reviewMode && st.key === entryStep;
                                 const n = count(st.key);
                                 return (
                                     <li key={st.key} className={i > 0 ? "border-l border-ink-200 dark:border-white/10" : ""}>
                                         <button
                                             type="button"
-                                            onClick={() => setEntryStep(st.key)}
+                                            onClick={() => { setReviewMode(false); setEntryStep(st.key); }}
                                             aria-current={on ? "step" : undefined}
                                             className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors focus-ring ${on ? "bg-brand-50 dark:bg-brand-500/10" : "hover:bg-ink-50 dark:hover:bg-white/5"}`}
                                         >
@@ -2050,13 +2078,14 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                             <li className="border-l border-ink-200 dark:border-white/10">
                                 <button
                                     type="button"
-                                    onClick={() => document.getElementById("entries-review")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                                    className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-ink-50 focus-ring dark:hover:bg-white/5"
+                                    onClick={() => setReviewMode(true)}
+                                    aria-current={reviewMode ? "step" : undefined}
+                                    className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors focus-ring ${reviewMode ? "bg-brand-50 dark:bg-brand-500/10" : "hover:bg-ink-50 dark:hover:bg-white/5"}`}
                                 >
-                                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center text-xs font-bold ${activities.length ? "bg-emerald-600 text-white" : "border border-ink-300 text-ink-500 dark:border-white/20"}`}>{steps.length + 1}</span>
+                                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center text-xs font-bold ${reviewMode ? "bg-brand-600 text-white" : activities.length ? "bg-emerald-600 text-white" : "border border-ink-300 text-ink-500 dark:border-white/20"}`}>{steps.length + 1}</span>
                                     <span className="min-w-0">
-                                        <span className="block truncate text-sm font-semibold text-ink-900 dark:text-white">Submit</span>
-                                        <span className="block truncate text-xs text-ink-500 dark:text-ink-400">{activities.length ? `${activities.length} ${activities.length === 1 ? "entry" : "entries"} ready` : "Send the day for approval"}</span>
+                                        <span className={`block truncate text-sm font-semibold ${reviewMode ? "text-brand-700 dark:text-brand-300" : "text-ink-900 dark:text-white"}`}>Review & submit</span>
+                                        <span className="block truncate text-xs text-ink-500 dark:text-ink-400">{activities.length ? `${activities.length} ${activities.length === 1 ? "entry" : "entries"} ready` : "See everything, then submit"}</span>
                                     </span>
                                 </button>
                             </li>
@@ -2066,7 +2095,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
             })()}
 
             {DeptId == 24 ? (<><WeeklyPulse /></>) : (<>
-                <Card className="w-full">
+                {!reviewMode && (<Card className="w-full">
                     <CardHeader className="pb-4">
                         <div className="flex flex-col space-y-2">
 
@@ -2075,8 +2104,19 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                 {/* Title */}
                                 <div className="mr-auto">
                                     <p className="text-base font-bold text-ink-900 dark:text-white">{entryStep === "TASK" ? "Task entry" : entryStep === "TARGET" ? "Target entry" : "Goal entry"}</p>
-                                    <p className="mt-0.5 text-xs text-ink-500 dark:text-ink-400">Fill the form and preview it to add it to your day. Move on with Next when you are done.</p>
+                                    <p className="mt-0.5 text-xs text-ink-500 dark:text-ink-400">Fill the form and press Preview. Save the entry to add it to your day, or keep editing.</p>
                                 </div>
+                                {(() => {
+                                    const order: EntryStep[] = ["TASK", ...(isSkipTargetStep ? [] : ["TARGET" as EntryStep]), ...(isSkipGoalStep && authUser.userRole !== 1 ? [] : ["GOAL" as EntryStep])];
+                                    const i = order.indexOf(entryStep);
+                                    const names: Record<string, string> = { TASK: "Task entry", TARGET: "Target entry", GOAL: "Goal entry" };
+                                    const next = order[i + 1];
+                                    return (
+                                        <Button color="primary" size="sm" onPress={() => (next ? setEntryStep(next) : setReviewMode(true))}>
+                                            {next ? `Next: ${names[next]} →` : "Next: Review & submit →"}
+                                        </Button>
+                                    );
+                                })()}
                                 
 
                                 {/* Half-Day Switch */}
@@ -2115,32 +2155,6 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                         {isTAMModalOpen ? "close" : " Switch to TAM Target"}
                                     </Button>
                                 )}
-
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept=".xlsx,.xls"
-                                    className="hidden"
-                                    onChange={handleUploadExcel}
-                                />
-                                <Button
-                                    color="success"
-                                    variant="flat"
-                                    size="sm"
-                                    isLoading={isUploading}
-                                    onPress={() => fileInputRef.current?.click()}
-                                >
-                                    {isUploading ? "Uploading..." : "Import"}
-                                </Button>
-                                <Button
-                                    color="secondary"
-                                    variant="flat"
-                                    size="sm"
-                                    onPress={handleDownloadTemplate}
-                                >
-                                    Export template
-                                </Button>
-
 
                             </div>
 
@@ -3445,119 +3459,21 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
 
 
-                                <Divider />
-
-                                {/* Footer */}
-                                <div className="flex justify-between items-center">
-                                    <div className="space-y-1 text-sm font-semibold">
-
-                                        <div>
-                                            <span className="text-ink-600 dark:text-ink-400">
-                                                Total Logged
-                                            </span>
-                                            <span className="text-brand-600 dark:text-brand-400 mx-2">
-                                                {(() => {
-                                                    const totalHours = activities.reduce((sum, a) => {
-                                                        // Skip target-based tasks
-                                                        if (a.targetValue || a.percentage) return sum;
-
-                                                        // For Unscheduled Tasks → add only customTime
-                                                        if (a.isDynamic) {
-                                                            return sum + Number(a.timeTaken || 0);
-                                                        }
-
-                                                        // For all other tasks → customTime * setup
-                                                        return sum + (Number(a.customTime || 0) * Number(a.setup || 1));
-                                                    }, 0);
-
-                                                    return `${totalHours.toFixed(2)} mins`;
-                                                })()}
-                                            </span>
-
-                                        </div>
-
-                                        <div>
-                                            <span className="text-ink-600 dark:text-ink-400">
-                                                Total Time Taken
-                                            </span>
-                                            <span className="text-emerald-600 dark:text-emerald-400 mx-2">
-                                                {(() => {
-                                                    const totalTimeTaken = activities.reduce((sum, a) => {
-                                                        return sum + Number(a.timeTaken || 0);
-                                                    }, 0);
-                                                    return `${totalTimeTaken.toFixed(2)} mins`;
-                                                })()}
-                                            </span>
-                                        </div>
-                                    </div>
-
-
-                                    <div className="flex gap-2">
-
-                                        {entryStep !== "TASK" && (
-                                            <Button
-                                                color="default"
-                                                size="sm"
-                                                onClick={() => {
-
-                                                    if (entryStep === "TARGET") {
-                                                        setEntryStep("TASK");
-                                                    } else if (entryStep === "GOAL") {
-                                                        setEntryStep(isSkipTargetStep ? "TASK" : "TARGET");
-                                                    }
-
-                                                }}
-                                            >
-                                                ← Back
-                                            </Button>
-                                        )}
-
-                                        {entryStep !== "GOAL" &&
-                                            !(entryStep === "TARGET" && isSkipGoalStep) && (
-                                                <Button
-                                                    color="primary"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        if (entryStep === "TASK") {
-                                                            setEntryStep(isSkipTargetStep ? "GOAL" : "TARGET");
-                                                        } else if (entryStep === "TARGET") {
-                                                            setEntryStep("GOAL");
-                                                        }
-                                                    }}
-                                                >
-                                                    {entryStep === "TASK" ? (isSkipTargetStep ? "Next: Goal entry →" : "Next: Target entry →") : "Next: Goal entry →"}
-                                                </Button>
-                                            )}
-
-                                        {(entryStep === "GOAL" || (entryStep === "TARGET" && isSkipGoalStep)) && (
-                                            <Button
-                                                color="primary"
-                                                size="sm"
-                                                onClick={() => document.getElementById("entries-review")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                                            >
-                                                Submit ↓
-                                            </Button>
-                                        )}
-
-                                    </div>
-
-
-                                </div>
                             </>
                         }
 
                     </CardBody>
-                </Card >
+                </Card >)}
                 {/* Activities/PR List */}
 
-                <Card id="entries-review" className="w-full scroll-mt-4 shadow-none">
+                {reviewMode && (<Card id="entries-review" className="w-full shadow-none">
                     <CardBody className="px-6 py-5">
                         <>
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h3 className="text-base font-bold text-ink-900 dark:text-white">Ready to submit</h3>
+                                    <h3 className="text-base font-bold text-ink-900 dark:text-white">Review & submit</h3>
                                     <p className="mt-0.5 text-xs text-ink-500 dark:text-ink-400">
-                                        {activities.length ? `${activities.length} ${activities.length === 1 ? "entry" : "entries"} added. Nothing is saved until you press Submit Log.` : "Entries you add in the steps above are listed here. Nothing is saved until you press Submit Log."}
+                                        Nothing is saved to Taskly until you press Submit Log.
                                     </p>
                                 </div>
                                 <Button
@@ -3624,42 +3540,64 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
                             </div>
 
-                            {/* Added entries: the preview already confirmed each one, so this is a short list to remove from, not a table */}
-                            {activities.length > 0 && (
-                                <ul className="mt-4 divide-y divide-ink-200 border border-ink-200 dark:divide-white/10 dark:border-white/10">
-                                    {activities.map((activity, index) => {
-                                        const kind = activity.isGoal ? "Goal" : activity.targetName ? "Target" : "Task";
-                                        const name = activity.goalName || activity.targetName || activity.taskName || "—";
-                                        const detail = activity.targetName || activity.goalID
-                                            ? `${activity.achievedUnit || 0}${activity.unit ? ` of ${activity.unit}` : ""} ${activity.frequency || ""}`.trim()
-                                            : `${Number(activity.timeTaken || 0).toFixed(0)} mins${Number(activity.setup || 1) > 1 ? ` · ${activity.setup} setups` : ""}`;
-                                        return (
-                                            <li key={activity.id} className="flex items-center gap-3 px-4 py-3">
-                                                <span className="w-6 text-xs font-semibold text-ink-400">{index + 1}</span>
-                                                <span className={`shrink-0 px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wide ${kind === "Task" ? "bg-ink-100 text-ink-700 dark:bg-white/10 dark:text-ink-200" : "bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-300"}`}>{kind}</span>
-                                                <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink-900 dark:text-white">{name}</span>
-                                                <span className="hidden shrink-0 text-xs text-ink-500 dark:text-ink-400 sm:block">{activity.workDate ? formatDate(activity.workDate) : ""}</span>
-                                                <span className="shrink-0 text-sm text-ink-700 dark:text-ink-200">{detail}</span>
-                                                <Button
-                                                    isIconOnly
-                                                    size="sm"
-                                                    variant="light"
-                                                    color="danger"
-                                                    aria-label={`Remove ${name}`}
-                                                    onClick={() => handleRemoveActivity(activity.id)}
-                                                >
-                                                    ✕
-                                                </Button>
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
-                            )}
+                            {/* Everything added so far, grouped, with totals. Edit by removing an entry and adding it again from its step. */}
+                            {(() => {
+                                const kindOf = (a: ActivityEntry) => (a.isGoal ? "Goal" : a.targetName ? "Target" : "Task");
+                                const minsOf = (a: ActivityEntry) => (a.isDynamic ? Number(a.timeTaken || 0) : Number(a.customTime || 0) * Number(a.setup || 1));
+                                const logged = activities.filter((a) => !(a.targetValue || a.percentage)).reduce((sum, a) => sum + minsOf(a), 0);
+                                const taken = activities.reduce((sum, a) => sum + Number(a.timeTaken || 0), 0);
+                                const groups = [["Task", "Task entries", "TASK"], ["Target", "Target entries", "TARGET"], ["Goal", "Goal entries", "GOAL"]] as const;
+                                return (
+                                    <div className="mt-5 flex flex-col gap-5">
+                                        <dl className="grid grid-cols-2 border border-ink-200 dark:border-white/10 sm:grid-cols-4">
+                                            {[["Entries", String(activities.length)], ["Total logged", `${logged.toFixed(0)} mins`], ["Total time taken", `${taken.toFixed(0)} mins`], ["Date", entryDateLabel]].map(([k, v], i) => (
+                                                <div key={k} className={`px-4 py-3 ${i > 0 ? "border-l border-ink-200 dark:border-white/10" : ""}`}>
+                                                    <dt className="eyebrow">{k}</dt>
+                                                    <dd className="mt-1 text-lg font-bold text-ink-900 dark:text-white">{v}</dd>
+                                                </div>
+                                            ))}
+                                        </dl>
+                                        {activities.length === 0 && (
+                                            <p className="border border-dashed border-ink-300 px-4 py-8 text-center text-sm text-ink-500 dark:border-white/15 dark:text-ink-400">
+                                                Nothing added yet. Go back to a step above, fill the form and press Preview.
+                                            </p>
+                                        )}
+                                        {groups.map(([kind, title, step]) => {
+                                            const rows = activities.filter((a) => kindOf(a) === kind);
+                                            if (!rows.length) return null;
+                                            return (
+                                                <section key={kind}>
+                                                    <div className="mb-2 flex items-center justify-between">
+                                                        <h4 className="eyebrow">{title} · {rows.length}</h4>
+                                                        <button type="button" className="text-[11px] font-bold uppercase tracking-wide text-brand-600 hover:underline focus-ring" onClick={() => { setReviewMode(false); setEntryStep(step as EntryStep); }}>Add another</button>
+                                                    </div>
+                                                    <ul className="divide-y divide-ink-200 border border-ink-200 dark:divide-white/10 dark:border-white/10">
+                                                        {rows.map((activity) => {
+                                                            const name = activity.goalName || activity.targetName || activity.taskName || "—";
+                                                            const detail = activity.targetName || activity.goalID
+                                                                ? `${activity.achievedUnit || 0}${activity.unit ? ` of ${activity.unit}` : ""} ${activity.frequency || ""}`.trim()
+                                                                : `${Number(activity.timeTaken || 0).toFixed(0)} mins${Number(activity.setup || 1) > 1 ? ` · ${activity.setup} setups` : ""}`;
+                                                            return (
+                                                                <li key={activity.id} className="flex items-center gap-3 px-4 py-3">
+                                                                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink-900 dark:text-white">{name}</span>
+                                                                    <span className="hidden shrink-0 text-xs text-ink-500 dark:text-ink-400 sm:block">{activity.workDate ? formatDate(activity.workDate) : ""}</span>
+                                                                    <span className="shrink-0 text-sm text-ink-700 dark:text-ink-200">{detail}</span>
+                                                                    <Button isIconOnly size="sm" variant="light" color="danger" aria-label={`Remove ${name}`} onClick={() => handleRemoveActivity(activity.id)}>✕</Button>
+                                                                </li>
+                                                            );
+                                                        })}
+                                                    </ul>
+                                                </section>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            })()}
                         </>
 
 
                     </CardBody>
-                </Card>
+                </Card>)}
             </>)
             }
 

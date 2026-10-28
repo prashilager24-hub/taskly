@@ -345,6 +345,8 @@ export default function FormPage() {
                         { key: "log", label: "Log activity" },
                     ]}
                 />
+                {/* Import / Export template are rendered here by the Log activity form */}
+                <div id="da-toolbar-slot" className="flex items-center gap-2" />
             </div>
 
             {view === "entries" ? (

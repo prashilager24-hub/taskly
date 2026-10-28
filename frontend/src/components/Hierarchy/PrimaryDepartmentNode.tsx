@@ -2,7 +2,7 @@ import { Handle, Position } from "reactflow";
 
 export function PrimaryDepartmentNode({ data }: any) {
     return (
-        <div className="rounded-xl border-2 border-blue-500 bg-white shadow-md p-3 min-w-[220px]">
+        <div className="rounded-xl border-2 border-brand-500 bg-white dark:bg-ink-900 shadow-md p-3 min-w-[220px]">
 
             <Handle type="target" position={Position.Top} />
 
@@ -10,7 +10,7 @@ export function PrimaryDepartmentNode({ data }: any) {
                 {data.primaryDepartmentName}
             </div>
 
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-ink-500 dark:text-ink-400">
                 {data.type}
             </div>
 

@@ -14,6 +14,9 @@ import {
   UpdateUserStatusSchema,
   ArchiveUsersSchema,
   SwitchUserSchema,
+  VerifyOtpSchema,
+  ResendOtpSchema,
+  ThemeSchema,
 } from './auth.schema';
 import * as ctrl from './auth.controller';
 import * as svc from './auth.service';
@@ -22,6 +25,8 @@ const router = Router();
 
 // ── Public routes ─────────────────────────────────────────────────────────────
 router.post('/authenticate', authLimiter, validate(LoginSchema), ctrl.loginHandler);
+router.post('/authenticate/verify-otp', authLimiter, validate(VerifyOtpSchema), ctrl.verifyOtpHandler);
+router.post('/authenticate/resend-otp', authLimiter, validate(ResendOtpSchema), ctrl.resendOtpHandler);
 router.post('/forgotPassword', authLimiter, validate(ForgotPasswordSchema), ctrl.forgotPasswordHandler);
 router.post('/resetPassword', authLimiter, validate(ResetPasswordSchema), ctrl.resetPasswordHandler);
 
@@ -30,6 +35,8 @@ router.post('/users/read', authenticate, validate(UsersReadSchema), ctrl.getUser
 router.post('/updateUserStatus', authenticate, validate(UpdateUserStatusSchema), ctrl.updateUserStatusHandler);
 router.post('/usersArchive', authenticate, validate(ArchiveUsersSchema), ctrl.archiveUsersHandler);
 router.post('/user/switch', authenticate, validate(SwitchUserSchema), ctrl.switchUserHandler);
+router.post('/logout', authenticate, ctrl.logoutHandler);
+router.put('/user/theme', authenticate, validate(ThemeSchema), ctrl.saveThemeHandler);
 
 router.post('/User/create', authenticate, validate(CreateUserSchema), ctrl.createUserHandler);
 router.put('/User/update', authenticate, validate(UpdateUserSchema), ctrl.updateUserHandler);

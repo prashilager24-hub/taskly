@@ -106,20 +106,20 @@ export default function ReportsPage() {
         switch (columnKey) {
             case 'DailyTaskLogID':
                 return (
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    <span className="text-sm font-medium text-ink-900 dark:text-white">
                         #{log.DailyTaskLogID}
                     </span>
                 );
             case 'TaskID':
                 return (
-                    <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                    <span className="text-sm font-medium text-brand-600 dark:text-brand-400">
                         T-{log.TaskID}
                     </span>
                 );
             case 'TaskName':
                 return (
                     <div className="max-w-xs">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate" title={log.TaskName}>
+                        <p className="text-sm font-medium text-ink-900 dark:text-white truncate" title={log.TaskName}>
                             {log.TaskName}
                         </p>
                     </div>
@@ -127,22 +127,22 @@ export default function ReportsPage() {
             case 'UserName':
                 return (
                     <div className="flex flex-col">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{log.UserName}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">ID: {log.UserID}</p>
+                        <p className="text-sm font-medium text-ink-900 dark:text-white">{log.UserName}</p>
+                        <p className="text-xs text-ink-500 dark:text-ink-400">ID: {log.UserID}</p>
                     </div>
                 );
             case 'WorkDate':
                 return new Date(log.WorkDate).toLocaleDateString();
             case 'actualTimeOfWork':
                 return (
-                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-brand-100 text-brand-800">
                         {log.actualTimeOfWork} mins
                     </span>
                 );
             case 'Remarks':
                 return (
                     <div className="max-w-xs">
-                        <p className="text-sm text-gray-600 dark:text-gray-400 truncate" title={log.Remarks}>
+                        <p className="text-sm text-ink-600 dark:text-ink-400 truncate" title={log.Remarks}>
                             {log.Remarks || 'No remarks'}
                         </p>
                     </div>
@@ -349,7 +349,7 @@ export default function ReportsPage() {
             </div>
 
             {/* Reports Table */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden p-6">
+            <div className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 overflow-hidden p-6">
                 <ReusableTable
                     data={reportData}
                     columns={reportColumns}

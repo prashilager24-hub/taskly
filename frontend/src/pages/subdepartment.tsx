@@ -6,7 +6,7 @@ import EmptyContainer from "@/components/EmptyContainer";
 import { Select, SelectItem } from "@/components/ui";
 import { DailyActivityLog } from "@/components";
 import {
-    Modal,
+    Drawer, DrawerContent, DrawerHeader, DrawerBody, DrawerFooter, Modal,
     ModalContent,
     ModalHeader,
     ModalBody,
@@ -32,7 +32,7 @@ const ConfirmDeleteModal = ({
 }) => (
     <Modal isOpen={isOpen} onOpenChange={onClose} size="sm">
         <ModalContent>
-            <ModalHeader>Delete Department</ModalHeader>
+            <ModalHeader>Delete Sub Department</ModalHeader>
             <ModalBody>
                 <p>
                     Are you sure you want to delete <strong>{departmentName}</strong>?
@@ -145,7 +145,7 @@ export default function DepartmentPage() {
 
             addToast({
                 title: "Success",
-                description: "Primary department linked successfully",
+                description: "Department linked successfully",
                 color: "success",
             });
 
@@ -159,7 +159,7 @@ export default function DepartmentPage() {
             console.error("Error linking primary department:", error);
             addToast({
                 title: "Error",
-                description: "Failed to link primary department",
+                description: "Failed to link department",
                 color: "danger",
             });
         }
@@ -345,7 +345,7 @@ export default function DepartmentPage() {
             console.log("Department Created:", response.data);
             addToast({
                 title: "Success",
-                description: "Department created successfully",
+                description: "Sub Department created successfully",
                 color: "success",
             });
 
@@ -390,7 +390,7 @@ export default function DepartmentPage() {
             console.error("Error creating department:", error);
             addToast({
                 title: "Error",
-                description: "Failed to create department",
+                description: "Failed to create sub department",
                 color: "danger",
             });
         }
@@ -420,7 +420,7 @@ export default function DepartmentPage() {
             console.log("Department Edited:", response.data);
             addToast({
                 title: "Success",
-                description: "Department updated successfully",
+                description: "Sub Department updated successfully",
                 color: "success",
             });
 
@@ -434,7 +434,7 @@ export default function DepartmentPage() {
             console.error("Error editing department:", error);
             addToast({
                 title: "Error",
-                description: "Failed to update department",
+                description: "Failed to update sub department",
                 color: "danger",
             });
         }
@@ -461,7 +461,7 @@ export default function DepartmentPage() {
             console.log("Department Deleted:", response.data);
             addToast({
                 title: "Success",
-                description: "Department deleted successfully",
+                description: "Sub Department deleted successfully",
                 color: "success",
             });
 
@@ -470,7 +470,7 @@ export default function DepartmentPage() {
             console.error("Error deleting department:", error);
             addToast({
                 title: "Error",
-                description: "Failed to delete department",
+                description: "Failed to delete sub department",
                 color: "danger",
             });
         }
@@ -510,7 +510,7 @@ export default function DepartmentPage() {
             console.error("Status change error:", error);
             addToast({
                 title: "Error",
-                description: "Failed to update department status",
+                description: "Failed to update sub department status",
                 color: "danger",
             });
         }
@@ -543,14 +543,14 @@ export default function DepartmentPage() {
         <div className="flex flex-col h-full">
             <Modal isOpen={linkModal.open} onOpenChange={() => setLinkModal({ open: false })} size="sm">
                 <ModalContent>
-                    <ModalHeader>Link Primary Department</ModalHeader>
+                    <ModalHeader>Link Department</ModalHeader>
                     <ModalBody>
                         <p className="text-sm text-default-500 mb-2">
                             Assign <b>{linkModal.name}</b> to a primary department.
                         </p>
                         <Select
-                            label="Primary Department"
-                            placeholder="Select Primary Department"
+                            label="Department"
+                            placeholder="Select Department"
                             selectedKeys={selectedPrimaryDepartmentId ? [selectedPrimaryDepartmentId] : []}
                             onSelectionChange={(keys) =>
                                 setSelectedPrimaryDepartmentId(Array.from(keys)[0] as string)
@@ -583,18 +583,13 @@ export default function DepartmentPage() {
             </Modal>
             {/* HEADER */}
             <div className="flex justify-between items-center mb-4 h-12">
-                <div>
-                    <h1 className={title({ size: "20px" })}>Department</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Manage and monitor all company departments
-                    </p>
-                </div>
+                <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">Manage and monitor all company departments</p>
 
                 <Button size="sm" color="primary" onClick={handleOpenModal}>
                     Add Sub Department
                 </Button>
             </div>
-            {/* <input type="search" placeholder="Search departments..." className="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" value={term} onChange={(e) => setTerm(e.target.value)} /> */}
+            {/* <input type="search" placeholder="Search departments..." className="border border-ink-300 dark:border-ink-600 bg-white dark:bg-ink-800 text-ink-900 dark:text-white placeholder:text-ink-500 dark:placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-brand-500" value={term} onChange={(e) => setTerm(e.target.value)} /> */}
             <Input
                 type="search"
                 placeholder="Search departments..."
@@ -636,20 +631,20 @@ export default function DepartmentPage() {
                     .map((ele) => (
                         <div
                             key={ele.key}
-                            className="relative p-5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
+                            className="relative p-5 rounded-xl bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-700 shadow-sm hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
                         >
                             {/* Top Section */}
                             <div className="flex justify-between items-start">
 
                                 {/* Left: Icon + Name */}
                                 <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-white text-lg font-bold">
+                                    <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-brand-100 dark:bg-brand-800 text-brand-600 dark:text-white text-lg font-bold">
                                         {ele.name?.charAt(0)}
                                     </div>
 
                                     <div>
                                         <div
-                                            className="text-sm font-semibold text-gray-800 dark:text-white break-all overflow-hidden"
+                                            className="text-sm font-semibold text-ink-800 dark:text-white break-all overflow-hidden"
                                             style={{
                                                 display: "-webkit-box",
                                                 WebkitLineClamp: 2,
@@ -658,7 +653,7 @@ export default function DepartmentPage() {
                                         >
                                             {ele.name}
                                         </div>
-                                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        <div className="text-xs text-ink-500 dark:text-ink-400">
                                             ID: {ele.key}
                                         </div>
                                     </div>
@@ -669,7 +664,7 @@ export default function DepartmentPage() {
                                     <DropdownTrigger>
                                         <button
                                             onClick={(e) => e.stopPropagation()}
-                                            className="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white text-lg"
+                                            className="text-ink-500 hover:text-ink-800 dark:text-ink-400 dark:hover:text-white text-lg"
                                         >
                                             ⋮
                                         </button>
@@ -695,25 +690,25 @@ export default function DepartmentPage() {
                                             }
                                         }}
                                     >
-                                        <DropdownItem key="edit" className="text-blue-600">
+                                        <DropdownItem key="edit" className="text-brand-600">
                                             Edit
                                         </DropdownItem>
 
-                                        <DropdownItem key="delete" className="text-red-600">
+                                        <DropdownItem key="delete" className="text-rose-600">
                                             Delete
                                         </DropdownItem>
 
                                         <DropdownItem
                                             key="toggle"
                                             className={
-                                                ele.departmentStatus ? "text-red-600" : "text-green-600"
+                                                ele.departmentStatus ? "text-rose-600" : "text-emerald-600"
                                             }
                                         >
                                             {ele.departmentStatus ? "Deactivate" : "Activate"}
                                         </DropdownItem>
                                         <DropdownItem
                                             key="link"
-                                            className="text-purple-600"
+                                            className="text-brand-600"
                                             onPress={() => {
                                                 setLinkModal({
                                                     open: true,
@@ -724,7 +719,7 @@ export default function DepartmentPage() {
                                                 setSelectedPrimaryDepartmentId(ele.primaryDepartmentId || "");
                                             }}
                                         >
-                                            Link Primary Department
+                                            Link Department
                                         </DropdownItem>
                                     </DropdownMenu>
                                 </Dropdown>
@@ -736,15 +731,15 @@ export default function DepartmentPage() {
                                 {/* Status Pill */}
                                 <span
                                     className={`px-3 py-1 text-xs font-medium rounded-full ${ele.departmentStatus
-                                        ? "bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200"
-                                        : "bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-200"
+                                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-800 dark:text-emerald-200"
+                                        : "bg-rose-100 text-rose-700 dark:bg-rose-800 dark:text-rose-200"
                                         }`}
                                 >
                                     {ele.departmentStatus ? "Active" : "Inactive"}
                                 </span>
 
                                 {/* Optional subtle indicator */}
-                                <div className="text-xs text-gray-400">
+                                <div className="text-xs text-ink-400">
                                     Dept
                                 </div>
                             </div>
@@ -755,19 +750,19 @@ export default function DepartmentPage() {
             {/*       ADD / EDIT MODAL      */}
             {/* =========================== */}
 
-            <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg">
-                <ModalContent>
+            <Drawer isOpen={isOpen} onOpenChange={onOpenChange}>
+                <DrawerContent>
                     {(onClose) => (
                         <>
-                            <ModalHeader>
-                                {selectedDepartmentId ? "Edit Department" : "Add New Department"}
-                            </ModalHeader>
+                            <DrawerHeader>
+                                {selectedDepartmentId ? "Edit Sub Department" : "Add New Sub Department"}
+                            </DrawerHeader>
 
-                            <ModalBody>
+                            <DrawerBody>
                                 <div className="space-y-4">
                                     <Input
-                                        label="Department"
-                                        placeholder="Enter department name"
+                                        label="Sub Department"
+                                        placeholder="Enter sub department name"
                                         value={department}
                                         onChange={(e) => setDepartment(e.target.value)}
                                         variant="bordered"
@@ -775,7 +770,7 @@ export default function DepartmentPage() {
                                     />
 
                                     <Input
-                                        label="Department Description"
+                                        label="Sub Department Description"
                                         placeholder="Enter department description"
                                         value={departmentDescription}
                                         onChange={(e) => setDepartmentDescription(e.target.value)}
@@ -817,9 +812,9 @@ export default function DepartmentPage() {
                                         ))}
                                     </Select>
                                 </div>
-                            </ModalBody>
+                            </DrawerBody>
 
-                            <ModalFooter>
+                            <DrawerFooter>
                                 <Button variant="light" onPress={onClose}>
                                     Cancel
                                 </Button>
@@ -836,13 +831,13 @@ export default function DepartmentPage() {
                                     }}
 
                                 >
-                                    {selectedDepartmentId ? "Update Department" : "Add Department"}
+                                    {selectedDepartmentId ? "Update Sub Department" : "Add Sub Department"}
                                 </Button>
-                            </ModalFooter>
+                            </DrawerFooter>
                         </>
                     )}
-                </ModalContent>
-            </Modal>
+                </DrawerContent>
+            </Drawer>
 
             {/* ============================ */}
             {/*      ACTIVATE / DEACTIVATE    */}
@@ -855,7 +850,7 @@ export default function DepartmentPage() {
             >
                 <ModalContent>
                     <ModalHeader>
-                        {toggleConfirm.departmentStatus ? "Deactivate Department" : "Activate Department"}
+                        {toggleConfirm.departmentStatus ? "Deactivate Sub Department" : "Activate Sub Department"}
                     </ModalHeader>
 
                     <ModalBody>

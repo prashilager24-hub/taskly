@@ -5,11 +5,29 @@ import { sendSuccess } from '../../utils/response';
 // Login, role lookup and user switch keep the Java response shapes (flat /
 // { status, statusCode, message, response }) because the frontend reads them
 // directly — they intentionally bypass sendSuccess().
+const clientOf = (req: Request) => ({ ip: req.ip ?? null, userAgent: req.get('user-agent') ?? null });
+
 export async function loginHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const result = await authService.login(req.body);
+    const result = await authService.login(req.body, clientOf(req));
     res.status(200).json(result);
   } catch (err) { next(err); }
+}
+
+export async function verifyOtpHandler(req: Request, res: Response, next: NextFunction) {
+  try { res.status(200).json(await authService.verifyOtp(req.body, clientOf(req))); } catch (err) { next(err); }
+}
+
+export async function resendOtpHandler(req: Request, res: Response, next: NextFunction) {
+  try { res.status(200).json(await authService.resendOtp(req.body, clientOf(req))); } catch (err) { next(err); }
+}
+
+export async function logoutHandler(req: Request, res: Response, next: NextFunction) {
+  try { res.status(200).json(await authService.logout(req.user!, clientOf(req))); } catch (err) { next(err); }
+}
+
+export async function saveThemeHandler(req: Request, res: Response, next: NextFunction) {
+  try { res.status(200).json(await authService.saveTheme(Number(req.user!.sub), req.body.theme)); } catch (err) { next(err); }
 }
 
 export async function getRoleHandler(req: Request, res: Response, next: NextFunction) {

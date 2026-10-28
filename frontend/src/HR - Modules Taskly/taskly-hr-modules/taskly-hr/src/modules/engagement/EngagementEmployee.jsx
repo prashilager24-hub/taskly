@@ -42,7 +42,7 @@ export default function EngagementEmployee({
             <ScaleLegend />
 
             <Section>1. Activity rating — this quarter</Section>
-            <div className="text-xs text-gray-600 mb-3">{ENG_Q1}</div>
+            <div className="text-xs text-ink-600 dark:text-ink-300 mb-3">{ENG_Q1}</div>
             {active.months ? active.months.map((m, i) => (
               <Field key={m} label={`Month ${i + 1}: ${m}`}>
                 <Scale compact value={months[i]} onChange={(n) => setMonths({ ...months, [i]: n })} />
@@ -63,7 +63,7 @@ export default function EngagementEmployee({
 
             {/* <div className="flex items-center gap-3 mb-4">
               <Switch isSelected={anon} onValueChange={setAnon} size="sm" />
-              <span className="text-sm text-gray-700">Submit anonymously</span>
+              <span className="text-sm text-ink-700 dark:text-ink-200">Submit anonymously</span>
             </div> */}
 
             <Button
@@ -95,12 +95,12 @@ export default function EngagementEmployee({
     <Screen id="3.0" title="Engagement surveys open for you" sub="Quarterly, voluntary, org-wide">
       {open.length ? (
         open.map((s) => (
-          <Card key={s.id} shadow="none" className="border border-gray-200 mb-2.5">
+          <Card key={s.id} shadow="none" className="border border-ink-200 dark:border-white/10 mb-2.5">
             <CardBody className="p-3.5">
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div>
                   <div className="font-semibold text-sm">{s.quarter}</div>
-                  <div className="text-xs text-gray-500 mt-0.5">{(s.months || []).join(" · ")} · Closes {s.closes}</div>
+                  <div className="text-xs text-ink-500 dark:text-ink-400 mt-0.5">{(s.months || []).join(" · ")} · Closes {s.closes}</div>
                 </div>
                 {(s.responses || []).some((r) => r.by === currentUser.name)
                   ? <Pill tone="done">Submitted</Pill>

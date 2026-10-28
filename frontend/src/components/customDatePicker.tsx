@@ -44,7 +44,7 @@ export default function CustomDatePicker({ value, onChange }: Props) {
     pastDate.setDate(today.getDate() - daysToSubtract);
 
     return (
-        <div className="border rounded-lg p-3 bg-white shadow-sm w-fit">
+        <div className="border rounded-lg p-3 bg-white dark:bg-ink-900 shadow-sm w-fit">
             <DayPicker
                 mode="single"
                 selected={selected}
@@ -70,7 +70,7 @@ export default function CustomDatePicker({ value, onChange }: Props) {
             />
 
             {selected && (
-                <div className="text-xs text-gray-600 mt-2 text-center">
+                <div className="text-xs text-ink-600 dark:text-ink-300 mt-2 text-center">
                     Selected: {format(selected, "dd MMM yyyy")}
                 </div>
             )}
@@ -120,7 +120,7 @@ export default function CustomDatePicker({ value, onChange }: Props) {
 //         : [{ after: today }];
 
 //     return (
-//         <div className="border rounded-lg p-3 bg-white shadow-sm w-fit">
+//         <div className="border rounded-lg p-3 bg-white dark:bg-ink-900 shadow-sm w-fit">
 //             <DayPicker
 //                 mode="single"
 //                 selected={selected}
@@ -128,7 +128,7 @@ export default function CustomDatePicker({ value, onChange }: Props) {
 //                 disabled={disabled}
 //             />
 //             {selected && (
-//                 <div className="text-xs text-gray-600 mt-2 text-center">
+//                 <div className="text-xs text-ink-600 dark:text-ink-300 mt-2 text-center">
 //                     Selected: {format(selected, "dd MMM yyyy")}
 //                 </div>
 //             )}

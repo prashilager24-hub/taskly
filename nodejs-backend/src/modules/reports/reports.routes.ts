@@ -5,31 +5,38 @@ import { z } from 'zod';
 import { sendSuccess } from '../../utils/response';
 import * as svc from './reports.service';
 import * as combined from './combined.service';
+import * as effSummary from './efficiencySummary.service';
 import { sendJava } from '../../utils/javaCompat';
 
 const router = Router();
 router.use(authenticate);
 
+// The dashboard sends null for unset filters plus fields this port doesn't use yet (goal dates, departmentType)
+const optNum = z.preprocess((v) => (v === "" ? null : v), z.coerce.number().int().nullish());
 const DashBoardFilterSchema = z.object({
   startDate: z.string(),
   endDate: z.string(),
-  userID: z.number().int().positive().optional(),
-  departmentID: z.number().int().optional(),
-  elID: z.number().int().optional(),
-  flID: z.number().int().optional(),
-  roleID: z.number().int().optional(),
-  isHeExecutiveLeader: z.boolean().optional(),
-  isHeFunctionalLeader: z.boolean().optional(),
-});
+  userID: optNum,
+  departmentID: optNum,
+  elID: optNum,
+  flID: optNum,
+  roleID: optNum,
+  isHeExecutiveLeader: z.boolean().nullish(),
+  isHeFunctionalLeader: z.boolean().nullish(),
+}).passthrough();
 
 const EfficiencySummaryFilterSchema = z.object({
-  startDate: z.string(),
-  endDate: z.string(),
-  userID: z.number().int().optional(),
-  departmentID: z.number().int().optional(),
-  elID: z.number().int().optional(),
-  isHeExecutiveLeader: z.boolean().optional(),
-});
+  startDate: z.string().nullish(),
+  endDate: z.string().nullish(),
+  userID: optNum,
+  departmentID: optNum,
+  eLID: optNum,
+  elID: optNum,
+  groupBy: z.string().nullish(),
+  efficiencyLevel: z.string().nullish(),
+  isHeExecutiveLeader: z.boolean().nullish(),
+  filters: z.array(z.object({ field: z.string(), operator: z.string(), value: z.coerce.string() })).nullish(),
+}).passthrough();
 
 // /combined bodies mirror Java's CombinedWorkFilterRequestDTO / BulkApprovalRequestDTO /
 // RejectEntryRequestDTO; the frontend sends null for unset filters.
@@ -59,14 +66,16 @@ router.post('/DashBoard', validate(DashBoardFilterSchema), async (req, res, next
   try { sendSuccess(res, await svc.listEfficiencySummary(req.body)); } catch (e) { next(e); }
 });
 
+// Java returned the map unwrapped — the dashboard reads res.data.elSummary etc.
 router.post('/DashBoardAll', validate(DashBoardFilterSchema), async (req, res, next) => {
-  try { sendSuccess(res, await svc.listEfficiencySummaryNewData(req.body)); } catch (e) { next(e); }
+  try { sendJava(res, await svc.listEfficiencySummaryNewData(req.body)); } catch (e) { next(e); }
 });
 
 // ── Efficiency report ─────────────────────────────────────────────────────────
 // POST /list-efficiency-summary
+// Java returned { data, summary } (or { departments } for an EL) unwrapped
 router.post('/list-efficiency-summary', validate(EfficiencySummaryFilterSchema), async (req, res, next) => {
-  try { sendSuccess(res, await svc.listEfficiencyReport(req.body)); } catch (e) { next(e); }
+  try { sendJava(res, await effSummary.listEfficiencySummary({ ...req.body, eLID: req.body.eLID ?? req.body.elID })); } catch (e) { next(e); }
 });
 
 // POST /download-efficiency-summary  → returns Excel bytes

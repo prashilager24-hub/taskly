@@ -1641,7 +1641,7 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                             <ModalHeader>{confirmTitle}</ModalHeader>
 
                             <ModalBody>
-                                <p className="text-sm text-gray-600">
+                                <p className="text-sm text-ink-600 dark:text-ink-300">
                                     {confirmMessage}
                                 </p>
                             </ModalBody>
@@ -1682,7 +1682,7 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                             <div className="flex items-center gap-4">
 
                                 {/* Title */}
-                                <p className="text-gray-900 dark:text-white text-sm font-medium">
+                                <p className="text-ink-900 dark:text-white text-sm font-medium">
                                     Daily Activity {authUser.departmentID ? "" : "Log"}
                                 </p>
 
@@ -1834,7 +1834,7 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                 maxValue={Maxtoday}
 
                             /> */}
-                                        <h3 className=" text-gray-900 dark:text-white" style={{ size: "12px" }}>
+                                        <h3 className=" text-ink-900 dark:text-white" style={{ size: "12px" }}>
                                             Date
                                         </h3>
                                         <Dropdown
@@ -1870,7 +1870,7 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                                 </DropdownItem>
                                             </DropdownMenu>
                                         </Dropdown>
-                                        <h3 className=" text-gray-900 dark:text-white" style={{ size: "12px" }}>
+                                        <h3 className=" text-ink-900 dark:text-white" style={{ size: "12px" }}>
                                             Add Task Entry
                                         </h3>
                                         <div className="">
@@ -2167,11 +2167,11 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                     <div
                                     >
 
-                                        <h3 className="text-gray-900 dark:text-white mb-4 text-sm">
+                                        <h3 className="text-ink-900 dark:text-white mb-4 text-sm">
                                             Add Target Entry
                                             {showMessage && (
 
-                                                <span className="ml-2 inline-flex items-center rounded-md bg-red-50 px-2 py-0.5 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                                                <span className="ml-2 inline-flex items-center rounded-md bg-rose-50 px-2 py-0.5 text-xs text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
                                                     Note: if your target is not present, it will be calculated automatically.Check your target achievement in performance insights report
                                                 </span>
 
@@ -2451,7 +2451,7 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                 {entryStep === "GOAL" && (
                                     DeptId == 42 ? (<>
                                         <div className="flex flex-col gap-4">
-                                            <h3 className="text-gray-900 dark:text-white text-sm">
+                                            <h3 className="text-ink-900 dark:text-white text-sm">
                                                 Add Goal Entry
                                             </h3>
 
@@ -2536,10 +2536,10 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                         </div>
                                     </>) : (
                                         <div className="flex flex-col gap-4">
-                                            <h3 className="text-gray-900 dark:text-white text-sm">
+                                            <h3 className="text-ink-900 dark:text-white text-sm">
                                                 Add Goal Entry
                                             </h3>
-                                            {(DeptId == 14 || DeptId == 32 || DeptId == 31) && (<span className="ml-2 inline-flex items-center rounded-md bg-red-50 px-2 py-0.5 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                                            {(DeptId == 14 || DeptId == 32 || DeptId == 31) && (<span className="ml-2 inline-flex items-center rounded-md bg-rose-50 px-2 py-0.5 text-xs text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
                                                 Note: finance, finance-AP, finance-AR auto calculated
                                             </span>)
 
@@ -2629,7 +2629,7 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                             />
                                             {
                                                 DeptId == 5 || DeptId == 36 && (
-                                                    <span className="ml-2 inline-flex items-center rounded-md bg-red-50 px-2 py-0.5 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                                                    <span className="ml-2 inline-flex items-center rounded-md bg-rose-50 px-2 py-0.5 text-xs text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
                                                         Note: please enter .5 if it is a shared call
                                                     </span>
                                                 )
@@ -2714,10 +2714,10 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                     <div className="text-lg font-semibold space-y-1">
 
                                         <div>
-                                            <span className="text-gray-600 dark:text-gray-400">
+                                            <span className="text-ink-600 dark:text-ink-400">
                                                 Total Logged
                                             </span>
-                                            <span className="text-blue-600 dark:text-blue-400 mx-2">
+                                            <span className="text-brand-600 dark:text-brand-400 mx-2">
                                                 {(() => {
                                                     const totalHours = activities.reduce((sum, a) => {
                                                         // Skip target-based tasks
@@ -2739,10 +2739,10 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                         </div>
 
                                         <div>
-                                            <span className="text-gray-600 dark:text-gray-400">
+                                            <span className="text-ink-600 dark:text-ink-400">
                                                 Total Time Taken
                                             </span>
-                                            <span className="text-green-600 dark:text-green-400 mx-2">
+                                            <span className="text-emerald-600 dark:text-emerald-400 mx-2">
                                                 {(() => {
                                                     const totalTimeTaken = activities.reduce((sum, a) => {
                                                         return sum + Number(a.timeTaken || 0);
@@ -2781,7 +2781,7 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                 </Card >
                 {/* Activities/PR List */}
 
-                <Card className="lg:col-span-2 w-full shadow-md border border-gray-200 dark:border-gray-700 rounded-2xl overflow-x/y-auto;">
+                <Card className="lg:col-span-2 w-full shadow-md border border-ink-200 dark:border-ink-700 rounded-2xl overflow-x/y-auto;">
                     <CardBody className="px-6 pb-6" style={{ minHeight: "40pc", maxHeight: "40pc" }}>
                         {isTAModalOpen ? <>
 
@@ -2797,14 +2797,14 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
         mb-5
         p-3
         px-2
-        bg-white
+        bg-white dark:bg-ink-900
         justify-between
         dark:bg-black
         
     "
                             >
                                 <div className="flex">
-                                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                    <label className="text-sm font-medium text-ink-600 dark:text-ink-400">
                                         Status:
                                     </label>
 
@@ -2827,7 +2827,7 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                         className="w-44"
                                         classNames={{
                                             trigger:
-                                                "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700",
+                                                "bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-700",
                                         }}
                                     >
                                         {[
@@ -2876,21 +2876,21 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                         {jobData.map((job) => (
                                             <div
                                                 key={job.positionID}
-                                                className="bg-white flex flex-col justify-between dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm p-5 hover:shadow-md transition"
+                                                className="bg-white flex flex-col justify-between dark:bg-ink-900 border border-ink-200 dark:border-ink-700 rounded-2xl shadow-sm p-5 hover:shadow-md transition"
                                             >
                                                 <div>
                                                     {/* Header */}
                                                     <div className="flex justify-between items-start mb-3">
-                                                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                                        <h3 className="text-lg font-semibold text-ink-900 dark:text-white">
                                                             {job.positionName}
                                                         </h3>
                                                         <span
                                                             className={`text-xs px-2 py-1 rounded-full font-medium
                   ${job.status === "OPEN"
-                                                                    ? "bg-green-100 text-green-700"
+                                                                    ? "bg-emerald-100 text-emerald-700"
                                                                     : job.status === "CLOSED"
-                                                                        ? "bg-red-100 text-red-700"
-                                                                        : "bg-yellow-100 text-yellow-700"
+                                                                        ? "bg-rose-100 text-rose-700"
+                                                                        : "bg-amber-100 text-amber-700"
                                                                 }`}
                                                         >
                                                             {job.status}
@@ -2898,12 +2898,12 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                                     </div>
 
                                                     {/* JD Details */}
-                                                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-3">
+                                                    <p className="text-sm text-ink-600 dark:text-ink-400 mb-4 line-clamp-3">
                                                         {job.jdDetails || "No description available"}
                                                     </p>
 
                                                     {/* Meta */}
-                                                    <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1 mb-4">
+                                                    <div className="text-xs text-ink-500 dark:text-ink-400 space-y-1 mb-4">
                                                         <div><strong>ID:</strong> {job.positionID}</div>
                                                         <div><strong>Created:</strong> {job.openDate || "—"}</div>
                                                         {job.updatedAt && (
@@ -2931,7 +2931,7 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                 </div>
                             ) : (
                                 <div className="flex flex-col h-full justify-between">
-                                    <div className="text-center text-gray-500 py-10">No JD records found</div>
+                                    <div className="text-center text-ink-500 dark:text-ink-400 py-10">No JD records found</div>
                                     {/* <div className="flex justify-end mt-6 gap-2">
                                         <Button
                                             size="sm"
@@ -2963,7 +2963,7 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                 <> <div className="space-y-4 "  >
                                     {/* Header */}
                                     <div className="flex items-center justify-between">
-                                        <h3 className="  text-gray-900 dark:text-white" style={{ size: "12px" }}>
+                                        <h3 className="  text-ink-900 dark:text-white" style={{ size: "12px" }}>
                                             Today's Activities
                                         </h3>
                                         <Button
@@ -3003,32 +3003,32 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                     </div>
 
                                     {/* Modern Table */}
-                                    <div className="overflow-x-auto overflow-y-auto max-h-[34rem] rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
-                                        <table className="min-w-full text-sm text-gray-800 dark:text-gray-200">
-                                            <thead className="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900" style={{ position: "sticky", top: 0, }}>
+                                    <div className="overflow-x-auto overflow-y-auto max-h-[34rem] rounded-xl border border-ink-100 dark:border-ink-800 shadow-sm">
+                                        <table className="min-w-full text-sm text-ink-800 dark:text-ink-200">
+                                            <thead className="bg-gradient-to-r from-ink-100 to-ink-50 dark:from-ink-800 dark:to-ink-900" style={{ position: "sticky", top: 0, }}>
                                                 <tr className="text-left">
-                                                    <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                                    <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                         No
                                                     </th>
-                                                    <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                                    <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                         Name
                                                     </th>
-                                                    <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                                    <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                         Type
                                                     </th>
-                                                    <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                                    <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                         Frequency / Count
                                                     </th>
-                                                    <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                                    <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                         Unit / Time
                                                     </th>
-                                                    <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                                    <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                         Achieved / Time Taken
                                                     </th>
-                                                    <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                                    <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                         Percentage / TAT
                                                     </th>
-                                                    <th className="px-4 py-3 font-semibold tracking-wide text-center text-gray-600 dark:text-gray-300">
+                                                    <th className="px-4 py-3 font-semibold tracking-wide text-center text-ink-600 dark:text-ink-300">
                                                         Action
                                                     </th>
                                                 </tr>
@@ -3039,11 +3039,11 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                                     <tr
                                                         key={activity.id}
                                                         className={`transition-all duration-150 ${activity.targetName
-                                                            ? "bg-blue-50/60 dark:bg-blue-900/30"
-                                                            : "bg-white dark:bg-gray-950"
+                                                            ? "bg-brand-50/60 dark:bg-brand-900/30"
+                                                            : "bg-white dark:bg-ink-950"
                                                             } `}
                                                     >
-                                                        <td className="px-4 py-3 font-semibold text-gray-700 dark:text-gray-100">
+                                                        <td className="px-4 py-3 font-semibold text-ink-700 dark:text-ink-100">
                                                             {index + 1}.
                                                         </td>
 
@@ -3056,10 +3056,10 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
 
                                                         <td className="px-4 py-3">
                                                             <span className={`inline-flex px-2 py-1 text-xs rounded-md ${activity.isGoal
-                                                                ? "bg-purple-100 text-purple-700"
+                                                                ? "bg-brand-100 text-brand-700"
                                                                 : activity.targetName
-                                                                    ? "bg-blue-100 text-blue-700"
-                                                                    : "bg-gray-100 text-gray-700"
+                                                                    ? "bg-brand-100 text-brand-700"
+                                                                    : "bg-ink-100 dark:bg-ink-800 text-ink-700 dark:text-ink-200"
                                                                 }`}>
                                                                 {activity.isGoal ? "Goal" : activity.targetName ? "Target" : "Task"}
                                                             </span>
@@ -3135,7 +3135,7 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                                 </tr>)}
 
                                             </tbody>
-                                            <tfoot className="sticky bottom-0 bg-gray-50 dark:bg-gray-900  font-semibold">
+                                            <tfoot className="sticky bottom-0 bg-ink-50 dark:bg-ink-900  font-semibold">
                                                 {/* <tr>
                                         <td colSpan="6" className="px-4 py-3 text-right">
                                             Average Percentage:
@@ -3158,10 +3158,10 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                                     </th>
                                                     <th className="px-4 py-3 font-semibold tracking-wide text-white-600 ">
                                                     </th>
-                                                    <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                                    <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
 
                                                     </th>
-                                                    <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300 flex justify-center ">
+                                                    <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300 flex justify-center ">
                                                         Average Percentage: {averagePercentage} %
                                                     </th>
                                                     <th className="px-4 py-3 font-semibold tracking-wide text-center text-white-600 ">

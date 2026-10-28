@@ -20,8 +20,20 @@ import { subscribeToPush, unsubscribeFromPush, isSubscribed } from "../../../../
 
 const NOTIFY_LIST = "hr@tapmind.com; admin@tapmind.com";
 
-export default function TasklyHRModules() {
-  const [mod, setMod] = useState("m1");
+// `section` comes from the Support routes (/support/onboarding|query|engagement). When given,
+// that section is shown and the in-page module tabs are hidden — the sidebar navigates instead.
+const SECTION_TO_MODULE = { onboarding: "m1", query: "m2", engagement: "m3" };
+
+const SECTION_SUBTITLES = {
+  m1: "How new joiners rate their first weeks, and who still needs to respond",
+  m2: "Raise questions to HR or L&D, track replies and rate the support you got",
+  m3: "Pulse surveys on how the team feels, rolled out by HR",
+};
+
+export default function TasklyHRModules({ section } = {}) {
+  const routed = SECTION_TO_MODULE[section];
+  const [mod, setMod] = useState(routed ?? "m1");
+  useEffect(() => { if (routed) setMod(routed); }, [routed]);
   const [role, setRole] = useState(null);
 
   const [surveys, setSurveys] = useState([]);
@@ -231,7 +243,7 @@ export default function TasklyHRModules() {
   /* ── UI config ── */
   const modules = [
     { id: "m1", num: "01", label: "Onboarding Experience" },
-    { id: "m2", num: "02", label: "Query & HR Support" },
+    { id: "m2", num: "02", label: "Query & HR" },
     { id: "m3", num: "03", label: "Employee Engagement" },
   ];
 
@@ -266,7 +278,7 @@ export default function TasklyHRModules() {
     if (loading || !role) {
       return (
         <div className="flex items-center justify-center py-20">
-          <div className="text-sm text-gray-400">Loading…</div>
+          <div className="text-sm text-ink-400">Loading…</div>
         </div>
       );
     }
@@ -287,22 +299,29 @@ export default function TasklyHRModules() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 text-gray-900">
+    <div className="text-ink-900 dark:text-white">
 
-      <div className="bg-white px-5 overflow-x-auto">
-        <Tabs
-          selectedKey={mod}
-          onSelectionChange={(k) => setMod(String(k))}
-          variant="light"
-          aria-label="HR Modules"
-        >
-          {modules.map((m) => (
-            <Tab key={m.id} title={<span className=" mr-1">{m.label}</span>} />
-          ))}
-        </Tabs>
-      </div>
+      {routed ? (
+        <div className="mb-2">
+          <h1 className="block text-[22px] font-black uppercase leading-tight tracking-title text-ink-900 dark:text-white lg:text-[26px]">{modules.find((m) => m.id === mod)?.label}</h1>
+          <p className="mt-1 text-sm text-ink-500 dark:text-ink-400">{SECTION_SUBTITLES[mod]}</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <Tabs
+            selectedKey={mod}
+            onSelectionChange={(k) => setMod(String(k))}
+            variant="light"
+            aria-label="HR Modules"
+          >
+            {modules.map((m) => (
+              <Tab key={m.id} title={<span className=" mr-1">{m.label}</span>} />
+            ))}
+          </Tabs>
+        </div>
+      )}
 
-      <div className="bg-white px-5 py-2.5 flex items-center gap-3 flex-wrap">
+      <div className="flex flex-wrap items-center gap-3">
         {/* <span className=" text-[10px] uppercase tracking-widest text-primary">Viewing as</span> */}
         {roles.length > 1 && (
           <Tabs
@@ -348,15 +367,15 @@ export default function TasklyHRModules() {
         </span> */}
       </div>
 
-      <div className="max-w-5xl mx-auto px-5 py-6 pb-24">{body()}</div>
+      <div className="pt-5 pb-16">{body()}</div>
 
       {toast && (
         <div className="fixed bottom-5 left-1/2 z-30 w-11/12 max-w-md" style={{ transform: "translateX(-50%)" }}>
-          <Card shadow="lg" className="bg-gray-900">
+          <Card shadow="lg" className="bg-ink-900">
             <CardBody className="p-3 flex items-start gap-2.5">
               <Mail size={15} className="text-primary-400 mt-0.5 shrink-0" />
               <div className=" text-white flex-1">{toast}</div>
-              <button onClick={() => setToast(null)} className="text-gray-500 hover:text-white"><X size={14} /></button>
+              <button onClick={() => setToast(null)} className="text-ink-500 dark:text-ink-400 hover:text-white"><X size={14} /></button>
             </CardBody>
           </Card>
         </div>

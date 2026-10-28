@@ -1,3 +1,4 @@
+import { PageTitle } from "@/components/page";
 import { useEffect, useState } from "react";
 import { Select, SelectItem } from "@/components/ui";
 import { DateRangePicker, Autocomplete, addToast, Spinner,  Modal,
@@ -190,20 +191,20 @@ const [goals, setGoals] = useState([]);
         switch (columnKey) {
             case 'DailyTaskLogID':
                 return (
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    <span className="text-sm font-medium text-ink-900 dark:text-white">
                         #{log.DailyTaskLogID}
                     </span>
                 );
             case 'TaskID':
                 return (
-                    <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                    <span className="text-sm font-medium text-brand-600 dark:text-brand-400">
                         T-{log.TaskID}
                     </span>
                 );
             case 'TaskName':
                 return (
                     <div className="max-w-xs">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate" title={log.TaskName}>
+                        <p className="text-sm font-medium text-ink-900 dark:text-white truncate" title={log.TaskName}>
                             {log.TaskName}
                         </p>
                     </div>
@@ -211,22 +212,22 @@ const [goals, setGoals] = useState([]);
             case 'UserName':
                 return (
                     <div className="flex flex-col">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{log.UserName}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">ID: {log.UserID}</p>
+                        <p className="text-sm font-medium text-ink-900 dark:text-white">{log.UserName}</p>
+                        <p className="text-xs text-ink-500 dark:text-ink-400">ID: {log.UserID}</p>
                     </div>
                 );
             case 'WorkDate':
                 return new Date(log.WorkDate).toLocaleDateString();
             case 'actualTimeOfWork':
                 return (
-                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-brand-100 text-brand-800">
                         {log.actualTimeOfWork} mins
                     </span>
                 );
             case 'Remarks':
                 return (
                     <div className="max-w-xs">
-                        <p className="text-sm text-gray-600 dark:text-gray-400 truncate" title={log.Remarks}>
+                        <p className="text-sm text-ink-600 dark:text-ink-400 truncate" title={log.Remarks}>
                             {log.Remarks || 'No remarks'}
                         </p>
                     </div>
@@ -584,16 +585,8 @@ const [goals, setGoals] = useState([]);
 
     return (
         < div>
-            <div className="mb-8 flex justify-between">
-                <div>
-                    <h1 className={title({ size: "20px" })}>
-                        User Performance History
-                    </h1>
-
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Review historical performance, productivity, utilization, and target achievement trends.
-                    </p>
-                </div>
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                <PageTitle title="User Performance History" subtitle="Review historical performance, productivity, utilization, and target achievement trends." />
 
                 <div className="flex gap-3 items-center">
                     <div className="flex gap-3 items-center">
@@ -614,7 +607,7 @@ const [goals, setGoals] = useState([]);
                                 <Button
                                     variant="flat"
                                     size="sm"
-                                    className="w-[260px] justify-between bg-gray-200"
+                                    className="w-[260px] justify-between border border-ink-300 bg-white dark:border-white/15 dark:bg-ink-900"
                                 >
                                     {dateRange?.startDate && dateRange?.endDate
                                         ? `${format(new Date(dateRange.startDate), "dd MMM yyyy")} → ${format(
@@ -771,10 +764,10 @@ const [goals, setGoals] = useState([]);
                                         <span
                                             className={`px-2 py-1 rounded-full text-xs font-medium
         ${dept.EfficiencyLevel === "High"
-                                                    ? "bg-green-100 text-green-700"
+                                                    ? "bg-emerald-100 text-emerald-700"
                                                     : dept.EfficiencyLevel === "At Par"
-                                                        ? "bg-yellow-100 text-yellow-700"
-                                                        : "bg-red-100 text-red-700"
+                                                        ? "bg-amber-100 text-amber-700"
+                                                        : "bg-rose-100 text-rose-700"
                                                 }`}
                                         >
                                             {dept.EfficiencyLevel}
@@ -787,27 +780,27 @@ const [goals, setGoals] = useState([]);
                                 <div className="grid grid-cols-3 gap-3 mb-3">
                                     <div>
                                         <p className="text-xs text-default-500">Target</p>
-                                        <p className="text-lg font-bold text-orange-500">
+                                        <p className="text-lg font-bold text-brand-500">
                                             {dept.AvgTargetPercent}%
                                         </p>
                                     </div>
 
                                     <div>
                                         <p className="text-xs text-default-500">Utilization</p>
-                                        <p className="text-lg font-bold text-green-500">
+                                        <p className="text-lg font-bold text-emerald-500">
                                             {dept.AvgUtilizationPercent}%
                                         </p>
                                     </div>
 
                                     <div>
                                         <p className="text-xs text-default-500">Goal</p>
-                                        <p className="text-lg font-bold text-blue-500">
+                                        <p className="text-lg font-bold text-brand-500">
                                             {dept.AvgGoalPercent}%
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className=" pt-3 flex justify-between text-sm align-bottom text-blue-600 cursor-pointer">
+                                <div className=" pt-3 flex justify-between text-sm align-bottom text-brand-600 cursor-pointer">
                                     <div>
                                         <p className="text-xs text-default-500">Period</p>
                                         <p className="font-medium">
@@ -822,7 +815,7 @@ const [goals, setGoals] = useState([]);
                                     </div>
                                     <div className="flex flex-col items-end">
                                        <p
-    className="cursor-pointer text-blue-600"
+    className="cursor-pointer text-brand-600"
     onClick={() => handleViewDetails(dept)}
 >
     View Details
@@ -846,7 +839,7 @@ const [goals, setGoals] = useState([]);
                                 <Spinner />
                             </div>
                         ) : (
-                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden p-6">
+                            <div className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 overflow-hidden p-6">
                                 <EfficiencyTable data={dashboard} type="user" />
                             </div>
                         )}

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui";
 import { addToast, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Tabs, Tab, Chip } from "@/components/ui";
 import { Input } from "@/components/ui";
 import {
-    Modal,
+    Drawer, DrawerContent, DrawerHeader, DrawerBody, DrawerFooter, Modal,
     ModalContent,
     ModalHeader,
     ModalBody,
@@ -40,6 +40,17 @@ interface PrimaryDepartment {
 }
 
 // Confirmation Modal for Delete-like destructive actions
+// Goal / target criteria are stored as JSON objects; show how many rules are set, not the JSON
+const criteriaLabel = (raw: unknown) => {
+    try {
+        const parsed = typeof raw === "string" ? JSON.parse(raw || "{}") : raw ?? {};
+        const n = Object.keys(parsed).length;
+        return n ? `${n} rule${n > 1 ? "s" : ""}` : "Not set";
+    } catch {
+        return String(raw || "Not set");
+    }
+};
+
 const ConfirmToggleModal = ({
     isOpen,
     onClose,
@@ -55,7 +66,7 @@ const ConfirmToggleModal = ({
 }) => (
     <Modal isOpen={isOpen} onOpenChange={onClose} size="sm">
         <ModalContent>
-            <ModalHeader>{active ? "Deactivate Primary Department" : "Activate Primary Department"}</ModalHeader>
+            <ModalHeader>{active ? "Deactivate Department" : "Activate Department"}</ModalHeader>
             <ModalBody>
                 <p>
                     Are you sure you want to
@@ -81,7 +92,7 @@ const ConfirmToggleModal = ({
     </Modal>
 );
 
-export default function PrimaryDepartmentPage() {
+export default function PrimaryDepartmentPage({ view = "list" }: { view?: "list" | "hierarchy" }) {
     const authUserLD = localStorage.getItem("authUserLD");
     const authToken = authUserLD ? JSON.parse(authUserLD).token : "";
     const [goalCriteria, setGoalCriteria] = useState<string>("DAILY");
@@ -178,10 +189,10 @@ export default function PrimaryDepartmentPage() {
 
             setPrimaryDepartmentList(formatted);
         } catch (err) {
-            console.error("Error fetching primary departments:", err);
+            console.error("Error fetching departments:", err);
             addToast({
                 title: "Error",
-                description: "Failed to load primary departments",
+                description: "Failed to load departments",
                 color: "danger",
             });
         } finally {
@@ -220,7 +231,7 @@ export default function PrimaryDepartmentPage() {
         if (!trimmedName) {
             addToast({
                 title: "Error",
-                description: "Primary department name is required",
+                description: "Department name is required",
                 color: "danger",
             });
             return;
@@ -240,7 +251,7 @@ export default function PrimaryDepartmentPage() {
 
             addToast({
                 title: "Success",
-                description: "Primary Department created successfully",
+                description: "Department created successfully",
                 color: "success",
             });
 
@@ -250,10 +261,10 @@ export default function PrimaryDepartmentPage() {
             const status = error?.response?.status;
             const message =
                 status === 409
-                    ? "A primary department with this name already exists"
-                    : "Failed to create primary department";
+                    ? "A department with this name already exists"
+                    : "Failed to create department";
 
-            console.error("Error creating primary department:", error);
+            console.error("Error creating department:", error);
             addToast({ title: "Error", description: message, color: "danger" });
         }
     };
@@ -276,7 +287,7 @@ export default function PrimaryDepartmentPage() {
 
             addToast({
                 title: "Success",
-                description: "Primary Department updated successfully",
+                description: "Department updated successfully",
                 color: "success",
             });
 
@@ -284,9 +295,9 @@ export default function PrimaryDepartmentPage() {
             fetchPrimaryDepartments();
         } catch (error: any) {
             const status = error?.response?.status;
-            const message = status === 404 ? "Primary department not found" : "Failed to update primary department";
+            const message = status === 404 ? "Department not found" : "Failed to update department";
 
-            console.error("Error updating primary department:", error);
+            console.error("Error updating department:", error);
             addToast({ title: "Error", description: message, color: "danger" });
         }
     };
@@ -301,7 +312,7 @@ export default function PrimaryDepartmentPage() {
 
             addToast({
                 title: "Success",
-                description: `Primary Department ${isActive ? "activated" : "deactivated"} successfully`,
+                description: `Department ${isActive ? "activated" : "deactivated"} successfully`,
                 color: isActive ? "success" : "warning",
             });
 
@@ -309,10 +320,10 @@ export default function PrimaryDepartmentPage() {
                 prev.map((pd) => (pd.key === id ? { ...pd, active: isActive } : pd))
             );
         } catch (error) {
-            console.error("Error toggling primary department status:", error);
+            console.error("Error toggling department status:", error);
             addToast({
                 title: "Error",
-                description: "Failed to update primary department status",
+                description: "Failed to update department status",
                 color: "danger",
             });
         }
@@ -326,38 +337,32 @@ export default function PrimaryDepartmentPage() {
         })
         .sort((a, b) => a.key - b.key);
 
+    useEffect(() => {
+        if (view === "hierarchy" && hierarchyData.length === 0) fetchHierarchy();
+    }, [view]);
+
     return (
         <div className="flex flex-col h-full">
+            {/* The tab strip lives on the Departments page; this view is picked from there */}
             <Tabs
-                aria-label="Primary Department Views"
-                color="primary"
-                variant="underlined"
-                className="mb-2"
-                onSelectionChange={(key) => {
-                    if (key === "hierarchy" && hierarchyData.length === 0) {
-                        fetchHierarchy();
-                    }
-                }}
+                aria-label="Department Views"
+                selectedKey={view}
+                classNames={{ tabList: "hidden" }}
             >
-                <Tab key="list" title="Primary Departments">
+                <Tab key="list" title="Departments">
                     {/* HEADER */}
                     <div className="flex justify-between items-center mb-4 h-12">
-                        <div>
-                            <h1 className={title({ size: "20px" })}>Primary Department</h1>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                Manage top-level primary departments used to group departments
-                            </p>
-                        </div>
+                        <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">Manage top-level departments used to group departments</p>
 
                         <Button size="sm" color="primary" onClick={handleOpenAddModal}>
-                            Add Primary Department
+                            Add Department
                         </Button>
                     </div>
 
                     {/* SEARCH */}
                     <Input
                         type="search"
-                        placeholder="Search primary departments..."
+                        placeholder="Search departments..."
                         value={term}
                         onValueChange={setTerm}
                         variant="bordered"
@@ -381,25 +386,25 @@ export default function PrimaryDepartmentPage() {
                     />
                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 p-4">
                         {!loading && filteredList.length === 0 && (
-                            <div className="col-span-full text-center text-sm text-gray-500 dark:text-gray-400 py-10">
-                                No primary departments found.
+                            <div className="col-span-full text-center text-sm text-ink-500 dark:text-ink-400 py-10">
+                                No departments found.
                             </div>
                         )}
 
                         {filteredList.map((pd) => (
-                            <div className="relative p-6 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
+                            <div className="relative p-6 rounded-xl bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-700 shadow-sm hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
                                 {/* Header */}
                                 <div className="flex justify-between items-start mb-5">
                                     <div className="flex items-center gap-3 min-w-0">
                                         {/* Avatar */}
-                                        <div className="h-11 w-11 flex items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold text-lg flex-shrink-0">
+                                        <div className="h-11 w-11 flex items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-600 text-white font-bold text-lg flex-shrink-0">
                                             {pd.name?.charAt(0).toUpperCase()}
                                         </div>
 
                                         {/* Name */}
                                         <div className="min-w-0">
                                             <h3
-                                                className="text-sm font-semibold text-gray-900 dark:text-white"
+                                                className="text-sm font-semibold text-ink-900 dark:text-white"
                                                 style={{
                                                     display: "-webkit-box",
                                                     WebkitLineClamp: 2,
@@ -410,7 +415,7 @@ export default function PrimaryDepartmentPage() {
                                                 {pd.name}
                                             </h3>
 
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            <p className="text-xs text-ink-500 dark:text-ink-400">
                                                 ID: {pd.key}
                                             </p>
                                         </div>
@@ -421,7 +426,7 @@ export default function PrimaryDepartmentPage() {
                                         <DropdownTrigger>
                                             <button
                                                 onClick={(e) => e.stopPropagation()}
-                                                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
+                                                className="p-2 rounded-lg hover:bg-ink-100 dark:hover:bg-ink-800 text-ink-500 dark:text-ink-400"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ellipsis-vertical-icon lucide-ellipsis-vertical"><circle cx="12" cy="12" r="1" /><circle cx="12" cy="5" r="1" /><circle cx="12" cy="19" r="1" /></svg>
                                             </button>
@@ -442,13 +447,13 @@ export default function PrimaryDepartmentPage() {
                                                 }
                                             }}
                                         >
-                                            <DropdownItem key="edit" className="text-blue-600">
+                                            <DropdownItem key="edit" className="text-brand-600">
                                                 Edit
                                             </DropdownItem>
 
                                             <DropdownItem
                                                 key="toggle"
-                                                className={pd.active ? "text-red-600" : "text-green-600"}
+                                                className={pd.active ? "text-rose-600" : "text-emerald-600"}
                                             >
                                                 {pd.active ? "Deactivate" : "Activate"}
                                             </DropdownItem>
@@ -460,38 +465,30 @@ export default function PrimaryDepartmentPage() {
                                 <div className="flex items-center justify-between mb-4">
                                     <span
                                         className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${pd.active
-                                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                                            : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                            : "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
                                             }`}
                                     >
                                         <span className="w-2 h-2 rounded-full bg-current" />
                                         {pd.active ? "Active" : "Inactive"}
                                     </span>
 
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                                        Primary Dept
+                                    <span className="text-xs text-ink-500 dark:text-ink-400">
+                                        Department
                                     </span>
                                 </div>
 
-                                <div className="border-t border-gray-200 dark:border-gray-700 my-4" />
+                                <div className="border-t border-ink-200 dark:border-ink-700 my-4" />
 
                                 {/* Info Chips */}
-                                <div className="flex flex-wrap gap-2">
-                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-xs font-medium">
-                                        <i className="ti ti-target-arrow" />
-                                        Goal: {pd.goalCriteria || "—"}
-                                    </div>
-
-                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs font-medium">
-                                        <i className="ti ti-flag-3" />
-                                        Target: {pd.targetCriteria || "—"}
-                                    </div>
-
-                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-xs font-medium">
-                                        <i className="ti ti-category" />
-                                        Type: {pd.type || "—"}
-                                    </div>
-                                </div>
+                                <dl className="grid grid-cols-3 gap-2 text-xs">
+                                    {[["Type", pd.type || "—"], ["Goals", criteriaLabel(pd.goalCriteria)], ["Targets", criteriaLabel(pd.targetCriteria)]].map(([k, v]) => (
+                                        <div key={k}>
+                                            <dt className="eyebrow !text-[9.5px]">{k}</dt>
+                                            <dd className="mt-1 truncate font-medium text-ink-900 dark:text-white">{v}</dd>
+                                        </div>
+                                    ))}
+                                </dl>
                             </div>
                         ))}
                     </div>
@@ -500,19 +497,19 @@ export default function PrimaryDepartmentPage() {
                 <Tab key="hierarchy" title="Hierarchy">
                     <div className="mt-4" style={{ height: "75vh" }}>
                         {hierarchyLoading && (
-                            <div className="text-center text-sm text-gray-500 dark:text-gray-400 py-10">
+                            <div className="text-center text-sm text-ink-500 dark:text-ink-400 py-10">
                                 Loading hierarchy...
                             </div>
                         )}
 
                         {!hierarchyLoading && hierarchyData.length === 0 && (
-                            <div className="text-center text-sm text-gray-500 dark:text-gray-400 py-10">
+                            <div className="text-center text-sm text-ink-500 dark:text-ink-400 py-10">
                                 No hierarchy data found.
                             </div>
                         )}
 
                         {!hierarchyLoading && hierarchyData.length > 0 && (
-                            <div className="w-full h-full rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                            <div className="w-full h-full rounded-xl border border-ink-200 dark:border-ink-700 overflow-hidden">
                                 <ReactFlow
                                     nodes={nodes}
                                     edges={edges}
@@ -534,19 +531,19 @@ export default function PrimaryDepartmentPage() {
             {/* =========================== */}
             {/*       ADD / EDIT MODAL      */}
             {/* =========================== */}
-            <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg">
-                <ModalContent>
+            <Drawer isOpen={isOpen} onOpenChange={onOpenChange}>
+                <DrawerContent>
                     {(onClose) => (
                         <>
-                            <ModalHeader>
-                                {selectedId ? "Edit Primary Department" : "Add New Primary Department"}
-                            </ModalHeader>
+                            <DrawerHeader>
+                                {selectedId ? "Edit Department" : "Add New Department"}
+                            </DrawerHeader>
 
-                            <ModalBody>
+                            <DrawerBody>
                                 <div className="space-y-4">
                                     <Input
-                                        label="Primary Department Name"
-                                        placeholder="Enter primary department name"
+                                        label="Department Name"
+                                        placeholder="Enter department name"
                                         value={primaryDepartmentName}
                                         onChange={(e) => setPrimaryDepartmentName(e.target.value)}
                                         variant="bordered"
@@ -598,9 +595,9 @@ export default function PrimaryDepartmentPage() {
                                         <SelectItem key="COMBINED">Combined</SelectItem>
                                     </Select>
                                 </div>
-                            </ModalBody>
+                            </DrawerBody>
 
-                            <ModalFooter>
+                            <DrawerFooter>
                                 <Button variant="light" onPress={onClose}>
                                     Cancel
                                 </Button>
@@ -616,13 +613,13 @@ export default function PrimaryDepartmentPage() {
                                         onClose();
                                     }}
                                 >
-                                    {selectedId ? "Update Primary Department" : "Add Primary Department"}
+                                    {selectedId ? "Update Department" : "Add Department"}
                                 </Button>
-                            </ModalFooter>
+                            </DrawerFooter>
                         </>
                     )}
-                </ModalContent>
-            </Modal>
+                </DrawerContent>
+            </Drawer>
 
             {/* ============================ */}
             {/*      ACTIVATE / DEACTIVATE    */}

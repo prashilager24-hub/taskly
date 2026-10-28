@@ -141,7 +141,7 @@ export default function QueryEmployee({ queries = [], currentUser, onRaise, onRa
             <Textarea rows={3} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Type a follow-up…" variant="bordered" />
           </Field>
         ) : (
-          <div className="text-[11px] text-gray-400 mt-2 mb-2">This query is {opened.status === "resolved" ? "awaiting your rating" : "closed"} — messaging is disabled.</div>
+          <div className="text-[11px] text-ink-400 mt-2 mb-2">This query is {opened.status === "resolved" ? "awaiting your rating" : "closed"} — messaging is disabled.</div>
         )}
         <div className="flex gap-2.5 flex-wrap">
           {(opened.status === "open" || opened.status === "in_progress") && (
@@ -245,11 +245,11 @@ export default function QueryEmployee({ queries = [], currentUser, onRaise, onRa
           <THead cols={["ID", "Subject", "Routed to", "Raised", "Status", ""]} />
           <tbody>
             {mine.map((q) => (
-              <tr key={q.id} className="border-b border-gray-100 last:border-0">
-                <td className="py-3 text-gray-500 font-mono text-xs">{q.id}</td>
+              <tr key={q.id} className="border-b border-ink-100 dark:border-white/10 last:border-0">
+                <td className="py-3 text-ink-500 dark:text-ink-400 font-secondary text-xs">{q.id}</td>
                 <td className="py-3">{q.subject}</td>
                 <td className="py-3 text-[13px]">{q.team}</td>
-                <td className="py-3 text-gray-500 text-[13px]">{q.raisedOn}</td>
+                <td className="py-3 text-ink-500 dark:text-ink-400 text-[13px]">{q.raisedOn}</td>
                 <td className="py-3">
                   {q.status === "open" && <Pill tone="open">Open</Pill>}
                   {q.status === "in_progress" && <Pill tone="open">In progress</Pill>}

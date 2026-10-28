@@ -39,3 +39,5 @@ coverage/
 
 # ── TypeScript cache ─────────────────────────────────────
 *.tsbuildinfo
+# Schema migrations are code, unlike DB dumps
+!nodejs-backend/src/config/migrations/*.sql

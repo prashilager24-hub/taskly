@@ -34,6 +34,13 @@
     @apply font-secondary font-medium uppercase tracking-wider text-[11px] text-ink-500 dark:text-ink-400;
   }
 
+  /* Short values (names, dates, departments) stay on one line; tables scroll sideways instead.
+     Cells meant for long text opt back in with whitespace-normal. */
+  th,
+  td {
+    white-space: nowrap;
+  }
+
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #c7cddb; border-radius: 8px; }
@@ -95,3 +102,8 @@
     animation: slideUp 3s ease-in-out forwards;
   }
 }
+
+/* Hierarchy minimap and controls follow the theme */
+html.dark .react-flow__minimap { background: #141414; }
+html.dark .react-flow__minimap-mask { fill: rgba(0, 0, 0, 0.6); }
+html.dark .react-flow__controls-button { background: #141414; border-color: rgba(255, 255, 255, 0.1); color: #fff; fill: #fff; }

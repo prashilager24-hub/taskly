@@ -54,7 +54,7 @@
 // //     return { completion, utilisation, qualityScore, efficiency, overall };
 // // }
 // // function metricColor(v) {
-// //     return v >= 85 ? '#059669' : v >= 65 ? '#ca8a04' : '#ff4b2b';
+// //     return v >= 85 ? '#059669' : v >= 65 ? '#d97706' : '#ff4b2b';
 // // }
 // // function trendIcon(v) { return v >= 85 ? '▲' : v >= 65 ? '●' : '▼'; }
 
@@ -70,7 +70,7 @@
 // //     });
 // //     for (let i = 0; i < n; i++) { const [x, y] = pt(i, r); h += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#e4e4e7" stroke-width="1"/>`; }
 // //     const dpts = values.map((v, i) => pt(i, r * (v / 100))).map(p => p.join(',')).join(' ');
-// //     h += `<polygon points="${dpts}" fill="rgba(37,99,235,.12)" stroke="#2563eb" stroke-width="2"/>`;
+// //     h += `<polygon points="${dpts}" fill="rgba(37,99,235,.12)" stroke="#ff6a1f" stroke-width="2"/>`;
 // //     values.forEach((v, i) => { const [x, y] = pt(i, r * (v / 100)); h += `<circle cx="${x}" cy="${y}" r="4" fill="${colors[i]}" stroke="#fff" stroke-width="2"/>`; });
 // //     for (let i = 0; i < n; i++) {
 // //         const [x, y] = pt(i, r + 16);
@@ -85,7 +85,7 @@
 // //     return (
 // //         <div className="text-center py-16 px-5 flex flex-col items-center gap-3.5">
 // //             <div className="text-5xl opacity-30">{icon}</div>
-// //             <div className="text-lg font-bold text-ink-500">{title}</div>
+// //             <div className="text-lg font-bold text-ink-500 dark:text-ink-400">{title}</div>
 // //             <div className="text-sm text-ink-400">{sub}</div>
 // //             <button onClick={onBtn} className="mt-1.5 px-6 py-2.5 bg-brand-600 text-white text-sm font-bold rounded-[9px] cursor-pointer border-none hover:bg-brand-700 transition-all">
 // //                 {btnLabel}
@@ -99,7 +99,7 @@
 // //     const TASK_TYPES = ['Feature', 'Bug', 'Refactor', 'Test', 'Docs', 'Review', 'Infra', 'Research'];
 // //     const TASK_STATUSES = [{ key: 'done', label: 'Done' }, { key: 'partial', label: 'Partial' }, { key: 'missed', label: 'Missed' }, { key: 'carry', label: 'Carry' }];
 // //     return (
-// //         <div style={{ display: 'grid', gridTemplateColumns: '90px 2fr 80px 1fr 1fr 1.5fr 36px', gap: 10, alignItems: 'center' }} className=" border border-ink-200 rounded-[10px] px-3.5 py-2.5 transition-all">
+// //         <div style={{ display: 'grid', gridTemplateColumns: '90px 2fr 80px 1fr 1fr 1.5fr 36px', gap: 10, alignItems: 'center' }} className=" border border-ink-200 dark:border-white/10 rounded-[10px] px-3.5 py-2.5 transition-all">
 // //             <Input size="sm" placeholder="TP-50" label="Jira ID" labelPlacement="outside"
 // //                 value={task.jiraId || ''} onValueChange={v => onChange('jiraId', v.toUpperCase())}
 // //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
@@ -134,7 +134,7 @@
 // //                     </Select>
 // //                 </div>
 // //             </div>
-// //             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">
+// //             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 dark:border-white/15 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">
 // //                 ×
 // //             </button>
 // //         </div>
@@ -144,7 +144,7 @@
 // // // ─── GOAL ROW COMPONENT ────────────────────────────────────────────────────────
 // // function GoalRowInput({ goal, onChange, onRemove }) {
 // //     return (
-// //         <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 36px', gap: 10, alignItems: 'center' }} className=" border border-ink-200 rounded-[10px] px-3.5 py-2.5">
+// //         <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 36px', gap: 10, alignItems: 'center' }} className=" border border-ink-200 dark:border-white/10 rounded-[10px] px-3.5 py-2.5">
 // //             <Input size="sm" placeholder="e.g. Zero crashes in prod" label="Goal Description" labelPlacement="outside"
 // //                 value={goal.name || ''} onValueChange={v => onChange('name', v)}
 // //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
@@ -154,7 +154,7 @@
 // //             <Input size="sm" type="number" placeholder="85" label="Achieved %" labelPlacement="outside"
 // //                 value={goal.achieved || ''} onValueChange={v => onChange('achieved', v)}
 // //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
-// //             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">
+// //             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 dark:border-white/15 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">
 // //                 ×
 // //             </button>
 // //         </div>
@@ -165,7 +165,7 @@
 // // function FormGroup({ label, hint, children, full, half }) {
 // //     return (
 // //         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, gridColumn: full ? '1/-1' : half ? 'span 2' : undefined }}>
-// //             <label className="text-[11px] font-bold tracking-[1.2px] uppercase text-ink-500">
+// //             <label className="text-[11px] font-bold tracking-[1.2px] uppercase text-ink-500 dark:text-ink-400">
 // //                 {label}{hint && <span className="text-[10px] font-normal text-ink-400 tracking-normal ml-1.5 normal-case">{hint}</span>}
 // //             </label>
 // //             {children}
@@ -194,7 +194,7 @@
 // //     const goalId = useRef(3);
 
 // //     const live = (f.committed || f.completed) ? calcMetrics(f.committed, f.completed, f.days, f.bugs, f.selfRating) : null;
-// //     const lc = v => v >= 85 ? '#059669' : v >= 65 ? '#ca8a04' : '#ff4b2b';
+// //     const lc = v => v >= 85 ? '#059669' : v >= 65 ? '#d97706' : '#ff4b2b';
 // //     const ll = v => v >= 85 ? '▲ On Target' : v >= 65 ? '● Moderate' : '▼ Below';
 
 // //     function addTask() { const id = taskId.current++; setTasks(t => [...t, { id, jiraId: '', name: '', sp: '', product: PRODUCTS[0], module: MODULES[0], type: 'Feature', status: 'done' }]); }
@@ -352,7 +352,7 @@
 // //                         <button onClick={handleSubmit} className="flex items-center gap-2.5 px-8 py-3 bg-brand-600 text-white text-[15px] font-bold rounded-[10px] cursor-pointer transition-all hover:bg-brand-700 border-none">
 // //                             <span>Submit Sprint Entry</span><span>→</span>
 // //                         </button>
-// //                         <button onClick={handleReset} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 rounded-[10px] text-sm font-semibold text-ink-500 cursor-pointer transition-all">
+// //                         <button onClick={handleReset} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 dark:border-white/15 rounded-[10px] text-sm font-semibold text-ink-500 dark:text-ink-400 cursor-pointer transition-all">
 // //                             Reset
 // //                         </button>
 // //                         <span className="text-xs text-ink-400 ml-auto">All fields with auto-calc will update your dashboard instantly</span>
@@ -366,7 +366,7 @@
 // // function AddBtn({ onClick, children }) {
 // //     return (
 // //         <button onClick={onClick}
-// //             className="mt-2.5 px-4 py-2 bg-transparent border-[1.5px] border-dashed border-ink-300 rounded-lg text-sm font-semibold text-ink-500 cursor-pointer flex items-center gap-2 transition-all hover:border-brand-600 hover:text-brand-600 hover:bg-[rgba(232,83,10,.04)]">
+// //             className="mt-2.5 px-4 py-2 bg-transparent border-[1.5px] border-dashed border-ink-300 dark:border-white/15 rounded-lg text-sm font-semibold text-ink-500 dark:text-ink-400 cursor-pointer flex items-center gap-2 transition-all hover:border-brand-600 hover:text-brand-600 hover:bg-[rgba(232,83,10,.04)]">
 // //             {children}
 // //         </button>
 // //     );
@@ -526,7 +526,7 @@
 // //         Math.min(100, cur.selfRating * 10)];
 
 // //     const radarLabels = ['Util', 'Velocity', 'Reviews', 'Quality', 'Goals', 'Self'];
-// //     const radarColors = ['#2563eb', '#ff6a1f', '#059669', '#7c3aed', '#ca8a04', '#0891b2'];
+// //     const radarColors = ['#ff6a1f', '#ff6a1f', '#059669', '#ff6a1f', '#d97706', '#0891b2'];
 // //     const score = m.overall || m.efficiency;
 // //     const scoreColor = metricColor(score);
 // //     const scoreLabel = score >= 85 ? 'EXCELLENT' : score >= 70 ? 'GOOD' : score >= 55 ? 'FAIR' : 'NEEDS FOCUS';
@@ -536,7 +536,7 @@
 // //     const statusTag = { done: { lbl: '✓ Done' }, partial: { lbl: '◑ Partial' }, missed: { lbl: '✗ Missed' }, carry: { lbl: '→ Carry' } };
 // //     const tagStyle = {
 // //         done: { background: 'rgba(22,163,74,.1)', color: '#059669' },
-// //         partial: { background: 'rgba(202,138,4,.1)', color: '#ca8a04' },
+// //         partial: { background: 'rgba(202,138,4,.1)', color: '#d97706' },
 // //         missed: { background: 'rgba(220,38,38,.1)', color: '#ff4b2b' },
 // //         carry: { background: 'rgba(107,114,128,.1)', color: '#6b7280' }
 // //     };
@@ -606,7 +606,7 @@
 // //                     { label: 'Efficiency Score', val: `${m.efficiency}`, sub: 'Composite /100', c: metricColor(m.efficiency), badge: trendIcon(m.efficiency) + ' Efficiency' },
 // //                     { label: 'Goals Met', val: `${goalsMet}/${cur.goals.length}`, sub: `${tasksDone}/${tasksTotal} tasks done`, c: metricColor(goalsMet / Math.max(cur.goals.length, 1) * 100), badge: goalsMet === cur.goals.length && cur.goals.length > 0 ? 'All met' : goalsMet > 0 ? 'Partial' : 'Missed', badgeColor: 'rgba(22,163,74,.1)', badgeTextColor: '#059669' },
 // //                 ].map((k, i) => (
-// //                     <div key={i} className="wp-kpi relative overflow-hidden rounded-xl p-5 bg-white border border-ink-200" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', '--kpi-color': k.c } as React.CSSProperties}>
+// //                     <div key={i} className="wp-kpi relative overflow-hidden rounded-xl p-5 bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', '--kpi-color': k.c } as React.CSSProperties}>
 // //                         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#8a8a8a', marginBottom: 8 }}>{k.label}</div>
 // //                         <div style={{ fontSize: 30, fontWeight: 900, lineHeight: 1, color: k.c, marginBottom: 4 }}>{k.val}</div>
 // //                         <div style={{ fontSize: 11, color: '#8a8a8a', fontFamily: 'monospace' }}>{k.sub}</div>
@@ -629,8 +629,8 @@
 // //                             return (
 // //                                 <div key={e.sprint} className="flex-1 flex flex-col items-center gap-1">
 // //                                     <div className="flex-1 flex items-end gap-[3px] w-full">
-// //                                         <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative bg-ink-100 border border-ink-200 transition-[height] duration-[400ms] ease-[cubic-bezier(.4,0,.2,1)]" style={{ height: `${cH}%` }} data-tip={`Committed: ${e.committed}SP`} />
-// //                                         <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative transition-[height] duration-[400ms] ease-[cubic-bezier(.4,0,.2,1)]" style={{ height: `${dH}%`, background: 'linear-gradient(180deg,#2563eb,#1d4ed8)' }} data-tip={`Done: ${e.completed}SP (${pct}%)`} />
+// //                                         <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative bg-ink-100 dark:bg-ink-800 border border-ink-200 dark:border-white/10 transition-[height] duration-[400ms] ease-[cubic-bezier(.4,0,.2,1)]" style={{ height: `${cH}%` }} data-tip={`Committed: ${e.committed}SP`} />
+// //                                         <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative transition-[height] duration-[400ms] ease-[cubic-bezier(.4,0,.2,1)]" style={{ height: `${dH}%`, background: 'linear-gradient(180deg,#ff6a1f,#e85511)' }} data-tip={`Done: ${e.completed}SP (${pct}%)`} />
 // //                                     </div>
 // //                                     <div style={{ fontSize: 10, color: '#8a8a8a', fontFamily: 'monospace' }}>{e.sprint}</div>
 // //                                 </div>
@@ -639,7 +639,7 @@
 // //                     </div>
 // //                     <div style={{ display: 'flex', gap: 16, marginTop: 14 }}>
 // //                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#8a8a8a' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#f4f4f5', border: '1px solid #e4e4e7', display: 'inline-block' }} /> Committed</div>
-// //                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#8a8a8a' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#2563eb', display: 'inline-block' }} /> Completed</div>
+// //                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#8a8a8a' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#ff6a1f', display: 'inline-block' }} /> Completed</div>
 // //                     </div>
 // //                 </div>
 // //                 <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
@@ -648,7 +648,7 @@
 // //                     </div>
 // //                     {cur.goals.length ? cur.goals.map((g, i) => {
 // //                         const pct = Math.min(100, Math.round((g.achieved / g.target) * 100));
-// //                         const c = g.achieved >= g.target ? '#059669' : g.achieved >= g.target * .7 ? '#ca8a04' : '#ff4b2b';
+// //                         const c = g.achieved >= g.target ? '#059669' : g.achieved >= g.target * .7 ? '#d97706' : '#ff4b2b';
 // //                         return (
 // //                             <div key={i} style={{ marginBottom: 14 }}>
 // //                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
@@ -680,11 +680,11 @@
 // //                         <tbody>
 // //                             {cur.tasks.length ? cur.tasks.map((t, i) => (
 // //                                 <tr key={i}>
-// //                                     <td className="text-center">{t.jiraId ? <a href={`https://tapminds.atlassian.net/browse/${t.jiraId}`} target="_blank" rel="noreferrer" style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#2563eb', textDecoration: 'none', background: 'rgba(37,99,235,.08)', padding: '2px 8px', borderRadius: 5, whiteSpace: 'nowrap' }}>{t.jiraId} ↗</a> : <span style={{ color: '#8a8a8a', fontSize: 11 }}>—</span>}</td>
+// //                                     <td className="text-center">{t.jiraId ? <a href={`https://tapminds.atlassian.net/browse/${t.jiraId}`} target="_blank" rel="noreferrer" style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#ff6a1f', textDecoration: 'none', background: 'rgba(37,99,235,.08)', padding: '2px 8px', borderRadius: 5, whiteSpace: 'nowrap' }}>{t.jiraId} ↗</a> : <span style={{ color: '#8a8a8a', fontSize: 11 }}>—</span>}</td>
 // //                                     <td className="text-center" style={{ fontWeight: 500 }}>{t.name}</td>
-// //                                     <td className="text-center" ><span style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 6, color: '#2563eb' }}>{t.sp}</span></td>
+// //                                     <td className="text-center" ><span style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 6, color: '#ff6a1f' }}>{t.sp}</span></td>
 // //                                     <td className="text-center" ><span style={{ fontSize: 11, color: '#6a6a6a', padding: '2px 8px', borderRadius: 5, whiteSpace: 'nowrap' }}>{t.product || '—'}</span></td>
-// //                                     <td className="text-center" ><span style={{ fontSize: 11, color: '#7c3aed', background: 'rgba(124,58,237,.07)', padding: '2px 8px', borderRadius: 5, whiteSpace: 'nowrap' }}>{t.module || '—'}</span></td>
+// //                                     <td className="text-center" ><span style={{ fontSize: 11, color: '#ff6a1f', background: 'rgba(124,58,237,.07)', padding: '2px 8px', borderRadius: 5, whiteSpace: 'nowrap' }}>{t.module || '—'}</span></td>
 // //                                     <td className="text-center" style={{ fontSize: 11, color: '#8a8a8a' }}>{t.type}</td>
 // //                                     <td className="text-center" ><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, ...tagStyle[t.status] }}>{statusTag[t.status]?.lbl}</span></td>
 // //                                 </tr>
@@ -728,7 +728,7 @@
 // //                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Developer Reflection</div>
 // //                     {cur.achievements && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#059669', marginBottom: 6 }}>✓ Achievements</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6a6a6a' }}>{cur.achievements}</div></div>}
 // //                     {cur.challenges && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#ff4b2b', marginBottom: 6 }}>⚠ Blockers</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6a6a6a' }}>{cur.challenges}</div></div>}
-// //                     {cur.nextFocus && <div><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#2563eb', marginBottom: 6 }}>→ Next Week Focus</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6a6a6a' }}>{cur.nextFocus}</div></div>}
+// //                     {cur.nextFocus && <div><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#ff6a1f', marginBottom: 6 }}>→ Next Week Focus</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6a6a6a' }}>{cur.nextFocus}</div></div>}
 // //                     {!cur.achievements && !cur.challenges && !cur.nextFocus && <div style={{ textAlign: 'center', color: '#8a8a8a', padding: 20, fontSize: 13 }}>No reflection notes added</div>}
 // //                 </div>
 // //                 <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
@@ -738,10 +738,10 @@
 // //                     <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e4e4e7' }}>
 // //                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
 // //                             {[
-// //                                 { label: 'Reviews Done', val: cur.reviews, color: '#2563eb' },
-// //                                 { label: 'Carry-over SP', val: cur.carryover, color: '#ca8a04' },
+// //                                 { label: 'Reviews Done', val: cur.reviews, color: '#ff6a1f' },
+// //                                 { label: 'Carry-over SP', val: cur.carryover, color: '#d97706' },
 // //                                 { label: 'Blockers', val: cur.blockers, color: '#ff4b2b' },
-// //                                 { label: 'Self Rating', val: `${cur.selfRating}/10`, color: '#7c3aed' },
+// //                                 { label: 'Self Rating', val: `${cur.selfRating}/10`, color: '#ff6a1f' },
 // //                             ].map(x => (
 // //                                 <div key={x.label} style={{ borderRadius: 8, padding: 12 }} className="shadow-md">
 // //                                     <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#8a8a8a', marginBottom: 4 }}>{x.label}</div>
@@ -790,7 +790,7 @@
 // //     );
 
 // //     const sorted = [...newData].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-// //     const color = v => v >= 85 ? '#059669' : v >= 65 ? '#ca8a04' : '#ff4b2b';
+// //     const color = v => v >= 85 ? '#059669' : v >= 65 ? '#d97706' : '#ff4b2b';
 // //     return (
 // //         <div style={{ margin: '0 auto', padding: '36px 40px 60px' }}>
 // //             <div className="wp-section-title flex items-center gap-2.5 text-[11px] font-bold tracking-[2px] uppercase text-ink-400 mb-4">
@@ -847,13 +847,13 @@
 
 // //                                     {/* Sprint */}
 // //                                     <td className="py-2">
-// //                                         <span className="font-mono text-xs px-2 py-1 rounded bg-[#f5f5f5]">
+// //                                         <span className="font-secondary text-xs px-2 py-1 rounded bg-[#f5f5f5]">
 // //                                             {e.sprint}
 // //                                         </span>
 // //                                     </td>
 
 // //                                     {/* Week */}
-// //                                     <td className="py-2 text-xs text-ink-400 font-mono">
+// //                                     <td className="py-2 text-xs text-ink-400 font-secondary">
 // //                                         {e.weekStart || ''}
 // //                                     </td>
 
@@ -866,7 +866,7 @@
 // //                                                     .map((t, i) => (
 // //                                                         <span
 // //                                                             key={i}
-// //                                                             className="text-[10px] font-mono font-bold text-blue-600 bg-blue-50 px-2 py-[2px] rounded whitespace-nowrap"
+// //                                                             className="text-[10px] font-secondary font-bold text-brand-600 bg-brand-50 px-2 py-[2px] rounded whitespace-nowrap"
 // //                                                         >
 // //                                                             {t.jiraId}
 // //                                                         </span>
@@ -878,7 +878,7 @@
 // //                                     </td>
 
 // //                                     {/* SP */}
-// //                                     <td className="text-center font-semibold text-blue-600">
+// //                                     <td className="text-center font-semibold text-brand-600">
 // //                                         {e.completed}/{e.committed}
 // //                                     </td>
 
@@ -911,7 +911,7 @@
 // //                                                     e.bugs <= 1
 // //                                                         ? '#059669'
 // //                                                         : e.bugs <= 3
-// //                                                             ? '#ca8a04'
+// //                                                             ? '#d97706'
 // //                                                             : '#ff4b2b'
 // //                                             }}
 // //                                         >
@@ -928,14 +928,14 @@
 // //                                     <td className="text-center whitespace-nowrap">
 // //                                         <button
 // //                                             onClick={() => onEdit(e)}
-// //                                             className="border border-ink-200 rounded px-2 py-1 text-xs font-semibold hover:bg-gray-100"
+// //                                             className="border border-ink-200 dark:border-white/10 rounded px-2 py-1 text-xs font-semibold hover:bg-ink-100 dark:hover:bg-ink-800"
 // //                                         >
 // //                                             Edit
 // //                                         </button>
 
 // //                                         <button
 // //                                             onClick={() => onDelete(e.id)}
-// //                                             className="ml-1 bg-red-50 border border-red-200 text-red-600 rounded px-2 py-1 text-xs font-semibold hover:bg-red-100"
+// //                                             className="ml-1 bg-rose-50 border border-rose-200 text-rose-600 rounded px-2 py-1 text-xs font-semibold hover:bg-rose-100"
 // //                                         >
 // //                                             Del
 // //                                         </button>
@@ -1071,7 +1071,7 @@
 // //     }
 
 // //     return (
-// //         <div className="relative min-h-screen isolate text-ink-900 ">
+// //         <div className="relative min-h-screen isolate text-ink-900 dark:text-white ">
 // //             <style>{GLOBAL_STYLE}</style>
 
 // //             {/* ── HEADER ── */}
@@ -1163,7 +1163,7 @@
 //     return { completion, utilisation, qualityScore, efficiency, overall };
 // }
 // function metricColor(v) {
-//     return v >= 85 ? '#059669' : v >= 65 ? '#ca8a04' : '#ff4b2b';
+//     return v >= 85 ? '#059669' : v >= 65 ? '#d97706' : '#ff4b2b';
 // }
 // function trendIcon(v) { return v >= 85 ? '▲' : v >= 65 ? '●' : '▼'; }
 
@@ -1179,7 +1179,7 @@
 //     });
 //     for (let i = 0; i < n; i++) { const [x, y] = pt(i, r); h += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#e4e4e7" stroke-width="1"/>`; }
 //     const dpts = values.map((v, i) => pt(i, r * (v / 100))).map(p => p.join(',')).join(' ');
-//     h += `<polygon points="${dpts}" fill="rgba(37,99,235,.12)" stroke="#2563eb" stroke-width="2"/>`;
+//     h += `<polygon points="${dpts}" fill="rgba(37,99,235,.12)" stroke="#ff6a1f" stroke-width="2"/>`;
 //     values.forEach((v, i) => { const [x, y] = pt(i, r * (v / 100)); h += `<circle cx="${x}" cy="${y}" r="4" fill="${colors[i]}" stroke="#fff" stroke-width="2"/>`; });
 //     for (let i = 0; i < n; i++) {
 //         const [x, y] = pt(i, r + 16);
@@ -1194,7 +1194,7 @@
 //     return (
 //         <div className="text-center py-16 px-5 flex flex-col items-center gap-3.5">
 //             <div className="text-5xl opacity-30">{icon}</div>
-//             <div className="text-lg font-bold text-ink-500">{title}</div>
+//             <div className="text-lg font-bold text-ink-500 dark:text-ink-400">{title}</div>
 //             <div className="text-sm text-ink-400">{sub}</div>
 //             <button onClick={onBtn} className="mt-1.5 px-6 py-2.5 bg-brand-600 text-white text-sm font-bold rounded-[9px] cursor-pointer border-none hover:bg-brand-700 transition-all">
 //                 {btnLabel}
@@ -1208,7 +1208,7 @@
 //     const TASK_TYPES = ['Feature', 'Bug', 'Refactor', 'Test', 'Docs', 'Review', 'Infra', 'Research'];
 //     const TASK_STATUSES = [{ key: 'done', label: 'Done' }, { key: 'partial', label: 'Partial' }, { key: 'missed', label: 'Missed' }, { key: 'carry', label: 'Carry' }];
 //     return (
-//         <div style={{ display: 'grid', gridTemplateColumns: '90px 2fr 80px 1fr 1fr 1.5fr 36px', gap: 10, alignItems: 'center' }} className="border border-ink-200 rounded-[10px] px-3.5 py-2.5 transition-all">
+//         <div style={{ display: 'grid', gridTemplateColumns: '90px 2fr 80px 1fr 1fr 1.5fr 36px', gap: 10, alignItems: 'center' }} className="border border-ink-200 dark:border-white/10 rounded-[10px] px-3.5 py-2.5 transition-all">
 //             <Input size="sm" placeholder="TP-50" label="Jira ID" labelPlacement="outside"
 //                 value={task.jiraId || ''} onValueChange={v => onChange('jiraId', v.toUpperCase())}
 //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
@@ -1243,7 +1243,7 @@
 //                     </Select>
 //                 </div>
 //             </div>
-//             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">×</button>
+//             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 dark:border-white/15 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">×</button>
 //         </div>
 //     );
 // }
@@ -1251,7 +1251,7 @@
 // // ─── GOAL ROW COMPONENT ────────────────────────────────────────────────────────
 // function GoalRowInput({ goal, onChange, onRemove }) {
 //     return (
-//         <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 36px', gap: 10, alignItems: 'center' }} className="border border-ink-200 rounded-[10px] px-3.5 py-2.5">
+//         <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 36px', gap: 10, alignItems: 'center' }} className="border border-ink-200 dark:border-white/10 rounded-[10px] px-3.5 py-2.5">
 //             <Input size="sm" placeholder="e.g. Zero crashes in prod" label="Goal Description" labelPlacement="outside"
 //                 value={goal.name || ''} onValueChange={v => onChange('name', v)}
 //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
@@ -1261,7 +1261,7 @@
 //             <Input size="sm" type="number" placeholder="85" label="Achieved %" labelPlacement="outside"
 //                 value={goal.achieved || ''} onValueChange={v => onChange('achieved', v)}
 //                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
-//             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">×</button>
+//             <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 dark:border-white/15 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">×</button>
 //         </div>
 //     );
 // }
@@ -1270,7 +1270,7 @@
 // function FormGroup({ label, hint, children, full, half }) {
 //     return (
 //         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, gridColumn: full ? '1/-1' : half ? 'span 2' : undefined }}>
-//             <label className="text-[11px] font-bold tracking-[1.2px] uppercase text-ink-500">
+//             <label className="text-[11px] font-bold tracking-[1.2px] uppercase text-ink-500 dark:text-ink-400">
 //                 {label}{hint && <span className="text-[10px] font-normal text-ink-400 tracking-normal ml-1.5 normal-case">{hint}</span>}
 //             </label>
 //             {children}
@@ -1281,7 +1281,7 @@
 // function AddBtn({ onClick, children }) {
 //     return (
 //         <button onClick={onClick}
-//             className="mt-2.5 px-4 py-2 bg-transparent border-[1.5px] border-dashed border-ink-300 rounded-lg text-sm font-semibold text-ink-500 cursor-pointer flex items-center gap-2 transition-all hover:border-brand-600 hover:text-brand-600 hover:bg-[rgba(232,83,10,.04)]">
+//             className="mt-2.5 px-4 py-2 bg-transparent border-[1.5px] border-dashed border-ink-300 dark:border-white/15 rounded-lg text-sm font-semibold text-ink-500 dark:text-ink-400 cursor-pointer flex items-center gap-2 transition-all hover:border-brand-600 hover:text-brand-600 hover:bg-[rgba(232,83,10,.04)]">
 //             {children}
 //         </button>
 //     );
@@ -1361,7 +1361,7 @@
 //     });
 
 //     const live = (f.committed || f.completed) ? calcMetrics(f.committed, f.completed, f.days, f.bugs, f.selfRating) : null;
-//     const lc = v => v >= 85 ? '#059669' : v >= 65 ? '#ca8a04' : '#ff4b2b';
+//     const lc = v => v >= 85 ? '#059669' : v >= 65 ? '#d97706' : '#ff4b2b';
 //     const ll = v => v >= 85 ? '▲ On Target' : v >= 65 ? '● Moderate' : '▼ Below';
 
 //     function addTask() { const id = taskId.current++; setTasks(t => [...t, { id, jiraId: '', name: '', sp: '', product: PRODUCTS[0], module: MODULES[0], type: 'Feature', status: 'done' }]); }
@@ -1541,11 +1541,11 @@
 //                             <span>{isEdit ? 'Save Changes' : 'Submit Sprint Entry'}</span>
 //                             <span>{isEdit ? '✓' : '→'}</span>
 //                         </button>
-//                         <button onClick={handleReset} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 rounded-[10px] text-sm font-semibold text-ink-500 cursor-pointer transition-all">
+//                         <button onClick={handleReset} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 dark:border-white/15 rounded-[10px] text-sm font-semibold text-ink-500 dark:text-ink-400 cursor-pointer transition-all">
 //                             Reset
 //                         </button>
 //                         {isEdit && (
-//                             <button onClick={onSwitchDashboard} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 rounded-[10px] text-sm font-semibold text-ink-400 cursor-pointer transition-all">
+//                             <button onClick={onSwitchDashboard} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 dark:border-white/15 rounded-[10px] text-sm font-semibold text-ink-400 cursor-pointer transition-all">
 //                                 Cancel
 //                             </button>
 //                         )}
@@ -1763,14 +1763,14 @@
 //         ? [radar.utilisation, radar.velocity, radar.reviews, radar.quality, radar.goals, radar.self]
 //         : [m.utilisation, m.completion, Math.min(100, cur.reviews * 20), m.qualityScore, goalsMet > 0 ? Math.round((goalsMet / Math.max(cur.goals.length, 1)) * 100) : 0, Math.min(100, cur.selfRating * 10)];
 //     const radarLabels = ['Util', 'Velocity', 'Reviews', 'Quality', 'Goals', 'Self'];
-//     const radarColors = ['#2563eb', '#ff6a1f', '#059669', '#7c3aed', '#ca8a04', '#0891b2'];
+//     const radarColors = ['#ff6a1f', '#ff6a1f', '#059669', '#ff6a1f', '#d97706', '#0891b2'];
 //     const score = m.overall || m.efficiency;
 //     const scoreColor = metricColor(score);
 //     const scoreLabel = score >= 85 ? 'EXCELLENT' : score >= 70 ? 'GOOD' : score >= 55 ? 'FAIR' : 'NEEDS FOCUS';
 //     const circumference = 2 * Math.PI * 36;
 //     const dashOffset = circumference * (1 - score / 100);
 //     const statusTag = { done: { lbl: '✓ Done' }, partial: { lbl: '◑ Partial' }, missed: { lbl: '✗ Missed' }, carry: { lbl: '→ Carry' } };
-//     const tagStyle = { done: { background: 'rgba(22,163,74,.1)', color: '#059669' }, partial: { background: 'rgba(202,138,4,.1)', color: '#ca8a04' }, missed: { background: 'rgba(220,38,38,.1)', color: '#ff4b2b' }, carry: { background: 'rgba(107,114,128,.1)', color: '#6b7280' } };
+//     const tagStyle = { done: { background: 'rgba(22,163,74,.1)', color: '#059669' }, partial: { background: 'rgba(202,138,4,.1)', color: '#d97706' }, missed: { background: 'rgba(220,38,38,.1)', color: '#ff4b2b' }, carry: { background: 'rgba(107,114,128,.1)', color: '#6b7280' } };
 
 //     return (
 //         <div style={{ margin: '0 auto', padding: '36px 40px 60px' }}>
@@ -1827,7 +1827,7 @@
 //                     { label: 'Efficiency Score', val: `${m.efficiency}`, sub: 'Composite /100', c: metricColor(m.efficiency), badge: trendIcon(m.efficiency) + ' Efficiency' },
 //                     { label: 'Goals Met', val: `${goalsMet}/${cur.goals.length}`, sub: `${tasksDone}/${tasksTotal} tasks done`, c: metricColor(goalsMet / Math.max(cur.goals.length, 1) * 100), badge: goalsMet === cur.goals.length && cur.goals.length > 0 ? 'All met' : goalsMet > 0 ? 'Partial' : 'Missed', badgeColor: 'rgba(22,163,74,.1)', badgeTextColor: '#059669' },
 //                 ].map((k, i) => (
-//                     <div key={i} className="wp-kpi relative overflow-hidden rounded-xl p-5 bg-white border border-ink-200" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', '--kpi-color': k.c } as React.CSSProperties}>
+//                     <div key={i} className="wp-kpi relative overflow-hidden rounded-xl p-5 bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', '--kpi-color': k.c } as React.CSSProperties}>
 //                         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#8a8a8a', marginBottom: 8 }}>{k.label}</div>
 //                         <div style={{ fontSize: 30, fontWeight: 900, lineHeight: 1, color: k.c, marginBottom: 4 }}>{k.val}</div>
 //                         <div style={{ fontSize: 11, color: '#8a8a8a', fontFamily: 'monospace' }}>{k.sub}</div>
@@ -1846,8 +1846,8 @@
 //                             return (
 //                                 <div key={e.sprint} className="flex-1 flex flex-col items-center gap-1">
 //                                     <div className="flex-1 flex items-end gap-[3px] w-full">
-//                                         <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative bg-ink-100 border border-ink-200" style={{ height: `${cH}%` }} data-tip={`Committed: ${e.committed}SP`} />
-//                                         <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative" style={{ height: `${dH}%`, background: 'linear-gradient(180deg,#2563eb,#1d4ed8)' }} data-tip={`Done: ${e.completed}SP (${pct}%)`} />
+//                                         <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative bg-ink-100 dark:bg-ink-800 border border-ink-200 dark:border-white/10" style={{ height: `${cH}%` }} data-tip={`Committed: ${e.committed}SP`} />
+//                                         <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative" style={{ height: `${dH}%`, background: 'linear-gradient(180deg,#ff6a1f,#e85511)' }} data-tip={`Done: ${e.completed}SP (${pct}%)`} />
 //                                     </div>
 //                                     <div style={{ fontSize: 10, color: '#8a8a8a', fontFamily: 'monospace' }}>{e.sprint}</div>
 //                                 </div>
@@ -1856,14 +1856,14 @@
 //                     </div>
 //                     <div style={{ display: 'flex', gap: 16, marginTop: 14 }}>
 //                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#8a8a8a' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#f4f4f5', border: '1px solid #e4e4e7', display: 'inline-block' }} /> Committed</div>
-//                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#8a8a8a' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#2563eb', display: 'inline-block' }} /> Completed</div>
+//                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#8a8a8a' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#ff6a1f', display: 'inline-block' }} /> Completed</div>
 //                     </div>
 //                 </div>
 //                 <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
 //                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>Goal Achievement <span style={{ fontFamily: 'monospace', fontSize: 11, padding: '2px 8px', borderRadius: 10, color: '#8a8a8a', fontWeight: 500 }}>{goalsMet}/{cur.goals.length} met</span></div>
 //                     {cur.goals.length ? cur.goals.map((g, i) => {
 //                         const pct = Math.min(100, Math.round((g.achieved / g.target) * 100));
-//                         const c = g.achieved >= g.target ? '#059669' : g.achieved >= g.target * .7 ? '#ca8a04' : '#ff4b2b';
+//                         const c = g.achieved >= g.target ? '#059669' : g.achieved >= g.target * .7 ? '#d97706' : '#ff4b2b';
 //                         return (
 //                             <div key={i} style={{ marginBottom: 14 }}>
 //                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
@@ -1892,11 +1892,11 @@
 //                         <tbody>
 //                             {cur.tasks.length ? cur.tasks.map((t, i) => (
 //                                 <tr key={i} style={{ borderTop: '1px solid #f0ede8' }}>
-//                                     <td style={{ padding: '8px', textAlign: 'center' }}>{t.jiraId ? <a href={`https://tapminds.atlassian.net/browse/${t.jiraId}`} target="_blank" rel="noreferrer" style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#2563eb', textDecoration: 'none', background: 'rgba(37,99,235,.08)', padding: '2px 8px', borderRadius: 5 }}>{t.jiraId} ↗</a> : <span style={{ color: '#8a8a8a', fontSize: 11 }}>—</span>}</td>
+//                                     <td style={{ padding: '8px', textAlign: 'center' }}>{t.jiraId ? <a href={`https://tapminds.atlassian.net/browse/${t.jiraId}`} target="_blank" rel="noreferrer" style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#ff6a1f', textDecoration: 'none', background: 'rgba(37,99,235,.08)', padding: '2px 8px', borderRadius: 5 }}>{t.jiraId} ↗</a> : <span style={{ color: '#8a8a8a', fontSize: 11 }}>—</span>}</td>
 //                                     <td style={{ padding: '8px', textAlign: 'center', fontWeight: 500, fontSize: 13 }}>{t.name}</td>
-//                                     <td style={{ padding: '8px', textAlign: 'center' }}><span style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563eb' }}>{t.sp}</span></td>
+//                                     <td style={{ padding: '8px', textAlign: 'center' }}><span style={{ fontFamily: 'monospace', fontSize: 11, color: '#ff6a1f' }}>{t.sp}</span></td>
 //                                     <td style={{ padding: '8px', textAlign: 'center' }}><span style={{ fontSize: 11, color: '#6a6a6a' }}>{t.product || '—'}</span></td>
-//                                     <td style={{ padding: '8px', textAlign: 'center' }}><span style={{ fontSize: 11, color: '#7c3aed', background: 'rgba(124,58,237,.07)', padding: '2px 8px', borderRadius: 5 }}>{t.module || '—'}</span></td>
+//                                     <td style={{ padding: '8px', textAlign: 'center' }}><span style={{ fontSize: 11, color: '#ff6a1f', background: 'rgba(124,58,237,.07)', padding: '2px 8px', borderRadius: 5 }}>{t.module || '—'}</span></td>
 //                                     <td style={{ padding: '8px', textAlign: 'center', fontSize: 11, color: '#8a8a8a' }}>{t.type}</td>
 //                                     <td style={{ padding: '8px', textAlign: 'center' }}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, ...tagStyle[t.status] }}>{statusTag[t.status]?.lbl}</span></td>
 //                                 </tr>
@@ -1932,7 +1932,7 @@
 //                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Developer Reflection</div>
 //                     {cur.achievements && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#059669', marginBottom: 6 }}>✓ Achievements</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6a6a6a' }}>{cur.achievements}</div></div>}
 //                     {cur.challenges && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#ff4b2b', marginBottom: 6 }}>⚠ Blockers</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6a6a6a' }}>{cur.challenges}</div></div>}
-//                     {cur.nextFocus && <div><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#2563eb', marginBottom: 6 }}>→ Next Week Focus</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6a6a6a' }}>{cur.nextFocus}</div></div>}
+//                     {cur.nextFocus && <div><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#ff6a1f', marginBottom: 6 }}>→ Next Week Focus</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6a6a6a' }}>{cur.nextFocus}</div></div>}
 //                     {!cur.achievements && !cur.challenges && !cur.nextFocus && <div style={{ textAlign: 'center', color: '#8a8a8a', padding: 20, fontSize: 13 }}>No reflection notes added</div>}
 //                 </div>
 //                 <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
@@ -1942,10 +1942,10 @@
 //                     <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e4e4e7' }}>
 //                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
 //                             {[
-//                                 { label: 'Reviews Done', val: cur.reviews, color: '#2563eb' },
-//                                 { label: 'Carry-over SP', val: cur.carryover, color: '#ca8a04' },
+//                                 { label: 'Reviews Done', val: cur.reviews, color: '#ff6a1f' },
+//                                 { label: 'Carry-over SP', val: cur.carryover, color: '#d97706' },
 //                                 { label: 'Blockers', val: cur.blockers, color: '#ff4b2b' },
-//                                 { label: 'Self Rating', val: `${cur.selfRating}/10`, color: '#7c3aed' },
+//                                 { label: 'Self Rating', val: `${cur.selfRating}/10`, color: '#ff6a1f' },
 //                             ].map(x => (
 //                                 <div key={x.label} style={{ borderRadius: 8, padding: 12 }} className="shadow-md">
 //                                     <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#8a8a8a', marginBottom: 4 }}>{x.label}</div>
@@ -2091,7 +2091,7 @@
 //     );
 
 //     const sorted = [...newData].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-//     const color = v => v >= 85 ? '#059669' : v >= 65 ? '#ca8a04' : '#ff4b2b';
+//     const color = v => v >= 85 ? '#059669' : v >= 65 ? '#d97706' : '#ff4b2b';
 
 //     return (
 //         <div style={{ margin: '0 auto', padding: '36px 40px 60px' }}>
@@ -2161,15 +2161,15 @@
 //                                     <td style={{ padding: '8px 4px' }}>
 //                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 160 }}>
 //                                             {e.tasks.filter(t => t.jiraId).length
-//                                                 ? e.tasks.filter(t => t.jiraId).map((t, i) => <span key={i} style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: 700, color: '#2563eb', background: 'rgba(37,99,235,.07)', padding: '2px 8px', borderRadius: 4, whiteSpace: 'nowrap' }}>{t.jiraId}</span>)
+//                                                 ? e.tasks.filter(t => t.jiraId).map((t, i) => <span key={i} style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: 700, color: '#ff6a1f', background: 'rgba(37,99,235,.07)', padding: '2px 8px', borderRadius: 4, whiteSpace: 'nowrap' }}>{t.jiraId}</span>)
 //                                                 : <span style={{ color: '#8a8a8a', fontSize: 12 }}>—</span>}
 //                                         </div>
 //                                     </td>
-//                                     <td style={{ textAlign: 'center', fontWeight: 600, color: '#2563eb' }}>{e.completed}/{e.committed}</td>
+//                                     <td style={{ textAlign: 'center', fontWeight: 600, color: '#ff6a1f' }}>{e.completed}/{e.committed}</td>
 //                                     <td style={{ textAlign: 'center', fontWeight: 600 }}><span style={{ color: color(e.metrics.completion) }}>{e.metrics.completion}%</span></td>
 //                                     <td style={{ textAlign: 'center', fontWeight: 600 }}><span style={{ color: color(e.metrics.utilisation) }}>{e.metrics.utilisation}%</span></td>
 //                                     <td style={{ textAlign: 'center', fontWeight: 600 }}><span style={{ color: color(e.metrics.efficiency) }}>{e.metrics.efficiency}/100</span></td>
-//                                     <td style={{ textAlign: 'center', fontWeight: 600 }}><span style={{ color: e.bugs <= 1 ? '#059669' : e.bugs <= 3 ? '#ca8a04' : '#ff4b2b' }}>{e.bugs}</span></td>
+//                                     <td style={{ textAlign: 'center', fontWeight: 600 }}><span style={{ color: e.bugs <= 1 ? '#059669' : e.bugs <= 3 ? '#d97706' : '#ff4b2b' }}>{e.bugs}</span></td>
 //                                     <td style={{ textAlign: 'center', fontWeight: 600 }}>{goalsMet}/{e.goals.length}</td>
 //                                     {user.userID != 1 && (
 //                                         <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
@@ -2330,7 +2330,7 @@
 //     }
 
 //     return (
-//         <div className="relative min-h-screen isolate text-ink-900">
+//         <div className="relative min-h-screen isolate text-ink-900 dark:text-white">
 //             <style>{GLOBAL_STYLE}</style>
 //             <header className="px-10 flex items-center justify-between h-16">
 //                 <Tabs
@@ -2420,7 +2420,7 @@ function calcMetrics(committed, completed, days, bugs, selfRating) {
     return { completion, utilisation, qualityScore, efficiency, overall };
 }
 function metricColor(v) {
-    return v >= 85 ? '#059669' : v >= 65 ? '#ca8a04' : '#ff4b2b';
+    return v >= 85 ? '#059669' : v >= 65 ? '#d97706' : '#ff4b2b';
 }
 function trendIcon(v) { return v >= 85 ? '▲' : v >= 65 ? '●' : '▼'; }
 
@@ -2436,7 +2436,7 @@ function buildRadar(values, labels, colors) {
     });
     for (let i = 0; i < n; i++) { const [x, y] = pt(i, r); h += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#e4e4e7" stroke-width="1"/>`; }
     const dpts = values.map((v, i) => pt(i, r * (v / 100))).map(p => p.join(',')).join(' ');
-    h += `<polygon points="${dpts}" fill="rgba(37,99,235,.12)" stroke="#2563eb" stroke-width="2"/>`;
+    h += `<polygon points="${dpts}" fill="rgba(37,99,235,.12)" stroke="#ff6a1f" stroke-width="2"/>`;
     values.forEach((v, i) => { const [x, y] = pt(i, r * (v / 100)); h += `<circle cx="${x}" cy="${y}" r="4" fill="${colors[i]}" stroke="#fff" stroke-width="2"/>`; });
     for (let i = 0; i < n; i++) {
         const [x, y] = pt(i, r + 16);
@@ -2559,15 +2559,15 @@ function JiraCsvImportBtn({ onImport, nextId }) {
                     display: 'flex', alignItems: 'center', gap: 8,
                     padding: '7px 16px',
                     background: 'transparent',
-                    border: '1.5px dashed #6366f1',
+                    border: '1.5px dashed #ff6a1f',
                     borderRadius: 8,
                     fontSize: 13, fontWeight: 600,
-                    color: '#6366f1',
+                    color: '#ff6a1f',
                     cursor: 'pointer',
                     transition: 'all .15s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,.06)'; e.currentTarget.style.borderColor = '#4f46e5'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#6366f1'; }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,.06)'; e.currentTarget.style.borderColor = '#ff6a1f'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#ff6a1f'; }}
             >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
                     <path d="M11.75 2L2 11.75l4.5 4.5L11.75 11l5.25 5.25 4.5-4.5L11.75 2z" fill="currentColor" opacity=".9" />
@@ -2594,7 +2594,7 @@ function EmptyState({ icon, title, sub, btnLabel, onBtn }) {
     return (
         <div className="text-center py-16 px-5 flex flex-col items-center gap-3.5">
             <div className="text-5xl opacity-30">{icon}</div>
-            <div className="text-lg font-bold text-ink-500">{title}</div>
+            <div className="text-lg font-bold text-ink-500 dark:text-ink-400">{title}</div>
             <div className="text-sm text-ink-400">{sub}</div>
             <button onClick={onBtn} className="mt-1.5 px-6 py-2.5 bg-brand-600 text-white text-sm font-bold rounded-[9px] cursor-pointer border-none hover:bg-brand-700 transition-all">
                 {btnLabel}
@@ -2608,7 +2608,7 @@ function TaskRowInput({ task, onChange, onRemove }) {
     const TASK_TYPES = ['Feature', 'Bug', 'Refactor', 'Test', 'Docs', 'Review', 'Infra', 'Research'];
     const TASK_STATUSES = [{ key: 'done', label: 'Done' }, { key: 'partial', label: 'Partial' }, { key: 'missed', label: 'Missed' }, { key: 'carry', label: 'Carry' }];
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: '90px 2fr 80px 1fr 1fr 1.5fr 36px', gap: 10, alignItems: 'center' }} className="border border-ink-200 rounded-[10px] px-3.5 py-2.5 transition-all">
+        <div style={{ display: 'grid', gridTemplateColumns: '90px 2fr 80px 1fr 1fr 1.5fr 36px', gap: 10, alignItems: 'center' }} className="border border-ink-200 dark:border-white/10 rounded-[10px] px-3.5 py-2.5 transition-all">
             <Input size="sm" placeholder="TP-50" label="Jira ID" labelPlacement="outside"
                 value={task.jiraId || ''} onValueChange={v => onChange('jiraId', v.toUpperCase())}
                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
@@ -2643,7 +2643,7 @@ function TaskRowInput({ task, onChange, onRemove }) {
                     </Select>
                 </div>
             </div>
-            <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">×</button>
+            <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 dark:border-white/15 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">×</button>
         </div>
     );
 }
@@ -2651,7 +2651,7 @@ function TaskRowInput({ task, onChange, onRemove }) {
 // ─── GOAL ROW COMPONENT ────────────────────────────────────────────────────────
 function GoalRowInput({ goal, onChange, onRemove }) {
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 36px', gap: 10, alignItems: 'center' }} className="border border-ink-200 rounded-[10px] px-3.5 py-2.5">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 36px', gap: 10, alignItems: 'center' }} className="border border-ink-200 dark:border-white/10 rounded-[10px] px-3.5 py-2.5">
             <Input size="sm" placeholder="e.g. Zero crashes in prod" label="Goal Description" labelPlacement="outside"
                 value={goal.name || ''} onValueChange={v => onChange('name', v)}
                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
@@ -2661,7 +2661,7 @@ function GoalRowInput({ goal, onChange, onRemove }) {
             <Input size="sm" type="number" placeholder="85" label="Achieved %" labelPlacement="outside"
                 value={goal.achieved || ''} onValueChange={v => onChange('achieved', v)}
                 classNames={{ label: 'text-[10px] font-bold tracking-widest uppercase text-ink-400' }} />
-            <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">×</button>
+            <button onClick={onRemove} className="w-7 h-7 rounded-md border border-ink-300 dark:border-white/15 bg-transparent text-ink-400 cursor-pointer text-[15px] flex items-center justify-center transition-all hover:bg-rose-600 hover:border-rose-600 hover:text-white">×</button>
         </div>
     );
 }
@@ -2670,7 +2670,7 @@ function GoalRowInput({ goal, onChange, onRemove }) {
 function FormGroup({ label, hint, children, full, half }) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, gridColumn: full ? '1/-1' : half ? 'span 2' : undefined }}>
-            <label className="text-[11px] font-bold tracking-[1.2px] uppercase text-ink-500">
+            <label className="text-[11px] font-bold tracking-[1.2px] uppercase text-ink-500 dark:text-ink-400">
                 {label}{hint && <span className="text-[10px] font-normal text-ink-400 tracking-normal ml-1.5 normal-case">{hint}</span>}
             </label>
             {children}
@@ -2681,7 +2681,7 @@ function FormGroup({ label, hint, children, full, half }) {
 function AddBtn({ onClick, children }) {
     return (
         <button onClick={onClick}
-            className="mt-2.5 px-4 py-2 bg-transparent border-[1.5px] border-dashed border-ink-300 rounded-lg text-sm font-semibold text-ink-500 cursor-pointer flex items-center gap-2 transition-all hover:border-brand-600 hover:text-brand-600 hover:bg-[rgba(232,83,10,.04)]">
+            className="mt-2.5 px-4 py-2 bg-transparent border-[1.5px] border-dashed border-ink-300 dark:border-white/15 rounded-lg text-sm font-semibold text-ink-500 dark:text-ink-400 cursor-pointer flex items-center gap-2 transition-all hover:border-brand-600 hover:text-brand-600 hover:bg-[rgba(232,83,10,.04)]">
             {children}
         </button>
     );
@@ -2760,7 +2760,7 @@ function FormTab({ initialEntry, onSubmit, onSwitchDashboard }) {
     });
 
     const live = (f.committed || f.completed) ? calcMetrics(f.committed, f.completed, f.days, f.bugs, f.selfRating) : null;
-    const lc = v => v >= 85 ? '#059669' : v >= 65 ? '#ca8a04' : '#ff4b2b';
+    const lc = v => v >= 85 ? '#059669' : v >= 65 ? '#d97706' : '#ff4b2b';
     const ll = v => v >= 85 ? '▲ On Target' : v >= 65 ? '● Moderate' : '▼ Below';
 
     function addTask() { const id = taskId.current++; setTasks(t => [...t, { id, jiraId: '', name: '', sp: '', product: PRODUCTS[0], module: MODULES[0], type: 'Feature', status: 'done' }]); }
@@ -2926,10 +2926,10 @@ function FormTab({ initialEntry, onSubmit, onSwitchDashboard }) {
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                <path d="M11.75 2L2 11.75l4.5 4.5L11.75 11l5.25 5.25 4.5-4.5L11.75 2z" fill="#6366f1" opacity=".9" />
-                                <path d="M11.75 22l9.75-9.75-4.5-4.5L11.75 13l-5.25-5.25-4.5 4.5L11.75 22z" fill="#6366f1" opacity=".5" />
+                                <path d="M11.75 2L2 11.75l4.5 4.5L11.75 11l5.25 5.25 4.5-4.5L11.75 2z" fill="#ff6a1f" opacity=".9" />
+                                <path d="M11.75 22l9.75-9.75-4.5-4.5L11.75 13l-5.25-5.25-4.5 4.5L11.75 22z" fill="#ff6a1f" opacity=".5" />
                             </svg>
-                            <span style={{ fontSize: 12, color: '#4f46e5', fontWeight: 600 }}>
+                            <span style={{ fontSize: 12, color: '#ff6a1f', fontWeight: 600 }}>
                                 Have a Jira export? Import your tasks directly from a CSV file.
                             </span>
                             <span style={{ fontSize: 11, color: '#8a8a8a' }}>
@@ -2987,11 +2987,11 @@ function FormTab({ initialEntry, onSubmit, onSwitchDashboard }) {
                             <span>{isEdit ? 'Save Changes' : 'Submit Sprint Entry'}</span>
                             <span>{isEdit ? '✓' : '→'}</span>
                         </button>
-                        <button onClick={handleReset} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 rounded-[10px] text-sm font-semibold text-ink-500 cursor-pointer transition-all">
+                        <button onClick={handleReset} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 dark:border-white/15 rounded-[10px] text-sm font-semibold text-ink-500 dark:text-ink-400 cursor-pointer transition-all">
                             Reset
                         </button>
                         {isEdit && (
-                            <button onClick={onSwitchDashboard} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 rounded-[10px] text-sm font-semibold text-ink-400 cursor-pointer transition-all">
+                            <button onClick={onSwitchDashboard} className="px-5 py-3 bg-transparent border-[1.5px] border-ink-300 dark:border-white/15 rounded-[10px] text-sm font-semibold text-ink-400 cursor-pointer transition-all">
                                 Cancel
                             </button>
                         )}
@@ -3141,14 +3141,14 @@ function DashboardTab({ entries, onSwitchForm }) {
         ? [radar.utilisation, radar.velocity, radar.reviews, radar.quality, radar.goals, radar.self]
         : [m.utilisation, m.completion, Math.min(100, cur.reviews * 20), m.qualityScore, goalsMet > 0 ? Math.round((goalsMet / Math.max(cur.goals.length, 1)) * 100) : 0, Math.min(100, cur.selfRating * 10)];
     const radarLabels = ['Util', 'Velocity', 'Reviews', 'Quality', 'Goals', 'Self'];
-    const radarColors = ['#2563eb', '#ff6a1f', '#059669', '#7c3aed', '#ca8a04', '#0891b2'];
+    const radarColors = ['#ff6a1f', '#ff6a1f', '#059669', '#ff6a1f', '#d97706', '#0891b2'];
     const score = m.overall || m.efficiency;
     const scoreColor = metricColor(score);
     const scoreLabel = score >= 85 ? 'EXCELLENT' : score >= 70 ? 'GOOD' : score >= 55 ? 'FAIR' : 'NEEDS FOCUS';
     const circumference = 2 * Math.PI * 36;
     const dashOffset = circumference * (1 - score / 100);
     const statusTag = { done: { lbl: '✓ Done' }, partial: { lbl: '◑ Partial' }, missed: { lbl: '✗ Missed' }, carry: { lbl: '→ Carry' } };
-    const tagStyle = { done: { background: 'rgba(22,163,74,.1)', color: '#059669' }, partial: { background: 'rgba(202,138,4,.1)', color: '#ca8a04' }, missed: { background: 'rgba(220,38,38,.1)', color: '#ff4b2b' }, carry: { background: 'rgba(107,114,128,.1)', color: '#6b7280' } };
+    const tagStyle = { done: { background: 'rgba(22,163,74,.1)', color: '#059669' }, partial: { background: 'rgba(202,138,4,.1)', color: '#d97706' }, missed: { background: 'rgba(220,38,38,.1)', color: '#ff4b2b' }, carry: { background: 'rgba(107,114,128,.1)', color: '#6b7280' } };
 
     return (
         <div style={{ margin: '0 auto', padding: '36px 40px 60px' }}>
@@ -3195,7 +3195,7 @@ function DashboardTab({ entries, onSwitchForm }) {
                     { label: 'Efficiency Score', val: `${m.efficiency}`, sub: 'Composite /100', c: metricColor(m.efficiency), badge: trendIcon(m.efficiency) + ' Efficiency' },
                     { label: 'Goals Met', val: `${goalsMet}/${cur.goals.length}`, sub: `${tasksDone}/${tasksTotal} tasks done`, c: metricColor(goalsMet / Math.max(cur.goals.length, 1) * 100), badge: goalsMet === cur.goals.length && cur.goals.length > 0 ? 'All met' : goalsMet > 0 ? 'Partial' : 'Missed', badgeColor: 'rgba(22,163,74,.1)', badgeTextColor: '#059669' },
                 ].map((k, i) => (
-                    <div key={i} className="wp-kpi relative overflow-hidden rounded-xl p-5 bg-white border border-ink-200"
+                    <div key={i} className="wp-kpi relative overflow-hidden rounded-xl p-5 bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10"
                         style={{ boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.05)', '--kpi-color': k.c }}>
                         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#8a8a8a', marginBottom: 8 }}>{k.label}</div>
                         <div style={{ fontSize: 30, fontWeight: 900, lineHeight: 1, color: k.c, marginBottom: 4 }}>{k.val}</div>
@@ -3218,8 +3218,8 @@ function DashboardTab({ entries, onSwitchForm }) {
                             return (
                                 <div key={e.sprint} className="flex-1 flex flex-col items-center gap-1">
                                     <div className="flex-1 flex items-end gap-[3px] w-full">
-                                        <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative bg-ink-100 border border-ink-200" style={{ height: `${cH}%` }} data-tip={`Committed: ${e.committed}SP`} />
-                                        <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative" style={{ height: `${dH}%`, background: 'linear-gradient(180deg,#2563eb,#1d4ed8)' }} data-tip={`Done: ${e.completed}SP (${pct}%)`} />
+                                        <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative bg-ink-100 dark:bg-ink-800 border border-ink-200 dark:border-white/10" style={{ height: `${cH}%` }} data-tip={`Committed: ${e.committed}SP`} />
+                                        <div className="wp-bar flex-1 rounded-t min-h-[3px] cursor-pointer relative" style={{ height: `${dH}%`, background: 'linear-gradient(180deg,#ff6a1f,#e85511)' }} data-tip={`Done: ${e.completed}SP (${pct}%)`} />
                                     </div>
                                     <div style={{ fontSize: 10, color: '#8a8a8a', fontFamily: 'monospace' }}>{e.sprint}</div>
                                 </div>
@@ -3228,7 +3228,7 @@ function DashboardTab({ entries, onSwitchForm }) {
                     </div>
                     <div style={{ display: 'flex', gap: 16, marginTop: 14 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#8a8a8a' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#f4f4f5', border: '1px solid #e4e4e7', display: 'inline-block' }} /> Committed</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#8a8a8a' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#2563eb', display: 'inline-block' }} /> Completed</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#8a8a8a' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#ff6a1f', display: 'inline-block' }} /> Completed</div>
                     </div>
                 </div>
                 <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
@@ -3237,7 +3237,7 @@ function DashboardTab({ entries, onSwitchForm }) {
                     </div>
                     {cur.goals.length ? cur.goals.map((g, i) => {
                         const pct = Math.min(100, Math.round((g.achieved / g.target) * 100));
-                        const c = g.achieved >= g.target ? '#059669' : g.achieved >= g.target * .7 ? '#ca8a04' : '#ff4b2b';
+                        const c = g.achieved >= g.target ? '#059669' : g.achieved >= g.target * .7 ? '#d97706' : '#ff4b2b';
                         return (
                             <div key={i} style={{ marginBottom: 14 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
@@ -3276,12 +3276,12 @@ function DashboardTab({ entries, onSwitchForm }) {
                             {cur.tasks.length ? cur.tasks.map((t, i) => (
                                 <tr key={i} style={{ borderTop: '1px solid #f0ede8' }}>
                                     <td style={{ padding: '8px', textAlign: 'center' }}>
-                                        {t.jiraId ? <a href={`https://tapminds.atlassian.net/browse/${t.jiraId}`} target="_blank" rel="noreferrer" style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#2563eb', textDecoration: 'none', background: 'rgba(37,99,235,.08)', padding: '2px 8px', borderRadius: 5 }}>{t.jiraId} ↗</a> : <span style={{ color: '#8a8a8a', fontSize: 11 }}>—</span>}
+                                        {t.jiraId ? <a href={`https://tapminds.atlassian.net/browse/${t.jiraId}`} target="_blank" rel="noreferrer" style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: '#ff6a1f', textDecoration: 'none', background: 'rgba(37,99,235,.08)', padding: '2px 8px', borderRadius: 5 }}>{t.jiraId} ↗</a> : <span style={{ color: '#8a8a8a', fontSize: 11 }}>—</span>}
                                     </td>
                                     <td style={{ padding: '8px', textAlign: 'center', fontWeight: 500, fontSize: 13 }}>{t.name}</td>
-                                    <td style={{ padding: '8px', textAlign: 'center' }}><span style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563eb' }}>{t.sp}</span></td>
+                                    <td style={{ padding: '8px', textAlign: 'center' }}><span style={{ fontFamily: 'monospace', fontSize: 11, color: '#ff6a1f' }}>{t.sp}</span></td>
                                     <td style={{ padding: '8px', textAlign: 'center' }}><span style={{ fontSize: 11, color: '#6a6a6a' }}>{t.product || '—'}</span></td>
-                                    <td style={{ padding: '8px', textAlign: 'center' }}><span style={{ fontSize: 11, color: '#7c3aed', background: 'rgba(124,58,237,.07)', padding: '2px 8px', borderRadius: 5 }}>{t.module || '—'}</span></td>
+                                    <td style={{ padding: '8px', textAlign: 'center' }}><span style={{ fontSize: 11, color: '#ff6a1f', background: 'rgba(124,58,237,.07)', padding: '2px 8px', borderRadius: 5 }}>{t.module || '—'}</span></td>
                                     <td style={{ padding: '8px', textAlign: 'center', fontSize: 11, color: '#8a8a8a' }}>{t.type}</td>
                                     <td style={{ padding: '8px', textAlign: 'center' }}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, ...tagStyle[t.status] }}>{statusTag[t.status]?.lbl}</span></td>
                                 </tr>
@@ -3318,7 +3318,7 @@ function DashboardTab({ entries, onSwitchForm }) {
                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Developer Reflection</div>
                     {cur.achievements && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#059669', marginBottom: 6 }}>✓ Achievements</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6a6a6a' }}>{cur.achievements}</div></div>}
                     {cur.challenges && <div style={{ marginBottom: 14 }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#ff4b2b', marginBottom: 6 }}>⚠ Blockers</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6a6a6a' }}>{cur.challenges}</div></div>}
-                    {cur.nextFocus && <div><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#2563eb', marginBottom: 6 }}>→ Next Week Focus</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6a6a6a' }}>{cur.nextFocus}</div></div>}
+                    {cur.nextFocus && <div><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#ff6a1f', marginBottom: 6 }}>→ Next Week Focus</div><div style={{ fontSize: 13, lineHeight: 1.6, color: '#6a6a6a' }}>{cur.nextFocus}</div></div>}
                     {!cur.achievements && !cur.challenges && !cur.nextFocus && <div style={{ textAlign: 'center', color: '#8a8a8a', padding: 20, fontSize: 13 }}>No reflection notes added</div>}
                 </div>
                 <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
@@ -3328,10 +3328,10 @@ function DashboardTab({ entries, onSwitchForm }) {
                     <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e4e4e7' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                             {[
-                                { label: 'Reviews Done', val: cur.reviews, color: '#2563eb' },
-                                { label: 'Carry-over SP', val: cur.carryover, color: '#ca8a04' },
+                                { label: 'Reviews Done', val: cur.reviews, color: '#ff6a1f' },
+                                { label: 'Carry-over SP', val: cur.carryover, color: '#d97706' },
                                 { label: 'Blockers', val: cur.blockers, color: '#ff4b2b' },
-                                { label: 'Self Rating', val: `${cur.selfRating}/10`, color: '#7c3aed' },
+                                { label: 'Self Rating', val: `${cur.selfRating}/10`, color: '#ff6a1f' },
                             ].map(x => (
                                 <div key={x.label} style={{ borderRadius: 8, padding: 12 }} className="shadow-md">
                                     <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#8a8a8a', marginBottom: 4 }}>{x.label}</div>
@@ -3417,7 +3417,7 @@ function HistoryTab({ entries, onDelete, onEdit, onSwitchForm }) {
     );
 
     const sorted = [...newData].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-    const color = v => v >= 85 ? '#059669' : v >= 65 ? '#ca8a04' : '#ff4b2b';
+    const color = v => v >= 85 ? '#059669' : v >= 65 ? '#d97706' : '#ff4b2b';
 
     return (
         <div style={{ margin: '0 auto', padding: '36px 40px 60px' }}>
@@ -3453,15 +3453,15 @@ function HistoryTab({ entries, onDelete, onEdit, onSwitchForm }) {
                                     <td style={{ padding: '8px 4px' }}>
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 160 }}>
                                             {e.tasks.filter(t => t.jiraId).length
-                                                ? e.tasks.filter(t => t.jiraId).map((t, i) => <span key={i} style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: 700, color: '#2563eb', background: 'rgba(37,99,235,.07)', padding: '2px 8px', borderRadius: 4, whiteSpace: 'nowrap' }}>{t.jiraId}</span>)
+                                                ? e.tasks.filter(t => t.jiraId).map((t, i) => <span key={i} style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: 700, color: '#ff6a1f', background: 'rgba(37,99,235,.07)', padding: '2px 8px', borderRadius: 4, whiteSpace: 'nowrap' }}>{t.jiraId}</span>)
                                                 : <span style={{ color: '#8a8a8a', fontSize: 12 }}>—</span>}
                                         </div>
                                     </td>
-                                    <td style={{ textAlign: 'center', fontWeight: 600, color: '#2563eb' }}>{e.completed}/{e.committed}</td>
+                                    <td style={{ textAlign: 'center', fontWeight: 600, color: '#ff6a1f' }}>{e.completed}/{e.committed}</td>
                                     <td style={{ textAlign: 'center', fontWeight: 600 }}><span style={{ color: color(e.metrics.completion) }}>{e.metrics.completion}%</span></td>
                                     <td style={{ textAlign: 'center', fontWeight: 600 }}><span style={{ color: color(e.metrics.utilisation) }}>{e.metrics.utilisation}%</span></td>
                                     <td style={{ textAlign: 'center', fontWeight: 600 }}><span style={{ color: color(e.metrics.efficiency) }}>{e.metrics.efficiency}/100</span></td>
-                                    <td style={{ textAlign: 'center', fontWeight: 600 }}><span style={{ color: e.bugs <= 1 ? '#059669' : e.bugs <= 3 ? '#ca8a04' : '#ff4b2b' }}>{e.bugs}</span></td>
+                                    <td style={{ textAlign: 'center', fontWeight: 600 }}><span style={{ color: e.bugs <= 1 ? '#059669' : e.bugs <= 3 ? '#d97706' : '#ff4b2b' }}>{e.bugs}</span></td>
                                     <td style={{ textAlign: 'center', fontWeight: 600 }}>{goalsMet}/{e.goals.length}</td>
                                     {user?.userID != 1 && (
                                         <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
@@ -3503,7 +3503,7 @@ function Toast() {
 export default function WeeklyPulse() {
     const userStr = localStorage.getItem('authUserLD');
     const user = userStr ? JSON.parse(userStr) : null;
-    const [tab, setTab] = useState(user?.userID == 1 ? 'history' : 'form');
+    const [tab, setTab] = useState(user?.userID == 1 || user?.userRole == 1 ? 'history' : 'form');
     const [entries, setEntries] = useState([]);
     const [editEntry, setEditEntry] = useState(null);
 
@@ -3594,7 +3594,7 @@ export default function WeeklyPulse() {
     }
 
     return (
-        <div className="relative min-h-screen isolate text-ink-900">
+        <div className="relative min-h-screen isolate text-ink-900 dark:text-white">
             <style>{GLOBAL_STYLE}</style>
             <header className="px-10 flex items-center justify-between h-16">
                 <Tabs

@@ -589,9 +589,6 @@ export default function ReusableTable({
                     </label> */}
                     <Pagination
                         showControls
-                        classNames={{
-                            cursor: "bg-foreground text-background",
-                        }}
                         color="default"
                         page={page}
                         onChange={(newPage) => {
@@ -627,7 +624,11 @@ export default function ReusableTable({
     return (
         <Table
             isCompact
-            removeWrapper
+            classNames={{
+                // Scrolls sideways inside its own frame, so the Actions column is never cut off
+                wrapper: "overflow-x-auto border border-ink-200 bg-white p-0 shadow-none dark:border-white/10 dark:bg-ink-900",
+                td: "whitespace-nowrap py-3",
+            }}
             aria-label="Data table"
             bottomContent={bottomContent}
             bottomContentPlacement="outside"

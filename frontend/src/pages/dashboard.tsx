@@ -1,11 +1,10 @@
 
 
+import { PageTitle } from "@/components/page";
 import React, { useEffect, useState, useMemo, useCallback, memo, lazy, Suspense } from "react";
 import { useDashboardStore } from "./../store/commonStore";
 import { Card, CardBody } from "@/components/ui";
 import { Switch } from "@/components/ui";
-import SwitchUserFilter from "@/components/SwitchUserFilter";
-import SwitchedUserBanner from "@/components/SwitchedUserBanner";
 import { motion, AnimatePresence } from "framer-motion";
 const ReactApexChart = React.lazy(() => import("react-apexcharts"));
 import { format } from "date-fns";
@@ -92,18 +91,18 @@ const ColumnChart = ({
     const trend = "+12.4%";
 
     return (
-        <div className="bg-white ">
+        <div className="bg-white dark:bg-ink-900 ">
             {/* Header */}
             {/* <div className="flex items-start justify-between mb-6">
                 <div>
-                    <p className="text-sm text-gray-500 mb-1">{title}</p>
+                    <p className="text-sm text-ink-500 dark:text-ink-400 mb-1">{title}</p>
                     <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-medium text-gray-900">{totalValue}</span>
+                        <span className="text-3xl font-medium text-ink-900 dark:text-white">{totalValue}</span>
                         <span className="text-sm text-emerald-500 font-medium">↑ {trend}</span>
                     </div>
                 </div>
                 {subtitle && (
-                    <span className="text-xs text-gray-400 bg-gray-50 px-3 py-1 rounded-full">
+                    <span className="text-xs text-ink-400 bg-ink-50 dark:bg-ink-950 px-3 py-1 rounded-full">
                         {subtitle}
                     </span>
                 )}
@@ -111,7 +110,7 @@ const ColumnChart = ({
 
             {/* Chart */}
             {totalValue === 0 && (
-                <p className="text-xs text-gray-400 text-center -mt-2 mb-2">No data</p>
+                <p className="text-xs text-ink-400 text-center -mt-2 mb-2">No data</p>
             )}
             <div className="relative flex items-end justify-around gap-3 h-48 mb-2">
                 {/* Grid lines */}
@@ -119,7 +118,7 @@ const ColumnChart = ({
                     {[0, 1, 2].map((i) => (
                         <div
                             key={i}
-                            className="w-full border-t border-dashed border-gray-100"
+                            className="w-full border-t border-dashed border-ink-100 dark:border-white/10"
                             style={{ marginTop: i === 0 ? 0 : "auto" }}
                         />
                     ))}
@@ -146,12 +145,12 @@ const ColumnChart = ({
                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                         exit={{ opacity: 0, y: 4, scale: 0.95 }}
                                         transition={{ duration: 0.12 }}
-                                        className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap z-10"
+                                        className="absolute -top-3 left-1/2 -translate-x-1/2 bg-ink-900 text-white text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap z-10"
                                     >
                                         <div className="flex flex-col items-center text-xs leading-tight">
                                             <span className="font-semibold">{labels[i]}</span>
-                                            <span className="text-blue-300">Utilization: {values[i]}</span>
-                                            <span className="text-gray-300">Goal: {goals[i]}</span>
+                                            <span className="text-brand-300">Utilization: {values[i]}</span>
+                                            <span className="text-ink-300">Goal: {goals[i]}</span>
                                         </div>
                                     </motion.div>
                                 )}
@@ -200,14 +199,14 @@ const ColumnChart = ({
                             </motion.div>
 
                             {/* Label */}
-                            <span className="text-xs text-gray-500 mt-2 font-medium">{val}</span>
+                            <span className="text-xs text-ink-500 dark:text-ink-400 mt-2 font-medium">{val}</span>
                         </div>
                     );
                 })}
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-gray-100">
+            <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-ink-100 dark:border-white/10">
                 {
                     // [
                     //     { label: "Peak", value: `${maxValue} (${labels[peakIndex]})` },
@@ -220,9 +219,9 @@ const ColumnChart = ({
                         // { label: "Total", value: totalValue },
                     ]
                         .map(({ label, value }) => (
-                            <div key={label} className="bg-blue-50 rounded-xl px-3 py-2.5">
-                                <p className="text-xs text-gray-400 uppercase tracking-wide mb-0.5">{label}</p>
-                                <p className="text-sm font-medium text-gray-900">{value}</p>
+                            <div key={label} className="bg-brand-50 rounded-xl px-3 py-2.5">
+                                <p className="text-xs text-ink-400 uppercase tracking-wide mb-0.5">{label}</p>
+                                <p className="text-sm font-medium text-ink-900 dark:text-white">{value}</p>
                             </div>
                         ))}
             </div>
@@ -277,7 +276,7 @@ const RADIAL_CHART_LABELS = [
     "Allocated Hrs",
     "Work Hrs",
     "average Goal"];
-const RADIAL_CHART_COLORS = ["#EF4444", "#10B981", "#F59E0B", "#8B5CF6", "#30328f"];
+const RADIAL_CHART_COLORS = ["#EF4444", "#10B981", "#F59E0B", "#ff8442", "#30328f"];
 
 const RADIAL_CHART_OPTIONS_BASE = {
     labels: RADIAL_CHART_LABELS,
@@ -371,12 +370,12 @@ const StatRow = memo(
         color: string;
         iconType: string;
     }) => (
-        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition">
+        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-ink-50 dark:hover:bg-ink-950 transition">
             <div className="flex items-center gap-2">
                 <div className={`p-2 rounded-lg bg-${color}-100 text-${color}-600`}>
                     <IconSet type={iconType} stroke="#101828" />
                 </div>
-                <h3 className="font-medium text-gray-800 text-xs">{label}</h3>
+                <h3 className="font-medium text-ink-800 dark:text-white text-xs">{label}</h3>
             </div>
             <span className={`font-bold text-${color}-600`}>{value}</span>
         </div>
@@ -385,36 +384,36 @@ const StatRow = memo(
 
 // Static – never changes, no props needed
 const EfficiencyRules = memo(() => (
-    <div className="bg-white rounded-xl p-4  flex flex-col gap-4 text-[12px]">
-        <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+    <div className="bg-white dark:bg-ink-900 rounded-xl p-4  flex flex-col gap-4 text-[12px]">
+        <h2 className="text-sm font-semibold text-ink-800 dark:text-white flex items-center gap-2">
             <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                 <path d="M3 17L9 11L13 15L21 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
             Efficiency &amp; Utilization Rules
         </h2>
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded leading-tight">
+        <div className="bg-amber-50 dark:bg-amber-500/10 border-l-4 border-amber-400 p-3 rounded leading-tight">
             <strong>Note:</strong> Regular workday = 8 Hours. Half Day leave = 4 Hours.
         </div>
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded leading-tight">
+        <div className="bg-amber-50 dark:bg-amber-500/10 border-l-4 border-amber-400 p-3 rounded leading-tight">
             <strong>Efficiency Calculation</strong>
             <ul className="list-disc pl-4 mt-1">
                 <li>
-                    <span className="text-green-600 font-semibold">High:</span>&nbsp;
+                    <span className="text-emerald-600 font-semibold">High:</span>&nbsp;
                     Target Achieved ≥ <b>100%</b> AND Goal Achieved ≥ <b>80%</b> AND Time Taken ≤ Allocated Time
                 </li>
 
                 <li>
-                    <span className="text-yellow-600 font-semibold">At Par:</span>&nbsp;
+                    <span className="text-amber-600 font-semibold">At Par:</span>&nbsp;
                     Target Achieved ≥ <b>80%</b> AND Goal Achieved ≥ <b>50%</b> AND Time Taken ≤ Allocated Time
                 </li>
 
                 <li>
-                    <span className="text-red-600 font-semibold">Low:</span>&nbsp;
+                    <span className="text-rose-600 font-semibold">Low:</span>&nbsp;
                     All other conditions
                 </li>
             </ul>
         </div>
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded leading-tight">
+        <div className="bg-amber-50 dark:bg-amber-500/10 border-l-4 border-amber-400 p-3 rounded leading-tight">
             <strong>Utilization Calculation</strong>
             <ul className="list-disc pl-4 mt-1">
                 <li>
@@ -434,7 +433,7 @@ const EfficiencyRules = memo(() => (
 // Skeleton loader for charts
 const RadialBarSkeleton = () => (
     <div className="flex justify-center items-center h-[230px]">
-        <div className="w-40 h-40 rounded-full border-8 border-gray-200 animate-pulse" />
+        <div className="w-40 h-40 rounded-full border-8 border-ink-200 dark:border-white/10 animate-pulse" />
     </div>
 );
 
@@ -653,7 +652,7 @@ const MultiRingChart = ({ values = [], colors = [], size = 200, stroke = 12 }) =
     );
 };
 
-const RADIAL_LEGEND_COLORS = ["#4338ca", "#059669", "#92400e", "#a855f7", "#eab308"];
+const RADIAL_LEGEND_COLORS = ["#ff6a1f", "#059669", "#52525b", "#ffa06b", "#d97706"];
 const RADIAL_METRIC_LABELS = ["Target %", "Allocated Hrs", "Work Hrs", "Avg Goal"];
 
 const RadialSummaryCard = memo(({
@@ -671,12 +670,12 @@ const RadialSummaryCard = memo(({
     const safeValues = isEmpty ? [0, 0, 0, 0, 0] : values;
 
     return (
-        <div className="bg-white rounded-2xl p-6 flex flex-col items-center w-full relative">
+        <div className="bg-white dark:bg-ink-900 rounded-2xl p-6 flex flex-col items-center w-full relative">
             {loading ? (
                 <RadialBarSkeleton />
             ) : (
                 <>
-                    <h2 className="text-xs tracking-widest text-gray-400 mb-4">
+                    <h2 className="text-xs tracking-widest text-ink-400 mb-4">
                         {title}
                     </h2>
 
@@ -689,7 +688,7 @@ const RadialSummaryCard = memo(({
                         />
                         {isEmpty && (
                             <div className="absolute inset-0 flex items-center justify-center">
-                                <span className="text-xs text-gray-400 bg-white/80 px-2 py-1 rounded-full">
+                                <span className="text-xs text-ink-400 bg-white/80 dark:bg-ink-900/80 px-2 py-1 rounded-full">
                                     No data
                                 </span>
                             </div>
@@ -703,7 +702,7 @@ const RadialSummaryCard = memo(({
                                     className="w-3 h-3 rounded-full"
                                     style={{ background: RADIAL_LEGEND_COLORS[i] }}
                                 />
-                                <span className="text-gray-600">
+                                <span className="text-ink-600 dark:text-ink-300">
                                     {label}{!isEmpty ? ` - ${safeValues[i]}%` : ""}
                                 </span>
                             </div>
@@ -711,7 +710,7 @@ const RadialSummaryCard = memo(({
                     </div>
 
                     {!isEmpty && subtitle && (
-                        <p className="text-xs text-gray-400 mt-4 text-center">{subtitle}</p>
+                        <p className="text-xs text-ink-400 mt-4 text-center">{subtitle}</p>
                     )}
                 </>
             )}
@@ -1056,7 +1055,7 @@ export default function DashboardPage() {
         ({ value, onChange }: { value: DateRange; onChange: (r: DateRange) => void }) => (
             <Dropdown placement="bottom-start">
                 <DropdownTrigger>
-                    <Button variant="flat" size="sm" className="w-[260px] justify-between bg-gray-200">
+                    <Button variant="flat" size="sm" className="w-[260px] justify-between border border-ink-300 bg-white dark:border-white/15 dark:bg-ink-900">
                         {value.startDate && value.endDate
                             ? `${format(new Date(value.startDate), "dd MMM yyyy")} → ${format(new Date(value.endDate), "dd MMM yyyy")}`
                             : "Select Date Range"}
@@ -1112,7 +1111,7 @@ export default function DashboardPage() {
                             <div
                                 key={i}
                                 className="
-                                bg-white
+                                bg-white dark:bg-ink-900
                                 rounded-2xl
                                 p-5
                                 flex-1
@@ -1139,17 +1138,17 @@ export default function DashboardPage() {
     min-w-[320px]
 ">                                        <div>
 
-                                            <h2 className="text-sm font-semibold text-gray-800 text-center">
+                                            <h2 className="text-sm font-semibold text-ink-800 dark:text-white text-center">
                                                 {item.title}
                                             </h2>
 
-                                            <p className="text-xs text-gray-400 mt-1">
+                                            <p className="text-xs text-ink-400 mt-1">
                                                 Efficiency Overview
                                             </p>
 
                                         </div>
                                         <div className="
-    bg-white
+    bg-white dark:bg-ink-900
     rounded-2xl
     p-6
     flex
@@ -1160,7 +1159,7 @@ export default function DashboardPage() {
                                             <h2 className="
         text-xs
         tracking-widest
-        text-gray-400
+        text-ink-400
         mb-4
     ">
                                                 {item.title?.toUpperCase()}
@@ -1172,11 +1171,11 @@ export default function DashboardPage() {
                                                 <MultiRingChart
                                                     values={item.values}
                                                     colors={[
-                                                        "#4338ca",
+                                                        "#ff6a1f",
                                                         "#059669",
-                                                        "#92400e",
-                                                        "#a855f7",
-                                                        "#eab308",
+                                                        "#52525b",
+                                                        "#ffa06b",
+                                                        "#d97706",
                                                     ]}
                                                     size={220}
                                                     stroke={12}
@@ -1209,16 +1208,16 @@ export default function DashboardPage() {
                                                                 className="w-3 h-3 rounded-full"
                                                                 style={{
                                                                     background: [
-                                                                        "#4338ca",
+                                                                        "#ff6a1f",
                                                                         "#059669",
-                                                                        "#92400e",
-                                                                        "#a855f7",
-                                                                        "#eab308",
+                                                                        "#52525b",
+                                                                        "#ffa06b",
+                                                                        "#d97706",
                                                                     ][i],
                                                                 }}
                                                             />
 
-                                                            <span className="text-gray-600">
+                                                            <span className="text-ink-600 dark:text-ink-300">
                                                                 {label}
                                                             </span>
 
@@ -1233,7 +1232,7 @@ export default function DashboardPage() {
                 px-4
                 py-2
                 rounded-xl
-                bg-blue-50
+                bg-brand-50
                 text-center
                 w-full
             ">
@@ -1242,7 +1241,7 @@ export default function DashboardPage() {
                     text-[11px]
                     uppercase
                     tracking-widest
-                    text-blue-400
+                    text-brand-400
                 ">
                                                         Efficiency
                                                     </p>
@@ -1250,7 +1249,7 @@ export default function DashboardPage() {
                                                     <h3 className="
                     text-2xl
                     font-bold
-                    text-blue-700
+                    text-brand-700
                     mt-1
                 ">
                                                         {item.subtitle}
@@ -1318,7 +1317,7 @@ export default function DashboardPage() {
                                                 <div
                                                     key={idx}
                                                     className="
-    bg-gray-50
+    bg-ink-50 dark:bg-ink-950
     rounded-xl
     p-4
     min-h-[120px]
@@ -1335,7 +1334,7 @@ export default function DashboardPage() {
                                                     text-[10px]
                                                     font-semibold
                                                     tracking-wide
-                                                    text-gray-500
+                                                    text-ink-500 dark:text-ink-400
                                                     uppercase
                                                 ">
                                                             {metric.label}
@@ -1358,14 +1357,14 @@ export default function DashboardPage() {
                                                         <h3 className="
                                                     text-lg
                                                     font-semibold
-                                                    text-gray-900
+                                                    text-ink-900 dark:text-white
                                                 ">
 
                                                             {typeof value === "number"
                                                                 ? metric.label.includes("%")
                                                                     ? `${value}%`
                                                                     : value
-                                                                : value}
+                                                                : value ?? "—"}
 
                                                         </h3>
 
@@ -1395,12 +1394,12 @@ export default function DashboardPage() {
                                                                         : metric.color === "green"
                                                                             ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                             : metric.color === "yellow"
-                                                                                ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
+                                                                                ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
                                                                                 : metric.color === "purple"
-                                                                                    ? ["#f3e8ff", "#e9d5ff", "#d8b4fe", "#c084fc", "#7c3aed"]
+                                                                                    ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
                                                                                     : metric.color === "indigo"
-                                                                                        ? ["#e0e7ff", "#c7d2fe", "#a5b4fc", "#818cf8", "#4f46e5"]
-                                                                                        : ["#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0284c7"];
+                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
+                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
 
                                                                 return (
                                                                     <div
@@ -1483,7 +1482,7 @@ export default function DashboardPage() {
                                         {logUsers.map((u) => (
                                             <div key={u.userID} className="p-3 flex flex-col">
                                                 <span className="font-medium text-sm">{u.userName}</span>
-                                                <span className="text-xs text-gray-500">{u.userEmail}</span>
+                                                <span className="text-xs text-ink-500 dark:text-ink-400">{u.userEmail}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -1500,46 +1499,19 @@ export default function DashboardPage() {
             </Drawer>
 
             {/* ── Page Header ─────────────────────────────────────────────────── */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-                <div>
-                    <h1 className={title({ size: "20px" })}>Dashboard</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                        View detailed insights into your department's daily work
-                    </p>
-                </div>
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                <PageTitle title="Dashboard" subtitle="View detailed insights into your department's daily work" />
 
                 <div className="flex items-center gap-2 whitespace-nowrap">
-                    <div
-                        className="
-                            px-3 py-1.5
-                            text-xs font-medium
-                            text-blue-600
-                            bg-blue-50
-                            rounded-md
-                            shadow-sm
-                            transition-all duration-300
-                            cursor-pointer
-                            overflow-hidden
-                            before:absolute before:top-0 before:left-[-100%]
-                            before:h-full before:w-[50%]
-                            before:bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.9),transparent)]
-                            before:skew-x-[-20deg]
-                            before:animate-shine
-                            relative
-                        "
-                        onClick={() => {
+                    <Button
+                        size="sm"
+                        variant="bordered"
+                        onPress={() => {
                             window.open("https://docs.google.com/spreadsheets/d/1qoniokvvEugnYDyaISblNbrCoeH7cJrdt_HksaWT-Vs/edit?gid=1681648508#gid=1681648508");
                         }}
                     >
-                        view goal & target
-                    </div>
-
-                    {(user?.userRole === 1 || user.userID === 144) && (
-                        <SwitchUserFilter
-                            currentUser={user}
-                            onSwitched={() => window.location.reload()}
-                        />
-                    )}
+                        View goal & target
+                    </Button>
 
                     <DateRangeDropdown
                         value={dateRange}
@@ -1547,7 +1519,6 @@ export default function DashboardPage() {
                     />
                 </div>
             </div>
-            <SwitchedUserBanner onSwitchBack={() => window.location.reload()} />
 
 
 
@@ -1566,7 +1537,7 @@ export default function DashboardPage() {
                     }}
                 >                    <Tab key="Overview" title="Overview" className="flex flex-col items-end">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                            <Card className="bg-white border border-gray-200 rounded-xl shadow-sm col-span-3">
+                            <Card className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10 rounded-xl shadow-sm col-span-3">
                                 <CardBody>
 
                                     {/* Admin / Employee top section */}
@@ -1630,22 +1601,22 @@ export default function DashboardPage() {
 
                                             {/* Col 2 – Stats panel (admin, no department) */}
                                             {!hasDepartment && companySummary && (
-                                                <div className="bg-white rounded-xl p-4  text-[12px] flex">
+                                                <div className="flex p-1 text-[12px]">
                                                     <div className="w-full">
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                        <div className="grid grid-cols-2 gap-3">
                                                             {stats.map((item, i) => {
                                                                 const value = item.value;
 
                                                                 return (
                                                                     <div
                                                                         key={i}
-                                                                        className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                        className="flex min-h-[112px] flex-col justify-between border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/50"
                                                                     >
 
                                                                         {/* TOP ROW */}
                                                                         <div className="flex items-center justify-between">
-                                                                            <span className="text-[11px] font-semibold text-gray-500 tracking-wide">
-                                                                                {item.label.toUpperCase()}
+                                                                            <span className="pr-2 font-secondary text-[10px] font-medium uppercase leading-snug tracking-wider text-ink-500 dark:text-ink-400">
+                                                                                {item.label}
                                                                             </span>
 
                                                                             <div className="opacity-60">
@@ -1655,12 +1626,12 @@ export default function DashboardPage() {
 
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
-                                                                            <h2 className="text-2xl font-semibold text-gray-900">
+                                                                            <h2 className="text-[26px] font-semibold leading-none text-ink-900 dark:text-white">
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
                                                                                         ? `${value}%`
                                                                                         : value
-                                                                                    : value}
+                                                                                    : value ?? "—"}
                                                                             </h2>
                                                                         </div>
 
@@ -1676,10 +1647,10 @@ export default function DashboardPage() {
                                                                                             : item.color === "green"
                                                                                                 ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                                 : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
+                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
                                                                                                     : item.color === "purple"
-                                                                                                        ? ["#f3e8ff", "#e9d5ff", "#d8b4fe", "#c084fc", "#7c3aed"]
-                                                                                                        : ["#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0284c7"];
+                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
+                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
 
                                                                                     return (
                                                                                         <div
@@ -1705,11 +1676,11 @@ export default function DashboardPage() {
 
                                             {/* Col 2 – Employee stat card (with department) */}
                                             {hasDepartment && isEmployee && (
-                                                <div className="bg-white rounded-xl p-4 text-[12px] flex w-full">
+                                                <div className="bg-white dark:bg-ink-900 rounded-xl p-4 text-[12px] flex w-full">
 
                                                     <div className="w-full">
 
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                        <div className="grid grid-cols-2 gap-3">
 
                                                             {[
                                                                 {
@@ -1749,14 +1720,14 @@ export default function DashboardPage() {
                                                                 return (
                                                                     <div
                                                                         key={i}
-                                                                        className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                        className="flex min-h-[112px] flex-col justify-between border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/50"
                                                                     >
 
                                                                         {/* TOP ROW */}
                                                                         <div className="flex items-center justify-between">
 
-                                                                            <span className="text-[11px] font-semibold text-gray-500 tracking-wide">
-                                                                                {item.label.toUpperCase()}
+                                                                            <span className="pr-2 font-secondary text-[10px] font-medium uppercase leading-snug tracking-wider text-ink-500 dark:text-ink-400">
+                                                                                {item.label}
                                                                             </span>
 
                                                                             <div className="opacity-60">
@@ -1771,13 +1742,13 @@ export default function DashboardPage() {
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
 
-                                                                            <h2 className="text-2xl font-semibold text-gray-900">
+                                                                            <h2 className="text-[26px] font-semibold leading-none text-ink-900 dark:text-white">
 
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
                                                                                         ? `${value}%`
                                                                                         : value
-                                                                                    : value}
+                                                                                    : value ?? "—"}
 
                                                                             </h2>
 
@@ -1801,10 +1772,10 @@ export default function DashboardPage() {
                                                                                             : item.color === "green"
                                                                                                 ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                                 : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
+                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
                                                                                                     : item.color === "purple"
-                                                                                                        ? ["#f3e8ff", "#e9d5ff", "#d8b4fe", "#c084fc", "#7c3aed"]
-                                                                                                        : ["#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0284c7"];
+                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
+                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
 
                                                                                     return (
                                                                                         <div
@@ -2007,7 +1978,7 @@ export default function DashboardPage() {
                     </Tab>
                     <Tab key="Business" title="Business" className="flex flex-col items-end">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                            <Card className="bg-white border border-gray-200 rounded-xl shadow-sm col-span-3">
+                            <Card className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10 rounded-xl shadow-sm col-span-3">
                                 <CardBody>
 
                                     {/* Admin / Employee top section */}
@@ -2084,22 +2055,22 @@ export default function DashboardPage() {
 
                                             {/* Col 2 – Stats panel (admin, no department) */}
                                             {!hasDepartment && companySummary && (
-                                                <div className="bg-white rounded-xl p-4  text-[12px] flex">
+                                                <div className="flex p-1 text-[12px]">
                                                     <div className="w-full">
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                        <div className="grid grid-cols-2 gap-3">
                                                             {stats.map((item, i) => {
                                                                 const value = item.value;
 
                                                                 return (
                                                                     <div
                                                                         key={i}
-                                                                        className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                        className="flex min-h-[112px] flex-col justify-between border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/50"
                                                                     >
 
                                                                         {/* TOP ROW */}
                                                                         <div className="flex items-center justify-between">
-                                                                            <span className="text-[11px] font-semibold text-gray-500 tracking-wide">
-                                                                                {item.label.toUpperCase()}
+                                                                            <span className="pr-2 font-secondary text-[10px] font-medium uppercase leading-snug tracking-wider text-ink-500 dark:text-ink-400">
+                                                                                {item.label}
                                                                             </span>
 
                                                                             <div className="opacity-60">
@@ -2109,12 +2080,12 @@ export default function DashboardPage() {
 
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
-                                                                            <h2 className="text-2xl font-semibold text-gray-900">
+                                                                            <h2 className="text-[26px] font-semibold leading-none text-ink-900 dark:text-white">
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
                                                                                         ? `${value}%`
                                                                                         : value
-                                                                                    : value}
+                                                                                    : value ?? "—"}
                                                                             </h2>
                                                                         </div>
 
@@ -2130,10 +2101,10 @@ export default function DashboardPage() {
                                                                                             : item.color === "green"
                                                                                                 ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                                 : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
+                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
                                                                                                     : item.color === "purple"
-                                                                                                        ? ["#f3e8ff", "#e9d5ff", "#d8b4fe", "#c084fc", "#7c3aed"]
-                                                                                                        : ["#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0284c7"];
+                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
+                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
 
                                                                                     return (
                                                                                         <div
@@ -2159,11 +2130,11 @@ export default function DashboardPage() {
 
                                             {/* Col 2 – Employee stat card (with department) */}
                                             {hasDepartment && isEmployee && (
-                                                <div className="bg-white rounded-xl p-4 text-[12px] flex w-full">
+                                                <div className="bg-white dark:bg-ink-900 rounded-xl p-4 text-[12px] flex w-full">
 
                                                     <div className="w-full">
 
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                        <div className="grid grid-cols-2 gap-3">
 
                                                             {[
                                                                 {
@@ -2203,14 +2174,14 @@ export default function DashboardPage() {
                                                                 return (
                                                                     <div
                                                                         key={i}
-                                                                        className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                        className="flex min-h-[112px] flex-col justify-between border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/50"
                                                                     >
 
                                                                         {/* TOP ROW */}
                                                                         <div className="flex items-center justify-between">
 
-                                                                            <span className="text-[11px] font-semibold text-gray-500 tracking-wide">
-                                                                                {item.label.toUpperCase()}
+                                                                            <span className="pr-2 font-secondary text-[10px] font-medium uppercase leading-snug tracking-wider text-ink-500 dark:text-ink-400">
+                                                                                {item.label}
                                                                             </span>
 
                                                                             <div className="opacity-60">
@@ -2225,13 +2196,13 @@ export default function DashboardPage() {
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
 
-                                                                            <h2 className="text-2xl font-semibold text-gray-900">
+                                                                            <h2 className="text-[26px] font-semibold leading-none text-ink-900 dark:text-white">
 
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
                                                                                         ? `${value}%`
                                                                                         : value
-                                                                                    : value}
+                                                                                    : value ?? "—"}
 
                                                                             </h2>
 
@@ -2255,10 +2226,10 @@ export default function DashboardPage() {
                                                                                             : item.color === "green"
                                                                                                 ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                                 : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
+                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
                                                                                                     : item.color === "purple"
-                                                                                                        ? ["#f3e8ff", "#e9d5ff", "#d8b4fe", "#c084fc", "#7c3aed"]
-                                                                                                        : ["#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0284c7"];
+                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
+                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
 
                                                                                     return (
                                                                                         <div
@@ -2459,9 +2430,9 @@ export default function DashboardPage() {
                             )} */}
                         </div>
                     </Tab>
-                    <Tab key="Support" title="Support" className="flex flex-col items-end">
+                    <Tab key="Support" title="Support Functions" className="flex flex-col items-end">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                            <Card className="bg-white border border-gray-200 rounded-xl shadow-sm col-span-3">
+                            <Card className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10 rounded-xl shadow-sm col-span-3">
                                 <CardBody>
 
                                     {/* Admin / Employee top section */}
@@ -2538,22 +2509,22 @@ export default function DashboardPage() {
 
                                             {/* Col 2 – Stats panel (admin, no department) */}
                                             {!hasDepartment && companySummary && (
-                                                <div className="bg-white rounded-xl p-4  text-[12px] flex">
+                                                <div className="flex p-1 text-[12px]">
                                                     <div className="w-full">
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                        <div className="grid grid-cols-2 gap-3">
                                                             {stats.map((item, i) => {
                                                                 const value = item.value;
 
                                                                 return (
                                                                     <div
                                                                         key={i}
-                                                                        className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                        className="flex min-h-[112px] flex-col justify-between border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/50"
                                                                     >
 
                                                                         {/* TOP ROW */}
                                                                         <div className="flex items-center justify-between">
-                                                                            <span className="text-[11px] font-semibold text-gray-500 tracking-wide">
-                                                                                {item.label.toUpperCase()}
+                                                                            <span className="pr-2 font-secondary text-[10px] font-medium uppercase leading-snug tracking-wider text-ink-500 dark:text-ink-400">
+                                                                                {item.label}
                                                                             </span>
 
                                                                             <div className="opacity-60">
@@ -2563,12 +2534,12 @@ export default function DashboardPage() {
 
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
-                                                                            <h2 className="text-2xl font-semibold text-gray-900">
+                                                                            <h2 className="text-[26px] font-semibold leading-none text-ink-900 dark:text-white">
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
                                                                                         ? `${value}%`
                                                                                         : value
-                                                                                    : value}
+                                                                                    : value ?? "—"}
                                                                             </h2>
                                                                         </div>
 
@@ -2584,10 +2555,10 @@ export default function DashboardPage() {
                                                                                             : item.color === "green"
                                                                                                 ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                                 : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
+                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
                                                                                                     : item.color === "purple"
-                                                                                                        ? ["#f3e8ff", "#e9d5ff", "#d8b4fe", "#c084fc", "#7c3aed"]
-                                                                                                        : ["#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0284c7"];
+                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
+                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
 
                                                                                     return (
                                                                                         <div
@@ -2613,11 +2584,11 @@ export default function DashboardPage() {
 
                                             {/* Col 2 – Employee stat card (with department) */}
                                             {hasDepartment && isEmployee && (
-                                                <div className="bg-white rounded-xl p-4 text-[12px] flex w-full">
+                                                <div className="bg-white dark:bg-ink-900 rounded-xl p-4 text-[12px] flex w-full">
 
                                                     <div className="w-full">
 
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                        <div className="grid grid-cols-2 gap-3">
 
                                                             {[
                                                                 {
@@ -2657,14 +2628,14 @@ export default function DashboardPage() {
                                                                 return (
                                                                     <div
                                                                         key={i}
-                                                                        className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                        className="flex min-h-[112px] flex-col justify-between border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/50"
                                                                     >
 
                                                                         {/* TOP ROW */}
                                                                         <div className="flex items-center justify-between">
 
-                                                                            <span className="text-[11px] font-semibold text-gray-500 tracking-wide">
-                                                                                {item.label.toUpperCase()}
+                                                                            <span className="pr-2 font-secondary text-[10px] font-medium uppercase leading-snug tracking-wider text-ink-500 dark:text-ink-400">
+                                                                                {item.label}
                                                                             </span>
 
                                                                             <div className="opacity-60">
@@ -2679,13 +2650,13 @@ export default function DashboardPage() {
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
 
-                                                                            <h2 className="text-2xl font-semibold text-gray-900">
+                                                                            <h2 className="text-[26px] font-semibold leading-none text-ink-900 dark:text-white">
 
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
                                                                                         ? `${value}%`
                                                                                         : value
-                                                                                    : value}
+                                                                                    : value ?? "—"}
 
                                                                             </h2>
 
@@ -2709,10 +2680,10 @@ export default function DashboardPage() {
                                                                                             : item.color === "green"
                                                                                                 ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                                 : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
+                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
                                                                                                     : item.color === "purple"
-                                                                                                        ? ["#f3e8ff", "#e9d5ff", "#d8b4fe", "#c084fc", "#7c3aed"]
-                                                                                                        : ["#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0284c7"];
+                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
+                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
 
                                                                                     return (
                                                                                         <div
@@ -2917,7 +2888,7 @@ export default function DashboardPage() {
 
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <Card className="bg-white border border-gray-200 rounded-xl shadow-sm col-span-3">
+                    <Card className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10 rounded-xl shadow-sm col-span-3">
                         <CardBody>
 
                             {/* Admin / Employee top section */}
@@ -2993,22 +2964,22 @@ export default function DashboardPage() {
 
                                     {/* Col 2 – Stats panel (admin, no department) */}
                                     {!hasDepartment && companySummary && (
-                                        <div className="bg-white rounded-xl p-4  text-[12px] flex">
+                                        <div className="flex p-1 text-[12px]">
                                             <div className="w-full">
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                <div className="grid grid-cols-2 gap-3">
                                                     {stats.map((item, i) => {
                                                         const value = item.value;
 
                                                         return (
                                                             <div
                                                                 key={i}
-                                                                className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                className="flex min-h-[112px] flex-col justify-between border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/50"
                                                             >
 
                                                                 {/* TOP ROW */}
                                                                 <div className="flex items-center justify-between">
-                                                                    <span className="text-[11px] font-semibold text-gray-500 tracking-wide">
-                                                                        {item.label.toUpperCase()}
+                                                                    <span className="pr-2 font-secondary text-[10px] font-medium uppercase leading-snug tracking-wider text-ink-500 dark:text-ink-400">
+                                                                        {item.label}
                                                                     </span>
 
                                                                     <div className="opacity-60">
@@ -3018,12 +2989,12 @@ export default function DashboardPage() {
 
                                                                 {/* VALUE */}
                                                                 <div className="mt-2">
-                                                                    <h2 className="text-2xl font-semibold text-gray-900">
+                                                                    <h2 className="text-[26px] font-semibold leading-none text-ink-900 dark:text-white">
                                                                         {typeof value === "number"
                                                                             ? item.label.includes("%")
                                                                                 ? `${value}%`
                                                                                 : value
-                                                                            : value}
+                                                                            : value ?? "—"}
                                                                     </h2>
                                                                 </div>
 
@@ -3039,10 +3010,10 @@ export default function DashboardPage() {
                                                                                     : item.color === "green"
                                                                                         ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                         : item.color === "yellow"
-                                                                                            ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
+                                                                                            ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
                                                                                             : item.color === "purple"
-                                                                                                ? ["#f3e8ff", "#e9d5ff", "#d8b4fe", "#c084fc", "#7c3aed"]
-                                                                                                : ["#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0284c7"];
+                                                                                                ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
+                                                                                                : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
 
                                                                             return (
                                                                                 <div
@@ -3068,11 +3039,11 @@ export default function DashboardPage() {
 
                                     {/* Col 2 – Employee stat card (with department) */}
                                     {hasDepartment && isEmployee && (
-                                        <div className="bg-white rounded-xl p-4 text-[12px] flex w-full">
+                                        <div className="bg-white dark:bg-ink-900 rounded-xl p-4 text-[12px] flex w-full">
 
                                             <div className="w-full">
 
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                <div className="grid grid-cols-2 gap-3">
 
                                                     {[
                                                         {
@@ -3112,14 +3083,14 @@ export default function DashboardPage() {
                                                         return (
                                                             <div
                                                                 key={i}
-                                                                className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                className="flex min-h-[112px] flex-col justify-between border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/50"
                                                             >
 
                                                                 {/* TOP ROW */}
                                                                 <div className="flex items-center justify-between">
 
-                                                                    <span className="text-[11px] font-semibold text-gray-500 tracking-wide">
-                                                                        {item.label.toUpperCase()}
+                                                                    <span className="pr-2 font-secondary text-[10px] font-medium uppercase leading-snug tracking-wider text-ink-500 dark:text-ink-400">
+                                                                        {item.label}
                                                                     </span>
 
                                                                     <div className="opacity-60">
@@ -3134,13 +3105,13 @@ export default function DashboardPage() {
                                                                 {/* VALUE */}
                                                                 <div className="mt-2">
 
-                                                                    <h2 className="text-2xl font-semibold text-gray-900">
+                                                                    <h2 className="text-[26px] font-semibold leading-none text-ink-900 dark:text-white">
 
                                                                         {typeof value === "number"
                                                                             ? item.label.includes("%")
                                                                                 ? `${value}%`
                                                                                 : value
-                                                                            : value}
+                                                                            : value ?? "—"}
 
                                                                     </h2>
 
@@ -3164,10 +3135,10 @@ export default function DashboardPage() {
                                                                                     : item.color === "green"
                                                                                         ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                         : item.color === "yellow"
-                                                                                            ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
+                                                                                            ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
                                                                                             : item.color === "purple"
-                                                                                                ? ["#f3e8ff", "#e9d5ff", "#d8b4fe", "#c084fc", "#7c3aed"]
-                                                                                                : ["#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0284c7"];
+                                                                                                ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
+                                                                                                : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
 
                                                                             return (
                                                                                 <div

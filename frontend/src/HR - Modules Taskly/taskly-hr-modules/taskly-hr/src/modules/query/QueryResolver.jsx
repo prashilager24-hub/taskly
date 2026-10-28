@@ -49,7 +49,7 @@ export default function QueryResolver({
             </Button>
           )}
         </div>
-        <div className="text-[11px] text-gray-400 mt-2.5">
+        <div className="text-[11px] text-ink-400 mt-2.5">
           Marking resolved sends the employee the 6-question support survey. The ticket closes only after they submit it.
         </div>
       </Screen>
@@ -69,11 +69,11 @@ export default function QueryResolver({
         <THead cols={["ID", "Employee", "Subject", "Category", "Status", ""]} />
         <tbody>
           {teamQueries.map((q) => (
-            <tr key={q.id} className="border-b border-gray-100 last:border-0">
-              <td className="py-3 text-gray-500 font-mono text-xs">{q.id}</td>
+            <tr key={q.id} className="border-b border-ink-100 dark:border-white/10 last:border-0">
+              <td className="py-3 text-ink-500 dark:text-ink-400 font-secondary text-xs">{q.id}</td>
               <td className="py-3">{q.employee}</td>
               <td className="py-3 text-[13px]">{q.subject}</td>
-              <td className="py-3 text-[13px] text-gray-600">{q.category}</td>
+              <td className="py-3 text-[13px] text-ink-600 dark:text-ink-300">{q.category}</td>
               <td className="py-3">
                 {(q.status === "open" || q.status === "in_progress") &&
                   (q.ageHrs > slaHours

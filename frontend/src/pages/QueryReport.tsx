@@ -1,3 +1,4 @@
+import { PageTitle } from "@/components/page";
 import { useEffect, useState } from "react";
 import { Select, SelectItem } from "@/components/ui";
 import { DateRangePicker, Autocomplete, addToast, Input, Spinner, AutocompleteItem, Dropdown, DropdownTrigger, Button, DropdownMenu, Card, CardBody, CardHeader, Tabs, Tab, DropdownItem, } from "@/components/ui";
@@ -181,20 +182,20 @@ export default function QueryReport() {
         switch (columnKey) {
             case 'DailyTaskLogID':
                 return (
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    <span className="text-sm font-medium text-ink-900 dark:text-white">
                         #{log.DailyTaskLogID}
                     </span>
                 );
             case 'TaskID':
                 return (
-                    <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                    <span className="text-sm font-medium text-brand-600 dark:text-brand-400">
                         T-{log.TaskID}
                     </span>
                 );
             case 'TaskName':
                 return (
                     <div className="max-w-xs">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate" title={log.TaskName}>
+                        <p className="text-sm font-medium text-ink-900 dark:text-white truncate" title={log.TaskName}>
                             {log.TaskName}
                         </p>
                     </div>
@@ -202,22 +203,22 @@ export default function QueryReport() {
             case 'UserName':
                 return (
                     <div className="flex flex-col">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{log.UserName}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">ID: {log.UserID}</p>
+                        <p className="text-sm font-medium text-ink-900 dark:text-white">{log.UserName}</p>
+                        <p className="text-xs text-ink-500 dark:text-ink-400">ID: {log.UserID}</p>
                     </div>
                 );
             case 'WorkDate':
                 return new Date(log.WorkDate).toLocaleDateString();
             case 'actualTimeOfWork':
                 return (
-                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-brand-100 text-brand-800">
                         {log.actualTimeOfWork} mins
                     </span>
                 );
             case 'Remarks':
                 return (
                     <div className="max-w-xs">
-                        <p className="text-sm text-gray-600 dark:text-gray-400 truncate" title={log.Remarks}>
+                        <p className="text-sm text-ink-600 dark:text-ink-400 truncate" title={log.Remarks}>
                             {log.Remarks || 'No remarks'}
                         </p>
                     </div>
@@ -556,16 +557,8 @@ export default function QueryReport() {
 
     return (
         < div>
-            <div className="mb-8 flex justify-between">
-                <div>
-                    <h1 className={title({ size: "20px" })}>
-                        Query Report
-                    </h1>
-
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Analyze and filter performance data across departments and users.
-                    </p>
-                </div>
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                <PageTitle title="Query Report" subtitle="Analyze and filter performance data across departments and users." />
 
                 <div className="flex gap-3 items-center">
                     <div className="flex gap-3 items-center">
@@ -586,7 +579,7 @@ export default function QueryReport() {
                                 <Button
                                     variant="flat"
                                     size="sm"
-                                    className="w-[260px] justify-between bg-gray-200"
+                                    className="w-[260px] justify-between border border-ink-300 bg-white dark:border-white/15 dark:bg-ink-900"
                                 >
                                     {dateRange?.startDate && dateRange?.endDate
                                         ? `${format(new Date(dateRange.startDate), "dd MMM yyyy")} → ${format(
@@ -829,7 +822,7 @@ export default function QueryReport() {
                                 <Spinner />
                             </div>
                         ) : (
-                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden p-6">
+                            <div className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 overflow-hidden p-6">
                                 <EfficiencyTable data={dashboard} type="user" />
                             </div>
                         )}

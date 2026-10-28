@@ -281,6 +281,8 @@ async function mapWorkRows(rows: mysql.RowDataPacket[]) {
     createdAt: r['CreatedAt'] instanceof Date ? (r['CreatedAt'] as Date).toISOString() : r['CreatedAt'],
     updatedAt: r['UpdatedAt'] instanceof Date ? (r['UpdatedAt'] as Date).toISOString() : r['UpdatedAt'],
     leaveType: r['LeaveType'],
+    // Not in the Java DTO — added so Daily Activity can show why an EL rejected an entry (DA-09)
+    commentForRejection: r['CommentForRejection'] ?? null,
     tamAccounts: r['DepartmentID'] === 23 ? tamByUser.get(r['UserID'] as number) ?? [] : null,
   }));
 }

@@ -71,7 +71,7 @@ export default function OnboardingEmployee({ surveys = [], onSubmit, currentUser
           </Button>
           {/* <Button size="sm" variant="flat" onPress={reset}>Save draft</Button> */}
         </div>
-        {!complete && <div className="text-[11px] text-gray-400 mt-2">All 7 ratings and Q8 are required.</div>}
+        {!complete && <div className="text-[11px] text-ink-400 mt-2">All 7 ratings and Q8 are required.</div>}
       </Screen>
     );
   }
@@ -82,10 +82,10 @@ export default function OnboardingEmployee({ surveys = [], onSubmit, currentUser
         <THead cols={["Survey", "Sent", "Due", "Status", ""]} />
         <tbody>
           {mine.map((s) => (
-            <tr key={s.id} className="border-b border-gray-100 last:border-0">
+            <tr key={s.id} className="border-b border-ink-100 dark:border-white/10 last:border-0">
               <td className="py-3">Onboarding Experience Survey</td>
-              <td className="py-3 text-gray-500 text-[13px]">{s.sentOn}</td>
-              <td className="py-3 text-gray-500 text-[13px]">{s.due}</td>
+              <td className="py-3 text-ink-500 dark:text-ink-400 text-[13px]">{s.sentOn}</td>
+              <td className="py-3 text-ink-500 dark:text-ink-400 text-[13px]">{s.due}</td>
               <td className="py-3">
                 {s.status === "pending"
                   ? <Pill tone="open">Pending</Pill>

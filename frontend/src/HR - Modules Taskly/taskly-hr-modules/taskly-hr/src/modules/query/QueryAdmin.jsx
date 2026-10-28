@@ -62,12 +62,12 @@ export default function QueryAdmin({ queries = [], admin = {}, slaHours = 72 }) 
         <THead cols={["Team", "Raised", "Resolved", "Avg score", "Below 6"]} />
         <tbody>
           {byTeam.map((t) => (
-            <tr key={t.team} className="border-b border-gray-100 last:border-0">
+            <tr key={t.team} className="border-b border-ink-100 dark:border-white/10 last:border-0">
               <td className="py-3">{t.team}</td>
               <td className="py-3">{t.raised}</td>
               <td className="py-3">{t.resolved}</td>
               <td className="py-3 font-semibold">
-                {t.n ? one(t.avg) : <span className="text-gray-400 font-normal">—</span>}
+                {t.n ? one(t.avg) : <span className="text-ink-400 font-normal">—</span>}
               </td>
               <td className="py-3">{t.low}</td>
             </tr>
@@ -88,13 +88,13 @@ export default function QueryAdmin({ queries = [], admin = {}, slaHours = 72 }) 
               const weakest = hasAdmin ? q.weakest : QUERY_SHORT[q.ratings.indexOf(Math.min(...q.ratings))];
               const comment = hasAdmin ? q.comment : q.ratingComment;
               return (
-                <tr key={q.id} className="border-b border-gray-100 last:border-0">
-                  <td className="py-3 text-gray-500 font-mono text-xs">{q.id}</td>
+                <tr key={q.id} className="border-b border-ink-100 dark:border-white/10 last:border-0">
+                  <td className="py-3 text-ink-500 dark:text-ink-400 font-secondary text-xs">{q.id}</td>
                   <td className="py-3">{q.team}</td>
                   <td className="py-3 text-[13px]">{q.subject}</td>
                   <td className="py-3 font-semibold text-red-600">{one(score)}</td>
-                  <td className="py-3 text-[13px] text-gray-600">{weakest}</td>
-                  <td className="py-3 text-[13px] text-gray-500">{comment}</td>
+                  <td className="py-3 text-[13px] text-ink-600 dark:text-ink-300">{weakest}</td>
+                  <td className="py-3 text-[13px] text-ink-500 dark:text-ink-400">{comment}</td>
                 </tr>
               );
             })}

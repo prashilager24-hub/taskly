@@ -1,3 +1,5 @@
+import { PageTitle } from "@/components/page";
+import { SummaryBar } from "@/components/page";
 import { useEffect, useState } from "react";
 import { Autocomplete, AutocompleteItem, Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Chip } from "@/components/ui";
 import { title } from "@/components/primitives";
@@ -48,10 +50,10 @@ export default function DailyLogs() {
     const [departmentList, setDepartmentList] = useState<Department[]>([]);
     const [loading, setLoading] = useState(false);
     const [filterStatus, setFilterStatus] = useState(
-        user?.departmentID ? String(user.departmentID) : ""
+        user?.userRole != 1 && user?.departmentID ? String(user.departmentID) : "" // admins start on all departments
     );
     const [selectedUser, setSelectedUser] = useState(
-        user?.userID ? String(user.userID) : ""
+        user?.userRole != 1 && user?.userID ? String(user.userID) : ""
     );
     const [users, setUsers] = useState<User[]>([]);
     const [dateSelect, setDateSelect] = useState(7)
@@ -401,7 +403,7 @@ export default function DailyLogs() {
             try {
                 const body = {
                     departmentID: user.userRole == 7 ? null : filterStatus ? Number(filterStatus) : null,
-                    userID: selectedUser !== 0 ? Number(selectedUser) : user.userID,
+                    userID: Number(selectedUser) || (user.userRole == 1 ? null : user.userID), // admins see everyone
                     startDate: dateRange.startDate,
                     endDate: dateRange.endDate,
                     isForTarget: isTarget,
@@ -476,19 +478,8 @@ export default function DailyLogs() {
 
     return (
         <div>
-            <div className="mb-8 flex justify-between">
-                <div>
-                    <h1 className={title({ size: "20px" })}>
-                        {user?.departmentID ? "My Data" : "User Data"}
-                    </h1>
-
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        {user?.departmentID
-                            ? "View insights and reports for your department’s daily activities."
-                            : "Access detailed insights into users’ performance and daily activity records."
-                        }
-                    </p>
-                </div>
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                <PageTitle title={user?.departmentID ? "My Data" : "User Data"} subtitle={user?.departmentID ? "View insights and reports for your department’s daily activities." : "Access detailed insights into users’ performance and daily activity records."} />
 
                 <div className="flex gap-3 items-center">
                     <div className="flex gap-3 items-center">
@@ -508,7 +499,7 @@ export default function DailyLogs() {
                                 <Button
                                     variant="flat"
                                     size="sm"
-                                    className="w-[260px] justify-between bg-gray-200"
+                                    className="w-[260px] justify-between border border-ink-300 bg-white dark:border-white/15 dark:bg-ink-900"
                                 >
                                     {dateRange?.startDate && dateRange?.endDate
                                         ? `${format(new Date(dateRange.startDate), "dd MMM yyyy")} → ${format(
@@ -561,44 +552,17 @@ export default function DailyLogs() {
                 </div>
             </div>
             {average && (
-                <div
-                    className="flex flex-col gap-4 p-4 bg-white rounded-xl  my-2 border border-gray-100"
-
-                >
-                    {/* Card Title */}
-                    <h2 className="text-base font-semibold text-gray-700 tracking-wide">
-                        Summary
-                    </h2>
-                    <div className="flex">
-                        {/* Avg Total Hours */}
-                        <div className="flex items-center justify-between rounded-lg p-2">
-                            <span className="text-sm text-gray-600 font-medium">
-                                average working Hours
-                            </span>
-
-                            <span className="px-3 py-1 mx-2 text-sm font-semibold text-green-700 bg-green-100 rounded-full">
-                                {average.avgTotalWork}
-                            </span>
-                        </div>
-
-                        {/* Avg Allocated Hours */}
-                        <div className="flex items-center justify-between rounded-lg p-2">
-                            <span className="text-sm text-gray-600 font-medium">
-                                average Allocated Hours
-                            </span>
-
-                            <span className="px-3 py-1 text-sm font-semibold text-yellow-700 bg-yellow-100 rounded-full">
-                                {average.avgAllocatedHrs}
-                            </span>
-                        </div>
-                    </div>
-
-                </div>
+                <SummaryBar
+                    className="lg:grid-cols-2"
+                    items={[
+                        { label: "Average working hours", value: average.avgTotalWork },
+                        { label: "Average allocated hours", value: average.avgAllocatedHrs },
+                    ]}
+                />
             )}
 
-
             {/* Reports Table */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden p-6">
+            <div className="border border-ink-200 bg-white p-5 dark:border-white/10 dark:bg-ink-900">
                 <ReusableTable
                     data={reportData}
                     columns={reportColumns}

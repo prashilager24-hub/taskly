@@ -1,55 +1,78 @@
 import { pool } from '../../config/db';
 import type mysql from 'mysql2/promise';
+import { toBool, toLocalDateTime, toNum } from '../../utils/javaCompat';
 
-interface ListFilter {
-  UserID?: number;
-  DepartmentID?: number;
-  GoalID?: number;
-  startDate?: string;
-  endDate?: string;
+export interface GoalDataListFilter {
+  userID?: number | null;
+  departmentID?: number | null;
+  goalID?: number | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  eLID?: number | null;
+  searchText?: string | null;
 }
 
-export async function listUserGoalData(
-  filter: ListFilter,
-  page?: number,
-  size?: number,
-  sortBy?: string,
-) {
-  const conditions: string[] = ['1=1'];
-  const params: unknown[] = [];
-
-  if (filter.UserID) { conditions.push('gd.UserID = ?'); params.push(filter.UserID); }
-  if (filter.DepartmentID) { conditions.push('gd.DepartmentID = ?'); params.push(filter.DepartmentID); }
-  if (filter.GoalID) { conditions.push('gd.GoalID = ?'); params.push(filter.GoalID); }
-  if (filter.startDate) { conditions.push('gd.WorkDate >= ?'); params.push(filter.startDate); }
-  if (filter.endDate) { conditions.push('gd.WorkDate <= ?'); params.push(filter.endDate); }
-
-  const orderClause = sortBy ? `ORDER BY gd.${sortBy}` : 'ORDER BY gd.WorkDate DESC';
-  const where = `WHERE ${conditions.join(' AND ')}`;
-  const baseQuery = `
-    SELECT gd.*, u.UserName, u.EmployeeID, d.DepartmentName, g.GoalName
-    FROM UserGoalData gd
+/**
+ * POST /userGoalData/list — goal entries with achieved vs fixed goal, for Reports → Goals Achieved.
+ * Returns { userGoalDataList, totalRecords, …, avgPercent } as the page reads it. Efficiency is
+ * achieved / fixed × 100; Java's department-specific recalculation (depts 13, 37, …) is not ported yet.
+ */
+export async function listUserGoalData(filter: GoalDataListFilter, page?: number, size?: number) {
+  const conds: string[] = [];
+  const params: (string | number)[] = [];
+  if (filter.userID) { conds.push('gd.UserID = ?'); params.push(filter.userID); }
+  if (filter.departmentID) { conds.push('gd.DepartmentID = ?'); params.push(filter.departmentID); }
+  if (filter.goalID) { conds.push('gd.GoalID = ?'); params.push(filter.goalID); }
+  if (filter.startDate) { conds.push('gd.WorkDate >= ?'); params.push(filter.startDate); }
+  if (filter.endDate) { conds.push('gd.WorkDate <= ?'); params.push(filter.endDate); }
+  if (filter.eLID) { conds.push('d.ExecutiveLeaderID = ?'); params.push(filter.eLID); }
+  if (filter.searchText) {
+    conds.push(`(u.UserName LIKE CONCAT('%', ?, '%') OR g.GoalName LIKE CONCAT('%', ?, '%'))`);
+    params.push(filter.searchText, filter.searchText);
+  }
+  const from = `FROM UserGoalData gd
     LEFT JOIN Users u ON u.UserID = gd.UserID
     LEFT JOIN Department d ON d.DepartmentID = gd.DepartmentID
     LEFT JOIN DepartmentGoal g ON g.GoalID = gd.GoalID
-    ${where} ${orderClause}`;
+    ${conds.length ? `WHERE ${conds.join(' AND ')}` : ''}`;
+  const paged = !!page && !!size && page > 0 && size > 0;
 
-  if (page && size) {
-    const offset = (page - 1) * size;
-    const [rows] = await pool.query<mysql.RowDataPacket[]>(`${baseQuery} LIMIT ? OFFSET ?`, [...params, size, offset]);
-    const [[countRow]] = await pool.query<mysql.RowDataPacket[]>(
-      `SELECT COUNT(*) as total FROM UserGoalData gd ${where}`, params,
-    );
-    return {
-      data: rows,
-      total: (countRow as mysql.RowDataPacket)['total'],
-      page, size,
-      totalPages: Math.ceil((countRow as mysql.RowDataPacket)['total'] / size),
-    };
-  }
+  const [rows] = await pool.query<mysql.RowDataPacket[]>(
+    `SELECT gd.*, u.UserName, g.GoalName ${from} ORDER BY gd.WorkDate DESC, gd.UserGoalDataID DESC${paged ? ' LIMIT ? OFFSET ?' : ''}`,
+    paged ? [...params, size!, (page! - 1) * size!] : params,
+  );
+  const [[agg]] = await pool.query<mysql.RowDataPacket[]>(
+    `SELECT COUNT(*) AS n, ROUND(AVG(CASE WHEN gd.FixedGoal > 0 THEN gd.AchievedGoal / gd.FixedGoal * 100 END), 2) AS avgPercent ${from}`,
+    params,
+  );
+  const totalRecords = Number(agg?.['n'] ?? 0);
 
-  const [rows] = await pool.query<mysql.RowDataPacket[]>(baseQuery, params);
-  return { data: rows, total: rows.length };
+  return {
+    userGoalDataList: rows.map((r) => {
+      const fixed = toNum(r['FixedGoal']) ?? 0;
+      const achieved = toNum(r['AchievedGoal']) ?? 0;
+      return {
+        userGoalDataID: r['UserGoalDataID'],
+        workDate: toLocalDateTime(r['WorkDate'])?.slice(0, 10) ?? null,
+        userID: r['UserID'],
+        userName: r['UserName'] ?? null,
+        departmentID: r['DepartmentID'],
+        goalID: r['GoalID'],
+        goalName: r['GoalName'] ?? null,
+        fixedGoal: fixed,
+        achievedGoal: achieved,
+        goalEfficiencyPercent: fixed > 0 ? Math.round((achieved / fixed) * 10000) / 100 : 0,
+        recalculatedTarget: null,
+        comment: r['Comment'] ?? null,
+        approvedByEL: toBool(r['ApprovedByEL']),
+      };
+    }),
+    totalRecords,
+    totalPages: paged ? Math.ceil(totalRecords / size!) : 1,
+    currentPage: paged ? page : 1,
+    pageSize: paged ? size : totalRecords,
+    avgPercent: toNum(agg?.['avgPercent']) ?? 0,
+  };
 }
 
 export async function updateRevisedGoal(

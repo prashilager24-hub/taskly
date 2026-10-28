@@ -21,7 +21,7 @@ export function Provider({ children }: { children: React.ReactNode }) {
         toastProps={{
           timeout: 7000,
           classNames: {
-            base: "w-[500px] max-w-[calc(100vw-2rem)] border border-ink-200 shadow-pop animate-[fadeIn_.15s_ease-out]",
+            base: "w-[500px] max-w-[calc(100vw-2rem)] border border-ink-200 dark:border-white/10 shadow-pop animate-[fadeIn_.15s_ease-out]",
             title: "font-bold",
           },
         }}

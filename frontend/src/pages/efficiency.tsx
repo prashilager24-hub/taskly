@@ -1,3 +1,4 @@
+import { PageTitle } from "@/components/page";
 import { useEffect, useState, useMemo, useCallback } from "react";
 
 import { addToast, Dropdown, DropdownTrigger, Button, DropdownMenu, DropdownItem } from "@/components/ui";
@@ -139,20 +140,20 @@ export default function Efficiency() {
     //     switch (columnKey) {
     //         case 'DailyTaskLogID':
     //             return (
-    //                 <span className="text-sm font-medium text-gray-900 dark:text-white">
+    //                 <span className="text-sm font-medium text-ink-900 dark:text-white">
     //                     #{log.DailyTaskLogID}
     //                 </span>
     //             );
     //         case 'TaskID':
     //             return (
-    //                 <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+    //                 <span className="text-sm font-medium text-brand-600 dark:text-brand-400">
     //                     T-{log.TaskID}
     //                 </span>
     //             );
     //         case 'TaskName':
     //             return (
     //                 <div className="max-w-xs">
-    //                     <p className="text-sm font-medium text-gray-900 dark:text-white truncate" title={log.TaskName}>
+    //                     <p className="text-sm font-medium text-ink-900 dark:text-white truncate" title={log.TaskName}>
     //                         {log.TaskName}
     //                     </p>
     //                 </div>
@@ -160,22 +161,22 @@ export default function Efficiency() {
     //         case 'UserName':
     //             return (
     //                 <div className="flex flex-col">
-    //                     <p className="text-sm font-medium text-gray-900 dark:text-white">{log.UserName}</p>
-    //                     <p className="text-xs text-gray-500 dark:text-gray-400">ID: {log.UserID}</p>
+    //                     <p className="text-sm font-medium text-ink-900 dark:text-white">{log.UserName}</p>
+    //                     <p className="text-xs text-ink-500 dark:text-ink-400">ID: {log.UserID}</p>
     //                 </div>
     //             );
     //         case 'WorkDate':
     //             return new Date(log.WorkDate).toLocaleDateString();
     //         case 'actualTimeOfWork':
     //             return (
-    //                 <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+    //                 <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-brand-100 text-brand-800">
     //                     {log.actualTimeOfWork} mins
     //                 </span>
     //             );
     //         case 'Remarks':
     //             return (
     //                 <div className="max-w-xs">
-    //                     <p className="text-sm text-gray-600 dark:text-gray-400 truncate" title={log.Remarks}>
+    //                     <p className="text-sm text-ink-600 dark:text-ink-400 truncate" title={log.Remarks}>
     //                         {log.Remarks || 'No remarks'}
     //                     </p>
     //                 </div>
@@ -502,13 +503,8 @@ export default function Efficiency() {
 
     return (
         < div>
-            <div className="mb-8 flex justify-between">
-                <div>
-                    <h1 className={title({ size: "20px" })}>Performance Insights</h1>
-
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Track performance, productivity, and utilization insights                                    </p>
-                </div>
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                <PageTitle title="Performance Insights" subtitle="Track performance, productivity, and utilization insights" />
 
                 <div className="flex gap-3 items-center">
                     <div className="flex gap-3 items-center">
@@ -529,7 +525,7 @@ export default function Efficiency() {
                                 <Button
                                     variant="flat"
                                     size="sm"
-                                    className="w-[260px] justify-between bg-gray-200"
+                                    className="w-[260px] justify-between border border-ink-300 bg-white dark:border-white/15 dark:bg-ink-900"
                                 >
                                     {dateRange?.startDate && dateRange?.endDate
                                         ? `${format(new Date(dateRange.startDate), "dd MMM yyyy")} → ${format(
@@ -597,11 +593,11 @@ export default function Efficiency() {
 
             {average && (
                 <div
-                    className="flex flex-col gap-4 p-4 bg-white rounded-xl  my-2 border border-gray-100"
+                    className="flex flex-col gap-4 p-4 bg-white dark:bg-ink-900 rounded-xl  my-2 border border-ink-100 dark:border-white/10"
 
                 >
                     {/* Card Title */}
-                    <h2 className="text-base font-semibold text-gray-700 tracking-wide">
+                    <h2 className="eyebrow">
                         Summary
                     </h2>
 
@@ -609,55 +605,55 @@ export default function Efficiency() {
                     <div className="flex">
 
                         {/* Total Working Hours */}
-                        <div className="flex justify-center items-center bg-gray-50 p-3 rounded-lg">
-                            <span className="text-xs text-gray-500 font-medium">
+                        <div className="flex justify-center items-center bg-ink-50 dark:bg-ink-950 p-3 rounded-lg">
+                            <span className="text-xs text-ink-500 dark:text-ink-400 font-medium">
                                 Average Working Hours
                             </span>
-                            <span className="mt-1 px-2 py-1 mx-2  text-sm font-semibold text-green-700 bg-green-100 rounded-full w-fit">
+                            <span className="mt-1 px-2 py-1 mx-2  text-sm font-semibold text-emerald-700 bg-emerald-100 rounded-full w-fit">
                                 {average.AvgTotalWork}
                             </span>
                         </div>
 
                         {/* Total Allocated Hours */}
-                        <div className="flex justify-center items-center bg-gray-50 p-3 rounded-lg">
-                            <span className="text-xs text-gray-500 font-medium">
+                        <div className="flex justify-center items-center bg-ink-50 dark:bg-ink-950 p-3 rounded-lg">
+                            <span className="text-xs text-ink-500 dark:text-ink-400 font-medium">
                                 Average Allocated Hours
                             </span>
-                            <span className="mt-1 px-2 py-1 mx-2  text-sm font-semibold text-yellow-700 bg-yellow-100 rounded-full w-fit">
+                            <span className="mt-1 px-2 py-1 mx-2  text-sm font-semibold text-amber-700 bg-amber-100 rounded-full w-fit">
                                 {average.AvgAllocatedHrs}
                             </span>
                         </div>
 
                         {/* Avg Utilization % */}
-                        {/* <div className="flex justify-center items-center bg-gray-50 p-3 rounded-lg">
-                            <span className="text-xs text-gray-500 font-medium">
+                        {/* <div className="flex justify-center items-center bg-ink-50 dark:bg-ink-950 p-3 rounded-lg">
+                            <span className="text-xs text-ink-500 dark:text-ink-400 font-medium">
                                 Avg Utilization %
                             </span>
-                            <span className="mt-1 px-2 py-1  mx-2 text-sm font-semibold text-blue-700 bg-blue-100 rounded-full w-fit">
+                            <span className="mt-1 px-2 py-1  mx-2 text-sm font-semibold text-brand-700 bg-brand-100 rounded-full w-fit">
                                 {average.AvgUtilizationPercent}%
                             </span>
                         </div> */}
-                        <div className="flex justify-center items-center bg-gray-50 p-3 rounded-lg">
-                            <span className="text-xs text-gray-500 font-medium">
+                        <div className="flex justify-center items-center bg-ink-50 dark:bg-ink-950 p-3 rounded-lg">
+                            <span className="text-xs text-ink-500 dark:text-ink-400 font-medium">
                                 Avg Target %
                             </span>
-                            <span className="mt-1 px-2 py-1  mx-2 text-sm font-semibold text-blue-700 bg-blue-100 rounded-full w-fit">
+                            <span className="mt-1 px-2 py-1  mx-2 text-sm font-semibold text-brand-700 bg-brand-100 rounded-full w-fit">
                                 {average.AvgTargetPercent}%
                             </span>
                         </div>
 
                         {/* Efficiency Level */}
-                        {/* <div className="flex justify-center items-center bg-gray-50 p-3 rounded-lg">
-                            <span className="text-xs text-gray-500 font-medium">
+                        {/* <div className="flex justify-center items-center bg-ink-50 dark:bg-ink-950 p-3 rounded-lg">
+                            <span className="text-xs text-ink-500 dark:text-ink-400 font-medium">
                                 Efficiency Level
                             </span>
 
                             <span
                                 className={`mt-1 px-2 py-1 mx-2 text-sm font-semibold rounded-full w-fit ${average.EfficiencyLevel === "High"
-                                    ? "bg-green-100 text-green-700"
+                                    ? "bg-emerald-100 text-emerald-700"
                                     : average.EfficiencyLevel === "At Par"
-                                        ? "bg-yellow-100 text-yellow-700"
-                                        : "bg-red-100 text-red-700"
+                                        ? "bg-amber-100 text-amber-700"
+                                        : "bg-rose-100 text-rose-700"
                                     }`}
                             >
                                 {average.EfficiencyLevel}
@@ -671,7 +667,7 @@ export default function Efficiency() {
             {/* Reports Table */}
             {/* {
                 user.userRole !== 3 && ( */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden p-6">
+            <div className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 overflow-hidden p-6">
                 <EfficiencyTable data={dashboard} type="user" />
             </div>
             {/* //     ) */}

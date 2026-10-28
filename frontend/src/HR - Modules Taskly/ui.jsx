@@ -5,7 +5,7 @@ import { SCALE_LABELS } from "../lib/scale";
 import { avg, one } from "../lib/metrics";
 
 export const inputCls =
-  "w-full border border-gray-300 rounded px-2.5 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400";
+  "w-full border border-ink-300 dark:border-white/15 rounded px-2.5 py-2 text-sm bg-white dark:bg-ink-900 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400";
 
 export function Pill({ tone = "grey", children }) {
   const colorMap = {
@@ -23,14 +23,14 @@ export function Pill({ tone = "grey", children }) {
 
 export function CardStat({ label, value, unit, note, hero }) {
   return (
-    <Card className={`border ${hero ? "border-primary-300 bg-primary-50" : "border-gray-200"}`} shadow="none">
+    <Card className={`border ${hero ? "border-primary-300 bg-primary-50" : "border-ink-200 dark:border-white/10"}`} shadow="none">
       <CardBody className="p-4">
-        <div className="text-[10px] font-mono uppercase tracking-wider text-gray-500 mb-2">{label}</div>
-        <div className={`text-2xl font-bold tracking-tight ${hero ? "text-primary-700" : "text-gray-900"}`}>
+        <div className="text-[10px] font-secondary uppercase tracking-wider text-ink-500 dark:text-ink-400 mb-2">{label}</div>
+        <div className={`text-2xl font-bold tracking-tight ${hero ? "text-primary-700" : "text-ink-900 dark:text-white"}`}>
           {value}
-          {unit && <span className="text-sm font-medium text-gray-400">{unit}</span>}
+          {unit && <span className="text-sm font-medium text-ink-400">{unit}</span>}
         </div>
-        {note && <div className="text-[11px] text-gray-500 mt-1">{note}</div>}
+        {note && <div className="text-[11px] text-ink-500 dark:text-ink-400 mt-1">{note}</div>}
       </CardBody>
     </Card>
   );
@@ -46,7 +46,7 @@ export function Cards({ children }) {
 
 export function Section({ children }) {
   return (
-    <div className="text-[10px] font-mono uppercase tracking-wider text-gray-500 mt-6 mb-3 pb-1.5 border-b border-gray-200">
+    <div className="text-[10px] font-secondary uppercase tracking-wider text-ink-500 dark:text-ink-400 mt-6 mb-3 pb-1.5 border-b border-ink-200 dark:border-white/10">
       {children}
     </div>
   );
@@ -54,15 +54,15 @@ export function Section({ children }) {
 
 export function Screen({ id, title, sub, children }) {
   return (
-    <Card shadow="none" className="border border-gray-200 mb-5">
-      <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-baseline gap-3 flex-wrap">
+    <Card shadow="none" className="border border-ink-200 dark:border-white/10 mb-5">
+      <div className="px-4 py-3 border-b border-ink-200 dark:border-white/10 bg-ink-50 dark:bg-ink-950 flex items-baseline gap-3 flex-wrap">
         {id && (
-          <Chip size="sm" variant="flat" color="primary" className="font-mono text-[11px]">
+          <Chip size="sm" variant="flat" color="primary" className="font-secondary text-[11px]">
             {id}
           </Chip>
         )}
         <span className="font-semibold text-[15px]">{title}</span>
-        {sub && <span className="text-xs text-gray-500">{sub}</span>}
+        {sub && <span className="text-xs text-ink-500 dark:text-ink-400">{sub}</span>}
       </div>
       <CardBody className="p-4">{children}</CardBody>
     </Card>
@@ -72,7 +72,7 @@ export function Screen({ id, title, sub, children }) {
 export function Field({ label, children }) {
   return (
     <div className="mb-3.5">
-      {label && <label className="block text-xs font-semibold text-gray-800 mb-1.5">{label}</label>}
+      {label && <label className="block text-xs font-semibold text-ink-800 dark:text-white mb-1.5">{label}</label>}
       {children}
     </div>
   );
@@ -97,7 +97,7 @@ export function Btn({ children, onClick, variant = "solid", size = "sm", disable
 
 export function BackLink({ onClick, children = "Back" }) {
   return (
-    <button onClick={onClick} className="text-xs text-gray-500 hover:text-gray-800 mb-4 flex items-center gap-1">
+    <button onClick={onClick} className="text-xs text-ink-500 dark:text-ink-400 hover:text-ink-800 dark:hover:text-white mb-4 flex items-center gap-1">
       &larr; {children}
     </button>
   );
@@ -132,7 +132,7 @@ export function Scale({ value, onChange, compact }) {
             {shown} — {SCALE_LABELS[shown - 1]}
           </span>
         ) : (
-          <span className="text-gray-400">1 — Very Poor · 10 — Excellent</span>
+          <span className="text-ink-400">1 — Very Poor · 10 — Excellent</span>
         )}
       </div>
     </div>
@@ -141,12 +141,12 @@ export function Scale({ value, onChange, compact }) {
 
 export function ScaleLegend() {
   return (
-    <div className="border border-gray-200 rounded p-3 mb-5 bg-gray-50">
-      <div className="text-[10px] font-mono uppercase tracking-wider text-gray-500 mb-2">Rating scale</div>
-      <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-gray-600">
+    <div className="border border-ink-200 dark:border-white/10 rounded p-3 mb-5 bg-ink-50 dark:bg-ink-950">
+      <div className="text-[10px] font-secondary uppercase tracking-wider text-ink-500 dark:text-ink-400 mb-2">Rating scale</div>
+      <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-ink-600 dark:text-ink-300">
         {SCALE_LABELS.map((l, i) => (
           <span key={i}>
-            <span className="font-semibold text-gray-800">{i + 1}</span> {l}
+            <span className="font-semibold text-ink-800 dark:text-white">{i + 1}</span> {l}
           </span>
         ))}
       </div>
@@ -162,9 +162,9 @@ export function Distribution({ values }) {
       <div className="flex items-end gap-1.5 h-24">
         {counts.map((c, i) => (
           <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
-            <div className="text-[10px] font-mono text-gray-400 mb-1">{c || ""}</div>
+            <div className="text-[10px] font-secondary text-ink-400 mb-1">{c || ""}</div>
             <div
-              className={`w-full rounded-t ${c === max && c > 0 ? "bg-primary" : "bg-gray-200"}`}
+              className={`w-full rounded-t ${c === max && c > 0 ? "bg-primary" : "bg-ink-200 dark:bg-ink-700"}`}
               style={{ height: `${(c / max) * 100}%`, minHeight: c ? 4 : 1 }}
             />
           </div>
@@ -172,7 +172,7 @@ export function Distribution({ values }) {
       </div>
       <div className="flex gap-1.5 mt-1">
         {counts.map((_, i) => (
-          <div key={i} className="flex-1 text-center text-[10px] font-mono text-gray-400">
+          <div key={i} className="flex-1 text-center text-[10px] font-secondary text-ink-400">
             {i + 1}
           </div>
         ))}
@@ -187,10 +187,10 @@ export function QuestionAverages({ labels, rows }) {
     <div className="space-y-2.5">
       {labels.map((q, i) => (
         <div key={i} className="flex items-center gap-3">
-          <div className="text-xs text-gray-600 flex-1 min-w-0 truncate" title={q}>
+          <div className="text-xs text-ink-600 dark:text-ink-300 flex-1 min-w-0 truncate" title={q}>
             {q}
           </div>
-          <div className="w-40 h-2 bg-gray-100 rounded overflow-hidden">
+          <div className="w-40 h-2 bg-ink-100 dark:bg-ink-800 rounded overflow-hidden">
             <div
               className={`h-full rounded ${averages[i] < 7 ? "bg-red-400" : "bg-primary"}`}
               style={{ width: `${(averages[i] / 10) * 100}%` }}
@@ -205,13 +205,13 @@ export function QuestionAverages({ labels, rows }) {
 
 export function EmailPreview({ to, subject, body }) {
   return (
-    <Card shadow="none" className="border border-gray-300 bg-gray-50">
+    <Card shadow="none" className="border border-ink-300 dark:border-white/15 bg-ink-50 dark:bg-ink-950">
       <CardBody className="p-3 text-[13px]">
-        <div className="font-mono text-[10.5px] text-gray-500 mb-1.5 flex items-center gap-1.5">
+        <div className="font-secondary text-[10.5px] text-ink-500 dark:text-ink-400 mb-1.5 flex items-center gap-1.5">
           <Mail size={12} /> To: {to}
         </div>
-        <div className="font-mono text-[10.5px] text-gray-500 mb-2">Subject: {subject}</div>
-        <div className="text-gray-700">{body}</div>
+        <div className="font-secondary text-[10.5px] text-ink-500 dark:text-ink-400 mb-2">Subject: {subject}</div>
+        <div className="text-ink-700 dark:text-ink-200">{body}</div>
       </CardBody>
     </Card>
   );
@@ -219,7 +219,7 @@ export function EmailPreview({ to, subject, body }) {
 
 export function Empty({ children }) {
   return (
-    <div className="border border-dashed border-gray-300 rounded p-6 text-center text-xs text-gray-400 bg-gray-50">
+    <div className="border border-dashed border-ink-300 dark:border-white/15 rounded p-6 text-center text-xs text-ink-400 bg-ink-50 dark:bg-ink-950">
       {children}
     </div>
   );
@@ -236,14 +236,14 @@ export function OpenPoint({ children }) {
 
 export function Thread({ messages }) {
   return (
-    <div className="border-l-2 border-gray-200 pl-3.5 mb-4">
+    <div className="border-l-2 border-ink-200 dark:border-white/10 pl-3.5 mb-4">
       {messages.map((m, i) => (
         <div key={i} className="mb-3.5">
           <div className="text-xs font-semibold">
             {m.who}
-            <span className="font-normal text-gray-400 font-mono text-[10.5px] ml-2">{m.at}</span>
+            <span className="font-normal text-ink-400 font-secondary text-[10.5px] ml-2">{m.at}</span>
           </div>
-          <div className="text-[13px] text-gray-600 mt-0.5">{m.text}</div>
+          <div className="text-[13px] text-ink-600 dark:text-ink-300 mt-0.5">{m.text}</div>
         </div>
       ))}
     </div>
@@ -252,9 +252,9 @@ export function Thread({ messages }) {
 
 export function ContextBar({ title, meta }) {
   return (
-    <div className="border border-dashed border-gray-300 rounded p-3 mb-4 bg-gray-50">
+    <div className="border border-dashed border-ink-300 dark:border-white/15 rounded p-3 mb-4 bg-ink-50 dark:bg-ink-950">
       <div className="font-semibold text-sm">{title}</div>
-      {meta && <div className="text-xs text-gray-500 mt-0.5">{meta}</div>}
+      {meta && <div className="text-xs text-ink-500 dark:text-ink-400 mt-0.5">{meta}</div>}
     </div>
   );
 }
@@ -262,9 +262,9 @@ export function ContextBar({ title, meta }) {
 export function THead({ cols }) {
   return (
     <thead>
-      <tr className="text-[10px] font-mono uppercase tracking-wider text-gray-500">
+      <tr className="text-[10px] font-secondary uppercase tracking-wider text-ink-500 dark:text-ink-400">
         {cols.map((c, i) => (
-          <th key={i} className="text-left py-2 border-b border-gray-200 whitespace-nowrap">
+          <th key={i} className="text-left py-2 border-b border-ink-200 dark:border-white/10 whitespace-nowrap">
             {c}
           </th>
         ))}

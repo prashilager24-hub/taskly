@@ -9,7 +9,7 @@ interface EmptyContainerProps {
 // Default file icons
 const FileIcon = () => (
     <svg
-        className="w-8 h-8 text-gray-300"
+        className="w-8 h-8 text-ink-300"
         fill="currentColor"
         viewBox="0 0 24 24"
     >
@@ -19,7 +19,7 @@ const FileIcon = () => (
 
 const FolderIcon = () => (
     <svg
-        className="w-8 h-8 text-gray-300"
+        className="w-8 h-8 text-ink-300"
         fill="currentColor"
         viewBox="0 0 24 24"
     >
@@ -29,7 +29,7 @@ const FolderIcon = () => (
 
 const GridIcon = () => (
     <svg
-        className="w-8 h-8 text-gray-300"
+        className="w-8 h-8 text-ink-300"
         fill="currentColor"
         viewBox="0 0 24 24"
     >
@@ -39,7 +39,7 @@ const GridIcon = () => (
 
 const PlayIcon = () => (
     <svg
-        className="w-8 h-8 text-gray-300"
+        className="w-8 h-8 text-ink-300"
         fill="currentColor"
         viewBox="0 0 24 24"
     >
@@ -49,7 +49,7 @@ const PlayIcon = () => (
 
 const ImageIcon = () => (
     <svg
-        className="w-8 h-8 text-gray-300"
+        className="w-8 h-8 text-ink-300"
         fill="currentColor"
         viewBox="0 0 24 24"
     >
@@ -92,7 +92,7 @@ export default function EmptyContainer({
                 <div className="flex justify-center items-center h-32">
                     {icon || (
                         <svg
-                            className="w-16 h-16 text-gray-400 dark:text-gray-500"
+                            className="w-16 h-16 text-ink-400 dark:text-ink-500"
                             viewBox="0 0 24 24"
                             fill="none"
                             stroke="currentColor"
@@ -116,10 +116,10 @@ export default function EmptyContainer({
 
             {/* Content */}
             <div className="text-center max-w-md">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                <h3 className="text-xl font-semibold text-ink-900 dark:text-white mb-2">
                     {title}
                 </h3>
-                {/* <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
+                {/* <p className="text-ink-500 dark:text-ink-400 text-sm leading-relaxed">
                     {description}
                 </p> */}
             </div>

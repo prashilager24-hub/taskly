@@ -111,11 +111,11 @@ export default function EngagementHR({ surveys = [], headcount = 0, notifyList =
           <THead cols={["Quarter", "Sent to", "Responses", "Avg", "Status", ""]} />
           <tbody>
             {surveys.map((s) => (
-              <tr key={s.id} className={`border-b border-gray-100 last:border-0 ${s.id === selected ? "bg-primary-50" : ""}`}>
+              <tr key={s.id} className={`border-b border-ink-100 dark:border-white/10 last:border-0 ${s.id === selected ? "bg-primary-50" : ""}`}>
                 <td className="py-3">{s.quarter}</td>
                 <td className="py-3">{s.sentTo}</td>
                 <td className="py-3">
-                  {(s.responses || []).length} <span className="text-gray-400">({pct((s.responses || []).length, s.sentTo)}%)</span>
+                  {(s.responses || []).length} <span className="text-ink-400">({pct((s.responses || []).length, s.sentTo)}%)</span>
                 </td>
                 <td className="py-3 font-semibold">{(s.responses || []).length ? one(engAvg({ ...s, responses: s.responses || [] })) : "—"}</td>
                 <td className="py-3">
@@ -128,7 +128,7 @@ export default function EngagementHR({ surveys = [], headcount = 0, notifyList =
             ))}
           </tbody>
         </table>
-        <div className="text-[11px] text-gray-400 mt-3">
+        <div className="text-[11px] text-ink-400 mt-3">
           Response rate sits next to the average on purpose — a 9.0 from 43% of the org is not a 9.0.
         </div>
       </Screen>
@@ -153,7 +153,7 @@ export default function EngagementHR({ surveys = [], headcount = 0, notifyList =
                 <Dropdown>
                   <DropdownTrigger>
                     <Button variant="bordered" className="w-full justify-between">
-                      {closes ? format(closes, "dd MMM yyyy") : <span className="text-gray-400">Pick a date</span>}
+                      {closes ? format(closes, "dd MMM yyyy") : <span className="text-ink-400">Pick a date</span>}
                     </Button>
                   </DropdownTrigger>
                   <DropdownMenu aria-label="Closes date picker" className="p-0" itemClasses={{ base: "p-0 cursor-default" }}>
@@ -166,9 +166,9 @@ export default function EngagementHR({ surveys = [], headcount = 0, notifyList =
             </div>
             <div>
               <Field label="Audience">
-                <div className="border border-gray-300 rounded-md bg-white">
-                  <div className="flex items-center gap-2 px-2.5 py-1.5 border-b border-gray-200">
-                    <Search size={14} className="text-gray-400 shrink-0" />
+                <div className="border border-ink-300 dark:border-white/15 rounded-md bg-white dark:bg-ink-900">
+                  <div className="flex items-center gap-2 px-2.5 py-1.5 border-b border-ink-200 dark:border-white/10">
+                    <Search size={14} className="text-ink-400 shrink-0" />
                     <input
                       className="flex-1 text-sm outline-none bg-transparent placeholder:text-gray-400"
                       placeholder={loadingUsers ? "Loading employees…" : "Search by name…"}
@@ -177,13 +177,13 @@ export default function EngagementHR({ surveys = [], headcount = 0, notifyList =
                       disabled={loadingUsers}
                     />
                     {userSearch && (
-                      <button onClick={() => setUserSearch("")} className="text-gray-400 hover:text-gray-600">
+                      <button onClick={() => setUserSearch("")} className="text-ink-400 hover:text-ink-600 dark:hover:text-ink-300">
                         <X size={13} />
                       </button>
                     )}
                   </div>
                   {selectedUsers.length > 0 && (
-                    <div className="flex flex-wrap gap-1 px-2.5 py-1.5 border-b border-gray-100">
+                    <div className="flex flex-wrap gap-1 px-2.5 py-1.5 border-b border-ink-100 dark:border-white/10">
                       {selectedUsers.map((u) => (
                         <Chip
                           key={u.userID}
@@ -203,14 +203,14 @@ export default function EngagementHR({ surveys = [], headcount = 0, notifyList =
                   )}
                   <div className="max-h-48 overflow-y-auto">
                     {filteredUsers.length === 0 && !loadingUsers && (
-                      <div className="px-3 py-2.5 text-xs text-gray-400">No users found.</div>
+                      <div className="px-3 py-2.5 text-xs text-ink-400">No users found.</div>
                     )}
                     {filteredUsers.length > 0 && (
                       <button
-                        className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 border-b border-gray-100 font-medium"
+                        className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-ink-50 dark:hover:bg-ink-950 border-b border-ink-100 dark:border-white/10 font-medium"
                         onClick={toggleAllFiltered}
                       >
-                        <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${allFilteredSelected ? "bg-primary border-primary" : "border-gray-300"}`}>
+                        <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${allFilteredSelected ? "bg-primary border-primary" : "border-ink-300 dark:border-white/15"}`}>
                           {allFilteredSelected && (
                             <svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6L8 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
                           )}
@@ -223,17 +223,17 @@ export default function EngagementHR({ surveys = [], headcount = 0, notifyList =
                       return (
                         <button
                           key={u.userID}
-                          className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 ${chosen ? "bg-primary-50" : ""}`}
+                          className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-ink-50 dark:hover:bg-ink-950 ${chosen ? "bg-primary-50" : ""}`}
                           onClick={() => toggleUser(u)}
                         >
-                          <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${chosen ? "bg-primary border-primary" : "border-gray-300"}`}>
+                          <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${chosen ? "bg-primary border-primary" : "border-ink-300 dark:border-white/15"}`}>
                             {chosen && (
                               <svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6L8 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="truncate">{u.userName}</div>
-                            <div className="text-[11px] text-gray-400 truncate">{u.departmentName || u.userEmail}</div>
+                            <div className="text-[11px] text-ink-400 truncate">{u.departmentName || u.userEmail}</div>
                           </div>
                         </button>
                       );
@@ -241,7 +241,7 @@ export default function EngagementHR({ surveys = [], headcount = 0, notifyList =
                   </div>
                 </div>
                 {selectedUsers.length > 0 && (
-                  <div className="text-[11px] text-gray-400 mt-1">{selectedUsers.length} employee{selectedUsers.length > 1 ? "s" : ""} selected</div>
+                  <div className="text-[11px] text-ink-400 mt-1">{selectedUsers.length} employee{selectedUsers.length > 1 ? "s" : ""} selected</div>
                 )}
               </Field>
               <Field label="Notify on submission">
@@ -271,7 +271,7 @@ export default function EngagementHR({ surveys = [], headcount = 0, notifyList =
         <Screen id="3.4" title={`Engagement scores — ${detail.quarter}`} sub="Computed live from the responses collected">
           <button
             onClick={() => { setSelected(null); setDetailData(null); }}
-            className="text-xs text-gray-500 hover:text-gray-800 mb-4 flex items-center gap-1"
+            className="text-xs text-ink-500 dark:text-ink-400 hover:text-ink-800 dark:hover:text-white mb-4 flex items-center gap-1"
           >
             <ArrowLeft size={12} /> Back to list
           </button>
@@ -299,11 +299,11 @@ export default function EngagementHR({ surveys = [], headcount = 0, notifyList =
               <Section>Continue / improve / introduce</Section>
               <div className="space-y-2.5">
                 {detailRes.filter((r) => r.feedback).map((r, i) => (
-                  <div key={i} className="border border-gray-200 rounded p-3 flex gap-3">
+                  <div key={i} className="border border-ink-200 dark:border-white/10 rounded p-3 flex gap-3">
                     <div className="text-sm font-bold text-primary-600 w-8">{one(avg(respValues(r)))}</div>
                     <div>
-                      <div className="text-[13px] text-gray-700">{r.feedback}</div>
-                      {/* <div className="text-[11px] text-gray-400 Anonymousmt-1">{r.anonymous ? "Anonymous" : r.by}</div> */}
+                      <div className="text-[13px] text-ink-700 dark:text-ink-200">{r.feedback}</div>
+                      {/* <div className="text-[11px] text-ink-400 Anonymousmt-1">{r.anonymous ? "Anonymous" : r.by}</div> */}
                     </div>
                   </div>
                 ))}

@@ -304,7 +304,7 @@ async function getDepartmentGoalSummary(filter: DashBoardFilter) {
 
   const [rows] = await pool.query<mysql.RowDataPacket[]>(
     `SELECT g.DepartmentID,
-       ROUND(AVG(g.GoalAchievedPercent),2) AS AvgGoalEfficiency
+       ROUND(AVG(CASE WHEN g.FixedGoal > 0 THEN g.AchievedGoal / g.FixedGoal * 100 END),2) AS AvgGoalEfficiency
      FROM UserGoalData g
      WHERE ${conds.join(' AND ')}
      GROUP BY g.DepartmentID`,
@@ -352,7 +352,7 @@ async function getELSummaryUsers(filter: DashBoardFilter) {
 async function getELGoalSummaryAdmin(filter: DashBoardFilter) {
   const [rows] = await pool.query<mysql.RowDataPacket[]>(
     `SELECT d.ExecutiveLeaderID AS ELID,
-       ROUND(AVG(g.GoalAchievedPercent),2) AS AvgGoalEfficiency
+       ROUND(AVG(CASE WHEN g.FixedGoal > 0 THEN g.AchievedGoal / g.FixedGoal * 100 END),2) AS AvgGoalEfficiency
      FROM UserGoalData g
      JOIN Department d ON d.DepartmentID = g.DepartmentID
      WHERE g.WorkDate BETWEEN ? AND ? AND d.ExecutiveLeaderID IS NOT NULL
@@ -401,7 +401,7 @@ async function getFLSummaryUsers(filter: DashBoardFilter) {
 async function getFLGoalSummary(filter: DashBoardFilter) {
   const [rows] = await pool.query<mysql.RowDataPacket[]>(
     `SELECT d.FunctionalLeaderID AS FLID,
-       ROUND(AVG(g.GoalAchievedPercent),2) AS AvgGoalEfficiency
+       ROUND(AVG(CASE WHEN g.FixedGoal > 0 THEN g.AchievedGoal / g.FixedGoal * 100 END),2) AS AvgGoalEfficiency
      FROM UserGoalData g
      JOIN Department d ON d.DepartmentID = g.DepartmentID
      WHERE g.WorkDate BETWEEN ? AND ? AND d.FunctionalLeaderID IS NOT NULL

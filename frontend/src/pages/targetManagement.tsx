@@ -1,6 +1,7 @@
+import { PageTitle } from "@/components/page";
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, addToast, Autocomplete, AutocompleteItem } from "@/components/ui";
+import { Drawer, DrawerContent, DrawerHeader, DrawerBody, DrawerFooter, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, addToast, Autocomplete, AutocompleteItem } from "@/components/ui";
 import { Input } from "@/components/ui";
 import axios from "axios";
 import { Select, SelectItem } from "@/components/ui";
@@ -420,14 +421,8 @@ const TargetManagement: React.FC = () => {
     return (
         <div>
 
-            <div className="flex justify-between items-center mb-4" style={{ height: "48px" }}>
-                <div>
-
-                    <h1 className={title({ size: "20px" })}>Target Management</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Manage and monitor all company Target
-                    </p>
-                </div>
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                <PageTitle title="Target Management" subtitle="Manage and monitor all company Target" />
                 <div className="flex justify-end m-3 gap-3">
                     <Button variant="flat"
                         size="sm"
@@ -456,7 +451,7 @@ const TargetManagement: React.FC = () => {
 
             {/* target Table */}
             {selectedRows.length > 0 && (
-                <div className="flex justify-between items-center bg-gray-100 p-3 rounded mb-3 shadow">
+                <div className="flex justify-between items-center bg-ink-100 dark:bg-ink-800 p-3 rounded mb-3 shadow">
                     <span className="font-semibold">
                         {selectedRows.length} task(s) selected
                     </span>
@@ -507,7 +502,7 @@ const TargetManagement: React.FC = () => {
                 </div>
             )}
 
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden p-6">
+            <div className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 overflow-hidden p-6">
                 <ReusableTable
                     key={tableRefreshKey}
                     data={target}
@@ -562,17 +557,16 @@ const TargetManagement: React.FC = () => {
                 />
             </div>
 
-            {/* Add Task Modal */}
-            <Modal
+            {/* Create / edit canvas */}
+            <Drawer
                 isOpen={isModalOpen}
                 onOpenChange={setIsModalOpen}
-                size="2xl"
             >
-                <ModalContent>
+                <DrawerContent>
                     {(onClose: () => void) => (
                         <>
-                            <ModalHeader className="flex flex-col gap-1">{isEditing ? "Edit Task" : "Add New Target"}</ModalHeader>
-                            <ModalBody>
+                            <DrawerHeader className="flex flex-col gap-1">{isEditing ? "Edit Task" : "Add New Target"}</DrawerHeader>
+                            <DrawerBody>
                                 <div className="space-y-4">
                                     <div className="mb-6 flex flex-col sm:flex-row gap-4">
                                         <Autocomplete
@@ -688,9 +682,9 @@ const TargetManagement: React.FC = () => {
                                         onChange={(e) => setNewTarget({ ...newTarget, description: e.target.value })}
                                     />
                                 </div>
-                            </ModalBody>
+                            </DrawerBody>
 
-                            <ModalFooter>
+                            <DrawerFooter>
                                 <Button color="danger" variant="light" onPress={onClose}>
                                     Cancel
                                 </Button>
@@ -703,11 +697,11 @@ const TargetManagement: React.FC = () => {
                                     {isEditing ? "Update Target" : "Add Target"}
                                 </Button>
 
-                            </ModalFooter>
+                            </DrawerFooter>
                         </>
                     )}
-                </ModalContent>
-            </Modal>
+                </DrawerContent>
+            </Drawer>
 
 
             <Modal isOpen={confirmOpen} onOpenChange={setConfirmOpen}>

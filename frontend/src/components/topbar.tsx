@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui";
-import { Avatar } from "@/components/ui";
 import { useEffect, useState, useRef } from "react";
 import { Dropdown, DropdownMenu, DropdownTrigger, DropdownItem } from "@/components/ui";
 import { formatDistanceToNow } from "date-fns";
+import SwitchUserModal from "./SwitchUserModal";
+import ThemeToggle from "./ThemeToggle";
+import { pageMeta } from "./sidebar";
+import { useLocation } from "react-router-dom";
 
 // Custom Icons
 const BellIcon = (props: any) => (
@@ -65,15 +68,18 @@ interface NotificationItem {
 
 interface TopbarProps {
     toggleSidebar: () => void;
-    title: string;
+    title?: string;
 }
 
 export const Topbar: React.FC<TopbarProps> = ({ toggleSidebar, title }) => {
+    const meta = pageMeta(useLocation().pathname);
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const [notifOpen, setNotifOpen] = useState(false);
     const notifRef = useRef<HTMLDivElement>(null);
 
     const authUserLD = localStorage.getItem("authUserLD");
+    const user = authUserLD ? JSON.parse(authUserLD) : null;
+    const initials = String(user?.name ?? "").split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
     const handleLogout = () => {
         localStorage.removeItem("authUserLD");
@@ -176,45 +182,46 @@ export const Topbar: React.FC<TopbarProps> = ({ toggleSidebar, title }) => {
     const unread = notifications.filter((n) => !n.read).length;
 
     return (
-        <header className="bg-white dark:bg-gray-900 px-4 py-3 flex items-center justify-between" style={{ height: "45px" }}>
-            <div className="flex items-center">
-                <Button
-                    isIconOnly
-                    variant="light"
-                    onClick={toggleSidebar}
-                    className=" mr-4 lg:hidden"
-                >
-                    <MenuIcon />
+        <header className="flex h-16 items-center justify-between gap-4 border-b border-ink-200 bg-white px-4 dark:border-white/10 dark:bg-ink-900 sm:px-6">
+            <div className="flex min-w-0 items-center gap-3">
+                <Button isIconOnly variant="light" size="sm" onClick={toggleSidebar} className="lg:hidden" aria-label="Open menu">
+                    <MenuIcon className="h-5 w-5" />
                 </Button>
-
-                {/* <h1 className="text-xl font-semibold">{title}</h1> */}
+                <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 text-[13px]">
+                    <span className="eyebrow hidden sm:inline">{meta.section}</span>
+                    <span aria-hidden className="hidden text-ink-300 dark:text-ink-600 sm:inline">/</span>
+                    <span className="truncate font-medium text-ink-900 dark:text-white" aria-current="page">{meta.label || title}</span>
+                </nav>
             </div>
 
-            <div className="flex items-center space-x-3">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                <SwitchUserModal />
+                <ThemeToggle />
+
                 {/* Notifications */}
                 <div className="relative" ref={notifRef}>
                     <button
                         onClick={() => setNotifOpen((o) => !o)}
-                        className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                        className="relative flex h-8 w-8 items-center justify-center text-ink-600 transition-colors hover:bg-ink-100 focus-ring dark:text-ink-300 dark:hover:bg-white/5"
                         aria-label="Notifications"
                     >
-                        <BellIcon className="w-[20px] h-[20px] text-gray-600 dark:text-gray-300" />
+                        <BellIcon className="h-[18px] w-[18px]" />
                         {unread > 0 && (
-                            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-brand-600 text-white text-[10px] font-bold flex items-center justify-center">
                                 {unread > 9 ? "9+" : unread}
                             </span>
                         )}
                     </button>
 
                     {notifOpen && (
-                        <div className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 overflow-hidden">
-                            <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 dark:border-gray-700">
-                                <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Notifications</span>
+                        <div className="absolute right-0 mt-2 w-96 max-w-[90vw] border border-ink-200 bg-white shadow-pop z-50 dark:border-white/10 dark:bg-ink-900 overflow-hidden">
+                            <div className="flex items-center justify-between px-4 py-2.5 border-b border-ink-100 dark:border-ink-700">
+                                <span className="eyebrow">Notifications</span>
                                 <div className="flex items-center gap-1">
                                     {notifications.length > 0 && (
                                         <button
                                             onClick={markAllRead}
-                                            className="text-[11px] text-primary hover:underline flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+                                            className="text-[11px] text-primary hover:underline flex items-center gap-1 px-2 py-1 rounded hover:bg-ink-100 dark:hover:bg-ink-800"
                                         >
                                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L7 17l-4-4" /><path d="M22 12l-7.5 7.5L13 18" /></svg>
                                             Mark all read
@@ -222,13 +229,13 @@ export const Topbar: React.FC<TopbarProps> = ({ toggleSidebar, title }) => {
                                     )}
                                     <button
                                         onClick={clearNotifications}
-                                        className="text-[11px] text-gray-400 hover:text-red-600 flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+                                        className="text-[11px] text-ink-400 hover:text-rose-600 flex items-center gap-1 px-2 py-1 rounded hover:bg-ink-100 dark:hover:bg-ink-800"
                                         aria-label="Clear all"
                                     >
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
                                         Clear
                                     </button>
-                                    <button onClick={() => setNotifOpen(false)} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Close">
+                                    <button onClick={() => setNotifOpen(false)} className="p-1 rounded hover:bg-ink-100 dark:hover:bg-ink-800" aria-label="Close">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
                                     </button>
                                 </div>
@@ -236,7 +243,7 @@ export const Topbar: React.FC<TopbarProps> = ({ toggleSidebar, title }) => {
 
                             <div className="max-h-96 overflow-y-auto">
                                 {notifications.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center py-10 text-gray-400">
+                                    <div className="flex flex-col items-center justify-center py-10 text-ink-400">
                                         <BellIcon className="w-6 h-6 mb-2" />
                                         <span className="text-xs">No notifications yet</span>
                                     </div>
@@ -244,13 +251,13 @@ export const Topbar: React.FC<TopbarProps> = ({ toggleSidebar, title }) => {
                                     notifications.map((n) => (
                                         <div
                                             key={n.id}
-                                            className={`px-4 py-3 border-b border-gray-50 dark:border-gray-800 last:border-0 ${n.read ? "opacity-70" : "bg-blue-50/40 dark:bg-blue-900/20"}`}
+                                            className={`px-4 py-3 border-b border-ink-50 dark:border-ink-800 last:border-0 ${n.read ? "opacity-70" : "bg-brand-50/60 dark:bg-brand-500/10"}`}
                                         >
                                             <div className="flex items-start gap-2">
-                                                {!n.read && <span className="mt-1.5 w-2 h-2 rounded-full bg-primary-600 shrink-0" />}
+                                                {!n.read && <span className="mt-1.5 w-2 h-2 rounded-full bg-brand-600 shrink-0" />}
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-[13px] text-gray-800 dark:text-gray-200 leading-snug">{n.message}</p>
-                                                    <p className="text-[11px] text-gray-400 mt-0.5">
+                                                    <p className="text-[13px] text-ink-800 dark:text-ink-200 leading-snug">{n.message}</p>
+                                                    <p className="text-[11px] text-ink-400 mt-0.5">
                                                         {formatDistanceToNow(new Date(n.time), { addSuffix: true })}
                                                     </p>
                                                 </div>
@@ -265,45 +272,24 @@ export const Topbar: React.FC<TopbarProps> = ({ toggleSidebar, title }) => {
 
                 <Dropdown placement="bottom-end">
                     <DropdownTrigger>
-                        <div className="flex items-center gap-2 cursor-pointer">
-                            <div className="hidden sm:block text-right">
-                                <p className="text-sm font-medium text-gray-900 dark:text-white">{authUserLD && JSON.parse(authUserLD).name}</p>
-
-                                {authUserLD && JSON.parse(authUserLD).departmentName && (
-                                    <p className="text-xs text-primary">
-                                        {JSON.parse(authUserLD)
-                                            .departmentName
-                                            .replace(/([A-Z])/g, ' $1')
-                                            .trim()}
-                                    </p>
+                        <button type="button" className="ml-1 flex items-center gap-2.5 border-l border-ink-200 pl-3 focus-ring dark:border-white/10">
+                            <span className="hidden text-right sm:block">
+                                <span className="block max-w-[160px] truncate text-[13px] font-medium leading-tight text-ink-900 dark:text-white">{user?.name}</span>
+                                {user?.departmentName && (
+                                    <span className="block max-w-[160px] truncate text-[11px] leading-tight text-ink-500 dark:text-ink-400">
+                                        {String(user.departmentName).replace(/([A-Z])/g, " $1").trim()}
+                                    </span>
                                 )}
-
-                            </div>
-                            <Avatar
-                                src=""
-                                size="sm"
-                                className="ring-2 ring-transparent hover:ring-blue-500 transition-all duration-200"
-                            />
-
-                            {/* Down Arrow Icon */}
-                            <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            >
-                                <path d="M6 9l6 6 6-6" />
-                            </svg>
-                        </div>
+                            </span>
+                            <span className="flex h-8 w-8 items-center justify-center bg-brand-600 text-[11px] font-bold text-white">{initials || "?"}</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ink-400" aria-hidden><path d="M6 9l6 6 6-6" /></svg>
+                        </button>
                     </DropdownTrigger>
 
                     <DropdownMenu aria-label="Profile Actions">
-                        <DropdownItem key="profile" isDisabled className="font-semibold">
-                            Profile
+                        <DropdownItem key="profile" isReadOnly className="cursor-default opacity-100" textValue="Profile">
+                            <p className="eyebrow">Signed in as</p>
+                            <p className="text-sm font-medium">{user?.email ?? user?.name}</p>
                         </DropdownItem>
 
                         <DropdownItem
@@ -314,7 +300,7 @@ export const Topbar: React.FC<TopbarProps> = ({ toggleSidebar, title }) => {
                                 window.location.href = "/logout"
                             }}
                         >
-                            Logout
+                            Sign out
                         </DropdownItem>
                     </DropdownMenu>
                 </Dropdown>

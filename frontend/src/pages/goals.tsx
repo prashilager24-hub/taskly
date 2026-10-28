@@ -1,3 +1,5 @@
+import { PageTitle } from "@/components/page";
+import { SummaryBar } from "@/components/page";
 import React, { useEffect, useState } from "react";
 import {
     DateRangePicker,
@@ -73,12 +75,14 @@ export default function Goals() {
     const [users, setUsers] = useState<any[]>([]);
     const [ELList, setELList] = useState<any[]>([]);
 
+    // Admins start with everyone; other users start on their own department and data
+    const isAdmin = user?.userRole == 1;
     const [filterStatus, setFilterStatus] = useState(
-        user?.departmentID ? String(user.departmentID) : ""
+        !isAdmin && user?.departmentID ? String(user.departmentID) : ""
     );
 
     const [selectedUser, setSelectedUser] = useState(
-        user?.userID ? user.userID == 1 ? null : String(user.userID) : ""
+        !isAdmin && user?.userID ? String(user.userID) : ""
     );
 
     const [elFilter, setELfilter] = useState(
@@ -189,7 +193,7 @@ export default function Goals() {
             sortable: true,
             renderCell: (item) =>
                 item.achievedGoal === 0 ? (
-                    <span className="text-red-500 font-medium">0</span>
+                    <span className="text-rose-500 font-medium">0</span>
                 ) : (
 
                     <span className="font-medium">{item.achievedGoal}</span>
@@ -213,10 +217,10 @@ export default function Goals() {
 
         //         const color =
         //             value >= 85
-        //                 ? "bg-green-100 text-green-700"
+        //                 ? "bg-emerald-100 text-emerald-700"
         //                 : value >= 60
-        //                     ? "bg-yellow-100 text-yellow-700"
-        //                     : "bg-red-100 text-red-700";
+        //                     ? "bg-amber-100 text-amber-700"
+        //                     : "bg-rose-100 text-rose-700";
         //         if (item.departmentID === 37) {
         //             return (
         //                 <span className="font-medium">
@@ -594,7 +598,7 @@ export default function Goals() {
                         userID:
                             selectedUser
                                 ? Number(selectedUser)
-                                : user?.userID == 1 ? null : user?.userID,
+                                : user?.userRole == 1 ? null : user?.userID, // admins see everyone
 
                         startDate: dateRange.startDate,
                         endDate: dateRange.endDate,
@@ -661,17 +665,8 @@ export default function Goals() {
 
     return (
         <div>
-            <div className="mb-8 flex justify-between">
-                <div>
-                    <h1 className={title({ size: "20px" })}>
-                        Goals Report
-                    </h1>
-
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Track goal progress and performance over time
-                    </p>
-
-                </div>
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                <PageTitle title="Goals Report" subtitle="Track goal progress and performance over time" />
 
                 <div className="flex gap-3 items-center">
                     <Dropdown placement="bottom-start">
@@ -679,7 +674,7 @@ export default function Goals() {
                             <Button
                                 variant="flat"
                                 size="sm"
-                                className="w-[260px] justify-between bg-gray-200"
+                                className="w-[260px] justify-between border border-ink-300 bg-white dark:border-white/15 dark:bg-ink-900"
                             >
                                 {dateRange?.startDate && dateRange?.endDate
                                     ? `${format(new Date(dateRange.startDate), "dd MMM yyyy")} → ${format(
@@ -856,31 +851,11 @@ export default function Goals() {
                     }
                 </div>
             </div>
-            <div
-                className="flex flex-col gap-4 p-4 bg-white rounded-xl  my-2 border border-gray-100"
-
-            >
-                {/* Card Title */}
-                <h2 className="text-base font-semibold text-gray-700 tracking-wide">
-                    Summary
-                </h2>
-                <div className="flex">
-                    {/* Avg Total Hours */}
-                    <div className="flex items-center justify-between rounded-lg p-2">
-                        <span className="text-sm text-gray-600 font-medium">
-                            Average Goal Achieved
-                        </span>
-
-                        <span className="px-3 py-1 mx-2 text-sm font-semibold text-green-700 bg-green-100 rounded-full">
-                            {Number(averageGoalAchieved || 0).toFixed(2)}%
-                        </span>
-                    </div>
-
-
-                </div>
-
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <SummaryBar
+                className="lg:grid-cols-2"
+                items={[{ label: "Average goal achieved", value: `${Number(averageGoalAchieved || 0).toFixed(2)}%` }]}
+            />
+            <div className="border border-ink-200 bg-white p-5 dark:border-white/10 dark:bg-ink-900">
                 <ReusableTable
                     data={reportData}
                     columns={reportColumns}

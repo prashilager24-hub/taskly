@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui";
 import { Divider } from "@heroui/divider";
 import axios from "axios";
 import EmptyContainer from "./EmptyContainer";
+import { EntrySteps, useEntryPreview } from "./EntryPreview";
 import { generateExcelTemplate, parseUploadedExcel } from "../lib/excelUtils";
 interface ActivityEntry {
     id: string;
@@ -885,6 +886,67 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
         setSelectedSubTasks([]);
 
     }, [currentActivity, selectedtask, workDate, tat, isHistoryEdit, DeptId, selectedSubTasks]);
+
+    // ── Fill → Preview → Save (DA-05 – DA-07) ──────────────────────────────────
+    // Preview shows what will be added; "Yes" runs the existing add, "No" keeps the form as filled.
+    const { openPreview, previewOpen, previewModal } = useEntryPreview();
+    const entryDateLabel = (() => {
+        try { return toYYYYMMDD(workDate); } catch { return String(workDate); }
+    })();
+
+    const requestAddActivity = () => {
+        const isTarget = (selectedtask as any)?.isForTarget;
+        const missing: string[] = [];
+        if (!currentActivity.task || (currentActivity.task === "custom" && !currentActivity.customTask)) missing.push("Task");
+        if (!isTarget && DeptId !== 42) {
+            if (!currentActivity.customTime && !currentActivity.timeType) missing.push("Time per setup");
+            if (!currentActivity.timeTaken) missing.push("Time taken");
+            if (!currentActivity.remark) missing.push("Remark");
+        }
+        if (missing.length) {
+            addToast({ title: "Missing details", description: `Fill in: ${missing.join(", ")}`, color: "danger" });
+            return;
+        }
+        openPreview(isTarget ? "Target task entry" : "Task entry", [
+            { label: "Date", value: entryDateLabel },
+            { label: "Task", value: currentActivity.task === "custom" ? currentActivity.customTask : currentActivity.taskName },
+            { label: "Type", value: isTarget ? "Target" : (selectedtask as any)?.isDynamic ? "Dynamic task" : "Task" },
+            ...(isTarget ? [] : [
+                { label: "Time per setup", value: currentActivity.customTime || currentActivity.timeType },
+                { label: "Setups", value: currentActivity.setup },
+                { label: "Time taken", value: currentActivity.timeTaken },
+            ]),
+            { label: "Remark", value: currentActivity.remark },
+        ], handleAddActivity);
+    };
+
+    const isActivityDirty = () =>
+        !!(currentActivity.task || currentActivity.timeTaken || currentActivity.remark || currentActivity.targetName || currentActivity.achievedUnit);
+    const cancelActivity = () => {
+        if (isActivityDirty() && !window.confirm("Discard this entry?")) return;
+        setCurrentActivity({
+            id: "",
+            task: "",
+            taskName: "",
+            customTask: "",
+            timeType: "",
+            customTime: "0",
+            timeTaken: "",
+            remark: "",
+            setup: "1",
+            targetName: "",
+            targetID: "",
+            unit: "",
+            frequency: "",
+            achievedUnit: "",
+        } as ActivityEntry);
+        setSelectedSubTasks([]);
+    };
+    const cancelGoal = () => {
+        if ((goalEntry.goalID || goalEntry.achievedUnit) && !window.confirm("Discard this goal entry?")) return;
+        setGoalEntry({ goalID: "", goalName: "", unit: "", frequency: "", achievedUnit: "", expectedUnit: "", companyName: "", networkType: "", tier: "", networkEntries: [] } as any);
+    };
+    const entryStepNumber: 1 | 2 | 3 = previewOpen ? 2 : activities.length > 0 ? 3 : 1;
 
     const handleDownloadTemplate = async () => {
         const dateStr = toDDMMYYYY(workDate);
@@ -1905,6 +1967,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
     return (
         <div className={`${DeptId == 24 ? "" : "grid grid-cols-1 xl:grid-cols-3 lg:grid-cols-1 md:grid-cols-1 gap-6"}`}>
+            {previewModal}
             <Modal
                 isOpen={showDateConfirm}
                 onOpenChange={setShowDateConfirm}
@@ -1916,7 +1979,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                             <ModalHeader>{confirmTitle}</ModalHeader>
 
                             <ModalBody>
-                                <p className="text-sm text-gray-600">
+                                <p className="text-sm text-ink-600 dark:text-ink-300">
                                     {confirmMessage}
                                 </p>
                             </ModalBody>
@@ -1954,12 +2017,13 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                     <CardHeader className="pb-4">
                         <div className="flex flex-col space-y-2">
 
-                            <div className="flex items-center gap-4">
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
 
                                 {/* Title */}
-                                <p className="text-gray-900 dark:text-white text-sm font-medium">
+                                <p className="text-ink-900 dark:text-white text-sm font-medium">
                                     Daily Activity {getPrimaryDepartmentId(authUser) ? "" : "Log"}
                                 </p>
+                                <div className="w-full"><EntrySteps step={entryStepNumber} /></div>
 
                                 {/* Half-Day Switch */}
 
@@ -2216,7 +2280,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                 maxValue={Maxtoday}
 
                             /> */}
-                                        <h3 className=" text-gray-900 dark:text-white" style={{ size: "12px" }}>
+                                        <h3 className=" text-ink-900 dark:text-white" style={{ size: "12px" }}>
                                             Date
                                         </h3>
                                         <Dropdown
@@ -2252,7 +2316,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                                 </DropdownItem>
                                             </DropdownMenu>
                                         </Dropdown>
-                                        <h3 className=" text-gray-900 dark:text-white" style={{ size: "12px" }}>
+                                        <h3 className=" text-ink-900 dark:text-white" style={{ size: "12px" }}>
                                             Add Task Entry
                                         </h3>
                                         <div className="">
@@ -2572,9 +2636,12 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                     >
                                         Cancel
                                     </Button> */}
+                                            <Button size="sm" variant="bordered" onPress={cancelActivity}>
+                                                Cancel
+                                            </Button>
                                             <Button
                                                 color="primary"
-                                                onClick={handleAddActivity}
+                                                onClick={requestAddActivity}
                                                 size="sm"
 
                                                 isDisabled={
@@ -2622,7 +2689,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
 
                                             >
-                                                Add Activity
+                                                Preview
                                             </Button>
 
                                         </div>
@@ -2634,11 +2701,11 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                     <div
                                     >
 
-                                        <h3 className="text-gray-900 dark:text-white mb-4 text-sm">
+                                        <h3 className="text-ink-900 dark:text-white mb-4 text-sm">
                                             Add Target Entry
                                             {showMessage && (
 
-                                                <span className="ml-2 inline-flex items-center rounded-md bg-red-50 px-2 py-0.5 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                                                <span className="ml-2 inline-flex items-center rounded-md bg-rose-50 px-2 py-0.5 text-xs text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
                                                     Note: if your target is not present, it will be calculated automatically.Check your target achievement in performance insights report
                                                 </span>
 
@@ -2718,16 +2785,16 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
                                         <div className="mb-3">
                                             {currentActivity.targetName && frequencyValidation.message && (
-                                                <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700">
-                                                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                                                <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700">
+                                                    <p className="text-sm text-amber-800 dark:text-amber-200">
                                                         {frequencyValidation.message}
                                                     </p>
                                                 </div>
                                             )}
 
                                             {currentActivity.targetName && frequencyValidation.isValid && (
-                                                <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700">
-                                                    <p className="text-sm text-green-800 dark:text-green-200">
+                                                <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700">
+                                                    <p className="text-sm text-emerald-800 dark:text-emerald-200">
                                                         ✓ {frequencyValidation.targetFrequency} target - Date is valid for adding data
                                                     </p>
                                                 </div>
@@ -2866,6 +2933,9 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                         <div className="flex justify-end gap-3" style={{ marginBottom: "100px" }}>
 
 
+                                            <Button size="sm" variant="bordered" onPress={cancelActivity}>
+                                                Cancel
+                                            </Button>
                                             {/* Add Target button */}
                                             <Button
                                                 color="primary"
@@ -2907,6 +2977,13 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                                         });
                                                         return;
                                                     }
+                                                    openPreview("Target entry", [
+                                                        { label: "Date", value: entryDateLabel },
+                                                        { label: "Target", value: currentActivity.targetName },
+                                                        { label: "Unit", value: currentActivity.unit },
+                                                        { label: "Achieved", value: currentActivity.achievedUnit },
+                                                        { label: "Remark", value: currentActivity.remark },
+                                                    ], () => {
                                                     let calculatedUnit =
                                                         String(currentActivity.targetID) === "78"
                                                             ? getUnitValue()
@@ -2940,10 +3017,11 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                                         frequency: "",
                                                         achievedUnit: "",
                                                     });
+                                                    });
                                                 }}
                                                 isDisabled={DeptId == 42 || (currentActivity.targetName && currentActivity.frequency ? !validateTargetFrequency(currentActivity.frequency, workDate).isValid : false)}
                                             >
-                                                Add Target
+                                                Preview
                                             </Button>
                                         </div>
 
@@ -2955,7 +3033,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
 
                                     <div className="flex flex-col gap-4">
-                                        <h3 className="text-gray-900 dark:text-white text-sm">
+                                        <h3 className="text-ink-900 dark:text-white text-sm">
                                             Add Goal Entry
                                         </h3>
 
@@ -3220,10 +3298,14 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                             </>
                                         )}
 
+                                        <div className="flex justify-end gap-2">
+                                        <Button size="sm" variant="bordered" onPress={cancelGoal}>
+                                            Cancel
+                                        </Button>
                                         <Button
                                             color="primary"
                                             size="sm"
-                                            className="w-30 self-end"
+                                            className="w-30"
                                             onClick={() => {
 
                                                 if (!goalEntry.goalID || !goalEntry.achievedUnit) {
@@ -3236,6 +3318,14 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                                     });
                                                     return;
                                                 }
+                                                openPreview("Goal entry", [
+                                                    { label: "Date", value: entryDateLabel },
+                                                    { label: "Goal", value: goalEntry.goalName },
+                                                    { label: "Unit", value: goalEntry.unit },
+                                                    { label: "Expected", value: goalEntry.expectedUnit },
+                                                    { label: "Achieved", value: goalEntry.achievedUnit },
+                                                    { label: "Comment", value: (goalEntry as any).comment },
+                                                ], () => {
                                                 const totalAchievedUnit = activities
                                                     .filter(a => a.targetID)
                                                     .reduce(
@@ -3289,10 +3379,12 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                                 });
 
 
+                                                });
                                             }}
                                         >
-                                            Add Goal
+                                            Preview
                                         </Button>
+                                        </div>
 
                                     </div>
                                 )
@@ -3312,10 +3404,10 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                     <div className="text-lg font-semibold space-y-1">
 
                                         <div>
-                                            <span className="text-gray-600 dark:text-gray-400">
+                                            <span className="text-ink-600 dark:text-ink-400">
                                                 Total Logged
                                             </span>
-                                            <span className="text-blue-600 dark:text-blue-400 mx-2">
+                                            <span className="text-brand-600 dark:text-brand-400 mx-2">
                                                 {(() => {
                                                     const totalHours = activities.reduce((sum, a) => {
                                                         // Skip target-based tasks
@@ -3337,10 +3429,10 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                         </div>
 
                                         <div>
-                                            <span className="text-gray-600 dark:text-gray-400">
+                                            <span className="text-ink-600 dark:text-ink-400">
                                                 Total Time Taken
                                             </span>
-                                            <span className="text-green-600 dark:text-green-400 mx-2">
+                                            <span className="text-emerald-600 dark:text-emerald-400 mx-2">
                                                 {(() => {
                                                     const totalTimeTaken = activities.reduce((sum, a) => {
                                                         return sum + Number(a.timeTaken || 0);
@@ -3400,11 +3492,11 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                 </Card >
                 {/* Activities/PR List */}
 
-                <Card className="lg:col-span-2 w-full shadow-md border border-gray-200 dark:border-gray-700 rounded-2xl overflow-x/y-auto;">
+                <Card className="lg:col-span-2 w-full shadow-md border border-ink-200 dark:border-ink-700 rounded-2xl overflow-x/y-auto;">
                     <CardBody className="px-6 pb-6" style={{ minHeight: "40pc", maxHeight: "40pc" }}>
                         <>
                             <div className="flex items-center justify-between">
-                                <h3 className="  text-gray-900 dark:text-white" style={{ size: "12px" }}>
+                                <h3 className="  text-ink-900 dark:text-white" style={{ size: "12px" }}>
                                     Today's Activities
                                 </h3>
                                 <Button
@@ -3472,35 +3564,35 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                             </div>
 
                             {/* Modern Table */}
-                            <div className="overflow-x-auto overflow-y-auto max-h-[34rem] rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
-                                <table className="min-w-full text-sm text-gray-800 dark:text-gray-200">
-                                    <thead className="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900" style={{ position: "sticky", top: 0, }}>
+                            <div className="overflow-x-auto overflow-y-auto max-h-[34rem] rounded-xl border border-ink-100 dark:border-ink-800 shadow-sm">
+                                <table className="min-w-full text-sm text-ink-800 dark:text-ink-200">
+                                    <thead className="bg-gradient-to-r from-ink-100 to-ink-50 dark:from-ink-800 dark:to-ink-900" style={{ position: "sticky", top: 0, }}>
                                         <tr className="text-left">
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                 No
                                             </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                 Date
                                             </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                 Name
                                             </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                 Type
                                             </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                 Frequency / Count
                                             </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                 Unit / Time
                                             </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                 Achieved / Time Taken
                                             </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                 Percentage / TAT
                                             </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-center text-gray-600 dark:text-gray-300">
+                                            <th className="px-4 py-3 font-semibold tracking-wide text-center text-ink-600 dark:text-ink-300">
                                                 Action
                                             </th>
                                         </tr>
@@ -3511,15 +3603,15 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                             <tr
                                                 key={activity.id}
                                                 className={`transition-all duration-150 ${activity.targetName
-                                                    ? "bg-blue-50/60 dark:bg-blue-900/30"
-                                                    : "bg-white dark:bg-gray-950"
+                                                    ? "bg-brand-50/60 dark:bg-brand-900/30"
+                                                    : "bg-white dark:bg-ink-950"
                                                     } `}
                                             >
-                                                <td className="px-4 py-3 font-semibold text-gray-700 dark:text-gray-100">
+                                                <td className="px-4 py-3 font-semibold text-ink-700 dark:text-ink-100">
                                                     {index + 1}.
                                                 </td>
 
-                                                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
+                                                <td className="px-4 py-3 whitespace-nowrap text-xs text-ink-500 dark:text-ink-400">
                                                     {activity.workDate ? formatDate(activity.workDate) : "—"}
                                                 </td>
 
@@ -3532,10 +3624,10 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
                                                 <td className="px-4 py-3">
                                                     <span className={`inline-flex px-2 py-1 text-xs rounded-md ${activity.isGoal
-                                                        ? "bg-purple-100 text-purple-700"
+                                                        ? "bg-brand-100 text-brand-700"
                                                         : activity.targetName
-                                                            ? "bg-blue-100 text-blue-700"
-                                                            : "bg-gray-100 text-gray-700"
+                                                            ? "bg-brand-100 text-brand-700"
+                                                            : "bg-ink-100 dark:bg-ink-800 text-ink-700 dark:text-ink-200"
                                                         }`}>
                                                         {activity.isGoal ? "Goal" : activity.targetName ? "Target" : "Task"}
                                                     </span>
@@ -3623,7 +3715,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                         </tr>)}
 
                                     </tbody>
-                                    <tfoot className="sticky bottom-0 bg-gray-50 dark:bg-gray-900  font-semibold">
+                                    <tfoot className="sticky bottom-0 bg-ink-50 dark:bg-ink-900  font-semibold">
                                         {/* <tr>
                                         <td colSpan="6" className="px-4 py-3 text-right">
                                             Average Percentage:
@@ -3648,10 +3740,10 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                             </th>
                                             <th className="px-4 py-3 font-semibold tracking-wide text-white-600 ">
                                             </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300">
+                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
 
                                             </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-gray-600 dark:text-gray-300 flex justify-center ">
+                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300 flex justify-center ">
                                                 Average Percentage: {averagePercentage} %
                                             </th>
                                             <th className="px-4 py-3 font-semibold tracking-wide text-center text-white-600 ">

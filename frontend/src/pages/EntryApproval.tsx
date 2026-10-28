@@ -1,3 +1,4 @@
+import { PageTitle } from "@/components/page";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -18,6 +19,7 @@ import {
 
     useDisclosure,
 } from "@/components/ui";
+import { title } from "@/components/primitives";
 import ReusableTable, { TableColumn, TableAction } from "@/components/table"
 import CustomDateRangePicker from "../components/CustomDateRangePicker"
 import { format } from "date-fns";
@@ -92,7 +94,7 @@ const getPriorityChip = (priority) => {
             return (
                 <Chip
                     size="sm"
-                    className="bg-red-100 text-red-600 font-medium"
+                    className="bg-rose-100 text-rose-600 font-medium"
                     radius="sm"
                 >
                     High
@@ -102,7 +104,7 @@ const getPriorityChip = (priority) => {
             return (
                 <Chip
                     size="sm"
-                    className="bg-blue-100 text-blue-600 font-medium"
+                    className="bg-brand-100 text-brand-600 font-medium"
                     radius="sm"
                 >
                     Medium
@@ -112,7 +114,7 @@ const getPriorityChip = (priority) => {
             return (
                 <Chip
                     size="sm"
-                    className="bg-gray-100 text-gray-600 font-medium"
+                    className="bg-ink-100 dark:bg-ink-800 text-ink-600 dark:text-ink-300 font-medium"
                     radius="sm"
                 >
                     Low
@@ -125,24 +127,24 @@ const getStatusChip = (status) => {
     switch (status) {
         case "Pending":
             return (
-                <div className="flex items-center gap-2 text-orange-500 text-sm font-medium">
-                    <span className="h-2 w-2 rounded-full bg-orange-500"></span>
+                <div className="flex items-center gap-2 text-brand-500 text-sm font-medium">
+                    <span className="h-2 w-2 rounded-full bg-brand-500"></span>
                     Pending
                 </div>
             );
 
         case "Approved":
             return (
-                <div className="flex items-center gap-2 text-green-500 text-sm font-medium">
-                    <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                <div className="flex items-center gap-2 text-emerald-500 text-sm font-medium">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
                     Approved
                 </div>
             );
 
         case "Rejected":
             return (
-                <div className="flex items-center gap-2 text-red-500 text-sm font-medium">
-                    <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                <div className="flex items-center gap-2 text-rose-500 text-sm font-medium">
+                    <span className="h-2 w-2 rounded-full bg-rose-500"></span>
                     Rejected
                 </div>
             );
@@ -195,7 +197,7 @@ export default function EntryApproval() {
 
 
     const [filterStatus, setFilterStatus] = useState(
-        user?.departmentID ? String(user.departmentID) : ""
+        user?.userRole != 1 && user?.departmentID ? String(user.departmentID) : "" // admins start on all departments
     );
     const [selectedUser, setSelectedUser] = useState(
         isELORUSER ? String(user?.userID) : ""
@@ -436,7 +438,7 @@ export default function EntryApproval() {
                 if (!filterStatus) {
                     if ([2, 5, 6, 7, 23].includes(user.userRole)) {
                         setFilterStatus(String(user.departmentID));
-                    } else if (formatted.length > 0) {
+                    } else if (formatted.length > 0 && user.userRole != 1) {
                         setFilterStatus(String(formatted[0].key));
                     }
                 }
@@ -756,7 +758,7 @@ export default function EntryApproval() {
     useEffect(() => {
 
         // wait until department default is set
-        if (user.userRole !== 2 && !filterStatus) {
+        if (user.userRole !== 2 && user.userRole !== 1 && !filterStatus) {
             return;
         }
 
@@ -781,7 +783,7 @@ export default function EntryApproval() {
 
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
+        <div className="">
             {/* Header */}
             <Modal
                 isOpen={rejectModalOpen}
@@ -798,7 +800,7 @@ export default function EntryApproval() {
                             <ModalBody>
                                 {selectedRows.length > 0 && (
                                     <div className="space-y-3">
-                                        <div className="bg-gray-100 rounded p-3 text-sm">
+                                        <div className="bg-ink-100 dark:bg-ink-800 rounded p-3 text-sm">
                                             <p>
                                                 <span className="font-semibold">
                                                     ID:
@@ -906,15 +908,8 @@ export default function EntryApproval() {
                     )}
                 </ModalContent>
             </Modal>
-            <div className="mb-6 flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-800">
-                        Task Approval Management
-                    </h1>
-                    <p className="mt-1 text-sm text-gray-500">
-                        Review and manage organizational task requests
-                    </p>
-                </div>
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                <PageTitle title="Entry Approval" subtitle="Review and manage organizational task requests" />
                 <div className="flex gap-3 items-center">
                     {![2, 5, 6, 7, 23].includes(user.userRole) && (
                         <>
@@ -923,7 +918,7 @@ export default function EntryApproval() {
                                     <Button
                                         variant="flat"
                                         size="sm"
-                                        className="w-[260px] justify-between bg-gray-200"
+                                        className="w-[260px] justify-between border border-ink-300 bg-white dark:border-white/15 dark:bg-ink-900"
                                     >
                                         {dateRange?.startDate && dateRange?.endDate
                                             ? `${format(new Date(dateRange.startDate), "dd MMM yyyy")} → ${format(
@@ -1041,9 +1036,9 @@ export default function EntryApproval() {
                     )}
                 </div>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden p-6">
+            <div className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 overflow-hidden p-6">
                 {selectedRows.length > 0 && user.userRole !== 2 && (
-                    <div className="flex justify-between items-center bg-gray-100 p-3 rounded mb-3 shadow">
+                    <div className="flex justify-between items-center bg-ink-100 dark:bg-ink-800 p-3 rounded mb-3 shadow">
                         <span className="font-semibold">
                             {selectedRows.length} item(s) selected
                         </span>

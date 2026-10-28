@@ -28,8 +28,8 @@ const GRADE_LABELS: Record<number, string> = {
 };
 
 const GRADE_COLORS = [
-    "#d65353", "#e47777", "#dc921f", "#efb34e", "#6d8fe0",
-    "#88a9ed", "#29915f", "#2457d6", "#8b5cf6", "#a855f7",
+    "#d65353", "#e47777", "#dc921f", "#efb34e", "#ff8442",
+    "#ffa06b", "#29915f", "#ff6a1f", "#ff8442", "#ffa06b",
 ];
 
 // Fallback only: when the API has no elManager field, the EL is taken from the
@@ -366,7 +366,7 @@ export default function AdminAnalytics({ reviews }: { reviews: any[] }) {
                         <BarChart
                             labels={["Overall"]}
                             series={[
-                                { name: "Goal %", color: "#2457d6", data: [goalAvg] },
+                                { name: "Goal %", color: "#ff6a1f", data: [goalAvg] },
                                 { name: "Target %", color: "#29915f", data: [targetAvg] },
                             ]}
                             max={chartMax}
@@ -422,7 +422,7 @@ export default function AdminAnalytics({ reviews }: { reviews: any[] }) {
                     <BarChart
                         labels={els.map((e) => e.name)}
                         series={[
-                            { name: "Goal %", color: "#2457d6", data: els.map((e) => e.goal) },
+                            { name: "Goal %", color: "#ff6a1f", data: els.map((e) => e.goal) },
                             { name: "Target %", color: "#29915f", data: els.map((e) => e.target) },
                         ]}
                         max={chartMax}

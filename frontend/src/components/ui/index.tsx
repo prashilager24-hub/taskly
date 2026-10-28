@@ -21,6 +21,12 @@ import {
   Chip as HeroChip,
   Input as HeroInput,
   Modal as HeroModal,
+  Drawer as HeroDrawer,
+  type DrawerProps,
+  Tabs as HeroTabs,
+  type TabsProps,
+  Pagination as HeroPagination,
+  type PaginationProps,
   Select as HeroSelect,
   Textarea as HeroTextarea,
   type ButtonProps,
@@ -188,6 +194,41 @@ export const DateRangePicker = forwardRef<HTMLDivElement, DateRangePickerProps>(
   );
 }) as typeof HeroDateRangePicker;
 
+// ── Tabs ─────────────────────────────────────────────────────────────────────
+
+// One look for every tab bar: underlined, uppercase tracked labels, brand cursor.
+// (Some pages pass variant="full", which HeroUI doesn't have — it is ignored here.)
+function ThemedTabs({ classNames, variant: _variant, ...props }: TabsProps) {
+  return (
+    <HeroTabs
+      variant="underlined"
+      classNames={{
+        ...classNames,
+        tabList: cn("gap-4 border-b border-ink-200 dark:border-white/10 p-0", classNames?.tabList),
+        cursor: cn("bg-brand-600 h-0.5", classNames?.cursor),
+        tab: cn("h-10 px-1 text-xs font-medium uppercase tracking-wide", classNames?.tab),
+        tabContent: cn("text-ink-500 dark:text-ink-400 group-data-[selected=true]:text-ink-900 dark:group-data-[selected=true]:text-white", classNames?.tabContent),
+      }}
+      {...props}
+    />
+  );
+}
+// Tabs is generic over its items (render-function children); keep that typing
+export const Tabs = ThemedTabs as typeof HeroTabs;
+
+export function Pagination({ classNames, ...props }: PaginationProps) {
+  return (
+    <HeroPagination
+      classNames={{
+        ...classNames,
+        cursor: cn("bg-brand-600 text-white font-bold", classNames?.cursor),
+        item: cn("bg-transparent text-ink-700 dark:text-ink-200 data-[hover=true]:bg-ink-100 dark:data-[hover=true]:bg-ink-800", classNames?.item),
+      }}
+      {...props}
+    />
+  );
+}
+
 // ── Surfaces ─────────────────────────────────────────────────────────────────
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(function Card({ className, shadow = "none", ...props }, ref) {
@@ -205,6 +246,7 @@ export const Chip = forwardRef<HTMLDivElement, ChipProps>(function Chip({ classN
   return (
     <HeroChip
       ref={ref}
+      radius="none"
       classNames={{ ...classNames, content: cn("font-medium uppercase tracking-chip text-[10.5px]", classNames?.content) }}
       {...props}
     />
@@ -213,4 +255,24 @@ export const Chip = forwardRef<HTMLDivElement, ChipProps>(function Chip({ classN
 
 export function Modal({ classNames, ...props }: ModalProps) {
   return <HeroModal classNames={{ ...classNames, base: cn("shadow-pop", classNames?.base) }} {...props} />;
+}
+
+// Create / edit forms open in a canvas: a panel that slides in from the right and keeps the page
+// visible behind it. Same parts as Modal (DrawerContent, DrawerHeader, DrawerBody, DrawerFooter).
+export function Drawer({ classNames, placement = "right", size = "xl", ...props }: DrawerProps) {
+  return (
+    <HeroDrawer
+      placement={placement}
+      size={size}
+      scrollBehavior="inside"
+      classNames={{
+        ...classNames,
+        base: cn("shadow-pop border-l border-ink-200 dark:border-white/10", classNames?.base),
+        header: cn("border-b border-ink-200 dark:border-white/10 text-lg font-black uppercase tracking-title", classNames?.header),
+        footer: cn("border-t border-ink-200 dark:border-white/10", classNames?.footer),
+        body: cn("py-6", classNames?.body),
+      }}
+      {...props}
+    />
+  );
 }

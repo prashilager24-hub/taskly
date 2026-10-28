@@ -1,3 +1,4 @@
+import { PageTitle } from "@/components/page";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui";
 import { Tabs, Tab, Card, CardBody, Listbox, ListboxItem, addToast, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Autocomplete, AutocompleteItem } from "@/components/ui";
@@ -480,13 +481,8 @@ export default function DepartmentPage() {
         <div className="flex flex-col h-full">
 
             {/* HEADER */}
-            <div className="flex justify-between items-center mb-4 h-12">
-                <div>
-                    <h1 className={title({ size: "20px" })}>Department</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Manage and monitor all company departments
-                    </p>
-                </div>
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                <PageTitle title="Department" subtitle="Manage and monitor all company departments" />
 
                 <Button size="sm" color="primary" onClick={handleOpenModal}>
                     Add Department
@@ -502,20 +498,20 @@ export default function DepartmentPage() {
                     .map((ele) => (
                         <div
                             key={ele.key}
-                            className="relative p-5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
+                            className="relative p-5 rounded-xl bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-700 shadow-sm hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
                         >
                             {/* Top Section */}
                             <div className="flex justify-between items-start">
 
                                 {/* Left: Icon + Name */}
                                 <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-white text-lg font-bold">
+                                    <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-brand-100 dark:bg-brand-800 text-brand-600 dark:text-white text-lg font-bold">
                                         {ele.name?.charAt(0)}
                                     </div>
 
                                     <div>
                                         <div
-                                            className="text-sm font-semibold text-gray-800 dark:text-white break-all overflow-hidden"
+                                            className="text-sm font-semibold text-ink-800 dark:text-white break-all overflow-hidden"
                                             style={{
                                                 display: "-webkit-box",
                                                 WebkitLineClamp: 2,
@@ -524,7 +520,7 @@ export default function DepartmentPage() {
                                         >
                                             {ele.name}
                                         </div>
-                                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        <div className="text-xs text-ink-500 dark:text-ink-400">
                                             ID: {ele.key}
                                         </div>
                                     </div>
@@ -535,7 +531,7 @@ export default function DepartmentPage() {
                                     <DropdownTrigger>
                                         <button
                                             onClick={(e) => e.stopPropagation()}
-                                            className="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white text-lg"
+                                            className="text-ink-500 hover:text-ink-800 dark:text-ink-400 dark:hover:text-white text-lg"
                                         >
                                             ⋮
                                         </button>
@@ -561,18 +557,18 @@ export default function DepartmentPage() {
                                             }
                                         }}
                                     >
-                                        <DropdownItem key="edit" className="text-blue-600">
+                                        <DropdownItem key="edit" className="text-brand-600">
                                             Edit
                                         </DropdownItem>
 
-                                        <DropdownItem key="delete" className="text-red-600">
+                                        <DropdownItem key="delete" className="text-rose-600">
                                             Delete
                                         </DropdownItem>
 
                                         <DropdownItem
                                             key="toggle"
                                             className={
-                                                ele.departmentStatus ? "text-red-600" : "text-green-600"
+                                                ele.departmentStatus ? "text-rose-600" : "text-emerald-600"
                                             }
                                         >
                                             {ele.departmentStatus ? "Deactivate" : "Activate"}
@@ -587,15 +583,15 @@ export default function DepartmentPage() {
                                 {/* Status Pill */}
                                 <span
                                     className={`px-3 py-1 text-xs font-medium rounded-full ${ele.departmentStatus
-                                        ? "bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200"
-                                        : "bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-200"
+                                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-800 dark:text-emerald-200"
+                                        : "bg-rose-100 text-rose-700 dark:bg-rose-800 dark:text-rose-200"
                                         }`}
                                 >
                                     {ele.departmentStatus ? "Active" : "Inactive"}
                                 </span>
 
                                 {/* Optional subtle indicator */}
-                                <div className="text-xs text-gray-400">
+                                <div className="text-xs text-ink-400">
                                     Dept
                                 </div>
                             </div>

@@ -3,6 +3,20 @@ import { z } from 'zod';
 export const LoginSchema = z.object({
   username: z.string().min(1, 'username is required'),
   password: z.string().min(1, 'password is required'),
+  keepSignedIn: z.boolean().optional(), // 7-day session instead of 1 day, kept across browser restarts
+});
+
+export const VerifyOtpSchema = z.object({
+  challengeId: z.string().uuid(),
+  code: z.string().regex(/^[0-9]{6}$/, 'Enter the 6-digit code'),
+});
+
+export const ResendOtpSchema = z.object({
+  challengeId: z.string().uuid(),
+});
+
+export const ThemeSchema = z.object({
+  theme: z.enum(['dark', 'light']),
 });
 
 export const CreateUserSchema = z.object({

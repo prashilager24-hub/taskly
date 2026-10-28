@@ -383,29 +383,32 @@ const StatRow = memo(
 );
 
 // Static – never changes, no props needed
+const RULE_CARD = "border-l-4 border-amber-400 bg-amber-50 p-4 leading-snug text-ink-800 dark:border-amber-500 dark:bg-amber-500/10 dark:text-ink-100";
 const EfficiencyRules = memo(() => (
-    <section className="border border-ink-200 bg-white text-[12.5px] dark:border-white/10 dark:bg-ink-900">
-        <h2 className="border-b border-ink-200 px-5 py-4 text-sm font-bold uppercase tracking-wide text-ink-900 dark:border-white/10 dark:text-white">
+    <section className="flex flex-col gap-4 text-[12.5px]">
+        <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-900 dark:text-white">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" aria-hidden>
+                <path d="M3 17L9 11L13 15L21 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
             Efficiency &amp; Utilization Rules
         </h2>
-        <div className="grid gap-6 px-5 py-4 leading-snug text-ink-700 dark:text-ink-200 md:grid-cols-3">
-            <div>
-                <p className="eyebrow mb-2">Workday</p>
-                <p>A regular day is 8 hours; a half-day leave counts as 4.</p>
+        <div className="grid gap-4 lg:grid-cols-3">
+            <div className={RULE_CARD}>
+                <strong>Note:</strong> Regular workday = 8 hours. Half day leave = 4 hours.
             </div>
-            <div>
-                <p className="eyebrow mb-2">Efficiency</p>
-                <ul className="flex flex-col gap-2">
-                    <li><span className="font-bold text-emerald-600">High</span> · target ≥ <b>100%</b>, goal ≥ <b>80%</b>, time taken ≤ allocated</li>
-                    <li><span className="font-bold text-amber-600">At par</span> · target ≥ <b>80%</b>, goal ≥ <b>50%</b>, time taken ≤ allocated</li>
-                    <li><span className="font-bold text-rose-600">Low</span> · everything else</li>
+            <div className={RULE_CARD}>
+                <strong>Efficiency Calculation</strong>
+                <ul className="mt-2 list-disc space-y-1.5 pl-4">
+                    <li><span className="font-semibold text-emerald-600">High:</span> Target Achieved ≥ <b>100%</b> AND Goal Achieved ≥ <b>80%</b> AND Time Taken ≤ Allocated Time</li>
+                    <li><span className="font-semibold text-amber-600">At Par:</span> Target Achieved ≥ <b>80%</b> AND Goal Achieved ≥ <b>50%</b> AND Time Taken ≤ Allocated Time</li>
+                    <li><span className="font-semibold text-rose-600">Low:</span> All other conditions</li>
                 </ul>
             </div>
-            <div>
-                <p className="eyebrow mb-2">Utilization</p>
-                <ul className="flex flex-col gap-2">
-                    <li><b>High or at par:</b> time taken ÷ standard time × 100</li>
-                    <li><b>Low:</b> time taken ÷ standard time × 100, capped at <b>100%</b></li>
+            <div className={RULE_CARD}>
+                <strong>Utilization Calculation</strong>
+                <ul className="mt-2 list-disc space-y-1.5 pl-4">
+                    <li><b>If Efficiency is High or At Par:</b> Time Taken / Standard Time × 100</li>
+                    <li><b>If Efficiency is Low:</b> Time Taken / Standard Time × 100 (capped to <b>100%</b>)</li>
                 </ul>
             </div>
         </div>

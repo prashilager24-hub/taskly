@@ -1,7 +1,7 @@
 
 
 import { PageTitle } from "@/components/page";
-import React, { useEffect, useState, useMemo, useCallback, memo, lazy, Suspense } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef, memo, lazy, Suspense } from "react";
 import { useDashboardStore } from "./../store/commonStore";
 import { Card, CardBody } from "@/components/ui";
 import { Switch } from "@/components/ui";
@@ -382,49 +382,32 @@ const StatRow = memo(
     )
 );
 
-// Static – never changes, no props needed
+// Static – never changes, no props needed. Collapsed by default: people read it once.
 const EfficiencyRules = memo(() => (
-    <div className="bg-white dark:bg-ink-900 rounded-xl p-4  flex flex-col gap-4 text-[12px]">
-        <h2 className="text-sm font-semibold text-ink-800 dark:text-white flex items-center gap-2">
-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                <path d="M3 17L9 11L13 15L21 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            Efficiency &amp; Utilization Rules
-        </h2>
-        <div className="bg-amber-50 dark:bg-amber-500/10 border-l-4 border-amber-400 p-3 rounded leading-tight">
-            <strong>Note:</strong> Regular workday = 8 Hours. Half Day leave = 4 Hours.
+    <details className="group border border-ink-200 bg-white text-[12.5px] dark:border-white/10 dark:bg-ink-900">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-5 py-4 focus-ring">
+            <span className="text-sm font-bold uppercase tracking-wide text-ink-900 dark:text-white">How it is calculated</span>
+            <span aria-hidden className="text-ink-400 transition-transform group-open:rotate-180">⌄</span>
+        </summary>
+        <div className="flex flex-col gap-4 border-t border-ink-200 px-5 py-4 leading-snug text-ink-700 dark:border-white/10 dark:text-ink-200">
+            <p><strong>Workday:</strong> a regular day is 8 hours; a half-day leave counts as 4.</p>
+            <div>
+                <p className="eyebrow mb-2">Efficiency</p>
+                <ul className="flex flex-col gap-2">
+                    <li><span className="font-bold text-emerald-600">High</span> · target ≥ <b>100%</b>, goal ≥ <b>80%</b>, time taken ≤ allocated</li>
+                    <li><span className="font-bold text-amber-600">At par</span> · target ≥ <b>80%</b>, goal ≥ <b>50%</b>, time taken ≤ allocated</li>
+                    <li><span className="font-bold text-rose-600">Low</span> · everything else</li>
+                </ul>
+            </div>
+            <div>
+                <p className="eyebrow mb-2">Utilization</p>
+                <ul className="flex flex-col gap-2">
+                    <li><b>High or at par:</b> time taken ÷ standard time × 100</li>
+                    <li><b>Low:</b> time taken ÷ standard time × 100, capped at <b>100%</b></li>
+                </ul>
+            </div>
         </div>
-        <div className="bg-amber-50 dark:bg-amber-500/10 border-l-4 border-amber-400 p-3 rounded leading-tight">
-            <strong>Efficiency Calculation</strong>
-            <ul className="list-disc pl-4 mt-1">
-                <li>
-                    <span className="text-emerald-600 font-semibold">High:</span>&nbsp;
-                    Target Achieved ≥ <b>100%</b> AND Goal Achieved ≥ <b>80%</b> AND Time Taken ≤ Allocated Time
-                </li>
-
-                <li>
-                    <span className="text-amber-600 font-semibold">At Par:</span>&nbsp;
-                    Target Achieved ≥ <b>80%</b> AND Goal Achieved ≥ <b>50%</b> AND Time Taken ≤ Allocated Time
-                </li>
-
-                <li>
-                    <span className="text-rose-600 font-semibold">Low:</span>&nbsp;
-                    All other conditions
-                </li>
-            </ul>
-        </div>
-        <div className="bg-amber-50 dark:bg-amber-500/10 border-l-4 border-amber-400 p-3 rounded leading-tight">
-            <strong>Utilization Calculation</strong>
-            <ul className="list-disc pl-4 mt-1">
-                <li>
-                    <b>If Efficiency is High or At Par:</b>&nbsp;Time Taken / Standard Time × 100
-                </li>
-                <li>
-                    <b>If Efficiency is Low:</b>&nbsp;Time Taken / Standard Time × 100 (capped to <b>100%</b>)
-                </li>
-            </ul>
-        </div>
-    </div>
+    </details>
 ));
 
 // Radial chart + stat card column pair
@@ -652,69 +635,82 @@ const MultiRingChart = ({ values = [], colors = [], size = 200, stroke = 12 }) =
     );
 };
 
-const RADIAL_LEGEND_COLORS = ["#ff6a1f", "#059669", "#52525b", "#ffa06b", "#d97706"];
-const RADIAL_METRIC_LABELS = ["Target %", "Allocated Hrs", "Work Hrs", "Avg Goal"];
+// One clear gauge for the headline number, then plain bars for the rest (each in its own unit).
+// company: values = [target %, allocated hrs/day, working hrs/day, avg goal %]
+// employee: values = [target %, utilization %, allocated hrs, working hrs]
+const Gauge = ({ value }: { value: number }) => {
+    const size = 200, stroke = 16, r = (size - stroke) / 2, c = 2 * Math.PI * r;
+    const pct = Math.max(0, Math.min(100, value));
+    const tone = value >= 100 ? "#059669" : value >= 80 ? "#ff6a1f" : "#d97706";
+    return (
+        <div className="relative" style={{ width: size, height: size }}>
+            <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`Target achieved ${value}%`}>
+                <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={stroke} className="stroke-ink-100 dark:stroke-white/10" />
+                <circle
+                    cx={size / 2} cy={size / 2} r={r} fill="none" stroke={tone} strokeWidth={stroke} strokeLinecap="butt"
+                    strokeDasharray={c} strokeDashoffset={c * (1 - pct / 100)} transform={`rotate(-90 ${size / 2} ${size / 2})`}
+                    className="transition-[stroke-dashoffset] duration-700 ease-out"
+                />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-4xl font-bold leading-none text-ink-900 dark:text-white">{Number.isInteger(value) ? value : value.toFixed(1)}%</span>
+                <span className="eyebrow mt-2">Target achieved</span>
+            </div>
+        </div>
+    );
+};
+
+const MetricBar = ({ label, value, unit, max }: { label: string; value: number; unit: "h" | "%"; max: number }) => (
+    <div>
+        <div className="mb-1.5 flex items-baseline justify-between text-xs">
+            <span className="text-ink-600 dark:text-ink-300">{label}</span>
+            <span className="font-bold text-ink-900 dark:text-white">{unit === "h" ? `${value.toFixed(2)} h` : `${value.toFixed(0)}%`}</span>
+        </div>
+        <div className="h-2 w-full bg-ink-100 dark:bg-white/10">
+            <div className="h-full bg-brand-600 transition-[width] duration-700 ease-out" style={{ width: `${Math.max(0, Math.min(100, (value / max) * 100))}%` }} />
+        </div>
+    </div>
+);
 
 const RadialSummaryCard = memo(({
     title,
     values,
     subtitle,
     loading,
+    kind = "company",
 }: {
     title: string;
     values: number[];
     subtitle?: string;
     loading: boolean;
+    kind?: "company" | "employee";
 }) => {
-    const isEmpty = !values || values.every((v) => !v);
-    const safeValues = isEmpty ? [0, 0, 0, 0, 0] : values;
+    const v = (values ?? []).map((x) => Number(x) || 0);
+    const isEmpty = v.length === 0 || v.every((x) => !x);
+    const at = (i: number) => v[i] ?? 0;
+    const hoursMax = Math.max(8, ...(kind === "company" ? [at(1), at(2)] : [at(2), at(3)]));
+    const bars = kind === "company"
+        ? [{ label: "Allocated hours per day", value: at(1), unit: "h" as const, max: hoursMax }, { label: "Working hours per day", value: at(2), unit: "h" as const, max: hoursMax }, { label: "Average goal achieved", value: at(3), unit: "%" as const, max: 100 }]
+        : [{ label: "Utilization", value: at(1), unit: "%" as const, max: 100 }, { label: "Allocated hours", value: at(2), unit: "h" as const, max: hoursMax }, { label: "Working hours", value: at(3), unit: "h" as const, max: hoursMax }];
 
     return (
-        <div className="bg-white dark:bg-ink-900 rounded-2xl p-6 flex flex-col items-center w-full relative">
+        <section className="flex w-full flex-col gap-5 border border-ink-200 bg-white p-5 dark:border-white/10 dark:bg-ink-900">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-ink-900 dark:text-white">{title}</h2>
             {loading ? (
                 <RadialBarSkeleton />
             ) : (
                 <>
-                    <h2 className="text-xs tracking-widest text-ink-400 mb-4">
-                        {title}
-                    </h2>
-
-                    <div className="relative">
-                        <MultiRingChart
-                            values={safeValues}
-                            colors={RADIAL_LEGEND_COLORS}
-                            size={220}
-                            stroke={12}
-                        />
-                        {isEmpty && (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <span className="text-xs text-ink-400 bg-white/80 dark:bg-ink-900/80 px-2 py-1 rounded-full">
-                                    No data
-                                </span>
-                            </div>
-                        )}
+                    <div className="flex justify-center">
+                        <Gauge value={at(0)} />
                     </div>
-
-                    <div className="grid grid-cols-2 gap-3 mt-4 text-xs">
-                        {RADIAL_METRIC_LABELS.map((label, i) => (
-                            <div key={i} className="flex items-center gap-2">
-                                <span
-                                    className="w-3 h-3 rounded-full"
-                                    style={{ background: RADIAL_LEGEND_COLORS[i] }}
-                                />
-                                <span className="text-ink-600 dark:text-ink-300">
-                                    {label}{!isEmpty ? ` - ${safeValues[i]}%` : ""}
-                                </span>
-                            </div>
-                        ))}
+                    {isEmpty && <p className="text-center text-xs text-ink-400">No data for this range yet.</p>}
+                    <div className="flex flex-col gap-4 border-t border-ink-200 pt-4 dark:border-white/10">
+                        {bars.map((b) => <MetricBar key={b.label} {...b} />)}
                     </div>
-
-                    {!isEmpty && subtitle && (
-                        <p className="text-xs text-ink-400 mt-4 text-center">{subtitle}</p>
-                    )}
+                    {!isEmpty && subtitle && <p className="text-center text-xs text-ink-500 dark:text-ink-400">{subtitle}</p>}
                 </>
             )}
-        </div>
+        </section>
     );
 });
 
@@ -989,22 +985,26 @@ export default function DashboardPage() {
     }, [selectedDepartment]);
 
     // ── Actions ───────────────────────────────────────────────────────────────
+    // Runs by itself when the admin opens the dashboard, so the numbers are always current
     const handleRunReport = useCallback(async () => {
         setLoading(true);
         try {
             const res = await axios.get("/t2.0/authentificationUtilization/calculateAll", {
                 headers: { "Content-Type": "application/json" },
             });
-            if (res.status === 200) {
-                setRefresh((r) => !r);
-                addToast({ title: "Success", description: "Report Successfully Executed", color: "success" });
-            }
+            if (res.status === 200) setRefresh((r) => !r);
         } catch (err) {
-            addToast({ title: "Error", description: String(err), color: "danger" });
+            addToast({ title: "Could not refresh the report", description: String(err), color: "danger" });
         } finally {
             setLoading(false);
         }
     }, []);
+    const autoRan = useRef(false);
+    useEffect(() => {
+        if (autoRan.current || user?.userRole !== 1 || user?.departmentID) return;
+        autoRan.current = true;
+        handleRunReport();
+    }, [handleRunReport]);
 
     const handleLog = useCallback(async () => {
         setLoading(true);
@@ -1053,20 +1053,7 @@ export default function DashboardPage() {
     // ── Date range picker dropdown (shared pattern) ───────────────────────────
     const DateRangeDropdown = useCallback(
         ({ value, onChange }: { value: DateRange; onChange: (r: DateRange) => void }) => (
-            <Dropdown placement="bottom-start">
-                <DropdownTrigger>
-                    <Button variant="flat" size="sm" className="w-[260px] justify-between border border-ink-300 bg-white dark:border-white/15 dark:bg-ink-900">
-                        {value.startDate && value.endDate
-                            ? `${format(new Date(value.startDate), "dd MMM yyyy")} → ${format(new Date(value.endDate), "dd MMM yyyy")}`
-                            : "Select Date Range"}
-                    </Button>
-                </DropdownTrigger>
-                <DropdownMenu aria-label="Date range" closeOnSelect={false} className="p-0">
-                    <DropdownItem key="calendar" className="p-0">
-                        <CustomDateRangePicker value={value} onChange={onChange} />
-                    </DropdownItem>
-                </DropdownMenu>
-            </Dropdown>
+            <CustomDateRangePicker value={value} onChange={onChange} />
         ),
         []
     );
@@ -1445,7 +1432,7 @@ export default function DashboardPage() {
             ">
 
                     <div className="h-full">
-                        <EfficiencyRules />
+                        <div className="lg:col-start-2"><EfficiencyRules /></div>
                     </div>
 
                 </div>
@@ -1513,6 +1500,11 @@ export default function DashboardPage() {
                         View goal & target
                     </Button>
 
+                    {user?.userRole === 1 && !user?.departmentID && (
+                        <Button size="sm" variant="bordered" onPress={() => setIsLogDrawerOpen(true)}>
+                            Missing logs
+                        </Button>
+                    )}
                     <DateRangeDropdown
                         value={dateRange}
                         onChange={setDateRange}
@@ -1537,52 +1529,20 @@ export default function DashboardPage() {
                     }}
                 >                    <Tab key="Overview" title="Overview" className="flex flex-col items-end">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                            <Card className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10 rounded-xl shadow-sm col-span-3">
-                                <CardBody>
+                            <Card className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10 rounded-xl shadow-sm col-span-3 border-0 bg-transparent shadow-none dark:bg-transparent">
+                                <CardBody className="p-0">
 
                                     {/* Admin / Employee top section */}
                                     {(isAdmin || isEmployee) && (
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)] lg:grid-rows-[auto_1fr]">
 
                                             {/* Col 1 – actions + chart */}
-                                            <div className="flex flex-col gap-3">
-                                                {/* Run Report & Missing Logs only for admin */}
-
-                                                {isAdmin && !hasDepartment && (
-                                                    <>
-                                                        <Button
-                                                            variant="flat" size="sm" color="primary"
-                                                            className="px-4 h-8 w-fit"
-                                                            isDisabled={loading}
-                                                            onClick={handleRunReport}
-                                                        >
-                                                            {loading ? (
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                                                                    Processing...
-                                                                </div>
-                                                            ) : (
-                                                                "Run Report"
-                                                            )}
-                                                        </Button>
-
-                                                        {/* <Switch isSelected={dateModification} size="sm" onValueChange={toggleDateModification}>
-                                                Toggle Date selection
-                                            </Switch> */}
-                                                        <Button
-                                                            variant="flat" size="sm" color="primary"
-                                                            className="px-4 h-8 w-fit"
-                                                            onClick={() => setIsLogDrawerOpen(true)}
-                                                        >
-                                                            View Missing Logs
-                                                        </Button>
-                                                    </>
-                                                )}
+                                            <div className="flex flex-col gap-3 lg:row-span-2">
+                                                
 
                                                 {/* Employee radial chart */}
                                                 {isEmployee && (
-                                                    <RadialSummaryCard
-                                                        title={currentUserSummary.title || "EMPLOYEE SUMMARY"}
+                                                    <RadialSummaryCard kind="employee" title={currentUserSummary.title || "EMPLOYEE SUMMARY"}
                                                         values={currentUserSummary.values}
                                                         subtitle={currentUserSummary.subtitle}
                                                         loading={loading}
@@ -1601,9 +1561,9 @@ export default function DashboardPage() {
 
                                             {/* Col 2 – Stats panel (admin, no department) */}
                                             {!hasDepartment && companySummary && (
-                                                <div className="flex p-1 text-[12px]">
+                                                <div className="flex w-full p-0 text-[12px]">
                                                     <div className="w-full">
-                                                        <div className="grid grid-cols-2 gap-3">
+                                                        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
                                                             {stats.map((item, i) => {
                                                                 const value = item.value;
 
@@ -1635,34 +1595,12 @@ export default function DashboardPage() {
                                                                             </h2>
                                                                         </div>
 
-                                                                        {/* MINI BAR GRAPH */}
                                                                         {typeof value === "number" && (
-                                                                            <div className="mt-3 flex items-end gap-1 h-8">
-                                                                                {[20, 40, 60, 80, 100].map((v, idx) => {
-                                                                                    const height = Math.max(10, (value / 100) * v);
-
-                                                                                    const color =
-                                                                                        item.color === "red"
-                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
-                                                                                            : item.color === "green"
-                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
-                                                                                                : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
-                                                                                                    : item.color === "purple"
-                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
-                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
-
-                                                                                    return (
-                                                                                        <div
-                                                                                            key={idx}
-                                                                                            className="flex-1 rounded-sm"
-                                                                                            style={{
-                                                                                                height: `${height}%`,
-                                                                                                background: color[idx],
-                                                                                            }}
-                                                                                        />
-                                                                                    );
-                                                                                })}
+                                                                            <div className="mt-3 h-1.5 w-full bg-ink-100 dark:bg-white/10" aria-hidden>
+                                                                                <div
+                                                                                    className="h-full bg-brand-600"
+                                                                                    style={{ width: `${Math.max(0, Math.min(100, /hour|hrs|allocated|working/i.test(String(item.label)) ? (value / 8) * 100 : value))}%` }}
+                                                                                />
                                                                             </div>
                                                                         )}
 
@@ -1680,7 +1618,7 @@ export default function DashboardPage() {
 
                                                     <div className="w-full">
 
-                                                        <div className="grid grid-cols-2 gap-3">
+                                                        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
 
                                                             {[
                                                                 {
@@ -1754,41 +1692,12 @@ export default function DashboardPage() {
 
                                                                         </div>
 
-                                                                        {/* MINI BAR GRAPH */}
                                                                         {typeof value === "number" && (
-
-                                                                            <div className="mt-3 flex items-end gap-1 h-8">
-
-                                                                                {[20, 40, 60, 80, 100].map((v, idx) => {
-
-                                                                                    const height = Math.max(
-                                                                                        10,
-                                                                                        (value / 100) * v
-                                                                                    );
-
-                                                                                    const color =
-                                                                                        item.color === "red"
-                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
-                                                                                            : item.color === "green"
-                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
-                                                                                                : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
-                                                                                                    : item.color === "purple"
-                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
-                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
-
-                                                                                    return (
-                                                                                        <div
-                                                                                            key={idx}
-                                                                                            className="flex-1 rounded-sm"
-                                                                                            style={{
-                                                                                                height: `${height}%`,
-                                                                                                background: color[idx],
-                                                                                            }}
-                                                                                        />
-                                                                                    );
-                                                                                })}
-
+                                                                            <div className="mt-3 h-1.5 w-full bg-ink-100 dark:bg-white/10" aria-hidden>
+                                                                                <div
+                                                                                    className="h-full bg-brand-600"
+                                                                                    style={{ width: `${Math.max(0, Math.min(100, /hour|hrs|allocated|working/i.test(String(item.label)) ? (value / 8) * 100 : value))}%` }}
+                                                                                />
                                                                             </div>
                                                                         )}
 
@@ -1804,7 +1713,7 @@ export default function DashboardPage() {
                                             )}
 
                                             {/* Col 3 – Rules (always visible in admin/employee view) */}
-                                            <EfficiencyRules />
+                                            <div className="lg:col-start-2"><EfficiencyRules /></div>
                                         </div>
                                     )}
 
@@ -1978,65 +1887,22 @@ export default function DashboardPage() {
                     </Tab>
                     <Tab key="Business" title="Business" className="flex flex-col items-end">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                            <Card className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10 rounded-xl shadow-sm col-span-3">
-                                <CardBody>
+                            <Card className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10 rounded-xl shadow-sm col-span-3 border-0 bg-transparent shadow-none dark:bg-transparent">
+                                <CardBody className="p-0">
 
                                     {/* Admin / Employee top section */}
                                     {(isAdmin || isEmployee) && (
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)] lg:grid-rows-[auto_1fr]">
 
                                             {/* Col 1 – actions + chart */}
-                                            <div className="flex flex-col gap-3">
+                                            <div className="flex flex-col gap-3 lg:row-span-2">
                                                 {/* Run Report & Missing Logs only for admin */}
 
-                                                {isAdmin && !hasDepartment && (
-                                                    <>
-                                                        <div className="flex gap-2">
-                                                            <Button
-                                                                variant="flat" size="sm" color="primary"
-                                                                className="px-4 h-8 w-fit"
-                                                                isDisabled={loading}
-                                                                onClick={handleRunReport}
-                                                            >
-                                                                {loading ? (
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                                                                        Processing...
-                                                                    </div>
-                                                                ) : (
-                                                                    "Run Report"
-                                                                )}
-                                                            </Button>
-
-                                                            {/* <Button
-                                                                variant="flat"
-                                                                size="sm"
-                                                                color="primary"
-                                                                className="px-4 h-8 w-fit"
-                                                                isDisabled={loading || hasDepartment}
-                                                                onClick={handleDownload}
-                                                            >
-                                                                Download
-                                                            </Button> */}
-                                                        </div>
-
-                                                        {/* <Switch isSelected={dateModification} size="sm" onValueChange={toggleDateModification}>
-                                                Toggle Date selection
-                                            </Switch> */}
-                                                        <Button
-                                                            variant="flat" size="sm" color="primary"
-                                                            className="px-4 h-8 w-fit"
-                                                            onClick={() => setIsLogDrawerOpen(true)}
-                                                        >
-                                                            View Missing Logs
-                                                        </Button>
-                                                    </>
-                                                )}
+                                                
 
                                                 {/* Employee radial chart */}
                                                 {isEmployee && (
-                                                    <RadialSummaryCard
-                                                        title={currentUserSummary.title || "EMPLOYEE SUMMARY"}
+                                                    <RadialSummaryCard kind="employee" title={currentUserSummary.title || "EMPLOYEE SUMMARY"}
                                                         values={currentUserSummary.values}
                                                         subtitle={currentUserSummary.subtitle}
                                                         loading={loading}
@@ -2055,9 +1921,9 @@ export default function DashboardPage() {
 
                                             {/* Col 2 – Stats panel (admin, no department) */}
                                             {!hasDepartment && companySummary && (
-                                                <div className="flex p-1 text-[12px]">
+                                                <div className="flex w-full p-0 text-[12px]">
                                                     <div className="w-full">
-                                                        <div className="grid grid-cols-2 gap-3">
+                                                        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
                                                             {stats.map((item, i) => {
                                                                 const value = item.value;
 
@@ -2089,34 +1955,12 @@ export default function DashboardPage() {
                                                                             </h2>
                                                                         </div>
 
-                                                                        {/* MINI BAR GRAPH */}
                                                                         {typeof value === "number" && (
-                                                                            <div className="mt-3 flex items-end gap-1 h-8">
-                                                                                {[20, 40, 60, 80, 100].map((v, idx) => {
-                                                                                    const height = Math.max(10, (value / 100) * v);
-
-                                                                                    const color =
-                                                                                        item.color === "red"
-                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
-                                                                                            : item.color === "green"
-                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
-                                                                                                : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
-                                                                                                    : item.color === "purple"
-                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
-                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
-
-                                                                                    return (
-                                                                                        <div
-                                                                                            key={idx}
-                                                                                            className="flex-1 rounded-sm"
-                                                                                            style={{
-                                                                                                height: `${height}%`,
-                                                                                                background: color[idx],
-                                                                                            }}
-                                                                                        />
-                                                                                    );
-                                                                                })}
+                                                                            <div className="mt-3 h-1.5 w-full bg-ink-100 dark:bg-white/10" aria-hidden>
+                                                                                <div
+                                                                                    className="h-full bg-brand-600"
+                                                                                    style={{ width: `${Math.max(0, Math.min(100, /hour|hrs|allocated|working/i.test(String(item.label)) ? (value / 8) * 100 : value))}%` }}
+                                                                                />
                                                                             </div>
                                                                         )}
 
@@ -2134,7 +1978,7 @@ export default function DashboardPage() {
 
                                                     <div className="w-full">
 
-                                                        <div className="grid grid-cols-2 gap-3">
+                                                        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
 
                                                             {[
                                                                 {
@@ -2208,41 +2052,12 @@ export default function DashboardPage() {
 
                                                                         </div>
 
-                                                                        {/* MINI BAR GRAPH */}
                                                                         {typeof value === "number" && (
-
-                                                                            <div className="mt-3 flex items-end gap-1 h-8">
-
-                                                                                {[20, 40, 60, 80, 100].map((v, idx) => {
-
-                                                                                    const height = Math.max(
-                                                                                        10,
-                                                                                        (value / 100) * v
-                                                                                    );
-
-                                                                                    const color =
-                                                                                        item.color === "red"
-                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
-                                                                                            : item.color === "green"
-                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
-                                                                                                : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
-                                                                                                    : item.color === "purple"
-                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
-                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
-
-                                                                                    return (
-                                                                                        <div
-                                                                                            key={idx}
-                                                                                            className="flex-1 rounded-sm"
-                                                                                            style={{
-                                                                                                height: `${height}%`,
-                                                                                                background: color[idx],
-                                                                                            }}
-                                                                                        />
-                                                                                    );
-                                                                                })}
-
+                                                                            <div className="mt-3 h-1.5 w-full bg-ink-100 dark:bg-white/10" aria-hidden>
+                                                                                <div
+                                                                                    className="h-full bg-brand-600"
+                                                                                    style={{ width: `${Math.max(0, Math.min(100, /hour|hrs|allocated|working/i.test(String(item.label)) ? (value / 8) * 100 : value))}%` }}
+                                                                                />
                                                                             </div>
                                                                         )}
 
@@ -2258,7 +2073,7 @@ export default function DashboardPage() {
                                             )}
 
                                             {/* Col 3 – Rules (always visible in admin/employee view) */}
-                                            <EfficiencyRules />
+                                            <div className="lg:col-start-2"><EfficiencyRules /></div>
                                         </div>
                                     )}
 
@@ -2432,65 +2247,22 @@ export default function DashboardPage() {
                     </Tab>
                     <Tab key="Support" title="Support Functions" className="flex flex-col items-end">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                            <Card className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10 rounded-xl shadow-sm col-span-3">
-                                <CardBody>
+                            <Card className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10 rounded-xl shadow-sm col-span-3 border-0 bg-transparent shadow-none dark:bg-transparent">
+                                <CardBody className="p-0">
 
                                     {/* Admin / Employee top section */}
                                     {(isAdmin || isEmployee) && (
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)] lg:grid-rows-[auto_1fr]">
 
                                             {/* Col 1 – actions + chart */}
-                                            <div className="flex flex-col gap-3">
+                                            <div className="flex flex-col gap-3 lg:row-span-2">
                                                 {/* Run Report & Missing Logs only for admin */}
 
-                                                {isAdmin && !hasDepartment && (
-                                                    <>
-                                                        <div className="flex gap-2">
-                                                            <Button
-                                                                variant="flat" size="sm" color="primary"
-                                                                className="px-4 h-8 w-fit"
-                                                                isDisabled={loading}
-                                                                onClick={handleRunReport}
-                                                            >
-                                                                {loading ? (
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                                                                        Processing...
-                                                                    </div>
-                                                                ) : (
-                                                                    "Run Report"
-                                                                )}
-                                                            </Button>
-
-                                                            {/* <Button
-                                                                variant="flat"
-                                                                size="sm"
-                                                                color="primary"
-                                                                className="px-4 h-8 w-fit"
-                                                                isDisabled={loading || hasDepartment}
-                                                                onClick={handleDownload}
-                                                            >
-                                                                Download
-                                                            </Button> */}
-                                                        </div>
-
-                                                        {/* <Switch isSelected={dateModification} size="sm" onValueChange={toggleDateModification}>
-                                                Toggle Date selection
-                                            </Switch> */}
-                                                        <Button
-                                                            variant="flat" size="sm" color="primary"
-                                                            className="px-4 h-8 w-fit"
-                                                            onClick={() => setIsLogDrawerOpen(true)}
-                                                        >
-                                                            View Missing Logs
-                                                        </Button>
-                                                    </>
-                                                )}
+                                                
 
                                                 {/* Employee radial chart */}
                                                 {isEmployee && (
-                                                    <RadialSummaryCard
-                                                        title={currentUserSummary.title || "EMPLOYEE SUMMARY"}
+                                                    <RadialSummaryCard kind="employee" title={currentUserSummary.title || "EMPLOYEE SUMMARY"}
                                                         values={currentUserSummary.values}
                                                         subtitle={currentUserSummary.subtitle}
                                                         loading={loading}
@@ -2509,9 +2281,9 @@ export default function DashboardPage() {
 
                                             {/* Col 2 – Stats panel (admin, no department) */}
                                             {!hasDepartment && companySummary && (
-                                                <div className="flex p-1 text-[12px]">
+                                                <div className="flex w-full p-0 text-[12px]">
                                                     <div className="w-full">
-                                                        <div className="grid grid-cols-2 gap-3">
+                                                        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
                                                             {stats.map((item, i) => {
                                                                 const value = item.value;
 
@@ -2543,34 +2315,12 @@ export default function DashboardPage() {
                                                                             </h2>
                                                                         </div>
 
-                                                                        {/* MINI BAR GRAPH */}
                                                                         {typeof value === "number" && (
-                                                                            <div className="mt-3 flex items-end gap-1 h-8">
-                                                                                {[20, 40, 60, 80, 100].map((v, idx) => {
-                                                                                    const height = Math.max(10, (value / 100) * v);
-
-                                                                                    const color =
-                                                                                        item.color === "red"
-                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
-                                                                                            : item.color === "green"
-                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
-                                                                                                : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
-                                                                                                    : item.color === "purple"
-                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
-                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
-
-                                                                                    return (
-                                                                                        <div
-                                                                                            key={idx}
-                                                                                            className="flex-1 rounded-sm"
-                                                                                            style={{
-                                                                                                height: `${height}%`,
-                                                                                                background: color[idx],
-                                                                                            }}
-                                                                                        />
-                                                                                    );
-                                                                                })}
+                                                                            <div className="mt-3 h-1.5 w-full bg-ink-100 dark:bg-white/10" aria-hidden>
+                                                                                <div
+                                                                                    className="h-full bg-brand-600"
+                                                                                    style={{ width: `${Math.max(0, Math.min(100, /hour|hrs|allocated|working/i.test(String(item.label)) ? (value / 8) * 100 : value))}%` }}
+                                                                                />
                                                                             </div>
                                                                         )}
 
@@ -2588,7 +2338,7 @@ export default function DashboardPage() {
 
                                                     <div className="w-full">
 
-                                                        <div className="grid grid-cols-2 gap-3">
+                                                        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
 
                                                             {[
                                                                 {
@@ -2662,41 +2412,12 @@ export default function DashboardPage() {
 
                                                                         </div>
 
-                                                                        {/* MINI BAR GRAPH */}
                                                                         {typeof value === "number" && (
-
-                                                                            <div className="mt-3 flex items-end gap-1 h-8">
-
-                                                                                {[20, 40, 60, 80, 100].map((v, idx) => {
-
-                                                                                    const height = Math.max(
-                                                                                        10,
-                                                                                        (value / 100) * v
-                                                                                    );
-
-                                                                                    const color =
-                                                                                        item.color === "red"
-                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
-                                                                                            : item.color === "green"
-                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
-                                                                                                : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
-                                                                                                    : item.color === "purple"
-                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
-                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
-
-                                                                                    return (
-                                                                                        <div
-                                                                                            key={idx}
-                                                                                            className="flex-1 rounded-sm"
-                                                                                            style={{
-                                                                                                height: `${height}%`,
-                                                                                                background: color[idx],
-                                                                                            }}
-                                                                                        />
-                                                                                    );
-                                                                                })}
-
+                                                                            <div className="mt-3 h-1.5 w-full bg-ink-100 dark:bg-white/10" aria-hidden>
+                                                                                <div
+                                                                                    className="h-full bg-brand-600"
+                                                                                    style={{ width: `${Math.max(0, Math.min(100, /hour|hrs|allocated|working/i.test(String(item.label)) ? (value / 8) * 100 : value))}%` }}
+                                                                                />
                                                                             </div>
                                                                         )}
 
@@ -2712,7 +2433,7 @@ export default function DashboardPage() {
                                             )}
 
                                             {/* Col 3 – Rules (always visible in admin/employee view) */}
-                                            <EfficiencyRules />
+                                            <div className="lg:col-start-2"><EfficiencyRules /></div>
                                         </div>
                                     )}
 
@@ -2888,64 +2609,21 @@ export default function DashboardPage() {
 
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <Card className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10 rounded-xl shadow-sm col-span-3">
-                        <CardBody>
+                    <Card className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10 rounded-xl shadow-sm col-span-3 border-0 bg-transparent shadow-none dark:bg-transparent">
+                                <CardBody className="p-0">
 
                             {/* Admin / Employee top section */}
                             {(isAdmin || isEmployee) && (
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)] lg:grid-rows-[auto_1fr]">
 
                                     {/* Col 1 – actions + chart */}
                                     <div className="flex flex-col gap-3">
                                         {/* Run Report & Missing Logs only for admin */}
 
-                                        {isAdmin && !hasDepartment && (
-                                            <>
-                                                <div className="flex gap-2">
-                                                    <Button
-                                                        variant="flat" size="sm" color="primary"
-                                                        className="px-4 h-8 w-fit"
-                                                        isDisabled={loading}
-                                                        onClick={handleRunReport}
-                                                    >
-                                                        {loading ? (
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                                                                Processing...
-                                                            </div>
-                                                        ) : (
-                                                            "Run Report"
-                                                        )}
-                                                    </Button>
-
-                                                    <Button
-                                                        variant="flat"
-                                                        size="sm"
-                                                        color="primary"
-                                                        className="px-4 h-8 w-fit"
-                                                        isDisabled={loading || hasDepartment}
-                                                        onClick={handleDownload}
-                                                    >
-                                                        Download
-                                                    </Button>
-                                                </div>
-
-                                                {/* <Switch isSelected={dateModification} size="sm" onValueChange={toggleDateModification}>
-                                                Toggle Date selection
-                                            </Switch> */}
-                                                <Button
-                                                    variant="flat" size="sm" color="primary"
-                                                    className="px-4 h-8 w-fit"
-                                                    onClick={() => setIsLogDrawerOpen(true)}
-                                                >
-                                                    View Missing Logs
-                                                </Button>
-                                            </>
-                                        )}
+                                        
                                         {/* Employee radial chart */}
                                         {isEmployee && (
-                                            <RadialSummaryCard
-                                                title={currentUserSummary.title || "EMPLOYEE SUMMARY"}
+                                            <RadialSummaryCard kind="employee" title={currentUserSummary.title || "EMPLOYEE SUMMARY"}
                                                 values={currentUserSummary.values}
                                                 subtitle={currentUserSummary.subtitle}
                                                 loading={loading}
@@ -2964,9 +2642,9 @@ export default function DashboardPage() {
 
                                     {/* Col 2 – Stats panel (admin, no department) */}
                                     {!hasDepartment && companySummary && (
-                                        <div className="flex p-1 text-[12px]">
+                                        <div className="flex w-full p-0 text-[12px]">
                                             <div className="w-full">
-                                                <div className="grid grid-cols-2 gap-3">
+                                                <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
                                                     {stats.map((item, i) => {
                                                         const value = item.value;
 
@@ -2998,36 +2676,14 @@ export default function DashboardPage() {
                                                                     </h2>
                                                                 </div>
 
-                                                                {/* MINI BAR GRAPH */}
                                                                 {typeof value === "number" && (
-                                                                    <div className="mt-3 flex items-end gap-1 h-8">
-                                                                        {[20, 40, 60, 80, 100].map((v, idx) => {
-                                                                            const height = Math.max(10, (value / 100) * v);
-
-                                                                            const color =
-                                                                                item.color === "red"
-                                                                                    ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
-                                                                                    : item.color === "green"
-                                                                                        ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
-                                                                                        : item.color === "yellow"
-                                                                                            ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
-                                                                                            : item.color === "purple"
-                                                                                                ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
-                                                                                                : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
-
-                                                                            return (
+                                                                            <div className="mt-3 h-1.5 w-full bg-ink-100 dark:bg-white/10" aria-hidden>
                                                                                 <div
-                                                                                    key={idx}
-                                                                                    className="flex-1 rounded-sm"
-                                                                                    style={{
-                                                                                        height: `${height}%`,
-                                                                                        background: color[idx],
-                                                                                    }}
+                                                                                    className="h-full bg-brand-600"
+                                                                                    style={{ width: `${Math.max(0, Math.min(100, /hour|hrs|allocated|working/i.test(String(item.label)) ? (value / 8) * 100 : value))}%` }}
                                                                                 />
-                                                                            );
-                                                                        })}
-                                                                    </div>
-                                                                )}
+                                                                            </div>
+                                                                        )}
 
                                                             </div>
                                                         );
@@ -3043,7 +2699,7 @@ export default function DashboardPage() {
 
                                             <div className="w-full">
 
-                                                <div className="grid grid-cols-2 gap-3">
+                                                <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
 
                                                     {[
                                                         {
@@ -3117,43 +2773,14 @@ export default function DashboardPage() {
 
                                                                 </div>
 
-                                                                {/* MINI BAR GRAPH */}
                                                                 {typeof value === "number" && (
-
-                                                                    <div className="mt-3 flex items-end gap-1 h-8">
-
-                                                                        {[20, 40, 60, 80, 100].map((v, idx) => {
-
-                                                                            const height = Math.max(
-                                                                                10,
-                                                                                (value / 100) * v
-                                                                            );
-
-                                                                            const color =
-                                                                                item.color === "red"
-                                                                                    ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
-                                                                                    : item.color === "green"
-                                                                                        ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
-                                                                                        : item.color === "yellow"
-                                                                                            ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
-                                                                                            : item.color === "purple"
-                                                                                                ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
-                                                                                                : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
-
-                                                                            return (
+                                                                            <div className="mt-3 h-1.5 w-full bg-ink-100 dark:bg-white/10" aria-hidden>
                                                                                 <div
-                                                                                    key={idx}
-                                                                                    className="flex-1 rounded-sm"
-                                                                                    style={{
-                                                                                        height: `${height}%`,
-                                                                                        background: color[idx],
-                                                                                    }}
+                                                                                    className="h-full bg-brand-600"
+                                                                                    style={{ width: `${Math.max(0, Math.min(100, /hour|hrs|allocated|working/i.test(String(item.label)) ? (value / 8) * 100 : value))}%` }}
                                                                                 />
-                                                                            );
-                                                                        })}
-
-                                                                    </div>
-                                                                )}
+                                                                            </div>
+                                                                        )}
 
                                                             </div>
                                                         );
@@ -3167,7 +2794,7 @@ export default function DashboardPage() {
                                     )}
 
                                     {/* Col 3 – Rules (always visible in admin/employee view) */}
-                                    <EfficiencyRules />
+                                    <div className="lg:col-start-2"><EfficiencyRules /></div>
                                 </div>
                             )}
 

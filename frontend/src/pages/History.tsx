@@ -602,36 +602,7 @@ const [goals, setGoals] = useState([]);
                             Download
                         </Button> */}
 
-                        {/* <Dropdown placement="bottom-start">
-                            <DropdownTrigger>
-                                <Button
-                                    variant="flat"
-                                    size="sm"
-                                    className="w-[260px] justify-between border border-ink-300 bg-white dark:border-white/15 dark:bg-ink-900"
-                                >
-                                    {dateRange?.startDate && dateRange?.endDate
-                                        ? `${format(new Date(dateRange.startDate), "dd MMM yyyy")} → ${format(
-                                            new Date(dateRange.endDate),
-                                            "dd MMM yyyy"
-                                        )}`
-                                        : "Select Date Range"}
-
-                                </Button>
-                            </DropdownTrigger>
-
-                            <DropdownMenu
-                                aria-label="Date range picker"
-                                className="p-0"
-                                closeOnSelect={false}
-                            >
-                                <DropdownItem key="calendar" className="p-0">
-                                    <CustomDateRangePicker
-                                        value={dateRange}
-                                        onChange={(range) => setDateRange(range)}
-                                    />
-                                </DropdownItem>
-                            </DropdownMenu>
-                        </Dropdown> */}
+                        {/* <CustomDateRangePicker value={dateRange} onChange={(range) => setDateRange(range)} /> */}
                     </div>
                     {
                         user.userRole !== 2 ? (<Dropdown isOpen={isFilterOpen} onOpenChange={setIsFilterOpen} style={{ width: "400px" }}>

@@ -1964,20 +1964,7 @@ export default function QuarterlyReview() {
 
     const DateRangeDropdown = useCallback(
         ({ value, onChange }) => (
-            <Dropdown placement="bottom-start">
-                <DropdownTrigger>
-                    <Button variant="flat" size="sm" className="w-[260px] justify-between border border-ink-300 bg-white dark:border-white/15 dark:bg-ink-900">
-                        {value.startDate && value.endDate
-                            ? `${format(new Date(value.startDate), "dd MMM yyyy")} → ${format(new Date(value.endDate), "dd MMM yyyy")}`
-                            : "Select Date Range"}
-                    </Button>
-                </DropdownTrigger>
-                <DropdownMenu aria-label="Date range" closeOnSelect={false} className="p-0">
-                    <DropdownItem key="calendar" className="p-0">
-                        <CustomDateRangePicker value={value} onChange={onChange} />
-                    </DropdownItem>
-                </DropdownMenu>
-            </Dropdown>
+            <CustomDateRangePicker value={value} onChange={onChange} />
         ),
         []
     );

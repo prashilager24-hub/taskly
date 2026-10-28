@@ -19,6 +19,11 @@ export default function Layout({ children }) {
             .then((res) => {
                 const fresh = res.data?.response;
                 if (!res.data?.status || !fresh) return;
+                let joinedChanged = false;
+                try {
+                    const me = JSON.parse(localStorage.getItem("authUserLD") || "null");
+                    if (me && fresh.joinedAt && me.joinedAt !== fresh.joinedAt) { me.joinedAt = fresh.joinedAt; localStorage.setItem("authUserLD", JSON.stringify(me)); joinedChanged = true; }
+                } catch { /* ignore */ }
                 const before = localStorage.getItem("roles");
                 const next = JSON.stringify(fresh);
                 if (before !== next) {
@@ -26,7 +31,8 @@ export default function Layout({ children }) {
                     let had = "";
                     try { had = JSON.parse(before || "{}").rolePrivileges ?? ""; } catch { /* ignore */ }
                     if (had !== fresh.rolePrivileges) window.location.reload();
-                }
+                    else if (joinedChanged) window.location.reload();
+                } else if (joinedChanged) window.location.reload();
             })
             .catch(() => undefined);
     }, []);

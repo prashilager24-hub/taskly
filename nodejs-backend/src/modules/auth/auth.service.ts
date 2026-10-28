@@ -41,7 +41,7 @@ interface UserRow {
   ReportingManagerID: number | null;
   ELManagerID: number | null;
   AppraisalCycle: string | null;
-  UserCreateTime?: string;
+  UserCreateTime?: Date | string | null;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -71,7 +71,7 @@ function signToken(user: UserRow, sessionId: string, expiresInSeconds: number): 
 const USER_SELECT = `
   SELECT UserID, UserEmail, UserName, UserPassword, RoleID, SecondaryRoleID,
          UserStatus, IsUserArchived, EmployeeID, ReportingManagerID,
-         ELManagerID, AppraisalCycle, FeedbackResolverTeam, ThemePreference, TwoFactor
+         ELManagerID, AppraisalCycle, FeedbackResolverTeam, ThemePreference, TwoFactor, UserCreateTime
   FROM Users`;
 
 interface SessionDepartment {
@@ -126,6 +126,8 @@ async function buildSessionPayload(user: SessionUser, token: string) {
     userName: user.UserName,
     userEmail: user.UserEmail,
     employeeID: user.EmployeeID,
+    // Joining date: Onboarding Experience is shown to new joiners for their first 45 days
+    joinedAt: user.UserCreateTime ?? null,
     // Saved Dark / Light choice; null until the user picks one at first sign-in (AUTH-11)
     themePreference: user.ThemePreference ?? null,
   };

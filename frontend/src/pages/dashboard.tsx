@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui";
 import { motion, AnimatePresence } from "framer-motion";
 const ReactApexChart = React.lazy(() => import("react-apexcharts"));
 import { format } from "date-fns";
-import CustomDateRangePicker from "../components/CustomDateRangePicker";
+import CustomDateRangePicker from "../components/customDateRangePicker";
 import {
     Autocomplete,
     AutocompleteItem,
@@ -495,10 +495,10 @@ function useDashboardData(
                         title: u.UserName,
                         subtitle: u.EfficiencyLevel,
                         values: [
-                            Number(u.AvgTargetPercent),
-                            Number(u.AvgUtilizationPercent),
-                            Number(u.AvgAllocatedHrs),
-                            Number(u.AvgTotalWork),
+                            Number(u.AvgTargetPercent) || 0,
+                            Number(u.AvgUtilizationPercent) || 0,
+                            Number(u.AvgAllocatedHrs) || 0,
+                            Number(u.AvgTotalWork) || 0,
                         ],
                     }))
                 );
@@ -846,7 +846,17 @@ export default function DashboardPage() {
     // Parse user once
     const user = useMemo<any>(() => {
         const raw = localStorage.getItem("authUserLD");
-        return raw ? JSON.parse(raw) : null;
+        const u = raw ? JSON.parse(raw) : null;
+        if (!u) return u;
+        // A person with an Executive / Functional Leader role who does not actually lead a department
+        // sees the same personal dashboard as any employee: their own summary, in the admin layout
+        const leads = (u.departments ?? []).some((d: any) => Number(d.executiveLeaderID) === Number(u.userID) || Number(d.functionalLeaderID) === Number(u.userID));
+        if ((u.userRole === 3 || u.userRole === 4) && !leads) {
+            const own = u.departmentID ?? u.departments?.[0]?.departmentID;
+            const ownName = u.departmentName ?? u.departments?.[0]?.departmentName;
+            return { ...u, userRole: 2, isHeExecutiveLeader: false, isHeFunctionalLeader: false, departmentID: own, departmentName: ownName };
+        }
+        return u;
     }, []);
     const dateModification = useDashboardStore((state) => state.dateModification);
     const toggleDateModification = useDashboardStore((state) => state.toggleDateModification);

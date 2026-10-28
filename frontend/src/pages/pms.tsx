@@ -6,89 +6,36 @@ import QuarterlyReview from '@/components/quarterlyReview';
 import MonthlyReview from '@/components/monthlyReview';
 import PmsDashboard from '@/components/pmsDashboard';
 import PmsReport from '@/components/pmsReport';
-import { useMemo } from "react";
+import { hasModuleAccess } from "@/lib/permissions";
+
+// Each PMS tab is a module in Access Management (pms_goals, pms_feedback, pms_quarterly, pms_dashboard,
+// pms_report): a person sees exactly the tabs their role, department and personal access allow.
+const TABS = [
+    { id: "Goal Setting", module: "pms_goals", label: "Goal Setting", render: () => <GoalSetting /> },
+    { id: "Manager Review", module: "pms_feedback", label: "Manager Feedback", render: () => <MonthlyReview /> },
+    { id: "Quarterly Review", module: "pms_quarterly", label: "Quarterly Review", render: () => <QuarterlyReview /> },
+    { id: "Dashboard", module: "pms_dashboard", label: "Dashboard", render: () => <PmsDashboard /> },
+    { id: "Report", module: "pms_report", label: "Report", render: () => <PmsReport isReport={true} /> },
+];
 
 export default function PMSPage() {
-    const user = useMemo<any>(() => {
-        const raw = localStorage.getItem("authUserLD");
-        return raw ? JSON.parse(raw) : null;
-    }, []);
-    const storedRole = JSON.parse(
-        localStorage.getItem("roles") || "{}"
-    );
+    const tabs = TABS.filter((t) => hasModuleAccess(t.module));
 
-    const permissions = JSON.parse(
-        storedRole.rolePrivileges || "{}"
-    );
-
-    const pmsPermissions = permissions?.pms || [];
-
-    const isReadOnly = user?.userRole === 2 ||
-        user?.userRole === 5 ||
-        user?.userRole === 6 ||
-
-        user?.userRole === 23;
-
-    // const isReportUser =
-    //     Number(user?.userID) === 1 ||
-    //     (user?.departments ?? []).some((d) => Number(d?.departmentID) === 16);
-    // Admin is role 1 (their userID is not 1), plus the department that owns the report
-    const isReportUser =
-        user?.userRole === 1 ||
-        Number(user?.departmentID) === 16 ||
-        (Array.isArray(user?.departments) &&
-            user.departments.some(
-                (d: any) => Number(d?.departmentID) === 16
-            ));
-
-    const tabs = isReadOnly
-        ? [
-            {
-                id: "Dashboard",
-                label: "Dashboard",
-                content: <PmsDashboard />
-            }
-        ]
-        : [
-            {
-                id: "Goal Setting",
-                label: "Goal Setting",
-                content: <GoalSetting />
-            },
-            {
-                id: "Manager Review",
-                label: "Manager Feedback",
-                content: <MonthlyReview />
-            },
-            {
-                id: "Quarterly Review",
-                label: "Quarterly Review",
-                content: <QuarterlyReview />
-            },
-            {
-                id: "Dashboard",
-                label: "Dashboard",
-                content: <PmsDashboard />
-            },
-
-            // Report visible only for userID 1 and 142
-            ...(isReportUser
-                ? [
-                    {
-                        id: "Report",
-                        label: "Report",
-                        content: <PmsReport isReport={true} />
-                    }
-                ]
-                : [])
-        ];
+    if (!tabs.length) {
+        return (
+            <div className="border border-ink-200 bg-white p-10 text-center dark:border-white/10 dark:bg-ink-900">
+                <p className="text-sm font-semibold text-ink-900 dark:text-white">No PMS tabs are available to you</p>
+                <p className="mt-1 text-xs text-ink-500 dark:text-ink-400">Ask an administrator to give you access to the PMS tabs you need.</p>
+            </div>
+        );
+    }
 
     return (
         <div className="flex w-full flex-col">
-            <Tabs aria-label="Dynamic tabs" items={tabs}>
+            <Tabs aria-label="PMS tabs" items={tabs}>
                 {(item) => (
                     <Tab key={item.id} title={item.label}>
-                        {item.content}
+                        {item.render()}
                     </Tab>
                 )}
             </Tabs>

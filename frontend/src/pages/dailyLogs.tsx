@@ -9,7 +9,7 @@ import { today, getLocalTimeZone } from "@internationalized/date";
 import { Topbar } from "@/components/topbar";
 import axios from "axios";
 import ReusableTable, { TableColumn, TableAction } from "@/components/table";
-import CustomDateRangePicker from "../components/CustomDateRangePicker"
+import CustomDateRangePicker from "../components/customDateRangePicker"
 import DailyLogsFilterDropdown from "@/components/DailyLogsFilterDropdown";
 import { format } from "date-fns";
 

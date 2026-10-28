@@ -26,9 +26,18 @@ export const CATALOG: ModuleDef[] = [
       { id: 'taskmgmt', label: 'Task Management', description: 'Tasks people log against' },
       { id: 'targetmgmt', label: 'Target Management', description: 'Targets per department' },
       { id: 'goalmgmt', label: 'Goal Management', description: 'Goals per department' },
+      { id: 'notifications', label: 'Notifications', description: 'Send notifications to departments, roles or people' },
     ],
   },
-  { id: 'pms', label: 'PMS', description: 'Goal setting, manager feedback, quarterly reviews and reports' },
+  {
+    id: 'pms', label: 'PMS', description: 'The PMS view on the Dashboard; the tabs below decide what is inside it', children: [
+      { id: 'pms_goals', label: 'Goal Setting', description: 'Set quarterly goals for people' },
+      { id: 'pms_feedback', label: 'Manager Feedback', description: 'Monthly feedback from managers' },
+      { id: 'pms_quarterly', label: 'Quarterly Review', description: 'Write and read quarterly reviews' },
+      { id: 'pms_dashboard', label: 'PMS Dashboard', description: 'Review cards and EL-wise charts' },
+      { id: 'pms_report', label: 'PMS Report', description: 'The review report tab' },
+    ],
+  },
   { id: 'hrfeedback', label: 'Support', description: 'Queries, onboarding experience and engagement' },
 ];
 

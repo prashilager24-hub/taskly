@@ -15,7 +15,7 @@ import {
 import axios from "axios";
 import { format } from "date-fns";
 import { useEffect, useState, useMemo, useCallback } from "react";
-import CustomDateRangePicker from "../components/CustomDateRangePicker";
+import CustomDateRangePicker from "../components/customDateRangePicker";
 
 
 const QUARTERS = [

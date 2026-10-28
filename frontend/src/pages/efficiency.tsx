@@ -8,7 +8,7 @@ import { title } from "@/components/primitives";
 
 import axios from "axios";
 import EfficiencyTable from "@/components/table2";
-import CustomDateRangePicker from "../components/CustomDateRangePicker"
+import CustomDateRangePicker from "../components/customDateRangePicker"
 import FilterDropdown from "@/components/FilterDropdown";
 import { format } from "date-fns";
 

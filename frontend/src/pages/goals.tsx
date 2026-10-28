@@ -18,7 +18,7 @@ import { title } from "@/components/primitives";
 import ReusableTable, { TableColumn } from "@/components/table";
 
 import { useMemo } from "react";
-import CustomDateRangePicker from "../components/CustomDateRangePicker"
+import CustomDateRangePicker from "../components/customDateRangePicker"
 import { format } from "date-fns";
 
 interface GoalLog {

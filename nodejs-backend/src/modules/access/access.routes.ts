@@ -21,8 +21,8 @@ router.get('/me', async (req, res, next) => {
   try {
     const userId = actor(req);
     const privileges = await svc.effectivePrivileges(userId);
-    const [[u]] = await pool.execute<mysql.RowDataPacket[]>('SELECT r.RoleName FROM Users u LEFT JOIN AMRole r ON r.RoleID = u.RoleID WHERE u.UserID = ?', [userId]);
-    ok(res, { roleName: u?.['RoleName'] ?? null, rolePrivileges: JSON.stringify(privileges), privileges });
+    const [[u]] = await pool.execute<mysql.RowDataPacket[]>('SELECT r.RoleName, u.UserCreateTime FROM Users u LEFT JOIN AMRole r ON r.RoleID = u.RoleID WHERE u.UserID = ?', [userId]);
+    ok(res, { roleName: u?.['RoleName'] ?? null, joinedAt: u?.['UserCreateTime'] ?? null, rolePrivileges: JSON.stringify(privileges), privileges });
   } catch (e) { next(e); }
 });
 

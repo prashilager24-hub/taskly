@@ -22,7 +22,7 @@ import {
     Tabs, Tab
 } from "@/components/ui";
 import { format, isSameQuarter } from "date-fns";
-import CustomDateRangePicker from "../components/CustomDateRangePicker";
+import CustomDateRangePicker from "../components/customDateRangePicker";
 import { finalGradeFromPercent, finalGradeLabelFromPercent } from "../lib/pmsGrade";
 
 // ─── Constants ────────────────────────────────────────────────────────────────

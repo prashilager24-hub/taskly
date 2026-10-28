@@ -21,7 +21,7 @@ import {
 } from "@/components/ui";
 import { title } from "@/components/primitives";
 import ReusableTable, { TableColumn, TableAction } from "@/components/table"
-import CustomDateRangePicker from "../components/CustomDateRangePicker"
+import CustomDateRangePicker from "../components/customDateRangePicker"
 import { format } from "date-fns";
 
 import {

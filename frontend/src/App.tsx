@@ -10,6 +10,7 @@ import TaskManagementPage from "@/pages/TaskManagement";
 import ReportsPage from "@/pages/reports";
 import History from "@/pages/History";
 import AccessManagementPage from "@/pages/access-management";
+import NotificationsPage from "@/pages/notifications";
 import Efficiency from "./pages/efficiency";
 import ResetPasswordPage from "./pages/forgotPassword";
 import TargetManagement from "./pages/targetManagement";
@@ -56,6 +57,7 @@ function App() {
         <Route path="/tasks" element={<ProtectedRoute module="taskmgmt"><TaskManagementPage /></ProtectedRoute>} />
         <Route path="/target" element={<ProtectedRoute module="targetmgmt"><TargetManagement /></ProtectedRoute>} />
         <Route path="/daily-log" element={<ProtectedRoute module="mydata"><DailyLogs /></ProtectedRoute>} />
+        <Route path="/notifications" element={<ProtectedRoute module="notifications"><NotificationsPage /></ProtectedRoute>} />
         <Route path="/access-management" element={<ProtectedRoute module="accessmgmt"><AccessManagementPage /></ProtectedRoute>} />
         <Route path="/efficiency-report" element={<ProtectedRoute module="perf"><Efficiency /></ProtectedRoute>} />
         <Route path="/sales-forward" element={<ProtectedRoute module="salesfwd"><SalesForward /></ProtectedRoute>} />

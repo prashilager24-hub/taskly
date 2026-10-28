@@ -1,6 +1,7 @@
+import type React from "react";
 import { useRef, useState } from "react";
 import { CalendarDays } from "lucide-react";
-import { parseDate, today, getLocalTimeZone, type DateValue } from "@internationalized/date";
+import { parseDate, today, getLocalTimeZone, type CalendarDate, type DateValue } from "@internationalized/date";
 
 import { Button, Popover, PopoverContent, PopoverTrigger, RangeCalendar } from "@/components/ui";
 
@@ -12,7 +13,9 @@ export interface IsoRange { start: string; end: string }
 
 const tz = getLocalTimeZone();
 const iso = (d: DateValue) => d.toString();
-const label = (s: string) => parseDate(s).toDate(tz).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+// An empty or unreadable value means "no range chosen" (reports treat that as all dates)
+const safe = (s?: string | null): CalendarDate | null => { try { return s ? parseDate(s) : null; } catch { return null; } };
+const label = (d: DateValue) => d.toDate(tz).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 
 export default function DateRangeField({ value, onChange, maxToday = true }: { value: IsoRange; onChange: (r: IsoRange) => void; maxToday?: boolean }) {
     const [open, setOpen] = useState(false);
@@ -21,6 +24,8 @@ export default function DateRangeField({ value, onChange, maxToday = true }: { v
     const triggerRef = useRef<HTMLButtonElement>(null);
     const [host, setHost] = useState<HTMLElement | undefined>(undefined);
     const now = today(tz);
+    const from = safe(value?.start), to = safe(value?.end);
+    const chosen = from && to ? { start: from, end: to } : null;
 
     const apply = (start: DateValue, end: DateValue) => { onChange({ start: iso(start), end: iso(end) }); setOpen(false); };
     const presets: { name: string; run: () => void }[] = [
@@ -36,7 +41,7 @@ export default function DateRangeField({ value, onChange, maxToday = true }: { v
         <Popover placement={host ? "bottom-end" : "bottom-start"} isOpen={open} onOpenChange={(o) => { if (o) setHost((triggerRef.current?.closest("[role=dialog]") as HTMLElement | null) ?? undefined); setOpen(o); }} portalContainer={host}>
             <PopoverTrigger>
                 <Button ref={triggerRef} variant="bordered" className="min-w-[280px] justify-between" startContent={<CalendarDays size={15} className="text-brand-600" />}>
-                    <span className="flex-1 text-left">{label(value.start)} → {label(value.end)}</span>
+                    <span className="flex-1 text-left">{chosen ? `${label(chosen.start)} → ${label(chosen.end)}` : "All dates"}</span>
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="p-0">
@@ -55,7 +60,7 @@ export default function DateRangeField({ value, onChange, maxToday = true }: { v
                             aria-label="Date range"
                             visibleMonths={host ? 1 : 2}
                             maxValue={maxToday ? now : undefined}
-                            value={{ start: parseDate(value.start), end: parseDate(value.end) }}
+                            value={chosen as React.ComponentProps<typeof RangeCalendar>["value"]}
                             onChange={(r) => apply(r.start, r.end)}
                         />
                     </div>

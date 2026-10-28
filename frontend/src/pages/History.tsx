@@ -18,7 +18,7 @@ import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import axios from "axios";
 import EfficiencyTable from "@/components/table2";
-import CustomDateRangePicker from "../components/CustomDateRangePicker"
+import CustomDateRangePicker from "../components/customDateRangePicker"
 import { format } from "date-fns";
 
 interface DailyTaskLog {
@@ -428,10 +428,8 @@ const [goals, setGoals] = useState([]);
                 const data = await res.data;
 
                 // map data to {key,name} format
-                const summarydata = data.summary
-                const keys= Object.keys(summarydata)
-
-                const actualdata = data.data
+                const summarydata = data?.summary ?? {}
+                const actualdata = Array.isArray(data?.data) ? data.data : []
                 const departmentSummary = Object.values(
                     actualdata.reduce((acc: any, item: any) => {
                         const deptId = item.DepartmentID;
@@ -511,10 +509,11 @@ const [goals, setGoals] = useState([]);
                 setLoading(false);
                 if (user.userRole == 3) {
 
-                    setELUserSummary(data.departments)
+                    setELUserSummary(data?.departments ?? [])
                 }
             } catch (err) {
                 console.error("Error fetching department list:", err);
+                setLoading(false);
             }
         };
 
@@ -821,6 +820,9 @@ const [goals, setGoals] = useState([]);
                 <div className="col-span-3 flex justify-center mt-4">
                     <Card className="w-full">
                         <CardBody>
+                            {!loading && !ELUserSummary?.length && (
+                                <p className="py-10 text-center text-sm text-ink-500 dark:text-ink-400">No department reports to show yet. You are not leading a department with logged work.</p>
+                            )}
                             <Tabs key="bordered" aria-label="Tabs variants" variant="full">
                                 {ELUserSummary?.map((ele) => {
                                     return (

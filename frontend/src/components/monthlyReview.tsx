@@ -20,7 +20,7 @@ import {
   addToast
 } from "@/components/ui";
 import { format } from "date-fns";
-import CustomDateRangePicker from "../components/CustomDateRangePicker";
+import CustomDateRangePicker from "../components/customDateRangePicker";
 
 
 const EMP_MAP = {

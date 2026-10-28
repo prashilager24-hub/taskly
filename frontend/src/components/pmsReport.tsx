@@ -1,5 +1,4 @@
 import { Segmented } from "@/components/page";
-import AdminAnalytics from "./AdminAnalytics";
 import {
     Card,
     CardBody,
@@ -727,12 +726,10 @@ export default function PmsReport({ isReport = false }) {
                         <ReviewCard key={review.id} review={review} />
                     ))}
                 </div>
-                {reviews.length > 0 && <LivePreviewSummary reviews={reviews} />}
+                {reviews.length > 0 && <div className="xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto"><LivePreviewSummary reviews={reviews} /></div>}
 
             </div>
 
-            {/* EL-wise comparison charts and the reviewed-users table */}
-            {reviews.length > 0 && !monthly && <AdminAnalytics reviews={reviews} />}
 
 
         </div>

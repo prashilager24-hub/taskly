@@ -653,6 +653,11 @@ const getBandChip = (score) => {
     return { label: "PIP", color: "danger" };
 };
 
+const fmtDay = (d: string) => {
+    const t = new Date(d);
+    return Number.isNaN(t.getTime()) ? String(d) : t.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+};
+
 const ratingAvg = (obj) => {
     const a2 = Number(obj?.assessor2 || 0);
     const a1 = Number(obj?.assessor1 || 0);
@@ -962,16 +967,13 @@ function ReviewCard({ review }) {
                             </Chip>
 
                         </div>
-                        <div>
-                            <Chip size="sm" variant="flat" color="primary"
-                                classNames={{ content: "text-[10px] font-medium" }}>
-                                range: {review.startDate} - {review.endDate}
-                            </Chip>
-                            <Chip size="sm" variant="flat" color="primary"
-                                classNames={{ content: "text-[10px] font-medium" }}>
-                                reviewed at: {review.createdAt}
-                            </Chip>
-                        </div>
+                        {(review.startDate || review.createdAt) && (
+                            <p className="mt-2 text-[11px] text-default-400">
+                                {review.startDate && review.endDate ? `Period ${fmtDay(review.startDate)} – ${fmtDay(review.endDate)}` : ""}
+                                {review.startDate && review.endDate && review.createdAt ? " · " : ""}
+                                {review.createdAt ? `Reviewed ${fmtDay(review.createdAt)}` : ""}
+                            </p>
+                        )}
                     </div>
                     <div className="text-right shrink-0">
                         <p className="text-[10px] text-default-400 uppercase tracking-wide">
@@ -1259,9 +1261,7 @@ export default function QuarterlyReviewDashboard() {
         : !!String(filters.departmentID ?? "").length;
     const isUserSelected = !!String(filters.userID ?? "").length;
 
-    const showLivePreview =
-        reviews.length > 0 &&
-        (!isPrivileged || (isDepartmentSelected && isUserSelected));
+    const showLivePreview = reviews.length > 0;
 
     const totalEmployees = reviews.length;
 
@@ -1320,12 +1320,12 @@ export default function QuarterlyReviewDashboard() {
             {/* ── Card Grid ── */}
             {reviews.length > 0 && (isPrivileged || (isDepartmentSelected && isUserSelected)) ? (
                 <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[1fr_288px]">
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="grid grid-cols-[repeat(auto-fit,minmax(380px,1fr))] gap-4">
                         {reviews.map((review) => (
                             <ReviewCard key={review.id} review={review} />
                         ))}
                     </div>
-                    {showLivePreview && <LivePreviewSummary reviews={reviews} />}
+                    {showLivePreview && <div className="xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto"><LivePreviewSummary reviews={reviews} /></div>}
                 </div>
             ) : (
                 <div className="border border-dashed border-ink-300 px-6 py-16 text-center dark:border-white/15">

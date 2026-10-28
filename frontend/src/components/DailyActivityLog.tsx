@@ -2055,8 +2055,8 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                 >
                                     <span className={`flex h-7 w-7 shrink-0 items-center justify-center text-xs font-bold ${activities.length ? "bg-emerald-600 text-white" : "border border-ink-300 text-ink-500 dark:border-white/20"}`}>{steps.length + 1}</span>
                                     <span className="min-w-0">
-                                        <span className="block truncate text-sm font-semibold text-ink-900 dark:text-white">Review & submit</span>
-                                        <span className="block truncate text-xs text-ink-500 dark:text-ink-400">{activities.length ? `${activities.length} ${activities.length === 1 ? "entry" : "entries"} ready` : "Check, then submit the day"}</span>
+                                        <span className="block truncate text-sm font-semibold text-ink-900 dark:text-white">Submit</span>
+                                        <span className="block truncate text-xs text-ink-500 dark:text-ink-400">{activities.length ? `${activities.length} ${activities.length === 1 ? "entry" : "entries"} ready` : "Send the day for approval"}</span>
                                     </span>
                                 </button>
                             </li>
@@ -3535,7 +3535,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                                 size="sm"
                                                 onClick={() => document.getElementById("entries-review")?.scrollIntoView({ behavior: "smooth", block: "start" })}
                                             >
-                                                Review & submit ↓
+                                                Submit ↓
                                             </Button>
                                         )}
 
@@ -3551,13 +3551,13 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                 {/* Activities/PR List */}
 
                 <Card id="entries-review" className="w-full scroll-mt-4 shadow-none">
-                    <CardBody className="px-6 pb-6" style={{ minHeight: "18pc" }}>
+                    <CardBody className="px-6 py-5">
                         <>
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h3 className="text-base font-bold text-ink-900 dark:text-white">Review & submit</h3>
+                                    <h3 className="text-base font-bold text-ink-900 dark:text-white">Ready to submit</h3>
                                     <p className="mt-0.5 text-xs text-ink-500 dark:text-ink-400">
-                                        {activities.length ? `${activities.length} ${activities.length === 1 ? "entry" : "entries"} added. Check them, then submit the log.` : "Everything you add in the steps above appears here before you submit."}
+                                        {activities.length ? `${activities.length} ${activities.length === 1 ? "entry" : "entries"} added. Nothing is saved until you press Submit Log.` : "Entries you add in the steps above are listed here. Nothing is saved until you press Submit Log."}
                                     </p>
                                 </div>
                                 <Button
@@ -3624,196 +3624,37 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
                             </div>
 
-                            {/* Modern Table */}
-                            <div className="overflow-x-auto overflow-y-auto max-h-[34rem] rounded-xl border border-ink-100 dark:border-ink-800 shadow-sm">
-                                <table className="min-w-full text-sm text-ink-800 dark:text-ink-200">
-                                    <thead className="bg-gradient-to-r from-ink-100 to-ink-50 dark:from-ink-800 dark:to-ink-900" style={{ position: "sticky", top: 0, }}>
-                                        <tr className="text-left">
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
-                                                No
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
-                                                Date
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
-                                                Name
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
-                                                Type
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
-                                                Frequency / Count
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
-                                                Unit / Time
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
-                                                Achieved / Time Taken
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
-                                                Percentage / TAT
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-center text-ink-600 dark:text-ink-300">
-                                                Action
-                                            </th>
-                                        </tr>
-                                    </thead>
-
-                                    <tbody>
-                                        {activities.length > 0 ? (<>{activities.map((activity, index) => (
-                                            <tr
-                                                key={activity.id}
-                                                className={`transition-all duration-150 ${activity.targetName
-                                                    ? "bg-brand-50/60 dark:bg-brand-900/30"
-                                                    : "bg-white dark:bg-ink-950"
-                                                    } `}
-                                            >
-                                                <td className="px-4 py-3 font-semibold text-ink-700 dark:text-ink-100">
-                                                    {index + 1}.
-                                                </td>
-
-                                                <td className="px-4 py-3 whitespace-nowrap text-xs text-ink-500 dark:text-ink-400">
-                                                    {activity.workDate ? formatDate(activity.workDate) : "—"}
-                                                </td>
-
-                                                <td className="px-4 py-3 font-medium">
-                                                    {activity.goalName ||
-                                                        activity.targetName ||
-                                                        activity.taskName || "—"}
-                                                </td>
-
-
-                                                <td className="px-4 py-3">
-                                                    <span className={`inline-flex px-2 py-1 text-xs rounded-md ${activity.isGoal
-                                                        ? "bg-brand-100 text-brand-700"
-                                                        : activity.targetName
-                                                            ? "bg-brand-100 text-brand-700"
-                                                            : "bg-ink-100 dark:bg-ink-800 text-ink-700 dark:text-ink-200"
-                                                        }`}>
-                                                        {activity.isGoal ? "Goal" : activity.targetName ? "Target" : "Task"}
-                                                    </span>
-
-                                                </td>
-
-                                                <td className="px-4 py-3">
-                                                    {activity.targetName
-                                                        ? activity.frequency || "-"
-                                                        : activity.setup || 1}
-                                                </td>
-
-                                                <td className="px-4 py-3">
-
-                                                    {(activity.targetName
-                                                        ? activity.unit || "-"
-                                                        : activity.goalID
-                                                            ? activity.unit || activity.expectedUnit || 0   // ✅ show unit first
-                                                            : (() => {
-                                                                const base = activity.isDynamic
-                                                                    ? Number(activity.timeTaken || 0)
-                                                                    : Number(activity.customTime || 0);
-                                                                const setup = Number(activity.setup || 1);
-                                                                return (base * setup).toFixed(2) + " mins";
-                                                            })()
-                                                    )}
-                                                </td>
-
-
-
-                                                <td className="px-4 py-3">
-                                                    {activity.targetName
-                                                        ? activity.achievedUnit || 0
-                                                        : activity.goalID ? activity.achievedUnit || 0 : `${Number(activity.timeTaken || 0).toFixed(2)} mins`}
-                                                </td>
-                                                <td className="px-4 py-3 text-center">
-                                                    {activity.targetName ? (() => {
-                                                        const achieved = Number(activity.achievedUnit || 0);
-                                                        const unit = Number(activity.unit || 0);
-
-                                                        // Target 92: accuracy-based → penalize if below 90%
-                                                        if (String(activity.targetID) === "92") {
-                                                            if (unit <= 0) return "N/A";
-                                                            const rawPct = Math.round((achieved / unit) * 100);
-                                                            const score = rawPct >= 90 ? 100 : 100 - (90 - rawPct);
-                                                            return `${Math.max(score, 0)} %`;
-                                                        }
-
-                                                        // Target 93: error-based → inverted (fewer errors = better)
-                                                        if (String(activity.targetID) === "93") {
-                                                            if (unit <= 0) return "N/A";
-                                                            const rawPct = Math.round((achieved / unit) * 100);
-                                                            const score = 100 - rawPct;
-                                                            return `${Math.max(score, 0)} %`;
-                                                        }
-
-                                                        // All other targets: standard percentage
-                                                        if (unit <= 0) return "N/A";
-                                                        return `${((achieved / unit) * 100).toFixed(2)} %`;
-                                                    })() : "N/A"}
-                                                </td>
-
-
-                                                <td className="px-4 py-3 text-center">
-                                                    <Button
-                                                        color="danger"
-                                                        variant="light"
-                                                        size="sm"
-                                                        className="!p-0 w-7 h-7 rounded-full flex items-center justify-center font-bold "
-                                                        onClick={() => handleRemoveActivity(activity.id)}
-                                                    >
-                                                        <svg fill="#ff0000" height="20px" width="20px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 457.503 457.503" xml:space="preserve" stroke="#ff0000"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g> <g> <path d="M381.575,57.067h-90.231C288.404,25.111,261.461,0,228.752,0C196.043,0,169.1,25.111,166.16,57.067H75.929 c-26.667,0-48.362,21.695-48.362,48.362c0,26.018,20.655,47.292,46.427,48.313v246.694c0,31.467,25.6,57.067,57.067,57.067 h195.381c31.467,0,57.067-25.6,57.067-57.067V153.741c25.772-1.02,46.427-22.294,46.427-48.313 C429.936,78.761,408.242,57.067,381.575,57.067z M165.841,376.817c0,8.013-6.496,14.509-14.508,14.509 c-8.013,0-14.508-6.496-14.508-14.509V186.113c0-8.013,6.496-14.508,14.508-14.508c8.013,0,14.508,6.496,14.508,14.508V376.817z M243.26,376.817c0,8.013-6.496,14.509-14.508,14.509c-8.013,0-14.508-6.496-14.508-14.509V186.113 c0-8.013,6.496-14.508,14.508-14.508c8.013,0,14.508,6.496,14.508,14.508V376.817z M320.679,376.817 c0,8.013-6.496,14.509-14.508,14.509c-8.013,0-14.509-6.496-14.509-14.509V186.113c0-8.013,6.496-14.508,14.509-14.508 s14.508,6.496,14.508,14.508V376.817z"></path> </g> </g> </g></svg>
-                                                    </Button>
-                                                </td>
-                                            </tr>
-                                        ))}</>) : (<tr>
-                                            <td colSpan={9} className="py-10">
-                                                <div className="flex justify-center items-center">
-                                                    <EmptyContainer
-                                                        title="No Activities"
-                                                        description="Select the filters to see the results"
-                                                    />
-                                                </div>
-                                            </td>
-                                        </tr>)}
-
-                                    </tbody>
-                                    <tfoot className="sticky bottom-0 bg-ink-50 dark:bg-ink-900  font-semibold">
-                                        {/* <tr>
-                                        <td colSpan="6" className="px-4 py-3 text-right">
-                                            Average Percentage:
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            {averagePercentage} %
-                                        </td>
-                                        <td></td>
-                                    </tr> */}
-                                        <tr className="text-left">
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-white-600 opcaity-0">
-
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-white-600 ">
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-white-600 ">
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-white-600 ">
-
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-white-600 ">
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-white-600 ">
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
-
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300 flex justify-center ">
-                                                Average Percentage: {averagePercentage} %
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-center text-white-600 ">
-                                            </th>
-                                        </tr>
-                                    </tfoot>
-
-                                </table>
-                            </div>
+                            {/* Added entries: the preview already confirmed each one, so this is a short list to remove from, not a table */}
+                            {activities.length > 0 && (
+                                <ul className="mt-4 divide-y divide-ink-200 border border-ink-200 dark:divide-white/10 dark:border-white/10">
+                                    {activities.map((activity, index) => {
+                                        const kind = activity.isGoal ? "Goal" : activity.targetName ? "Target" : "Task";
+                                        const name = activity.goalName || activity.targetName || activity.taskName || "—";
+                                        const detail = activity.targetName || activity.goalID
+                                            ? `${activity.achievedUnit || 0}${activity.unit ? ` of ${activity.unit}` : ""} ${activity.frequency || ""}`.trim()
+                                            : `${Number(activity.timeTaken || 0).toFixed(0)} mins${Number(activity.setup || 1) > 1 ? ` · ${activity.setup} setups` : ""}`;
+                                        return (
+                                            <li key={activity.id} className="flex items-center gap-3 px-4 py-3">
+                                                <span className="w-6 text-xs font-semibold text-ink-400">{index + 1}</span>
+                                                <span className={`shrink-0 px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wide ${kind === "Task" ? "bg-ink-100 text-ink-700 dark:bg-white/10 dark:text-ink-200" : "bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-300"}`}>{kind}</span>
+                                                <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink-900 dark:text-white">{name}</span>
+                                                <span className="hidden shrink-0 text-xs text-ink-500 dark:text-ink-400 sm:block">{activity.workDate ? formatDate(activity.workDate) : ""}</span>
+                                                <span className="shrink-0 text-sm text-ink-700 dark:text-ink-200">{detail}</span>
+                                                <Button
+                                                    isIconOnly
+                                                    size="sm"
+                                                    variant="light"
+                                                    color="danger"
+                                                    aria-label={`Remove ${name}`}
+                                                    onClick={() => handleRemoveActivity(activity.id)}
+                                                >
+                                                    ✕
+                                                </Button>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            )}
                         </>
 
 

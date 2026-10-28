@@ -65,7 +65,6 @@ export default function FormPage() {
     const [departmentInput, setDepartmentInput] = useState("");
     // Opens on past entries (DA-02); "Log activity" shows the entry form, filtered by frequency (DA-03)
     const [view, setView] = useState<"entries" | "log">("entries");
-    const [frequency, setFrequency] = useState<"daily" | "weekly">("daily");
 
     useEffect(() => {
         if (filterStatus !== null) return;
@@ -267,11 +266,8 @@ export default function FormPage() {
     }, [filterStatus])
 
 
-    // Weekly → weekly and monthly items; Daily → everything else (daily, dynamic, "not daily")
-    const isWeekly = (f?: string) => f === "Weekly" || f === "Monthly";
-    const frequencyTasks = Array.isArray(taskList)
-        ? taskList.filter((t: any) => (frequency === "weekly") === isWeekly(t?.frequency))
-        : taskList;
+    // Daily and weekly tasks are offered together; each task keeps its own frequency
+    const frequencyTasks = taskList;
 
     return (
         <div>
@@ -349,12 +345,6 @@ export default function FormPage() {
                         { key: "log", label: "Log activity" },
                     ]}
                 />
-                {view === "log" && (
-                    <div className="flex items-center gap-3">
-                        <span className="eyebrow">Frequency</span>
-                        <Segmented label="Frequency" size="sm" value={frequency} onChange={setFrequency} options={[{ key: "daily", label: "Daily" }, { key: "weekly", label: "Weekly" }]} />
-                    </div>
-                )}
             </div>
 
             {view === "entries" ? (

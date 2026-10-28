@@ -18,6 +18,7 @@ import {
 
     useDisclosure,
 } from "@/components/ui";
+import { title } from "@/components/primitives";
 import ReusableTable, { TableColumn, TableAction } from "@/components/table"
 import CustomDateRangePicker from "../components/CustomDateRangePicker"
 import { format } from "date-fns";
@@ -195,7 +196,7 @@ export default function EntryApproval() {
 
 
     const [filterStatus, setFilterStatus] = useState(
-        user?.departmentID ? String(user.departmentID) : ""
+        user?.userRole != 1 && user?.departmentID ? String(user.departmentID) : "" // admins start on all departments
     );
     const [selectedUser, setSelectedUser] = useState(
         isELORUSER ? String(user?.userID) : ""
@@ -436,7 +437,7 @@ export default function EntryApproval() {
                 if (!filterStatus) {
                     if ([2, 5, 6, 7, 23].includes(user.userRole)) {
                         setFilterStatus(String(user.departmentID));
-                    } else if (formatted.length > 0) {
+                    } else if (formatted.length > 0 && user.userRole != 1) {
                         setFilterStatus(String(formatted[0].key));
                     }
                 }
@@ -756,7 +757,7 @@ export default function EntryApproval() {
     useEffect(() => {
 
         // wait until department default is set
-        if (user.userRole !== 2 && !filterStatus) {
+        if (user.userRole !== 2 && user.userRole !== 1 && !filterStatus) {
             return;
         }
 
@@ -781,7 +782,7 @@ export default function EntryApproval() {
 
 
     return (
-        <div className="min-h-screen bg-ink-50 dark:bg-ink-950 p-6">
+        <div className="">
             {/* Header */}
             <Modal
                 isOpen={rejectModalOpen}
@@ -908,9 +909,7 @@ export default function EntryApproval() {
             </Modal>
             <div className="mb-6 flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-ink-800 dark:text-white">
-                        Task Approval Management
-                    </h1>
+                    <h1 className={title({ size: "20px" })}>Entry Approval</h1>
                     <p className="mt-1 text-sm text-ink-500 dark:text-ink-400">
                         Review and manage organizational task requests
                     </p>
@@ -923,7 +922,7 @@ export default function EntryApproval() {
                                     <Button
                                         variant="flat"
                                         size="sm"
-                                        className="w-[260px] justify-between bg-ink-200 dark:bg-ink-700"
+                                        className="w-[260px] justify-between border border-ink-300 bg-white dark:border-white/15 dark:bg-ink-900"
                                     >
                                         {dateRange?.startDate && dateRange?.endDate
                                             ? `${format(new Date(dateRange.startDate), "dd MMM yyyy")} → ${format(
@@ -1041,7 +1040,7 @@ export default function EntryApproval() {
                     )}
                 </div>
             </div>
-            <div className="bg-white dark:bg-ink-800 rounded-lg shadow overflow-hidden p-6">
+            <div className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 overflow-hidden p-6">
                 {selectedRows.length > 0 && user.userRole !== 2 && (
                     <div className="flex justify-between items-center bg-ink-100 dark:bg-ink-800 p-3 rounded mb-3 shadow">
                         <span className="font-semibold">

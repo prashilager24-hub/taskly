@@ -13,7 +13,6 @@ import {
   LayoutDashboard,
   LifeBuoy,
   MessageSquareText,
-  Network,
   Settings,
   ShieldCheck,
   Smile,
@@ -67,8 +66,7 @@ export const MENU: MenuItem[] = [
     module: "admin",
     children: [
       { icon: ShieldCheck, label: "Access Management", href: "access-management", module: "accessmgmt" },
-      { icon: Building2, label: "Departments", href: "primaryDepartment", module: "deptmgmt" },
-      { icon: Network, label: "Sub Departments", href: "department", module: "deptmgmt" },
+      { icon: Building2, label: "Departments", href: "departments", module: "deptmgmt" },
       { icon: ClipboardList, label: "Task Management", href: "tasks", module: "taskmgmt" },
       { icon: Target, label: "Target Management", href: "target", module: "targetmgmt" },
       { icon: Goal, label: "Goal Management", href: "Goal-management", module: "goalmgmt" },

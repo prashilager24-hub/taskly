@@ -3,7 +3,7 @@ import { Button } from "@/components/ui";
 import { addToast, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Tabs, Tab, Chip } from "@/components/ui";
 import { Input } from "@/components/ui";
 import {
-    Modal,
+    Drawer, DrawerContent, DrawerHeader, DrawerBody, DrawerFooter, Modal,
     ModalContent,
     ModalHeader,
     ModalBody,
@@ -92,7 +92,7 @@ const ConfirmToggleModal = ({
     </Modal>
 );
 
-export default function PrimaryDepartmentPage() {
+export default function PrimaryDepartmentPage({ view = "list" }: { view?: "list" | "hierarchy" }) {
     const authUserLD = localStorage.getItem("authUserLD");
     const authToken = authUserLD ? JSON.parse(authUserLD).token : "";
     const [goalCriteria, setGoalCriteria] = useState<string>("DAILY");
@@ -337,28 +337,22 @@ export default function PrimaryDepartmentPage() {
         })
         .sort((a, b) => a.key - b.key);
 
+    useEffect(() => {
+        if (view === "hierarchy" && hierarchyData.length === 0) fetchHierarchy();
+    }, [view]);
+
     return (
         <div className="flex flex-col h-full">
+            {/* The tab strip lives on the Departments page; this view is picked from there */}
             <Tabs
                 aria-label="Department Views"
-                color="primary"
-                variant="underlined"
-                className="mb-2"
-                onSelectionChange={(key) => {
-                    if (key === "hierarchy" && hierarchyData.length === 0) {
-                        fetchHierarchy();
-                    }
-                }}
+                selectedKey={view}
+                classNames={{ tabList: "hidden" }}
             >
                 <Tab key="list" title="Departments">
                     {/* HEADER */}
                     <div className="flex justify-between items-center mb-4 h-12">
-                        <div>
-                            <h1 className={title({ size: "20px" })}>Department Management</h1>
-                            <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">
-                                Manage top-level departments used to group departments
-                            </p>
-                        </div>
+                        <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">Manage top-level departments used to group departments</p>
 
                         <Button size="sm" color="primary" onClick={handleOpenAddModal}>
                             Add Department
@@ -537,15 +531,15 @@ export default function PrimaryDepartmentPage() {
             {/* =========================== */}
             {/*       ADD / EDIT MODAL      */}
             {/* =========================== */}
-            <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg">
-                <ModalContent>
+            <Drawer isOpen={isOpen} onOpenChange={onOpenChange}>
+                <DrawerContent>
                     {(onClose) => (
                         <>
-                            <ModalHeader>
+                            <DrawerHeader>
                                 {selectedId ? "Edit Department" : "Add New Department"}
-                            </ModalHeader>
+                            </DrawerHeader>
 
-                            <ModalBody>
+                            <DrawerBody>
                                 <div className="space-y-4">
                                     <Input
                                         label="Department Name"
@@ -601,9 +595,9 @@ export default function PrimaryDepartmentPage() {
                                         <SelectItem key="COMBINED">Combined</SelectItem>
                                     </Select>
                                 </div>
-                            </ModalBody>
+                            </DrawerBody>
 
-                            <ModalFooter>
+                            <DrawerFooter>
                                 <Button variant="light" onPress={onClose}>
                                     Cancel
                                 </Button>
@@ -621,11 +615,11 @@ export default function PrimaryDepartmentPage() {
                                 >
                                     {selectedId ? "Update Department" : "Add Department"}
                                 </Button>
-                            </ModalFooter>
+                            </DrawerFooter>
                         </>
                     )}
-                </ModalContent>
-            </Modal>
+                </DrawerContent>
+            </Drawer>
 
             {/* ============================ */}
             {/*      ACTIVATE / DEACTIVATE    */}

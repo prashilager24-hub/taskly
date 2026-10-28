@@ -102,3 +102,8 @@
     animation: slideUp 3s ease-in-out forwards;
   }
 }
+
+/* Hierarchy minimap and controls follow the theme */
+html.dark .react-flow__minimap { background: #141414; }
+html.dark .react-flow__minimap-mask { fill: rgba(0, 0, 0, 0.6); }
+html.dark .react-flow__controls-button { background: #141414; border-color: rgba(255, 255, 255, 0.1); color: #fff; fill: #fff; }

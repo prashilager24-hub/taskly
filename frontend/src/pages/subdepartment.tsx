@@ -6,7 +6,7 @@ import EmptyContainer from "@/components/EmptyContainer";
 import { Select, SelectItem } from "@/components/ui";
 import { DailyActivityLog } from "@/components";
 import {
-    Modal,
+    Drawer, DrawerContent, DrawerHeader, DrawerBody, DrawerFooter, Modal,
     ModalContent,
     ModalHeader,
     ModalBody,
@@ -583,12 +583,7 @@ export default function DepartmentPage() {
             </Modal>
             {/* HEADER */}
             <div className="flex justify-between items-center mb-4 h-12">
-                <div>
-                    <h1 className={title({ size: "20px" })}>Sub Department Management</h1>
-                    <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">
-                        Manage and monitor all company departments
-                    </p>
-                </div>
+                <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">Manage and monitor all company departments</p>
 
                 <Button size="sm" color="primary" onClick={handleOpenModal}>
                     Add Sub Department
@@ -755,15 +750,15 @@ export default function DepartmentPage() {
             {/*       ADD / EDIT MODAL      */}
             {/* =========================== */}
 
-            <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg">
-                <ModalContent>
+            <Drawer isOpen={isOpen} onOpenChange={onOpenChange}>
+                <DrawerContent>
                     {(onClose) => (
                         <>
-                            <ModalHeader>
+                            <DrawerHeader>
                                 {selectedDepartmentId ? "Edit Sub Department" : "Add New Sub Department"}
-                            </ModalHeader>
+                            </DrawerHeader>
 
-                            <ModalBody>
+                            <DrawerBody>
                                 <div className="space-y-4">
                                     <Input
                                         label="Sub Department"
@@ -817,9 +812,9 @@ export default function DepartmentPage() {
                                         ))}
                                     </Select>
                                 </div>
-                            </ModalBody>
+                            </DrawerBody>
 
-                            <ModalFooter>
+                            <DrawerFooter>
                                 <Button variant="light" onPress={onClose}>
                                     Cancel
                                 </Button>
@@ -838,11 +833,11 @@ export default function DepartmentPage() {
                                 >
                                     {selectedDepartmentId ? "Update Sub Department" : "Add Sub Department"}
                                 </Button>
-                            </ModalFooter>
+                            </DrawerFooter>
                         </>
                     )}
-                </ModalContent>
-            </Modal>
+                </DrawerContent>
+            </Drawer>
 
             {/* ============================ */}
             {/*      ACTIVATE / DEACTIVATE    */}

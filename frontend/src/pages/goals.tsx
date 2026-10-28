@@ -681,7 +681,7 @@ export default function Goals() {
                             <Button
                                 variant="flat"
                                 size="sm"
-                                className="w-[260px] justify-between bg-ink-200 dark:bg-ink-700"
+                                className="w-[260px] justify-between border border-ink-300 bg-white dark:border-white/15 dark:bg-ink-900"
                             >
                                 {dateRange?.startDate && dateRange?.endDate
                                     ? `${format(new Date(dateRange.startDate), "dd MMM yyyy")} → ${format(
@@ -863,7 +863,7 @@ export default function Goals() {
 
             >
                 {/* Card Title */}
-                <h2 className="text-base font-semibold text-ink-700 dark:text-ink-200 tracking-wide">
+                <h2 className="eyebrow">
                     Summary
                 </h2>
                 <div className="flex">
@@ -873,7 +873,7 @@ export default function Goals() {
                             Average Goal Achieved
                         </span>
 
-                        <span className="px-3 py-1 mx-2 text-sm font-semibold text-emerald-700 bg-emerald-100 rounded-full">
+                        <span className="$1">
                             {Number(averageGoalAchieved || 0).toFixed(2)}%
                         </span>
                     </div>
@@ -882,7 +882,7 @@ export default function Goals() {
                 </div>
 
             </div>
-            <div className="bg-white dark:bg-ink-800 rounded-lg shadow p-6">
+            <div className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 p-6">
                 <ReusableTable
                     data={reportData}
                     columns={reportColumns}

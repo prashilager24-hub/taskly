@@ -349,7 +349,7 @@ export default function ReportsPage() {
             </div>
 
             {/* Reports Table */}
-            <div className="bg-white dark:bg-ink-800 rounded-lg shadow overflow-hidden p-6">
+            <div className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 overflow-hidden p-6">
                 <ReusableTable
                     data={reportData}
                     columns={reportColumns}

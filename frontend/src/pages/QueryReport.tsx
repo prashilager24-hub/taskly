@@ -586,7 +586,7 @@ export default function QueryReport() {
                                 <Button
                                     variant="flat"
                                     size="sm"
-                                    className="w-[260px] justify-between bg-ink-200 dark:bg-ink-700"
+                                    className="w-[260px] justify-between border border-ink-300 bg-white dark:border-white/15 dark:bg-ink-900"
                                 >
                                     {dateRange?.startDate && dateRange?.endDate
                                         ? `${format(new Date(dateRange.startDate), "dd MMM yyyy")} → ${format(
@@ -829,7 +829,7 @@ export default function QueryReport() {
                                 <Spinner />
                             </div>
                         ) : (
-                            <div className="bg-white dark:bg-ink-800 rounded-lg shadow overflow-hidden p-6">
+                            <div className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 overflow-hidden p-6">
                                 <EfficiencyTable data={dashboard} type="user" />
                             </div>
                         )}

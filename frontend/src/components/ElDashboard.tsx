@@ -93,7 +93,7 @@ export default function ELDashboard({ data }) {
                     <AccordionItem
                         key={el.ELID}
                         aria-label={el.ELName}
-                        className="bg-white dark:bg-ink-900 rounded-2xl shadow px-4"
+                        className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 px-4"
                         title={
                             // Fix 2 — min-w-0 + overflow-x-auto on the row
                             <div className="flex items-center justify-between w-full min-w-0 overflow-x-auto">

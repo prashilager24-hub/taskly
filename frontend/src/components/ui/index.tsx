@@ -21,6 +21,8 @@ import {
   Chip as HeroChip,
   Input as HeroInput,
   Modal as HeroModal,
+  Drawer as HeroDrawer,
+  type DrawerProps,
   Tabs as HeroTabs,
   type TabsProps,
   Pagination as HeroPagination,
@@ -244,6 +246,7 @@ export const Chip = forwardRef<HTMLDivElement, ChipProps>(function Chip({ classN
   return (
     <HeroChip
       ref={ref}
+      radius="none"
       classNames={{ ...classNames, content: cn("font-medium uppercase tracking-chip text-[10.5px]", classNames?.content) }}
       {...props}
     />
@@ -252,4 +255,24 @@ export const Chip = forwardRef<HTMLDivElement, ChipProps>(function Chip({ classN
 
 export function Modal({ classNames, ...props }: ModalProps) {
   return <HeroModal classNames={{ ...classNames, base: cn("shadow-pop", classNames?.base) }} {...props} />;
+}
+
+// Create / edit forms open in a canvas: a panel that slides in from the right and keeps the page
+// visible behind it. Same parts as Modal (DrawerContent, DrawerHeader, DrawerBody, DrawerFooter).
+export function Drawer({ classNames, placement = "right", size = "xl", ...props }: DrawerProps) {
+  return (
+    <HeroDrawer
+      placement={placement}
+      size={size}
+      scrollBehavior="inside"
+      classNames={{
+        ...classNames,
+        base: cn("shadow-pop border-l border-ink-200 dark:border-white/10", classNames?.base),
+        header: cn("border-b border-ink-200 dark:border-white/10 text-lg font-black uppercase tracking-title", classNames?.header),
+        footer: cn("border-t border-ink-200 dark:border-white/10", classNames?.footer),
+        body: cn("py-6", classNames?.body),
+      }}
+      {...props}
+    />
+  );
 }

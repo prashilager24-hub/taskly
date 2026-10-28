@@ -33,9 +33,11 @@ export default function Layout({ children }) {
 
                 {/* Content Scroll Area */}
                 <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
+                    <div className="mx-auto w-full max-w-[1680px]">
                     {/* "Viewing as … — Return" while an admin is switched into another user, on every page */}
                     <SwitchedUserBanner onSwitchBack={() => window.location.reload()} />
                     {children}
+                    </div>
                 </main>
 
             </div>

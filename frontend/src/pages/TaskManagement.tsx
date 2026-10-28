@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, addToast } from "@/components/ui";
+import { Drawer, DrawerContent, DrawerHeader, DrawerBody, DrawerFooter, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, addToast } from "@/components/ui";
 import { Input } from "@/components/ui";
 import axios from "axios";
 import { Select, SelectItem } from "@/components/ui";
@@ -456,7 +456,7 @@ const TaskManagement: React.FC = () => {
                 </div>
             )}
 
-            <div className="bg-white dark:bg-ink-800 rounded-lg shadow overflow-hidden p-6">
+            <div className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 overflow-hidden p-6">
                 <ReusableTable
                     key={tableRefreshKey}
                     data={tasks}
@@ -511,17 +511,16 @@ const TaskManagement: React.FC = () => {
                 />
             </div>
 
-            {/* Add Task Modal */}
-            <Modal
+            {/* Create / edit canvas */}
+            <Drawer
                 isOpen={isModalOpen}
                 onOpenChange={setIsModalOpen}
-                size="2xl"
             >
-                <ModalContent>
+                <DrawerContent>
                     {(onClose: () => void) => (
                         <>
-                            <ModalHeader className="flex flex-col gap-1">{isEditing ? "Edit Task" : "Add New Task"}</ModalHeader>
-                            <ModalBody>
+                            <DrawerHeader className="flex flex-col gap-1">{isEditing ? "Edit Task" : "Add New Task"}</DrawerHeader>
+                            <DrawerBody>
                                 <div className="space-y-4">
                                     <Input
                                         label="Task Name"
@@ -671,8 +670,8 @@ const TaskManagement: React.FC = () => {
                                         </Select>
                                     </div>
                                 </div>
-                            </ModalBody>
-                            <ModalFooter>
+                            </DrawerBody>
+                            <DrawerFooter>
                                 <Button color="danger" variant="light" onPress={onClose}>
                                     Cancel
                                 </Button>
@@ -685,11 +684,11 @@ const TaskManagement: React.FC = () => {
                                     {isEditing ? "Update Task" : "Add Task"}
                                 </Button>
 
-                            </ModalFooter>
+                            </DrawerFooter>
                         </>
                     )}
-                </ModalContent>
-            </Modal>
+                </DrawerContent>
+            </Drawer>
 
 
             <Modal isOpen={confirmOpen} onOpenChange={setConfirmOpen}>

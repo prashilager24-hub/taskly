@@ -5,7 +5,7 @@ import ProtectedRoute from "@/components/protectedRoute"
 import IndexPage from "@/pages/index";
 import DashboardHome from "@/pages/home";
 import ActivityLogPage from "@/pages/activity-log";
-import DepartmentPage from "@/pages/subdepartment";
+import DepartmentsPage from "@/pages/departments";
 import TaskManagementPage from "@/pages/TaskManagement";
 import ReportsPage from "@/pages/reports";
 import History from "@/pages/History";
@@ -24,7 +24,6 @@ import SalesForward from "./pages/salesForward";
 import GoalManagement from "./pages/goalManagement";
 import Goals from "./pages/goals";
 import QueryReport from "./pages/QueryReport";
-import PrimaryDepartmentPage from "./pages/PrimaryDepartment";
 import HRFeedback from "./pages/hrFeedback";
 
 const ProtectedLayout = () => (
@@ -49,8 +48,9 @@ function App() {
       <Route element={<ProtectedLayout />}>
         <Route path="/dashboard" element={<DashboardHome />} />
         <Route path="/activity-log" element={<ActivityLogPage />} />
-        <Route path="/department" element={<ProtectedRoute adminOnly={true}><DepartmentPage /></ProtectedRoute>} />
-        <Route path="/primaryDepartment" element={<ProtectedRoute adminOnly={true}><PrimaryDepartmentPage /></ProtectedRoute>} />
+        <Route path="/departments" element={<ProtectedRoute adminOnly={true}><DepartmentsPage /></ProtectedRoute>} />
+        <Route path="/department" element={<Navigate to="/departments?tab=sub" replace />} />
+        <Route path="/primaryDepartment" element={<Navigate to="/departments?tab=primary" replace />} />
         <Route path="/daily-activity" element={<FormPage />} />
         <Route path="/department-forms" element={<Navigate to="/daily-activity" replace />} />
         <Route path="/tasks" element={<ProtectedRoute adminOnly={true}><TaskManagementPage /></ProtectedRoute>} />

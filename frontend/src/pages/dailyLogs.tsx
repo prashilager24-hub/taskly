@@ -48,10 +48,10 @@ export default function DailyLogs() {
     const [departmentList, setDepartmentList] = useState<Department[]>([]);
     const [loading, setLoading] = useState(false);
     const [filterStatus, setFilterStatus] = useState(
-        user?.departmentID ? String(user.departmentID) : ""
+        user?.userRole != 1 && user?.departmentID ? String(user.departmentID) : "" // admins start on all departments
     );
     const [selectedUser, setSelectedUser] = useState(
-        user?.userID ? String(user.userID) : ""
+        user?.userRole != 1 && user?.userID ? String(user.userID) : ""
     );
     const [users, setUsers] = useState<User[]>([]);
     const [dateSelect, setDateSelect] = useState(7)
@@ -401,7 +401,7 @@ export default function DailyLogs() {
             try {
                 const body = {
                     departmentID: user.userRole == 7 ? null : filterStatus ? Number(filterStatus) : null,
-                    userID: selectedUser !== 0 ? Number(selectedUser) : user.userID,
+                    userID: Number(selectedUser) || (user.userRole == 1 ? null : user.userID), // admins see everyone
                     startDate: dateRange.startDate,
                     endDate: dateRange.endDate,
                     isForTarget: isTarget,
@@ -508,7 +508,7 @@ export default function DailyLogs() {
                                 <Button
                                     variant="flat"
                                     size="sm"
-                                    className="w-[260px] justify-between bg-ink-200 dark:bg-ink-700"
+                                    className="w-[260px] justify-between border border-ink-300 bg-white dark:border-white/15 dark:bg-ink-900"
                                 >
                                     {dateRange?.startDate && dateRange?.endDate
                                         ? `${format(new Date(dateRange.startDate), "dd MMM yyyy")} → ${format(
@@ -566,7 +566,7 @@ export default function DailyLogs() {
 
                 >
                     {/* Card Title */}
-                    <h2 className="text-base font-semibold text-ink-700 dark:text-ink-200 tracking-wide">
+                    <h2 className="eyebrow">
                         Summary
                     </h2>
                     <div className="flex">
@@ -576,7 +576,7 @@ export default function DailyLogs() {
                                 average working Hours
                             </span>
 
-                            <span className="px-3 py-1 mx-2 text-sm font-semibold text-emerald-700 bg-emerald-100 rounded-full">
+                            <span className="$1">
                                 {average.avgTotalWork}
                             </span>
                         </div>
@@ -598,7 +598,7 @@ export default function DailyLogs() {
 
 
             {/* Reports Table */}
-            <div className="bg-white dark:bg-ink-800 rounded-lg shadow overflow-hidden p-6">
+            <div className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 overflow-hidden p-6">
                 <ReusableTable
                     data={reportData}
                     columns={reportColumns}

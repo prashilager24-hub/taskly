@@ -392,7 +392,7 @@ const EfficiencyRules = memo(() => (
             </svg>
             Efficiency &amp; Utilization Rules
         </h2>
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="flex flex-col gap-4">
             <div className={RULE_CARD}>
                 <strong>Note:</strong> Regular workday = 8 hours. Half day leave = 4 hours.
             </div>

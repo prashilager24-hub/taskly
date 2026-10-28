@@ -1,3 +1,5 @@
+import { PageTitle } from "@/components/page";
+import { SummaryBar } from "@/components/page";
 import React, { useEffect, useState } from "react";
 import {
     DateRangePicker,
@@ -663,17 +665,8 @@ export default function Goals() {
 
     return (
         <div>
-            <div className="mb-8 flex justify-between">
-                <div>
-                    <h1 className={title({ size: "20px" })}>
-                        Goals Report
-                    </h1>
-
-                    <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">
-                        Track goal progress and performance over time
-                    </p>
-
-                </div>
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                <PageTitle title="Goals Report" subtitle="Track goal progress and performance over time" />
 
                 <div className="flex gap-3 items-center">
                     <Dropdown placement="bottom-start">
@@ -858,31 +851,11 @@ export default function Goals() {
                     }
                 </div>
             </div>
-            <div
-                className="flex flex-col gap-4 p-4 bg-white dark:bg-ink-900 rounded-xl  my-2 border border-ink-100 dark:border-white/10"
-
-            >
-                {/* Card Title */}
-                <h2 className="eyebrow">
-                    Summary
-                </h2>
-                <div className="flex">
-                    {/* Avg Total Hours */}
-                    <div className="flex items-center justify-between rounded-lg p-2">
-                        <span className="text-sm text-ink-600 dark:text-ink-300 font-medium">
-                            Average Goal Achieved
-                        </span>
-
-                        <span className="$1">
-                            {Number(averageGoalAchieved || 0).toFixed(2)}%
-                        </span>
-                    </div>
-
-
-                </div>
-
-            </div>
-            <div className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 p-6">
+            <SummaryBar
+                className="lg:grid-cols-2"
+                items={[{ label: "Average goal achieved", value: `${Number(averageGoalAchieved || 0).toFixed(2)}%` }]}
+            />
+            <div className="border border-ink-200 bg-white p-5 dark:border-white/10 dark:bg-ink-900">
                 <ReusableTable
                     data={reportData}
                     columns={reportColumns}

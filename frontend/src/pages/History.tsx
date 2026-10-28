@@ -1,3 +1,4 @@
+import { PageTitle } from "@/components/page";
 import { useEffect, useState } from "react";
 import { Select, SelectItem } from "@/components/ui";
 import { DateRangePicker, Autocomplete, addToast, Spinner,  Modal,
@@ -584,16 +585,8 @@ const [goals, setGoals] = useState([]);
 
     return (
         < div>
-            <div className="mb-8 flex justify-between">
-                <div>
-                    <h1 className={title({ size: "20px" })}>
-                        User Performance History
-                    </h1>
-
-                    <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">
-                        Review historical performance, productivity, utilization, and target achievement trends.
-                    </p>
-                </div>
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                <PageTitle title="User Performance History" subtitle="Review historical performance, productivity, utilization, and target achievement trends." />
 
                 <div className="flex gap-3 items-center">
                     <div className="flex gap-3 items-center">

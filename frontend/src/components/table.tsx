@@ -627,7 +627,7 @@ export default function ReusableTable({
             classNames={{
                 // Scrolls sideways inside its own frame, so the Actions column is never cut off
                 wrapper: "overflow-x-auto border border-ink-200 bg-white p-0 shadow-none dark:border-white/10 dark:bg-ink-900",
-                td: "py-3",
+                td: "whitespace-nowrap py-3",
             }}
             aria-label="Data table"
             bottomContent={bottomContent}

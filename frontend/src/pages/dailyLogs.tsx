@@ -1,3 +1,5 @@
+import { PageTitle } from "@/components/page";
+import { SummaryBar } from "@/components/page";
 import { useEffect, useState } from "react";
 import { Autocomplete, AutocompleteItem, Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Chip } from "@/components/ui";
 import { title } from "@/components/primitives";
@@ -476,19 +478,8 @@ export default function DailyLogs() {
 
     return (
         <div>
-            <div className="mb-8 flex justify-between">
-                <div>
-                    <h1 className={title({ size: "20px" })}>
-                        {user?.departmentID ? "My Data" : "User Data"}
-                    </h1>
-
-                    <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">
-                        {user?.departmentID
-                            ? "View insights and reports for your department’s daily activities."
-                            : "Access detailed insights into users’ performance and daily activity records."
-                        }
-                    </p>
-                </div>
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                <PageTitle title={user?.departmentID ? "My Data" : "User Data"} subtitle={user?.departmentID ? "View insights and reports for your department’s daily activities." : "Access detailed insights into users’ performance and daily activity records."} />
 
                 <div className="flex gap-3 items-center">
                     <div className="flex gap-3 items-center">
@@ -561,44 +552,17 @@ export default function DailyLogs() {
                 </div>
             </div>
             {average && (
-                <div
-                    className="flex flex-col gap-4 p-4 bg-white dark:bg-ink-900 rounded-xl  my-2 border border-ink-100 dark:border-white/10"
-
-                >
-                    {/* Card Title */}
-                    <h2 className="eyebrow">
-                        Summary
-                    </h2>
-                    <div className="flex">
-                        {/* Avg Total Hours */}
-                        <div className="flex items-center justify-between rounded-lg p-2">
-                            <span className="text-sm text-ink-600 dark:text-ink-300 font-medium">
-                                average working Hours
-                            </span>
-
-                            <span className="$1">
-                                {average.avgTotalWork}
-                            </span>
-                        </div>
-
-                        {/* Avg Allocated Hours */}
-                        <div className="flex items-center justify-between rounded-lg p-2">
-                            <span className="text-sm text-ink-600 dark:text-ink-300 font-medium">
-                                average Allocated Hours
-                            </span>
-
-                            <span className="px-3 py-1 text-sm font-semibold text-amber-700 bg-amber-100 rounded-full">
-                                {average.avgAllocatedHrs}
-                            </span>
-                        </div>
-                    </div>
-
-                </div>
+                <SummaryBar
+                    className="lg:grid-cols-2"
+                    items={[
+                        { label: "Average working hours", value: average.avgTotalWork },
+                        { label: "Average allocated hours", value: average.avgAllocatedHrs },
+                    ]}
+                />
             )}
 
-
             {/* Reports Table */}
-            <div className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 overflow-hidden p-6">
+            <div className="border border-ink-200 bg-white p-5 dark:border-white/10 dark:bg-ink-900">
                 <ReusableTable
                     data={reportData}
                     columns={reportColumns}

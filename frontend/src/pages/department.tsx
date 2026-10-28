@@ -1,3 +1,4 @@
+import { PageTitle } from "@/components/page";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui";
 import { Tabs, Tab, Card, CardBody, Listbox, ListboxItem, addToast, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Autocomplete, AutocompleteItem } from "@/components/ui";
@@ -480,13 +481,8 @@ export default function DepartmentPage() {
         <div className="flex flex-col h-full">
 
             {/* HEADER */}
-            <div className="flex justify-between items-center mb-4 h-12">
-                <div>
-                    <h1 className={title({ size: "20px" })}>Department</h1>
-                    <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">
-                        Manage and monitor all company departments
-                    </p>
-                </div>
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                <PageTitle title="Department" subtitle="Manage and monitor all company departments" />
 
                 <Button size="sm" color="primary" onClick={handleOpenModal}>
                     Add Department

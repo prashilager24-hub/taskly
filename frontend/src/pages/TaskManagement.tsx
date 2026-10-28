@@ -1,3 +1,4 @@
+import { PageTitle } from "@/components/page";
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui";
 import { Drawer, DrawerContent, DrawerHeader, DrawerBody, DrawerFooter, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, addToast } from "@/components/ui";
@@ -358,14 +359,8 @@ const TaskManagement: React.FC = () => {
     return (
         <div>
 
-            <div className="flex justify-between items-center mb-4" style={{ height: "48px" }}>
-                <div>
-
-                    <h1 className={title({ size: "20px" })}>Task Management</h1>
-                    <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">
-                        Manage and monitor all company Tasks
-                    </p>
-                </div>
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                <PageTitle title="Task Management" subtitle="Manage and monitor all company Tasks" />
                 <div className="flex justify-end m-3 gap-3">
 
                     <Button variant="flat"

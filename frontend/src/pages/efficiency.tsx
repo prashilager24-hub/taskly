@@ -1,3 +1,4 @@
+import { PageTitle } from "@/components/page";
 import { useEffect, useState, useMemo, useCallback } from "react";
 
 import { addToast, Dropdown, DropdownTrigger, Button, DropdownMenu, DropdownItem } from "@/components/ui";
@@ -502,13 +503,8 @@ export default function Efficiency() {
 
     return (
         < div>
-            <div className="mb-8 flex justify-between">
-                <div>
-                    <h1 className={title({ size: "20px" })}>Performance Insights</h1>
-
-                    <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">
-                        Track performance, productivity, and utilization insights                                    </p>
-                </div>
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                <PageTitle title="Performance Insights" subtitle="Track performance, productivity, and utilization insights" />
 
                 <div className="flex gap-3 items-center">
                     <div className="flex gap-3 items-center">

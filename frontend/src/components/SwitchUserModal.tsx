@@ -4,14 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { Users } from "lucide-react";
 
 import {
-    Autocomplete,
-    AutocompleteItem,
     Button,
-    Modal,
-    ModalBody,
-    ModalContent,
-    ModalFooter,
-    ModalHeader,
+    Drawer,
+    DrawerBody,
+    DrawerContent,
+    DrawerFooter,
+    DrawerHeader,
+    Input,
     addToast,
     useDisclosure,
 } from "@/components/ui";
@@ -115,58 +114,70 @@ export default function SwitchUserModal() {
         }
     };
 
+    const [deptSearch, setDeptSearch] = useState("");
+    const [userSearch, setUserSearch] = useState("");
+    const shownDepartments = departments.filter((d) => d.name.toLowerCase().includes(deptSearch.toLowerCase()));
+    const shownUsers = users.filter((u) => u.name.toLowerCase().includes(userSearch.toLowerCase()));
+
     if (!canSwitchUser()) return null;
 
+    const row = (active: boolean) =>
+        `flex w-full items-center justify-between border px-3 py-2.5 text-left text-sm transition-colors focus-ring ${
+            active
+                ? "border-brand-600 bg-brand-50 font-semibold text-brand-700 dark:bg-brand-500/15 dark:text-brand-300"
+                : "border-ink-200 text-ink-800 hover:border-brand-500 dark:border-white/10 dark:text-ink-100"
+        }`;
+
+    // Plain lists inside the canvas (no pop-up menus), so picking a department never dismisses it
     return (
         <>
             <Button size="sm" variant="bordered" startContent={<Users size={14} />} onPress={onOpen}>
                 Switch User
             </Button>
 
-            <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) reset(); onOpenChange(); }} size="md">
-                <ModalContent>
-                    <ModalHeader className="flex flex-col gap-1">
+            <Drawer isOpen={isOpen} onOpenChange={(open) => { if (!open) reset(); onOpenChange(); }} size="md">
+                <DrawerContent>
+                    <DrawerHeader className="flex flex-col gap-1">
                         <span className="eyebrow">Admin</span>
-                        <span className="text-base font-bold">Switch user</span>
-                    </ModalHeader>
-                    <ModalBody className="gap-4">
-                        <Autocomplete
-                            label="Department"
-                            labelPlacement="outside"
-                            placeholder="Select a department"
-                            selectedKey={departmentId || null}
-                            onSelectionChange={(key) => setDepartmentId(key ? String(key) : "")}
-                        >
-                            {departments.map((d) => (
-                                <AutocompleteItem key={String(d.id)} textValue={d.name}>{d.name}</AutocompleteItem>
-                            ))}
-                        </Autocomplete>
+                        <span>Switch user</span>
+                    </DrawerHeader>
+                    <DrawerBody className="gap-6">
+                        <section className="flex flex-col gap-2">
+                            <p className="eyebrow">1 · Department</p>
+                            <Input size="sm" placeholder="Search departments" value={deptSearch} onValueChange={setDeptSearch} />
+                            <div className="flex max-h-56 flex-col gap-1.5 overflow-y-auto">
+                                {shownDepartments.map((d) => (
+                                    <button key={d.id} type="button" className={row(String(d.id) === departmentId)} onClick={() => { setDepartmentId(String(d.id)); setUserSearch(""); }}>
+                                        {d.name}
+                                    </button>
+                                ))}
+                                {!shownDepartments.length && <p className="text-xs text-ink-500 dark:text-ink-400">{departments.length ? "No matching department." : "Loading departments…"}</p>}
+                            </div>
+                        </section>
 
-                        <Autocomplete
-                            label="User"
-                            labelPlacement="outside"
-                            placeholder={departmentId ? "Select a user" : "Choose a department first"}
-                            isDisabled={!departmentId}
-                            isLoading={loadingUsers}
-                            selectedKey={userId || null}
-                            onSelectionChange={(key) => setUserId(key ? String(key) : "")}
-                        >
-                            {users.map((u) => (
-                                <AutocompleteItem key={String(u.id)} textValue={u.name}>{u.name}</AutocompleteItem>
-                            ))}
-                        </Autocomplete>
-                        {departmentId && !loadingUsers && users.length === 0 && (
-                            <p className="text-xs text-ink-500 dark:text-ink-400">No active users in this department.</p>
-                        )}
-                    </ModalBody>
-                    <ModalFooter>
+                        <section className="flex flex-col gap-2">
+                            <p className="eyebrow">2 · User</p>
+                            <Input size="sm" placeholder="Search users" value={userSearch} onValueChange={setUserSearch} isDisabled={!departmentId} />
+                            <div className="flex max-h-56 flex-col gap-1.5 overflow-y-auto">
+                                {shownUsers.map((u) => (
+                                    <button key={u.id} type="button" className={row(String(u.id) === userId)} onClick={() => setUserId(String(u.id))}>
+                                        {u.name}
+                                    </button>
+                                ))}
+                                {!departmentId && <p className="text-xs text-ink-500 dark:text-ink-400">Choose a department first.</p>}
+                                {departmentId && loadingUsers && <p className="text-xs text-ink-500 dark:text-ink-400">Loading users…</p>}
+                                {departmentId && !loadingUsers && users.length === 0 && <p className="text-xs text-ink-500 dark:text-ink-400">No active users in this department.</p>}
+                            </div>
+                        </section>
+                    </DrawerBody>
+                    <DrawerFooter>
                         <Button variant="bordered" onPress={() => { reset(); onClose(); }}>Cancel</Button>
                         <Button color="primary" isDisabled={!userId} isLoading={switching} onPress={handleSwitch}>
                             Switch
                         </Button>
-                    </ModalFooter>
-                </ModalContent>
-            </Modal>
+                    </DrawerFooter>
+                </DrawerContent>
+            </Drawer>
         </>
     );
 }

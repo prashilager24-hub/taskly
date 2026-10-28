@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/page";
 import { useSearchParams } from "react-router-dom";
 
 import { Tab, Tabs } from "@/components/ui";
@@ -23,12 +24,7 @@ export default function DepartmentsPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <header>
-        <h1 className={title({ size: "20px" })}>Departments</h1>
-        <p className="mt-1 text-sm text-ink-500 dark:text-ink-400">
-          Primary departments group the sub departments where people, tasks, targets and goals live.
-        </p>
-      </header>
+      <PageHeader title="Departments" subtitle="Primary departments group the sub departments where people, tasks, targets and goals live." className="mb-0" />
 
       <Tabs
         aria-label="Department views"

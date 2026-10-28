@@ -444,7 +444,7 @@ export default function EfficiencyTable({ data, type, onEdit, dashboard = false 
                 classNames={{
                     wrapper: dashboard ? "" : "min-h-[400px] overflow-x-auto border border-ink-200 p-0 shadow-none dark:border-white/10",
                     th: ["bg-ink-100", "dark:bg-ink-800", "text-default-500", "border-divider"],
-                    td: ["py-3"],
+                    td: ["whitespace-nowrap", "py-3"],
                 }}
                 sortDescriptor={sortDescriptor}
                 topContent={type == "admin" ? null : topContent}

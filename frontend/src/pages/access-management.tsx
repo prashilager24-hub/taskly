@@ -1,4 +1,5 @@
 
+import { PageTitle } from "@/components/page";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui";
 import { Input } from "@/components/ui";
@@ -565,13 +566,8 @@ export default function AccessManagementPage() {
     return (
         <div>
             <AddNewRoleModal isOpen={isRoleModalOpen} onClose={() => setIsRoleModalOpen(false)} />
-            <div className="flex justify-between m-3 gap-3">
-                <div>
-                    <h1 className={title({ size: "20px" })}>Access Management</h1>
-                    <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">
-                        Manage user roles, permissions, and access control
-                    </p>
-                </div>
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                <PageTitle title="Access Management" subtitle="Manage user roles, permissions, and access control" />
                 <div className="flex gap-3">
                     <Button
                         variant="flat"

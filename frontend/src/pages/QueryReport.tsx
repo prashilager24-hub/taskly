@@ -1,3 +1,4 @@
+import { PageTitle } from "@/components/page";
 import { useEffect, useState } from "react";
 import { Select, SelectItem } from "@/components/ui";
 import { DateRangePicker, Autocomplete, addToast, Input, Spinner, AutocompleteItem, Dropdown, DropdownTrigger, Button, DropdownMenu, Card, CardBody, CardHeader, Tabs, Tab, DropdownItem, } from "@/components/ui";
@@ -556,16 +557,8 @@ export default function QueryReport() {
 
     return (
         < div>
-            <div className="mb-8 flex justify-between">
-                <div>
-                    <h1 className={title({ size: "20px" })}>
-                        Query Report
-                    </h1>
-
-                    <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">
-                        Analyze and filter performance data across departments and users.
-                    </p>
-                </div>
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                <PageTitle title="Query Report" subtitle="Analyze and filter performance data across departments and users." />
 
                 <div className="flex gap-3 items-center">
                     <div className="flex gap-3 items-center">

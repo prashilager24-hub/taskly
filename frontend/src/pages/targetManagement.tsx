@@ -1,3 +1,4 @@
+import { PageTitle } from "@/components/page";
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui";
 import { Drawer, DrawerContent, DrawerHeader, DrawerBody, DrawerFooter, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, addToast, Autocomplete, AutocompleteItem } from "@/components/ui";
@@ -420,14 +421,8 @@ const TargetManagement: React.FC = () => {
     return (
         <div>
 
-            <div className="flex justify-between items-center mb-4" style={{ height: "48px" }}>
-                <div>
-
-                    <h1 className={title({ size: "20px" })}>Target Management</h1>
-                    <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">
-                        Manage and monitor all company Target
-                    </p>
-                </div>
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                <PageTitle title="Target Management" subtitle="Manage and monitor all company Target" />
                 <div className="flex justify-end m-3 gap-3">
                     <Button variant="flat"
                         size="sm"

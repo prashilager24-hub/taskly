@@ -1,3 +1,4 @@
+import { PageTitle } from "@/components/page";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -907,13 +908,8 @@ export default function EntryApproval() {
                     )}
                 </ModalContent>
             </Modal>
-            <div className="mb-6 flex items-center justify-between">
-                <div>
-                    <h1 className={title({ size: "20px" })}>Entry Approval</h1>
-                    <p className="mt-1 text-sm text-ink-500 dark:text-ink-400">
-                        Review and manage organizational task requests
-                    </p>
-                </div>
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                <PageTitle title="Entry Approval" subtitle="Review and manage organizational task requests" />
                 <div className="flex gap-3 items-center">
                     {![2, 5, 6, 7, 23].includes(user.userRole) && (
                         <>

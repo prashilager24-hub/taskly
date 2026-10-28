@@ -1,5 +1,6 @@
 
 
+import { PageTitle } from "@/components/page";
 import React, { useEffect, useState, useMemo, useCallback, memo, lazy, Suspense } from "react";
 import { useDashboardStore } from "./../store/commonStore";
 import { Card, CardBody } from "@/components/ui";
@@ -1498,13 +1499,8 @@ export default function DashboardPage() {
             </Drawer>
 
             {/* ── Page Header ─────────────────────────────────────────────────── */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-                <div>
-                    <h1 className={title({ size: "20px" })}>Dashboard</h1>
-                    <p className="text-sm text-ink-500 dark:text-ink-400">
-                        View detailed insights into your department's daily work
-                    </p>
-                </div>
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                <PageTitle title="Dashboard" subtitle="View detailed insights into your department's daily work" />
 
                 <div className="flex items-center gap-2 whitespace-nowrap">
                     <Button
@@ -1630,7 +1626,7 @@ export default function DashboardPage() {
 
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
-                                                                            <h2 className="text-[28px] font-black leading-none tracking-tight text-ink-900 dark:text-white">
+                                                                            <h2 className="text-[26px] font-semibold leading-none text-ink-900 dark:text-white">
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
                                                                                         ? `${value}%`
@@ -1746,7 +1742,7 @@ export default function DashboardPage() {
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
 
-                                                                            <h2 className="text-[28px] font-black leading-none tracking-tight text-ink-900 dark:text-white">
+                                                                            <h2 className="text-[26px] font-semibold leading-none text-ink-900 dark:text-white">
 
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
@@ -2084,7 +2080,7 @@ export default function DashboardPage() {
 
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
-                                                                            <h2 className="text-[28px] font-black leading-none tracking-tight text-ink-900 dark:text-white">
+                                                                            <h2 className="text-[26px] font-semibold leading-none text-ink-900 dark:text-white">
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
                                                                                         ? `${value}%`
@@ -2200,7 +2196,7 @@ export default function DashboardPage() {
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
 
-                                                                            <h2 className="text-[28px] font-black leading-none tracking-tight text-ink-900 dark:text-white">
+                                                                            <h2 className="text-[26px] font-semibold leading-none text-ink-900 dark:text-white">
 
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
@@ -2538,7 +2534,7 @@ export default function DashboardPage() {
 
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
-                                                                            <h2 className="text-[28px] font-black leading-none tracking-tight text-ink-900 dark:text-white">
+                                                                            <h2 className="text-[26px] font-semibold leading-none text-ink-900 dark:text-white">
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
                                                                                         ? `${value}%`
@@ -2654,7 +2650,7 @@ export default function DashboardPage() {
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
 
-                                                                            <h2 className="text-[28px] font-black leading-none tracking-tight text-ink-900 dark:text-white">
+                                                                            <h2 className="text-[26px] font-semibold leading-none text-ink-900 dark:text-white">
 
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
@@ -2993,7 +2989,7 @@ export default function DashboardPage() {
 
                                                                 {/* VALUE */}
                                                                 <div className="mt-2">
-                                                                    <h2 className="text-[28px] font-black leading-none tracking-tight text-ink-900 dark:text-white">
+                                                                    <h2 className="text-[26px] font-semibold leading-none text-ink-900 dark:text-white">
                                                                         {typeof value === "number"
                                                                             ? item.label.includes("%")
                                                                                 ? `${value}%`
@@ -3109,7 +3105,7 @@ export default function DashboardPage() {
                                                                 {/* VALUE */}
                                                                 <div className="mt-2">
 
-                                                                    <h2 className="text-[28px] font-black leading-none tracking-tight text-ink-900 dark:text-white">
+                                                                    <h2 className="text-[26px] font-semibold leading-none text-ink-900 dark:text-white">
 
                                                                         {typeof value === "number"
                                                                             ? item.label.includes("%")

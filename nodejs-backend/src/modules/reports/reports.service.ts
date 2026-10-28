@@ -262,6 +262,7 @@ async function getCompanySummary(filter: DashBoardFilter) {
   return rows[0] ?? {};
 }
 
+// One person for the range: the averages the dashboard cards show, plus the day-by-day rows (DailyData) for the chart
 async function getUserSummary(filter: DashBoardFilter) {
   const [rows] = await pool.query<mysql.RowDataPacket[]>(
     `SELECT e.*, u.UserName, d.DepartmentName
@@ -271,10 +272,22 @@ async function getUserSummary(filter: DashBoardFilter) {
      WHERE e.DayType = 'Working'
        AND e.WorkDate BETWEEN ? AND ?
        AND e.UserID = ?
-     ORDER BY e.WorkDate DESC`,
+     ORDER BY e.WorkDate ASC`,
     [filter.startDate, filter.endDate, filter.userID],
   );
-  return rows;
+  if (!rows.length) return [];
+  const mean = (key: string) => Math.round((rows.reduce((n, r) => n + (Number(r[key]) || 0), 0) / rows.length) * 100) / 100;
+  const target = mean('TargetAchievedPercent');
+  const util = mean('UtilizationPercent');
+  const allocated = mean('AllocatedTimeHrs');
+  const worked = mean('TotalTimeOfWork');
+  const level = target >= 100 && worked <= allocated ? 'High' : target >= 80 && worked <= allocated ? 'At Par' : 'Low';
+  const first = rows[0] as mysql.RowDataPacket;
+  return [{
+    UserID: first['UserID'], UserName: first['UserName'], DepartmentID: first['DepartmentID'], DepartmentName: first['DepartmentName'],
+    EfficiencyLevel: level, AvgTargetPercent: target, AvgUtilizationPercent: util, AvgAllocatedHrs: allocated, AvgTotalWork: worked,
+    DailyData: rows,
+  }];
 }
 
 async function getDepartmentSummary(filter: DashBoardFilter) {

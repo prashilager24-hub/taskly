@@ -33,6 +33,7 @@ import axios from "axios";
 import { EmptyContainer } from "@/components";
 import EfficiencyTable from "@/components/table2";
 import ELDashboard from "@/components/ElDashboard";
+import DailyBars from "@/components/DailyBars";
 import { dateMatchModifiers } from "react-day-picker";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -2629,10 +2630,10 @@ export default function DashboardPage() {
 
                             {/* Admin / Employee top section */}
                             {(isAdmin || isEmployee) && (
-                                <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)] lg:grid-rows-[auto_1fr]">
+                                <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)] lg:grid-rows-[auto_auto_1fr]">
 
                                     {/* Col 1 – actions + chart */}
-                                    <div className="flex flex-col gap-3">
+                                    <div className="flex flex-col gap-3 lg:row-span-3">
                                         {/* Run Report & Missing Logs only for admin */}
 
                                         
@@ -2806,6 +2807,32 @@ export default function DashboardPage() {
                                             </div>
 
                                         </div>
+                                    )}
+
+                                    {/* Col 2 – the person's own days */}
+                                    {isEmployee && (
+                                        <section className="border border-ink-200 bg-white p-5 dark:border-white/10 dark:bg-ink-900">
+                                            <h2 className="text-sm font-bold uppercase tracking-wide text-ink-900 dark:text-white">Your days</h2>
+                                            <p className="mt-1 text-xs text-ink-500 dark:text-ink-400">Target achieved and hours worked for each working day in this range.</p>
+                                            {userSummaryData.length === 0 ? (
+                                                <p className="py-10 text-center text-sm text-ink-500 dark:text-ink-400">No logged days in this range. Pick a wider range above.</p>
+                                            ) : (
+                                                <div className="mt-5 grid grid-cols-1 gap-8 2xl:grid-cols-2">
+                                                    <div>
+                                                        <p className="eyebrow mb-3">Target achieved %</p>
+                                                        <DailyBars unit="%" goal={100}
+                                                            labels={userSummaryData.map((d: any) => new Date(d.WorkDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }))}
+                                                            values={userSummaryData.map((d: any) => Math.round(Number(d.TargetAchievedPercent) || 0))} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="eyebrow mb-3">Hours worked</p>
+                                                        <DailyBars unit="h" goal={8}
+                                                            labels={userSummaryData.map((d: any) => new Date(d.WorkDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }))}
+                                                            values={userSummaryData.map((d: any) => Math.round((Number(d.TotalTimeOfWork) || 0) * 10) / 10)} />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </section>
                                     )}
 
                                     {/* Col 3 – Rules (always visible in admin/employee view) */}

@@ -42,8 +42,11 @@ router.post('/User/create', authenticate, validate(CreateUserSchema), ctrl.creat
 router.put('/User/update', authenticate, validate(UpdateUserSchema), ctrl.updateUserHandler);
 
 // GET /MissingData — returns users/departments missing required profile data
-router.get('/MissingData', authenticate, async (_req, res, next) => {
-  try { sendSuccess(res, await svc.getMissingData()); } catch (e) { next(e); }
+router.get('/MissingData', authenticate, async (req, res, next) => {
+  try {
+    const { startDate, endDate } = req.query as { startDate?: string; endDate?: string };
+    res.json(await svc.getMissingData(startDate, endDate)); // raw array, as the Java endpoint returned
+  } catch (e) { next(e); }
 });
 
 // POST /sendMailbulk — bulk email sender

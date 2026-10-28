@@ -595,16 +595,18 @@ export async function archiveAMRole(input: { id: number }) {
   return { message: 'AMRole archived' };
 }
 
-// GET /MissingData — users lacking required fields
-export async function getMissingData() {
+// GET /MissingData?startDate&endDate — active users with a department who logged no work in the range
+export async function getMissingData(startDate?: string, endDate?: string) {
+  const today = new Date().toISOString().slice(0, 10);
+  const from = startDate || today;
+  const to = endDate || today;
   const [rows] = await pool.query<mysql.RowDataPacket[]>(
-    `SELECT UserID, UserName, EmployeeID, Email,
-            CASE WHEN DepartmentID IS NULL THEN 1 ELSE 0 END AS missingDepartment,
-            CASE WHEN AMRoleID IS NULL THEN 1 ELSE 0 END AS missingRole,
-            CASE WHEN ProfileImage IS NULL OR ProfileImage = '' THEN 1 ELSE 0 END AS missingProfileImage
-     FROM Users
-     WHERE DepartmentID IS NULL OR AMRoleID IS NULL
-     ORDER BY UserName`,
+    `SELECT u.UserID AS userID, u.UserName AS userName, u.UserEmail AS userEmail
+     FROM Users u
+     WHERE u.UserStatus = 1 AND u.IsUserArchived = 0 AND u.RoleID <> 1 AND EXISTS (SELECT 1 FROM DepartmentUser du WHERE du.UserID = u.UserID)
+       AND NOT EXISTS (SELECT 1 FROM UserWorkData w WHERE w.UserID = u.UserID AND w.WorkDate BETWEEN ? AND ?)
+     ORDER BY u.UserName`,
+    [from, to],
   );
   return rows;
 }

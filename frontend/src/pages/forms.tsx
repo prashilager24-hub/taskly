@@ -1,4 +1,4 @@
-import { PageTitle } from "@/components/page";
+import { PageHeader, Segmented } from "@/components/page";
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui";
 import { Autocomplete, AutocompleteItem } from "@/components/ui";
@@ -275,27 +275,23 @@ export default function FormPage() {
 
     return (
         <div>
-            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+            <PageHeader title="Daily Activity" subtitle="Log what you worked on today, or review the entries already submitted." />
 
-                <PageTitle title="Daily Activity" subtitle="Submit your department's daily tasks and activity updates" />
-
-                <div className=" flex flex-col sm:flex-row gap-4 items-end">
-
-
-                    <div className="flex gap-3 items-center">
-
-                        {
-                            user.userRole == 2 ||
-                                user.userRole == 5 ||
-                                user.userRole == 6 ||
-                                user.userRole == 7 ||
-                                user.userRole == 23 ? null : (
-                                <div className="mb-6 flex flex-col sm:flex-row gap-4">
-
-                                    <Autocomplete
-                                        aria-label="Filter by Department"
-                                        placeholder="Filter by Department"
-                                        className="max-w-xs"
+            {!(
+                user.userRole == 2 ||
+                user.userRole == 5 ||
+                user.userRole == 6 ||
+                user.userRole == 7 ||
+                user.userRole == 23
+            ) && (
+                <section aria-label="Whose activity" className="mb-6 border border-ink-200 bg-white p-5 dark:border-white/10 dark:bg-ink-900">
+                    <p className="eyebrow mb-3">Logging for</p>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:max-w-3xl">
+                        <Autocomplete
+                                        label="Department"
+                                labelPlacement="outside"
+                                        placeholder="Select department"
+                                        className="w-full"
                                         selectedKey={filterStatus}
                                         inputValue={departmentInput}
                                         onInputChange={setDepartmentInput}
@@ -321,12 +317,12 @@ export default function FormPage() {
                                                 </AutocompleteItem>
                                             ))}
                                     </Autocomplete>
-
-                                    {(user.userRole === 3 || user.userRole === 4 || user.userRole === 1) && (
-                                        <Autocomplete
-                                            aria-label="Filter by User"
-                                            placeholder="Select User"
-                                            className="max-w-xs"
+                        {(user.userRole === 3 || user.userRole === 4 || user.userRole === 1) && (
+                            <Autocomplete
+                                            label="Person"
+                                labelPlacement="outside"
+                                            placeholder="Select person"
+                                            className="w-full"
                                             selectedKey={String(selectedUserId)}
                                             onSelectionChange={(key) =>
                                                 setSelectedUserId(Number(key))
@@ -338,47 +334,33 @@ export default function FormPage() {
                                                 </AutocompleteItem>
                                             ))}
                                         </Autocomplete>
-                                    )}
-                                </div>
-                            )
-                        }
+                        )}
                     </div>
+                </section>
+            )}
 
-
-
-                </div>
-
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                <Segmented
+                    label="Daily Activity views"
+                    value={view}
+                    onChange={setView}
+                    options={[
+                        { key: "entries", label: selectedUserId === user.userID ? "My entries" : "Entries" },
+                        { key: "log", label: "Log activity" },
+                    ]}
+                />
+                {view === "log" && (
+                    <div className="flex items-center gap-3">
+                        <span className="eyebrow">Frequency</span>
+                        <Segmented label="Frequency" size="sm" value={frequency} onChange={setFrequency} options={[{ key: "daily", label: "Daily" }, { key: "weekly", label: "Weekly" }]} />
+                    </div>
+                )}
             </div>
-
-
-
-
-            <Tabs
-                aria-label="Daily Activity views"
-                selectedKey={view}
-                onSelectionChange={(k) => setView(k as "entries" | "log")}
-                className="mb-4"
-            >
-                <Tab key="entries" title={selectedUserId === user.userID ? "My entries" : "Entries"} />
-                <Tab key="log" title="Log activity" />
-            </Tabs>
 
             {view === "entries" ? (
                 <PastEntries userId={selectedUserId} departmentId={filterStatus} onLogActivity={() => setView("log")} />
             ) : (
             <div>
-                <div className="mb-4 flex items-center gap-3">
-                    <span className="label-base mb-0">Frequency</span>
-                    <Tabs
-                        aria-label="Frequency"
-                        size="sm"
-                        selectedKey={frequency}
-                        onSelectionChange={(k) => setFrequency(k as "daily" | "weekly")}
-                    >
-                        <Tab key="daily" title="Daily" />
-                        <Tab key="weekly" title="Weekly" />
-                    </Tabs>
-                </div>
                 {filterStatus ? (
                     <DailyActivityLog task={frequencyTasks} DeptId={filterStatus} selectedUserId={selectedUserId} selectedUserRole={
                         [1, 3, 4].includes(user.userRole)

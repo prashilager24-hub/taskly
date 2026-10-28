@@ -1966,7 +1966,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
     };
 
     return (
-        <div className={`${DeptId == 24 ? "" : "grid grid-cols-1 xl:grid-cols-3 lg:grid-cols-1 md:grid-cols-1 gap-6"}`}>
+        <div className={`${DeptId == 24 ? "" : "grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(340px,400px)_minmax(0,1fr)]"}`}>
             {previewModal}
             <Modal
                 isOpen={showDateConfirm}
@@ -2020,10 +2020,11 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
 
                                 {/* Title */}
-                                <p className="text-ink-900 dark:text-white text-sm font-medium">
-                                    Daily Activity {getPrimaryDepartmentId(authUser) ? "" : "Log"}
-                                </p>
-                                <div className="w-full"><EntrySteps step={entryStepNumber} /></div>
+                                <div className="mr-auto">
+                                    <p className="text-base font-bold text-ink-900 dark:text-white">New entry</p>
+                                    <p className="mt-0.5 text-xs text-ink-500 dark:text-ink-400">Add what you worked on, preview it, then submit the day.</p>
+                                </div>
+                                <div className="order-last w-full border-t border-ink-200 pt-3 dark:border-white/10"><EntrySteps step={entryStepNumber} /></div>
 
                                 {/* Half-Day Switch */}
 
@@ -2076,7 +2077,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                     isLoading={isUploading}
                                     onPress={() => fileInputRef.current?.click()}
                                 >
-                                    {isUploading ? "Uploading..." : "import"}
+                                    {isUploading ? "Uploading..." : "Import"}
                                 </Button>
                                 <Button
                                     color="secondary"
@@ -2084,7 +2085,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                     size="sm"
                                     onPress={handleDownloadTemplate}
                                 >
-                                    export template
+                                    Export template
                                 </Button>
 
 
@@ -2280,9 +2281,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                 maxValue={Maxtoday}
 
                             /> */}
-                                        <h3 className=" text-ink-900 dark:text-white" style={{ size: "12px" }}>
-                                            Date
-                                        </h3>
+                                        <h3 className="eyebrow">Date</h3>
                                         <Dropdown
                                             isOpen={open}
                                             onOpenChange={setOpen}
@@ -2316,9 +2315,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                                 </DropdownItem>
                                             </DropdownMenu>
                                         </Dropdown>
-                                        <h3 className=" text-ink-900 dark:text-white" style={{ size: "12px" }}>
-                                            Add Task Entry
-                                        </h3>
+                                        <h3 className="eyebrow">New Task Entry</h3>
                                         <div className="">
                                             {/* Task Dropdown or Custom Input */}
                                             {currentActivity.task === "custom" ? (
@@ -3033,9 +3030,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
 
                                     <div className="flex flex-col gap-4">
-                                        <h3 className="text-ink-900 dark:text-white text-sm">
-                                            Add Goal Entry
-                                        </h3>
+                                        <h3 className="eyebrow">New Goal Entry</h3>
 
 
                                         <Autocomplete
@@ -3090,7 +3085,8 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                             ))}
                                         </Autocomplete>
 
-                                        {DeptId == 43 || DeptId == 44 || DeptId == 49 || DeptId == 25 || DeptId == 26 ? (<Input
+                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+{DeptId == 43 || DeptId == 44 || DeptId == 49 || DeptId == 25 || DeptId == 26 ? (<Input
                                             label="revenue generated previous week"
                                             value={goalEntry.unit}
                                             onChange={(e) => {
@@ -3137,6 +3133,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                             isDisabled
                                             variant="bordered"
                                         />
+</div>
 
                                         {/* {DeptId == 59 || DeptId == 60  && (
                                                 <Autocomplete
@@ -3492,13 +3489,16 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                 </Card >
                 {/* Activities/PR List */}
 
-                <Card className="lg:col-span-2 w-full shadow-md border border-ink-200 dark:border-ink-700 rounded-2xl overflow-x/y-auto;">
+                <Card className="w-full shadow-md border border-ink-200 dark:border-ink-700 rounded-2xl overflow-x/y-auto;">
                     <CardBody className="px-6 pb-6" style={{ minHeight: "40pc", maxHeight: "40pc" }}>
                         <>
                             <div className="flex items-center justify-between">
-                                <h3 className="  text-ink-900 dark:text-white" style={{ size: "12px" }}>
-                                    Today's Activities
-                                </h3>
+                                <div>
+                                    <h3 className="text-base font-bold text-ink-900 dark:text-white">Today's activities</h3>
+                                    <p className="mt-0.5 text-xs text-ink-500 dark:text-ink-400">
+                                        {activities.length ? `${activities.length} ${activities.length === 1 ? "entry" : "entries"} added. Check them, then submit the log.` : "Entries you add on the left appear here before you submit."}
+                                    </p>
+                                </div>
                                 <Button
                                     color="secondary"
                                     size="sm"

@@ -10,8 +10,9 @@ export default defineConfig({
   server: {
     host: true,
     port: 3030,
-    // ── Local dev: allow both localhost and the production hostname ──────────
-    allowedHosts: ['taskly.tapmind.io', 'localhost', '127.0.0.1'],
+    // ── Local dev: allow localhost, the production hostname, and VS Code port
+    //    forwarding (dev tunnels, e.g. abc123-3030.inc1.devtunnels.ms) ─────────
+    allowedHosts: ['taskly.tapmind.io', 'localhost', '127.0.0.1', '.devtunnels.ms'],
     // ── Proxy all API calls to the Node.js backend ───────────────────────────
     // The frontend uses relative URLs like /t2.0/authentificationUtilization/*
     // and /api/* — Vite forwards them to the backend so no CORS issues locally.

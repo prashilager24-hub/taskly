@@ -12,13 +12,17 @@ import * as svc from './userGoalData.service';
 const router = Router();
 router.use(authenticate);
 
+// The Goals page sends camelCase filters with nulls / 0 / NaN for "any"
+const optId = z.preprocess((v) => (v === "" || v === 0 || (typeof v === "number" && Number.isNaN(v)) ? null : v), z.coerce.number().int().nullish());
 const ListFilterSchema = z.object({
-  UserID: z.number().int().positive().optional(),
-  DepartmentID: z.number().int().positive().optional(),
-  GoalID: z.number().int().positive().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-});
+  userID: optId,
+  departmentID: optId,
+  goalID: optId,
+  eLID: optId,
+  startDate: z.string().nullish(),
+  endDate: z.string().nullish(),
+  searchText: z.string().nullish(),
+}).passthrough();
 
 const RevisedGoalSchema = z.object({
   UserGoalDataID: z.number().int().positive(),
@@ -38,8 +42,7 @@ router.post('/list', validate(ListFilterSchema), async (req, res, next) => {
   try {
     const page = req.query['page'] ? Number(req.query['page']) : undefined;
     const size = req.query['size'] ? Number(req.query['size']) : undefined;
-    const sortBy = req.query['sortBy'] as string | undefined;
-    sendSuccess(res, await svc.listUserGoalData(req.body, page, size, sortBy));
+    sendSuccess(res, await svc.listUserGoalData(req.body, page, size));
   } catch (e) { next(e); }
 });
 

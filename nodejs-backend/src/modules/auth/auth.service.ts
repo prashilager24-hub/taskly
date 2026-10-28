@@ -130,7 +130,13 @@ async function buildSessionPayload(user: SessionUser, token: string) {
   };
 
   if (user.RoleID === 3) {
-    session['departments'] = await departmentsWhereLeader('ExecutiveLeaderID', user.UserID);
+    const departments = await departmentsWhereLeader('ExecutiveLeaderID', user.UserID);
+    const seen = new Set(departments.map((d) => d.departmentID));
+    // An EL who also works in a department (demo data) keeps that department, as Functional Leaders do
+    for (const d of await departmentsOfMember(user.UserID)) {
+      if (!seen.has(d.departmentID)) departments.push({ ...d, executiveLeaderID: null, functionalLeaderID: null });
+    }
+    session['departments'] = departments;
     session['isHeExecutiveLeader'] = true;
   } else if (user.RoleID === 4) {
     const departments = await departmentsWhereLeader('FunctionalLeaderID', user.UserID);

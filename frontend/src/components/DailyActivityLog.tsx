@@ -1966,7 +1966,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
     };
 
     return (
-        <div className={`${DeptId == 24 ? "" : "grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(340px,400px)_minmax(0,1fr)]"}`}>
+        <div className={`${DeptId == 24 ? "" : "flex flex-col gap-6"}`}>
             {previewModal}
             <Modal
                 isOpen={showDateConfirm}
@@ -2012,8 +2012,61 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                 </ModalContent>
             </Modal>
 
+
+            {DeptId != 24 && (() => {
+                const kindOf = (a: ActivityEntry): EntryStep => (a.isGoal ? "GOAL" : a.targetID || a.targetName ? "TARGET" : "TASK");
+                const count = (k: EntryStep) => activities.filter((a) => kindOf(a) === k).length;
+                const steps: { key: EntryStep; label: string; hint: string }[] = [
+                    { key: "TASK", label: "Task entry", hint: "What you worked on" },
+                    ...(isSkipTargetStep ? [] : [{ key: "TARGET" as EntryStep, label: "Target entry", hint: "Units against targets" }]),
+                    ...(isSkipGoalStep && authUser.userRole !== 1 ? [] : [{ key: "GOAL" as EntryStep, label: "Goal entry", hint: "Progress on goals" }]),
+                ];
+                const here = steps.findIndex((st) => st.key === entryStep);
+                return (
+                    <nav aria-label="Entry steps" className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900">
+                        <ol className="grid" style={{ gridTemplateColumns: `repeat(${steps.length + 1}, minmax(0, 1fr))` }}>
+                            {steps.map((st, i) => {
+                                const on = st.key === entryStep;
+                                const n = count(st.key);
+                                return (
+                                    <li key={st.key} className={i > 0 ? "border-l border-ink-200 dark:border-white/10" : ""}>
+                                        <button
+                                            type="button"
+                                            onClick={() => setEntryStep(st.key)}
+                                            aria-current={on ? "step" : undefined}
+                                            className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors focus-ring ${on ? "bg-brand-50 dark:bg-brand-500/10" : "hover:bg-ink-50 dark:hover:bg-white/5"}`}
+                                        >
+                                            <span className={`flex h-7 w-7 shrink-0 items-center justify-center text-xs font-bold ${on ? "bg-brand-600 text-white" : n > 0 ? "bg-emerald-600 text-white" : i < here ? "bg-ink-300 text-white" : "border border-ink-300 text-ink-500 dark:border-white/20"}`}>
+                                                {n > 0 && !on ? "✓" : i + 1}
+                                            </span>
+                                            <span className="min-w-0">
+                                                <span className={`block truncate text-sm font-semibold ${on ? "text-brand-700 dark:text-brand-300" : "text-ink-900 dark:text-white"}`}>{st.label}</span>
+                                                <span className="block truncate text-xs text-ink-500 dark:text-ink-400">{n ? `${n} added` : st.hint}</span>
+                                            </span>
+                                        </button>
+                                    </li>
+                                );
+                            })}
+                            <li className="border-l border-ink-200 dark:border-white/10">
+                                <button
+                                    type="button"
+                                    onClick={() => document.getElementById("entries-review")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                                    className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-ink-50 focus-ring dark:hover:bg-white/5"
+                                >
+                                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center text-xs font-bold ${activities.length ? "bg-emerald-600 text-white" : "border border-ink-300 text-ink-500 dark:border-white/20"}`}>{steps.length + 1}</span>
+                                    <span className="min-w-0">
+                                        <span className="block truncate text-sm font-semibold text-ink-900 dark:text-white">Review & submit</span>
+                                        <span className="block truncate text-xs text-ink-500 dark:text-ink-400">{activities.length ? `${activities.length} ${activities.length === 1 ? "entry" : "entries"} ready` : "Check, then submit the day"}</span>
+                                    </span>
+                                </button>
+                            </li>
+                        </ol>
+                    </nav>
+                );
+            })()}
+
             {DeptId == 24 ? (<><WeeklyPulse /></>) : (<>
-                <Card className="w-full" style={{ minHeight: "40pc" }}>
+                <Card className="w-full">
                     <CardHeader className="pb-4">
                         <div className="flex flex-col space-y-2">
 
@@ -2021,10 +2074,10 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
                                 {/* Title */}
                                 <div className="mr-auto">
-                                    <p className="text-base font-bold text-ink-900 dark:text-white">New entry</p>
-                                    <p className="mt-0.5 text-xs text-ink-500 dark:text-ink-400">Add what you worked on, preview it, then submit the day.</p>
+                                    <p className="text-base font-bold text-ink-900 dark:text-white">{entryStep === "TASK" ? "Task entry" : entryStep === "TARGET" ? "Target entry" : "Goal entry"}</p>
+                                    <p className="mt-0.5 text-xs text-ink-500 dark:text-ink-400">Fill the form and preview it to add it to your day. Move on with Next when you are done.</p>
                                 </div>
-                                <div className="order-last w-full border-t border-ink-200 pt-3 dark:border-white/10"><EntrySteps step={entryStepNumber} /></div>
+                                
 
                                 {/* Half-Day Switch */}
 
@@ -2315,7 +2368,6 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                                 </DropdownItem>
                                             </DropdownMenu>
                                         </Dropdown>
-                                        <h3 className="eyebrow">New Task Entry</h3>
                                         <div className="">
                                             {/* Task Dropdown or Custom Input */}
                                             {currentActivity.task === "custom" ? (
@@ -3030,7 +3082,6 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
 
                                     <div className="flex flex-col gap-4">
-                                        <h3 className="eyebrow">New Goal Entry</h3>
 
 
                                         <Autocomplete
@@ -3398,7 +3449,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
                                 {/* Footer */}
                                 <div className="flex justify-between items-center">
-                                    <div className="text-lg font-semibold space-y-1">
+                                    <div className="space-y-1 text-sm font-semibold">
 
                                         <div>
                                             <span className="text-ink-600 dark:text-ink-400">
@@ -3457,7 +3508,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
                                                 }}
                                             >
-                                                Back
+                                                ← Back
                                             </Button>
                                         )}
 
@@ -3474,9 +3525,19 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                                         }
                                                     }}
                                                 >
-                                                    Next
+                                                    {entryStep === "TASK" ? (isSkipTargetStep ? "Next: Goal entry →" : "Next: Target entry →") : "Next: Goal entry →"}
                                                 </Button>
                                             )}
+
+                                        {(entryStep === "GOAL" || (entryStep === "TARGET" && isSkipGoalStep)) && (
+                                            <Button
+                                                color="primary"
+                                                size="sm"
+                                                onClick={() => document.getElementById("entries-review")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                                            >
+                                                Review & submit ↓
+                                            </Button>
+                                        )}
 
                                     </div>
 
@@ -3489,14 +3550,14 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                 </Card >
                 {/* Activities/PR List */}
 
-                <Card className="w-full shadow-md border border-ink-200 dark:border-ink-700 rounded-2xl overflow-x/y-auto;">
-                    <CardBody className="px-6 pb-6" style={{ minHeight: "40pc", maxHeight: "40pc" }}>
+                <Card id="entries-review" className="w-full scroll-mt-4 shadow-none">
+                    <CardBody className="px-6 pb-6" style={{ minHeight: "18pc" }}>
                         <>
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h3 className="text-base font-bold text-ink-900 dark:text-white">Today's activities</h3>
+                                    <h3 className="text-base font-bold text-ink-900 dark:text-white">Review & submit</h3>
                                     <p className="mt-0.5 text-xs text-ink-500 dark:text-ink-400">
-                                        {activities.length ? `${activities.length} ${activities.length === 1 ? "entry" : "entries"} added. Check them, then submit the log.` : "Entries you add on the left appear here before you submit."}
+                                        {activities.length ? `${activities.length} ${activities.length === 1 ? "entry" : "entries"} added. Check them, then submit the log.` : "Everything you add in the steps above appears here before you submit."}
                                     </p>
                                 </div>
                                 <Button

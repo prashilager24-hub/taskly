@@ -14,7 +14,7 @@ export function Provider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
 
   return (
-    <HeroUIProvider navigate={navigate} useHref={useHref}>
+    <HeroUIProvider navigate={navigate} useHref={useHref} disableAnimation>
       {/* TapMind toasts: 500px, top-center, 7s */}
       <ToastProvider
         placement="top-center"

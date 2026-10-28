@@ -74,6 +74,7 @@ interface TopbarProps {
 export const Topbar: React.FC<TopbarProps> = ({ toggleSidebar, title }) => {
     const meta = pageMeta(useLocation().pathname);
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+    const lastRaw = useRef<string | null>(null);
     const [notifOpen, setNotifOpen] = useState(false);
     const notifRef = useRef<HTMLDivElement>(null);
 
@@ -113,8 +114,11 @@ export const Topbar: React.FC<TopbarProps> = ({ toggleSidebar, title }) => {
     useEffect(() => {
         const load = () => {
             try {
-                const raw = localStorage.getItem(STORAGE_KEY);
-                setNotifications(raw ? JSON.parse(raw) : []);
+                const raw = localStorage.getItem(STORAGE_KEY) ?? "[]";
+                // Polled every 2s: keep the same state when nothing changed so the topbar doesn't re-render
+                if (raw === lastRaw.current) return;
+                lastRaw.current = raw;
+                setNotifications(JSON.parse(raw));
             } catch {
                 setNotifications([]);
             }

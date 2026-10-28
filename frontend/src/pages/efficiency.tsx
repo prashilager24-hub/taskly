@@ -145,7 +145,7 @@ export default function Efficiency() {
     //             );
     //         case 'TaskID':
     //             return (
-    //                 <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+    //                 <span className="text-sm font-medium text-brand-600 dark:text-brand-400">
     //                     T-{log.TaskID}
     //                 </span>
     //             );
@@ -168,7 +168,7 @@ export default function Efficiency() {
     //             return new Date(log.WorkDate).toLocaleDateString();
     //         case 'actualTimeOfWork':
     //             return (
-    //                 <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+    //                 <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-brand-100 text-brand-800">
     //                     {log.actualTimeOfWork} mins
     //                 </span>
     //             );
@@ -613,7 +613,7 @@ export default function Efficiency() {
                             <span className="text-xs text-ink-500 dark:text-ink-400 font-medium">
                                 Average Working Hours
                             </span>
-                            <span className="mt-1 px-2 py-1 mx-2  text-sm font-semibold text-green-700 bg-green-100 rounded-full w-fit">
+                            <span className="mt-1 px-2 py-1 mx-2  text-sm font-semibold text-emerald-700 bg-emerald-100 rounded-full w-fit">
                                 {average.AvgTotalWork}
                             </span>
                         </div>
@@ -623,7 +623,7 @@ export default function Efficiency() {
                             <span className="text-xs text-ink-500 dark:text-ink-400 font-medium">
                                 Average Allocated Hours
                             </span>
-                            <span className="mt-1 px-2 py-1 mx-2  text-sm font-semibold text-yellow-700 bg-yellow-100 rounded-full w-fit">
+                            <span className="mt-1 px-2 py-1 mx-2  text-sm font-semibold text-amber-700 bg-amber-100 rounded-full w-fit">
                                 {average.AvgAllocatedHrs}
                             </span>
                         </div>
@@ -633,7 +633,7 @@ export default function Efficiency() {
                             <span className="text-xs text-ink-500 dark:text-ink-400 font-medium">
                                 Avg Utilization %
                             </span>
-                            <span className="mt-1 px-2 py-1  mx-2 text-sm font-semibold text-blue-700 bg-blue-100 rounded-full w-fit">
+                            <span className="mt-1 px-2 py-1  mx-2 text-sm font-semibold text-brand-700 bg-brand-100 rounded-full w-fit">
                                 {average.AvgUtilizationPercent}%
                             </span>
                         </div> */}
@@ -641,7 +641,7 @@ export default function Efficiency() {
                             <span className="text-xs text-ink-500 dark:text-ink-400 font-medium">
                                 Avg Target %
                             </span>
-                            <span className="mt-1 px-2 py-1  mx-2 text-sm font-semibold text-blue-700 bg-blue-100 rounded-full w-fit">
+                            <span className="mt-1 px-2 py-1  mx-2 text-sm font-semibold text-brand-700 bg-brand-100 rounded-full w-fit">
                                 {average.AvgTargetPercent}%
                             </span>
                         </div>
@@ -654,10 +654,10 @@ export default function Efficiency() {
 
                             <span
                                 className={`mt-1 px-2 py-1 mx-2 text-sm font-semibold rounded-full w-fit ${average.EfficiencyLevel === "High"
-                                    ? "bg-green-100 text-green-700"
+                                    ? "bg-emerald-100 text-emerald-700"
                                     : average.EfficiencyLevel === "At Par"
-                                        ? "bg-yellow-100 text-yellow-700"
-                                        : "bg-red-100 text-red-700"
+                                        ? "bg-amber-100 text-amber-700"
+                                        : "bg-rose-100 text-rose-700"
                                     }`}
                             >
                                 {average.EfficiencyLevel}

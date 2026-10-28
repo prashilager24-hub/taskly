@@ -40,6 +40,17 @@ interface PrimaryDepartment {
 }
 
 // Confirmation Modal for Delete-like destructive actions
+// Goal / target criteria are stored as JSON objects; show how many rules are set, not the JSON
+const criteriaLabel = (raw: unknown) => {
+    try {
+        const parsed = typeof raw === "string" ? JSON.parse(raw || "{}") : raw ?? {};
+        const n = Object.keys(parsed).length;
+        return n ? `${n} rule${n > 1 ? "s" : ""}` : "Not set";
+    } catch {
+        return String(raw || "Not set");
+    }
+};
+
 const ConfirmToggleModal = ({
     isOpen,
     onClose,
@@ -392,7 +403,7 @@ export default function PrimaryDepartmentPage() {
                                 <div className="flex justify-between items-start mb-5">
                                     <div className="flex items-center gap-3 min-w-0">
                                         {/* Avatar */}
-                                        <div className="h-11 w-11 flex items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold text-lg flex-shrink-0">
+                                        <div className="h-11 w-11 flex items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-600 text-white font-bold text-lg flex-shrink-0">
                                             {pd.name?.charAt(0).toUpperCase()}
                                         </div>
 
@@ -442,13 +453,13 @@ export default function PrimaryDepartmentPage() {
                                                 }
                                             }}
                                         >
-                                            <DropdownItem key="edit" className="text-blue-600">
+                                            <DropdownItem key="edit" className="text-brand-600">
                                                 Edit
                                             </DropdownItem>
 
                                             <DropdownItem
                                                 key="toggle"
-                                                className={pd.active ? "text-red-600" : "text-green-600"}
+                                                className={pd.active ? "text-rose-600" : "text-emerald-600"}
                                             >
                                                 {pd.active ? "Deactivate" : "Activate"}
                                             </DropdownItem>
@@ -460,8 +471,8 @@ export default function PrimaryDepartmentPage() {
                                 <div className="flex items-center justify-between mb-4">
                                     <span
                                         className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${pd.active
-                                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                                            : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                            : "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
                                             }`}
                                     >
                                         <span className="w-2 h-2 rounded-full bg-current" />
@@ -476,22 +487,14 @@ export default function PrimaryDepartmentPage() {
                                 <div className="border-t border-ink-200 dark:border-ink-700 my-4" />
 
                                 {/* Info Chips */}
-                                <div className="flex flex-wrap gap-2">
-                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-xs font-medium">
-                                        <i className="ti ti-target-arrow" />
-                                        Goal: {pd.goalCriteria || "—"}
-                                    </div>
-
-                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs font-medium">
-                                        <i className="ti ti-flag-3" />
-                                        Target: {pd.targetCriteria || "—"}
-                                    </div>
-
-                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-xs font-medium">
-                                        <i className="ti ti-category" />
-                                        Type: {pd.type || "—"}
-                                    </div>
-                                </div>
+                                <dl className="grid grid-cols-3 gap-2 text-xs">
+                                    {[["Type", pd.type || "—"], ["Goals", criteriaLabel(pd.goalCriteria)], ["Targets", criteriaLabel(pd.targetCriteria)]].map(([k, v]) => (
+                                        <div key={k}>
+                                            <dt className="eyebrow !text-[9.5px]">{k}</dt>
+                                            <dd className="mt-1 truncate font-medium text-ink-900 dark:text-white">{v}</dd>
+                                        </div>
+                                    ))}
+                                </dl>
                             </div>
                         ))}
                     </div>

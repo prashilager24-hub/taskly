@@ -1,51 +1,30 @@
-import { useEffect, useState, useMemo } from "react";
-import { Button } from "@/components/ui";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard,
-  FileText,
-  ClipboardList,
-  ShieldCheck,
-  Users,
-  Building2,
-  Target,
-  Goal,
-  Briefcase,
   BarChart3,
+  Briefcase,
+  Building2,
   CheckCircle2,
-  Settings,
+  ChevronDown,
+  ClipboardList,
+  FileText,
+  Goal,
+  History,
+  LayoutDashboard,
   LifeBuoy,
+  MessageSquareText,
+  Network,
+  Settings,
+  ShieldCheck,
+  Smile,
+  Sparkles,
+  Target,
+  Users,
+  X,
 } from "lucide-react";
-// Custom Icons
 
-
-
-const XIcon = (props: any) => (
-  <svg
-    aria-hidden="true"
-    fill="none"
-    focusable="false"
-    height="1em"
-    role="presentation"
-    viewBox="0 0 24 24"
-    width="1em"
-    {...props}
-  >
-    <path
-      d="M18 6L6 18M6 6l12 12"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2"
-    />
-  </svg>
-);
-const ChevronDownIcon = (props: any) => (
-  <svg aria-hidden="true" fill="none" focusable="false" height="1em" role="presentation" viewBox="0 0 24 24" width="1em" {...props}>
-    <path d="M6 9l6 6 6-6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-  </svg>
-);
-// Sidebar Component
+// Sidebar in the TapMind CRM style: always dark, uppercase section labels, an orange bar on the
+// active item. The menu below is also what the top bar uses for page titles (pageMeta).
 
 interface SidebarProps {
   isOpen: boolean;
@@ -63,410 +42,258 @@ interface MenuItem {
   children?: MenuItem[];
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({
-  isOpen,
-  toggleSidebar,
-  currentPage = "/",
-}) => {
-  const [authUserLD, setauthUserLD] = useState<any>(null);
-  const [rolePermissions, setRolePermissions] = useState<any>({});
-  const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
-  const [currentNews, setCurrentNews] = useState(0);
+export const MENU: MenuItem[] = [
+  { icon: LayoutDashboard, label: "Dashboard", href: "dashboard", module: "dashboard" },
+  { icon: ClipboardList, label: "Daily Activity", href: "daily-activity", module: "dataentry" },
+  {
+    icon: BarChart3,
+    label: "Reports",
+    href: "reports",
+    module: "reports",
+    children: [
+      { icon: FileText, label: "Performance Insights", href: "efficiency-report", module: "perf" },
+      { icon: Users, label: "User Data", href: "daily-log", module: "mydata" },
+      { icon: Goal, label: "Goals Achieved", href: "goals", module: "goals" },
+      { icon: CheckCircle2, label: "Entry Approval", href: "entry-approval", module: "entryApproval" },
+      { icon: History, label: "User History", href: "user-history", module: "userHistory" },
+      { icon: MessageSquareText, label: "Query Report", href: "query-report", module: "queryReport" },
+    ],
+  },
+  { icon: Briefcase, label: "Sales Forward", href: "sales-forward", module: "salesfwd", departments: [21] },
+  {
+    icon: Settings,
+    label: "Admin",
+    href: "admin",
+    module: "admin",
+    children: [
+      { icon: ShieldCheck, label: "Access Management", href: "access-management", module: "accessmgmt" },
+      { icon: Building2, label: "Departments", href: "primaryDepartment", module: "deptmgmt" },
+      { icon: Network, label: "Sub Departments", href: "department", module: "deptmgmt" },
+      { icon: ClipboardList, label: "Task Management", href: "tasks", module: "taskmgmt" },
+      { icon: Target, label: "Target Management", href: "target", module: "targetmgmt" },
+      { icon: Goal, label: "Goal Management", href: "Goal-management", module: "goalmgmt" },
+    ],
+  },
+  // Support (formerly HR Feedback); PMS lives on the Dashboard as a tab
+  {
+    icon: LifeBuoy,
+    label: "Support",
+    href: "support",
+    module: "hrfeedback",
+    children: [
+      { icon: Sparkles, label: "Onboarding Experience", href: "support/onboarding", module: "hrfeedback" },
+      { icon: MessageSquareText, label: "Query & HR", href: "support/query", module: "hrfeedback" },
+      { icon: Smile, label: "Employee Engagement", href: "support/engagement", module: "hrfeedback" },
+    ],
+  },
+];
 
-  const newsItems = [
-    {
-      title: "Please Get your Q3 reviews done last date is october 8th",
-      time: "2026-10-06T12:25:00",
-    },
-  ];
+const norm = (path: string) => path.replace(/^\/+|\/+$/g, "").toLowerCase();
 
-  const getRelativeTime = (timestamp: string) => {
-    const now = new Date();
-    const createdAt = new Date(timestamp);
+// Pages reached from inside other pages, not from the menu
+const EXTRA_PAGES: Record<string, { section: string; label: string }> = {
+  "activity-log": { section: "Workspace", label: "Activity Log" },
+  pms: { section: "Workspace", label: "Performance Reviews" },
+  "hr-feedback": { section: "Support", label: "HR Feedback" },
+  support: { section: "Support", label: "Support" },
+};
 
-    const diffMs = now.getTime() - createdAt.getTime();
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+/** Section + title for the page at `pathname`, for the top bar */
+export function pageMeta(pathname: string): { section: string; label: string } {
+  const path = norm(pathname);
+  for (const item of MENU) {
+    if (norm(item.href) === path) return { section: "Workspace", label: item.label };
+    const child = item.children?.find((c) => norm(c.href) === path);
+    if (child) return { section: item.label, label: child.label };
+  }
+  return EXTRA_PAGES[path] ?? { section: "Taskly", label: "" };
+}
 
-    if (diffMinutes < 1) return "just now";
+const ANNOUNCEMENT = { title: "Q3 reviews close on 8 October — finish yours from Dashboard → PMS.", time: "2026-10-06T12:25:00" };
 
-    if (diffMinutes < 60) {
-      return `${diffMinutes} minute${diffMinutes !== 1 ? "s" : ""} ago`;
-    }
+const relativeTime = (timestamp: string) => {
+  const minutes = Math.floor((Date.now() - new Date(timestamp).getTime()) / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+};
 
-    const diffHours = Math.floor(diffMinutes / 60);
+const readJson = (key: string) => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
 
-    if (diffHours < 24) {
-      return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`;
-    }
-
-    const diffDays = Math.floor(diffHours / 24);
-
-    return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
-  };
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentNews((prev) => (prev + 1) % newsItems.length);
-    }, 3000);
-    return () => clearInterval(timer);
-  }, [newsItems.length]);
-
-  const [, setCurrentTime] = useState(Date.now());
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(Date.now());
-    }, 60000); // update every minute
-
-    return () => clearInterval(timer);
-  }, []);
-  // const toggleMenu = (label: string) => {
-  //   console.log("Toggling menu:", label);
-  //   console.log("Currently expanded menus:", expandedMenus);
-  //   setExpandedMenus(prev =>
-  //     prev.includes(label)
-  //       ? prev.filter(item => item !== label)
-  //       : [...prev, label]
-  //   );
-  //   console.log("Updated expanded menus:", expandedMenus);
-  // };
-  const toggleMenu = (label: string) => {
-    setExpandedMenus(prev =>
-      prev.includes(label) ? [] : [label]
-    );
-  };
-
-
-  // Load user when component mounts
-  useEffect(() => {
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, currentPage = "/" }) => {
+  const navigate = useNavigate();
+  const [authUserLD, setAuthUserLD] = useState<any>(() => readJson("authUserLD"));
+  const [rolePermissions] = useState<any>(() => {
     try {
-      const storedUser = localStorage.getItem("authUserLD");
-      if (storedUser) {
-        setauthUserLD(JSON.parse(storedUser));
-      }
-
-      const storedRole = localStorage.getItem("roles");
-      if (storedRole) {
-        const parsedRole = JSON.parse(storedRole);
-        setRolePermissions(
-          JSON.parse(parsedRole.rolePrivileges || "{}")
-        );
-      }
-    } catch (e) {
-      console.error("Failed to parse auth data from localStorage:", e);
+      return JSON.parse(readJson("roles")?.rolePrivileges || "{}");
+    } catch {
+      return {};
     }
-  }, []);
+  });
 
   // Sync with changes from other tabs or after login/logout
   useEffect(() => {
-    const handleStorageChange = () => {
-      const storedUser = localStorage.getItem("authUserLD");
-      setauthUserLD(storedUser ? JSON.parse(storedUser) : null);
-    };
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    const onStorage = () => setAuthUserLD(readJson("authUserLD"));
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
-  const navigate = useNavigate();
-  const hasAccess = (
-    module: string,
-    permission: string = "read"
-  ) => {
-    return rolePermissions?.[module]?.includes(permission);
-  };
 
-  // Define menu items
-  const menuItems: MenuItem[] = [
-    {
-      icon: LayoutDashboard,
-      label: "Dashboard",
-      href: "dashboard",
-      module: "dashboard"
-    },
-
-    {
-      icon: ClipboardList,
-      label: "Daily Activity",
-      href: "daily-activity",
-      module: "dataentry"
-    },
-
-    {
-      icon: BarChart3,
-      label: "Reports",
-      href: "reports",
-      module: "reports",
-      children: [
-        {
-          icon: FileText,
-          label: "Performance Insights",
-          href: "efficiency-report",
-          module: "perf"
-        },
-        {
-          icon: Users,
-          label: "User Data",
-          href: "daily-log",
-          module: "mydata"
-        },
-        {
-          icon: Goal,
-          label: "Goals Achieved",
-          href: "goals",
-          module: "goals"
-        },
-        {
-          icon: CheckCircle2,
-          label: "Entry Approval",
-          href: "entry-approval",
-          module: "entryApproval"
-        },
-        {
-          icon: CheckCircle2,
-          label: "User History",
-          href: "user-history",
-          module: "userHistory"
-        },
-        {
-          icon: CheckCircle2,
-          label: "Query Report",
-          href: "query-report",
-          module: "queryReport"
-        },
-
-      ]
-    },
-
-    {
-      icon: Briefcase,
-      label: "Sales Forward",
-      href: "sales-forward",
-      module: "salesfwd",
-      departments: [21]
-    },
-
-    {
-      icon: Settings,
-      label: "Admin",
-      href: "admin",
-      module: "admin",
-      children: [
-        {
-          icon: ShieldCheck,
-          label: "Access Management",
-          href: "access-management",
-          module: "accessmgmt"
-        },
-        {
-          icon: Building2,
-          label: "Department Management",
-          href: "primaryDepartment",
-          module: "deptmgmt"
-        },
-
-        {
-          icon: Building2,
-          label: "Sub Department Management",
-          href: "department",
-          module: "deptmgmt"
-        },
-        {
-          icon: ClipboardList,
-          label: "Task Management",
-          href: "tasks",
-          module: "taskmgmt"
-        },
-        {
-          icon: Target,
-          label: "Target Management",
-          href: "target",
-          module: "targetmgmt"
-        },
-        {
-          icon: Goal,
-          label: "Goal Management",
-          href: "Goal-management",
-          module: "goalmgmt"
-        }
-      ]
-    },
-
-    // Support (formerly HR Feedback); PMS now lives on the Dashboard as a tab
-    {
-      icon: LifeBuoy,
-      label: "Support",
-      href: "support",
-      module: "hrfeedback",
-      children: [
-        { icon: ClipboardList, label: "Onboarding Experience", href: "support/onboarding", module: "hrfeedback" },
-        { icon: ClipboardList, label: "Query & HR", href: "support/query", module: "hrfeedback" },
-        { icon: ClipboardList, label: "Employee Engagement", href: "support/engagement", module: "hrfeedback" },
-      ]
-    }
-  ];
+  const hasAccess = (module: string, permission = "read") => rolePermissions?.[module]?.includes(permission);
 
   // Filter based on user role
-  const filteredMenu = useMemo(() => menuItems
-    .map((item) => {
-      if (item.children) {
-        const filteredChildren = item.children.filter((child) => {
+  const menu = useMemo(() => MENU
+    .map((item) => item.children
+      ? {
+        ...item,
+        children: item.children.filter((child) => {
           if (child.adminOnly) return authUserLD?.userRole === 1;
           if (child.module === "hrfeedback") return true; // Support is open to every user
           return hasAccess(child.module);
-        });
-        return { ...item, children: filteredChildren };
+        }),
       }
-      return item;
-    })
+      : item)
     .filter((item) => {
       if (item.adminOnly) return authUserLD?.userRole === 1;
       if (item.module === "hrfeedback") return true;
-      if (item.departments?.length) {
-        const hasDeptAccess = item.departments.includes(
-          Number(authUserLD?.departmentID)
-        );
-        if (!hasDeptAccess) return false;
-      }
-      if (hasAccess(item.module)) return true;
-      if (item.children?.length) return true;
-      return false;
+      if (item.departments?.length && !item.departments.includes(Number(authUserLD?.departmentID))) return false;
+      if (item.children) return item.children.length > 0;
+      return hasAccess(item.module);
     }), [authUserLD, rolePermissions]);
 
-  const activePage = useMemo(() => currentPage.replaceAll("/", ""), [currentPage]);
-  const isActiveHref = (href: string) => activePage === href.split("/").join("");
+  const active = norm(currentPage);
+  const isActive = (href: string) => active === norm(href);
+
+  // The group holding the current page starts open
+  const [expanded, setExpanded] = useState<string | null>(null);
+  useEffect(() => {
+    const group = MENU.find((item) => item.children?.some((c) => isActive(c.href)));
+    if (group) setExpanded(group.label);
+  }, [currentPage]);
+
+  const initials = (authUserLD?.name ?? "")
+    .split(" ")
+    .map((p: string) => p[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
+  const itemClass = (on: boolean) =>
+    `group relative flex w-full items-center gap-3 px-3 py-2.5 text-[13px] transition-colors focus-ring ${
+      on ? "bg-white/[0.06] font-medium text-white" : "text-ink-400 hover:bg-white/[0.04] hover:text-white"
+    }`;
+  const bar = (on: boolean) => (
+    <span aria-hidden className={`absolute inset-y-1.5 left-0 w-[3px] transition-colors ${on ? "bg-brand-600" : "bg-transparent"}`} />
+  );
 
   return (
     <>
       {/* Mobile overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 xl:hidden"
-          onClick={toggleSidebar}
-        />
-      )}
+      {isOpen && <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden" onClick={toggleSidebar} />}
 
-      {/* Sidebar */}
-      <div
-        className={`fixed inset-y-0 left-0 z-50 bg-white dark:bg-ink-900 shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${isOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
-        style={{ height: "100%", minWidth: "16rem" }}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex h-full w-64 flex-col border-r border-white/10 bg-black text-white transition-transform duration-300 ease-out lg:static lg:translate-x-0 ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
-        <div className="flex items-center gap-2 px-4 py-4 justify-center cursor-pointer" onClick={() => {
-          navigate("/dashboard")
-        }}>
-          <img src="/Tapmind.ico" alt="Taskly Logo" /><h2 className="text-3xl font-bold dark:text-white">TASKLY</h2>
-          <Button
-            isIconOnly
-            variant="light"
-            onClick={toggleSidebar}
-            className="lg:hidden"
-          >
-            <XIcon />
-          </Button>
+        {/* Brand */}
+        <div className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-5">
+          <button type="button" className="flex items-center gap-2.5 focus-ring" onClick={() => navigate("/dashboard")}>
+            <img src="/Tapmind.ico" alt="" className="h-7 w-7" />
+            <span className="text-base font-black uppercase tracking-btn">Taskly</span>
+          </button>
+          <button type="button" onClick={toggleSidebar} aria-label="Close menu" className="p-1.5 text-ink-400 hover:text-white focus-ring lg:hidden">
+            <X size={18} />
+          </button>
         </div>
 
-        <nav className="mt-8">
-          <ul className="space-y-2 px-4" style={{ fontSize: "12px" }}>
-            {filteredMenu.map((item) => {
-              const isActive = isActiveHref(item.href);
-              const isExpanded = expandedMenus.includes(item.label);
-              const hasChildren = item.children && item.children.length > 0;
+        <nav className="flex-1 overflow-y-auto px-3 py-5" aria-label="Main">
+          <p className="mb-2 px-3 font-secondary text-[10px] font-medium uppercase tracking-eyebrow text-ink-500">Menu</p>
+          <ul className="space-y-0.5">
+            {menu.map((item) => {
+              const groupActive = item.children?.some((c) => isActive(c.href)) ?? false;
+              const open = expanded === item.label;
+
+              if (!item.children) {
+                const on = isActive(item.href);
+                return (
+                  <li key={item.label}>
+                    <Link to={`/${item.href}`} onClick={() => { setExpanded(null); if (isOpen) toggleSidebar(); }}
+                      className={itemClass(on)} aria-current={on ? "page" : undefined}>
+                      {bar(on)}
+                      <item.icon size={17} strokeWidth={1.75} className={on ? "text-brand-500" : ""} />
+                      {item.label}
+                    </Link>
+                  </li>
+                );
+              }
 
               return (
                 <li key={item.label}>
-                  {hasChildren ? (
-                    <>
-                      {/* Parent menu */}
-                      <button
-                        onClick={() => {
-                          toggleMenu(item.label)
-                        }}
-
-                        className={`flex items-center justify-between w-full px-4 py-2 rounded-lg transition-colors
-    ${isExpanded || item.children?.some(c => isActiveHref(c.href))
-                            ? "bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400"
-                            : "text-ink-700 dark:text-ink-200 hover:bg-ink-100 dark:hover:bg-ink-800"
-                          }`}
-                      >
-                        <div className="flex items-center">
-                          <item.icon className="w-5 h-5 mr-3" />
-                          {item.label}
-                        </div>
-                        <ChevronDownIcon
-                          className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                        />
-                      </button>
-
-                      {/* Children menus */}
-                      {isExpanded && (
-                        <ul className="mt-1 ml-8 space-y-1">
+                  <button type="button" onClick={() => setExpanded(open ? null : item.label)} aria-expanded={open}
+                    className={itemClass(groupActive && !open)}>
+                    {bar(groupActive && !open)}
+                    <item.icon size={17} strokeWidth={1.75} className={groupActive ? "text-brand-500" : ""} />
+                    <span className="flex-1 text-left">{item.label}</span>
+                    <ChevronDown size={14} className={`text-ink-500 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+                  </button>
+                  <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+                    <ul className="overflow-hidden">
+                      <li className="ml-[22px] mt-0.5 border-l border-white/10 pb-1">
+                        <ul>
                           {item.children.map((child) => {
-                            const isChildActive = isActiveHref(child.href);
+                            const on = isActive(child.href);
                             return (
-                              <li key={child.label} style={{ fontSize: "12px" }} onClick={() => {
-                                toggleSidebar();
-                              }}>
-                                <Link
-                                  to={`/${child.href}`}
-                                  className={`flex items-center px-4 py-2 rounded-lg  transition-colors ${isChildActive
-                                    ? "bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400"
-                                    : "text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-950"
-                                    }`}
-                                >
+                              <li key={child.label}>
+                                <Link to={`/${child.href}`} onClick={() => { if (isOpen) toggleSidebar(); }} tabIndex={open ? 0 : -1}
+                                  aria-current={on ? "page" : undefined}
+                                  className={`relative -ml-px flex items-center border-l py-2 pl-4 pr-2 text-[12.5px] transition-colors focus-ring ${
+                                    on ? "border-brand-600 font-medium text-white" : "border-transparent text-ink-400 hover:border-white/30 hover:text-white"
+                                  }`}>
                                   {child.label}
                                 </Link>
                               </li>
                             );
                           })}
                         </ul>
-                      )}
-                    </>
-                  ) : (
-                    // Regular menu item without children
-                    <Link
-                      to={`/${item.href}`}
-                      onClick={() => {
-                        setExpandedMenus([])
-                        toggleSidebar();
-                      }}
-                      className={`flex items-center px-4 py-2 rounded-lg transition-colors ${isActive
-                        ? "bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400"
-                        : "text-ink-700 dark:text-ink-200 hover:bg-ink-100 dark:hover:bg-ink-800"
-                        }`}
-                    >
-                      <item.icon className="w-5 h-5 mr-3" />
-                      {item.label}
-                    </Link>
-                  )}
+                      </li>
+                    </ul>
+                  </div>
                 </li>
               );
             })}
           </ul>
         </nav>
 
-        {/* Newsletter Section */}
-        <div className="absolute bottom-0 left-0 right-0 p-3 ">
-          <div className="bg-primary/10 rounded-xl p-4 border border-primary/20">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-              <h3 className="text-xs font-bold text-primary uppercase">
-                Announcements
-              </h3>
-            </div>
-            <div className="h-[80px] flex items-center overflow-hidden">
-              <div
-                key={currentNews}
-                className="w-full p-2.5 rounded-lg bg-white/80 dark:bg-ink-900/80 shadow-sm animate-slideUp"
-              >
-                <p className="text-xs font-medium text-ink-800 dark:text-white line-clamp-4">
-                  {newsItems[currentNews].title}
-                </p>
-                <p className="text-[10px] text-primary mt-1 font-medium">
-                  {getRelativeTime(newsItems[currentNews].time)}
-                </p>
-              </div>
+        {/* Announcement */}
+        <div className="mx-3 mb-3 border border-white/10 bg-white/[0.03] p-3.5">
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand-500" />
+            <span className="font-secondary text-[10px] font-medium uppercase tracking-eyebrow text-brand-500">Announcement</span>
+            <span className="ml-auto text-[10px] text-ink-500">{relativeTime(ANNOUNCEMENT.time)}</span>
+          </div>
+          <p className="mt-2 text-xs leading-relaxed text-ink-300">{ANNOUNCEMENT.title}</p>
+        </div>
+
+        {/* Signed-in user */}
+        {authUserLD && (
+          <div className="flex items-center gap-3 border-t border-white/10 px-5 py-4">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center bg-brand-600 text-xs font-bold text-white">{initials || "?"}</span>
+            <div className="min-w-0">
+              <p className="truncate text-[13px] font-medium">{authUserLD.name}</p>
+              <p className="truncate text-[11px] text-ink-500">{authUserLD.email ?? authUserLD.departmentName ?? ""}</p>
             </div>
           </div>
-        </div>
-      </div>
+        )}
+      </aside>
     </>
   );
 };

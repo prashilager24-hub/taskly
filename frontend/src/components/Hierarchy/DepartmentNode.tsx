@@ -10,7 +10,7 @@ export function DepartmentNode({ data }: any) {
 
             <div className="text-xs">EL: {data.executiveLeaderName || "—"}</div>
 
-            <div className="text-xs text-blue-600">
+            <div className="text-xs text-brand-600">
                 {data.users?.length || 0} users (click to toggle)
             </div>
 

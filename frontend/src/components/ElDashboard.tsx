@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Accordion, AccordionItem } from "@/components/ui";
 import EfficiencyTable from "./table2";
 const getBadgeColor = (level) => {
-    if (level === "High") return "bg-green-100 text-green-700";
-    if (level === "At Par") return "bg-yellow-100 text-yellow-700";
-    return "bg-red-100 text-red-700";
+    if (level === "High") return "bg-emerald-100 text-emerald-700";
+    if (level === "At Par") return "bg-amber-100 text-amber-700";
+    return "bg-rose-100 text-rose-700";
 };
 
 const CircularProgress = ({ value, size = 40, stroke = 4 }) => {
@@ -100,7 +100,7 @@ export default function ELDashboard({ data }) {
 
                                 {/* LEFT — Fix 4: reduced min-w + shrink-0 */}
                                 <div className="flex items-center gap-4 min-w-[160px] shrink-0">
-                                    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center font-bold">
+                                    <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center font-bold">
                                         {el.ELName?.[0]}
                                     </div>
                                     <div>

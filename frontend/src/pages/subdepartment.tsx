@@ -594,7 +594,7 @@ export default function DepartmentPage() {
                     Add Sub Department
                 </Button>
             </div>
-            {/* <input type="search" placeholder="Search departments..." className="border border-ink-300 dark:border-ink-600 bg-white dark:bg-ink-800 text-ink-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" value={term} onChange={(e) => setTerm(e.target.value)} /> */}
+            {/* <input type="search" placeholder="Search departments..." className="border border-ink-300 dark:border-ink-600 bg-white dark:bg-ink-800 text-ink-900 dark:text-white placeholder:text-ink-500 dark:placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-brand-500" value={term} onChange={(e) => setTerm(e.target.value)} /> */}
             <Input
                 type="search"
                 placeholder="Search departments..."
@@ -643,7 +643,7 @@ export default function DepartmentPage() {
 
                                 {/* Left: Icon + Name */}
                                 <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-white text-lg font-bold">
+                                    <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-brand-100 dark:bg-brand-800 text-brand-600 dark:text-white text-lg font-bold">
                                         {ele.name?.charAt(0)}
                                     </div>
 
@@ -695,25 +695,25 @@ export default function DepartmentPage() {
                                             }
                                         }}
                                     >
-                                        <DropdownItem key="edit" className="text-blue-600">
+                                        <DropdownItem key="edit" className="text-brand-600">
                                             Edit
                                         </DropdownItem>
 
-                                        <DropdownItem key="delete" className="text-red-600">
+                                        <DropdownItem key="delete" className="text-rose-600">
                                             Delete
                                         </DropdownItem>
 
                                         <DropdownItem
                                             key="toggle"
                                             className={
-                                                ele.departmentStatus ? "text-red-600" : "text-green-600"
+                                                ele.departmentStatus ? "text-rose-600" : "text-emerald-600"
                                             }
                                         >
                                             {ele.departmentStatus ? "Deactivate" : "Activate"}
                                         </DropdownItem>
                                         <DropdownItem
                                             key="link"
-                                            className="text-purple-600"
+                                            className="text-brand-600"
                                             onPress={() => {
                                                 setLinkModal({
                                                     open: true,
@@ -736,8 +736,8 @@ export default function DepartmentPage() {
                                 {/* Status Pill */}
                                 <span
                                     className={`px-3 py-1 text-xs font-medium rounded-full ${ele.departmentStatus
-                                        ? "bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200"
-                                        : "bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-200"
+                                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-800 dark:text-emerald-200"
+                                        : "bg-rose-100 text-rose-700 dark:bg-rose-800 dark:text-rose-200"
                                         }`}
                                 >
                                     {ele.departmentStatus ? "Active" : "Inactive"}

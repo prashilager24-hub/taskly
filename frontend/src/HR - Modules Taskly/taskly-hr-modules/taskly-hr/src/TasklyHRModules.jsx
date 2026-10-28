@@ -24,6 +24,12 @@ const NOTIFY_LIST = "hr@tapmind.com; admin@tapmind.com";
 // that section is shown and the in-page module tabs are hidden — the sidebar navigates instead.
 const SECTION_TO_MODULE = { onboarding: "m1", query: "m2", engagement: "m3" };
 
+const SECTION_SUBTITLES = {
+  m1: "How new joiners rate their first weeks, and who still needs to respond",
+  m2: "Raise questions to HR or L&D, track replies and rate the support you got",
+  m3: "Pulse surveys on how the team feels, rolled out by HR",
+};
+
 export default function TasklyHRModules({ section } = {}) {
   const routed = SECTION_TO_MODULE[section];
   const [mod, setMod] = useState(routed ?? "m1");
@@ -293,15 +299,15 @@ export default function TasklyHRModules({ section } = {}) {
   };
 
   return (
-    <div className="min-h-screen bg-ink-100 dark:bg-ink-800 text-ink-900 dark:text-white">
+    <div className="text-ink-900 dark:text-white">
 
       {routed ? (
-        <div className="bg-white dark:bg-ink-900 px-5 pt-4 pb-1">
-          <span className="eyebrow">Support</span>
-          <h1 className="text-lg font-bold text-ink-900 dark:text-white">{modules.find((m) => m.id === mod)?.label}</h1>
+        <div className="mb-2">
+          <h1 className="block text-[22px] font-black uppercase leading-tight tracking-title text-ink-900 dark:text-white lg:text-[26px]">{modules.find((m) => m.id === mod)?.label}</h1>
+          <p className="mt-1 text-sm text-ink-500 dark:text-ink-400">{SECTION_SUBTITLES[mod]}</p>
         </div>
       ) : (
-        <div className="bg-white dark:bg-ink-900 px-5 overflow-x-auto">
+        <div className="overflow-x-auto">
           <Tabs
             selectedKey={mod}
             onSelectionChange={(k) => setMod(String(k))}
@@ -315,7 +321,7 @@ export default function TasklyHRModules({ section } = {}) {
         </div>
       )}
 
-      <div className="bg-white dark:bg-ink-900 px-5 py-2.5 flex items-center gap-3 flex-wrap">
+      <div className="flex flex-wrap items-center gap-3">
         {/* <span className=" text-[10px] uppercase tracking-widest text-primary">Viewing as</span> */}
         {roles.length > 1 && (
           <Tabs
@@ -361,7 +367,7 @@ export default function TasklyHRModules({ section } = {}) {
         </span> */}
       </div>
 
-      <div className="max-w-5xl mx-auto px-5 py-6 pb-24">{body()}</div>
+      <div className="pt-5 pb-16">{body()}</div>
 
       {toast && (
         <div className="fixed bottom-5 left-1/2 z-30 w-11/12 max-w-md" style={{ transform: "translateX(-50%)" }}>

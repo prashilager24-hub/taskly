@@ -13,7 +13,6 @@ import AccessManagementPage from "@/pages/access-management";
 import Efficiency from "./pages/efficiency";
 import ResetPasswordPage from "./pages/forgotPassword";
 import TargetManagement from "./pages/targetManagement";
-import DarkVeil from "./bg"
 import DailyLogs from "./pages/dailyLogs";
 import Layout from "./components/layout";
 import { Outlet } from "react-router-dom";
@@ -43,19 +42,7 @@ function App() {
       {/* Public Route */}
       <Route
         path="/"
-        element={
-          <>
-            <DarkVeil
-              speed={2.1}
-              hueShift={211}
-              noiseIntensity={0.17}
-              scanlineFrequency={3.8}
-              scanlineIntensity={0}
-              warpAmount={0}
-            />
-            <IndexPage />
-          </>
-        }
+        element={<IndexPage />}
       />
 
       {/* PROTECTED ROUTES WITH CONSTANT SIDEBAR + TOPBAR */}

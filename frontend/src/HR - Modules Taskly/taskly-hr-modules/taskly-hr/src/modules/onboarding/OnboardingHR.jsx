@@ -114,20 +114,20 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
 
           <div className="grid gap-4 mb-5" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))" }}>
             <div className="space-y-1.5">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-ink-500 dark:text-ink-400">Employee</div>
+              <div className="text-[10px] font-secondary uppercase tracking-wider text-ink-500 dark:text-ink-400">Employee</div>
               <div className="text-sm font-semibold">{detailSurvey.employee}</div>
               <div className="text-[12px] text-ink-500 dark:text-ink-400">{detailSurvey.dept}</div>
             </div>
             <div className="space-y-1.5">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-ink-500 dark:text-ink-400">Joined</div>
+              <div className="text-[10px] font-secondary uppercase tracking-wider text-ink-500 dark:text-ink-400">Joined</div>
               <div className="text-sm">{detailSurvey.joined}</div>
             </div>
             <div className="space-y-1.5">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-ink-500 dark:text-ink-400">Due</div>
+              <div className="text-[10px] font-secondary uppercase tracking-wider text-ink-500 dark:text-ink-400">Due</div>
               <div className="text-sm">{detailSurvey.due}</div>
             </div>
             <div className="space-y-1.5">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-ink-500 dark:text-ink-400">Status</div>
+              <div className="text-[10px] font-secondary uppercase tracking-wider text-ink-500 dark:text-ink-400">Status</div>
               <div>{detailSurvey.status === "submitted" ? <Pill tone="done">Submitted</Pill> : <Pill tone="open">{detailSurvey.status}</Pill>}</div>
             </div>
           </div>
@@ -143,7 +143,7 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
             {ONB_QUESTIONS.map((q, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div className="text-xs text-ink-600 dark:text-ink-300 flex-1 min-w-0" title={q}>
-                  <span className="font-mono text-ink-400 mr-1.5">Q{i + 1}.</span>
+                  <span className="font-secondary text-ink-400 mr-1.5">Q{i + 1}.</span>
                   {q}
                 </div>
                 <div className="w-36 h-2 bg-ink-100 dark:bg-ink-800 rounded overflow-hidden">

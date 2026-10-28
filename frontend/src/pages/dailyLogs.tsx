@@ -576,7 +576,7 @@ export default function DailyLogs() {
                                 average working Hours
                             </span>
 
-                            <span className="px-3 py-1 mx-2 text-sm font-semibold text-green-700 bg-green-100 rounded-full">
+                            <span className="px-3 py-1 mx-2 text-sm font-semibold text-emerald-700 bg-emerald-100 rounded-full">
                                 {average.avgTotalWork}
                             </span>
                         </div>
@@ -587,7 +587,7 @@ export default function DailyLogs() {
                                 average Allocated Hours
                             </span>
 
-                            <span className="px-3 py-1 text-sm font-semibold text-yellow-700 bg-yellow-100 rounded-full">
+                            <span className="px-3 py-1 text-sm font-semibold text-amber-700 bg-amber-100 rounded-full">
                                 {average.avgAllocatedHrs}
                             </span>
                         </div>

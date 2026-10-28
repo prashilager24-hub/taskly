@@ -378,7 +378,7 @@ export default function DashboardFilters({
         if (selectedUser) {
             fetchQuarterlyReviews();
         } else {
-            if (authUser.userID === 1 || authUser.departmentID === 16) {
+            if (authUser.userID === 1 || authUser.userRole == 1 || authUser.departmentID === 16) {
                 fetchAllQuarterlyReviews();
             }
         }

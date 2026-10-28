@@ -73,12 +73,14 @@ export default function Goals() {
     const [users, setUsers] = useState<any[]>([]);
     const [ELList, setELList] = useState<any[]>([]);
 
+    // Admins start with everyone; other users start on their own department and data
+    const isAdmin = user?.userRole == 1;
     const [filterStatus, setFilterStatus] = useState(
-        user?.departmentID ? String(user.departmentID) : ""
+        !isAdmin && user?.departmentID ? String(user.departmentID) : ""
     );
 
     const [selectedUser, setSelectedUser] = useState(
-        user?.userID ? user.userID == 1 ? null : String(user.userID) : ""
+        !isAdmin && user?.userID ? String(user.userID) : ""
     );
 
     const [elFilter, setELfilter] = useState(
@@ -189,7 +191,7 @@ export default function Goals() {
             sortable: true,
             renderCell: (item) =>
                 item.achievedGoal === 0 ? (
-                    <span className="text-red-500 font-medium">0</span>
+                    <span className="text-rose-500 font-medium">0</span>
                 ) : (
 
                     <span className="font-medium">{item.achievedGoal}</span>
@@ -213,10 +215,10 @@ export default function Goals() {
 
         //         const color =
         //             value >= 85
-        //                 ? "bg-green-100 text-green-700"
+        //                 ? "bg-emerald-100 text-emerald-700"
         //                 : value >= 60
-        //                     ? "bg-yellow-100 text-yellow-700"
-        //                     : "bg-red-100 text-red-700";
+        //                     ? "bg-amber-100 text-amber-700"
+        //                     : "bg-rose-100 text-rose-700";
         //         if (item.departmentID === 37) {
         //             return (
         //                 <span className="font-medium">
@@ -594,7 +596,7 @@ export default function Goals() {
                         userID:
                             selectedUser
                                 ? Number(selectedUser)
-                                : user?.userID == 1 ? null : user?.userID,
+                                : user?.userRole == 1 ? null : user?.userID, // admins see everyone
 
                         startDate: dateRange.startDate,
                         endDate: dateRange.endDate,
@@ -871,7 +873,7 @@ export default function Goals() {
                             Average Goal Achieved
                         </span>
 
-                        <span className="px-3 py-1 mx-2 text-sm font-semibold text-green-700 bg-green-100 rounded-full">
+                        <span className="px-3 py-1 mx-2 text-sm font-semibold text-emerald-700 bg-emerald-100 rounded-full">
                             {Number(averageGoalAchieved || 0).toFixed(2)}%
                         </span>
                     </div>

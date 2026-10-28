@@ -296,7 +296,7 @@ export default function EfficiencyTable({ data, type, onEdit, dashboard = false 
                 return (
                     <span
                         className="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
-                    bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                    bg-brand-100 text-brand-800 dark:bg-brand-900 dark:text-brand-200"
                     >
                         {cellValue}
                     </span>
@@ -313,10 +313,10 @@ export default function EfficiencyTable({ data, type, onEdit, dashboard = false 
                         <div className="w-full bg-ink-200 rounded-full h-1.5 dark:bg-ink-700">
                             <div
                                 className={`h-1.5 rounded-full ${cellValue >= 80
-                                    ? "bg-green-500"
+                                    ? "bg-emerald-500"
                                     : cellValue >= 50
-                                        ? "bg-yellow-500"
-                                        : "bg-red-500"
+                                        ? "bg-amber-500"
+                                        : "bg-rose-500"
                                     }`}
                                 style={{ width: `${Math.min(cellValue ?? 0, 100)}%` }}
                             ></div>
@@ -331,7 +331,7 @@ export default function EfficiencyTable({ data, type, onEdit, dashboard = false 
                 return (
                     <span
                         className="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
-                    bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                    bg-brand-100 text-brand-800 dark:bg-brand-900 dark:text-brand-200"
                     >
                         {cellValue?.toFixed(2)} hrs
                     </span>

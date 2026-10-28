@@ -187,7 +187,7 @@ export default function QueryReport() {
                 );
             case 'TaskID':
                 return (
-                    <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                    <span className="text-sm font-medium text-brand-600 dark:text-brand-400">
                         T-{log.TaskID}
                     </span>
                 );
@@ -210,7 +210,7 @@ export default function QueryReport() {
                 return new Date(log.WorkDate).toLocaleDateString();
             case 'actualTimeOfWork':
                 return (
-                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-brand-100 text-brand-800">
                         {log.actualTimeOfWork} mins
                     </span>
                 );

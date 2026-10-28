@@ -89,7 +89,7 @@ export default function QueryAdmin({ queries = [], admin = {}, slaHours = 72 }) 
               const comment = hasAdmin ? q.comment : q.ratingComment;
               return (
                 <tr key={q.id} className="border-b border-ink-100 dark:border-white/10 last:border-0">
-                  <td className="py-3 text-ink-500 dark:text-ink-400 font-mono text-xs">{q.id}</td>
+                  <td className="py-3 text-ink-500 dark:text-ink-400 font-secondary text-xs">{q.id}</td>
                   <td className="py-3">{q.team}</td>
                   <td className="py-3 text-[13px]">{q.subject}</td>
                   <td className="py-3 font-semibold text-red-600">{one(score)}</td>

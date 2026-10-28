@@ -196,7 +196,7 @@ const [goals, setGoals] = useState([]);
                 );
             case 'TaskID':
                 return (
-                    <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                    <span className="text-sm font-medium text-brand-600 dark:text-brand-400">
                         T-{log.TaskID}
                     </span>
                 );
@@ -219,7 +219,7 @@ const [goals, setGoals] = useState([]);
                 return new Date(log.WorkDate).toLocaleDateString();
             case 'actualTimeOfWork':
                 return (
-                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-brand-100 text-brand-800">
                         {log.actualTimeOfWork} mins
                     </span>
                 );
@@ -771,10 +771,10 @@ const [goals, setGoals] = useState([]);
                                         <span
                                             className={`px-2 py-1 rounded-full text-xs font-medium
         ${dept.EfficiencyLevel === "High"
-                                                    ? "bg-green-100 text-green-700"
+                                                    ? "bg-emerald-100 text-emerald-700"
                                                     : dept.EfficiencyLevel === "At Par"
-                                                        ? "bg-yellow-100 text-yellow-700"
-                                                        : "bg-red-100 text-red-700"
+                                                        ? "bg-amber-100 text-amber-700"
+                                                        : "bg-rose-100 text-rose-700"
                                                 }`}
                                         >
                                             {dept.EfficiencyLevel}
@@ -794,20 +794,20 @@ const [goals, setGoals] = useState([]);
 
                                     <div>
                                         <p className="text-xs text-default-500">Utilization</p>
-                                        <p className="text-lg font-bold text-green-500">
+                                        <p className="text-lg font-bold text-emerald-500">
                                             {dept.AvgUtilizationPercent}%
                                         </p>
                                     </div>
 
                                     <div>
                                         <p className="text-xs text-default-500">Goal</p>
-                                        <p className="text-lg font-bold text-blue-500">
+                                        <p className="text-lg font-bold text-brand-500">
                                             {dept.AvgGoalPercent}%
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className=" pt-3 flex justify-between text-sm align-bottom text-blue-600 cursor-pointer">
+                                <div className=" pt-3 flex justify-between text-sm align-bottom text-brand-600 cursor-pointer">
                                     <div>
                                         <p className="text-xs text-default-500">Period</p>
                                         <p className="font-medium">
@@ -822,7 +822,7 @@ const [goals, setGoals] = useState([]);
                                     </div>
                                     <div className="flex flex-col items-end">
                                        <p
-    className="cursor-pointer text-blue-600"
+    className="cursor-pointer text-brand-600"
     onClick={() => handleViewDetails(dept)}
 >
     View Details

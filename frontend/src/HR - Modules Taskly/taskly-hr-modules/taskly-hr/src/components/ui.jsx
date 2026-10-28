@@ -25,7 +25,7 @@ export function CardStat({ label, value, unit, note, hero }) {
   return (
     <Card className={`border ${hero ? "border-primary-300 bg-primary-50" : "border-ink-200 dark:border-white/10"}`} shadow="none">
       <CardBody className="p-4">
-        <div className="text-[10px] font-mono uppercase tracking-wider text-ink-500 dark:text-ink-400 mb-2">{label}</div>
+        <div className="text-[10px] font-secondary uppercase tracking-wider text-ink-500 dark:text-ink-400 mb-2">{label}</div>
         <div className={`text-2xl font-bold tracking-tight ${hero ? "text-primary-700" : "text-ink-900 dark:text-white"}`}>
           {value}
           {unit && <span className="text-sm font-medium text-ink-400">{unit}</span>}
@@ -46,7 +46,7 @@ export function Cards({ children }) {
 
 export function Section({ children }) {
   return (
-    <div className="text-[10px] font-mono uppercase tracking-wider text-ink-500 dark:text-ink-400 mt-6 mb-3 pb-1.5 border-b border-ink-200 dark:border-white/10">
+    <div className="text-[10px] font-secondary uppercase tracking-wider text-ink-500 dark:text-ink-400 mt-6 mb-3 pb-1.5 border-b border-ink-200 dark:border-white/10">
       {children}
     </div>
   );
@@ -55,13 +55,8 @@ export function Section({ children }) {
 export function Screen({ id, title, sub, children }) {
   return (
     <Card shadow="none" className="border border-ink-200 dark:border-white/10 mb-5">
-      <div className="px-4 py-3 border-b border-ink-200 dark:border-white/10 bg-ink-50 dark:bg-ink-950 flex items-baseline gap-3 flex-wrap">
-        {id && (
-          <Chip size="sm" variant="flat" color="primary" className="font-mono text-[11px]">
-            {id}
-          </Chip>
-        )}
-        <span className="font-semibold text-[15px]">{title}</span>
+      <div className="px-4 py-3 border-b border-ink-200 dark:border-white/10 bg-white dark:bg-ink-900 flex items-baseline gap-3 flex-wrap">
+        <span className="text-[15px] font-bold">{title}</span>
         {sub && <span className="text-xs text-ink-500 dark:text-ink-400">{sub}</span>}
       </div>
       <CardBody className="p-4">{children}</CardBody>
@@ -142,7 +137,7 @@ export function Scale({ value, onChange, compact }) {
 export function ScaleLegend() {
   return (
     <div className="border border-ink-200 dark:border-white/10 rounded p-3 mb-5 bg-ink-50 dark:bg-ink-950">
-      <div className="text-[10px] font-mono uppercase tracking-wider text-ink-500 dark:text-ink-400 mb-2">Rating scale</div>
+      <div className="text-[10px] font-secondary uppercase tracking-wider text-ink-500 dark:text-ink-400 mb-2">Rating scale</div>
       <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-ink-600 dark:text-ink-300">
         {SCALE_LABELS.map((l, i) => (
           <span key={i}>
@@ -162,7 +157,7 @@ export function Distribution({ values, counts }) {
       <div className="flex items-end gap-1.5 h-24">
         {c.map((cc, i) => (
           <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
-            <div className="text-[10px] font-mono text-ink-400 mb-1">{cc || ""}</div>
+            <div className="text-[10px] font-secondary text-ink-400 mb-1">{cc || ""}</div>
             <div
               className={`w-full rounded-t ${cc === max && cc > 0 ? "bg-primary" : "bg-ink-200 dark:bg-ink-700"}`}
               style={{ height: `${(cc / max) * 100}%`, minHeight: cc ? 4 : 1 }}
@@ -172,7 +167,7 @@ export function Distribution({ values, counts }) {
       </div>
       <div className="flex gap-1.5 mt-1">
         {c.map((_, i) => (
-          <div key={i} className="flex-1 text-center text-[10px] font-mono text-ink-400">
+          <div key={i} className="flex-1 text-center text-[10px] font-secondary text-ink-400">
             {i + 1}
           </div>
         ))}
@@ -207,10 +202,10 @@ export function EmailPreview({ to, subject, body }) {
   return (
     <Card shadow="none" className="border border-ink-300 dark:border-white/15 bg-ink-50 dark:bg-ink-950">
       <CardBody className="p-3 text-[13px]">
-        <div className="font-mono text-[10.5px] text-ink-500 dark:text-ink-400 mb-1.5 flex items-center gap-1.5">
+        <div className="font-secondary text-[10.5px] text-ink-500 dark:text-ink-400 mb-1.5 flex items-center gap-1.5">
           <Mail size={12} /> To: {to}
         </div>
-        <div className="font-mono text-[10.5px] text-ink-500 dark:text-ink-400 mb-2">Subject: {subject}</div>
+        <div className="font-secondary text-[10.5px] text-ink-500 dark:text-ink-400 mb-2">Subject: {subject}</div>
         <div className="text-ink-700 dark:text-ink-200">{body}</div>
       </CardBody>
     </Card>
@@ -241,7 +236,7 @@ export function Thread({ messages }) {
         <div key={i} className="mb-3.5">
           <div className="text-xs font-semibold">
             {m.who}
-            <span className="font-normal text-ink-400 font-mono text-[10.5px] ml-2">{m.at}</span>
+            <span className="font-normal text-ink-400 font-secondary text-[10.5px] ml-2">{m.at}</span>
           </div>
           <div className="text-[13px] text-ink-600 dark:text-ink-300 mt-0.5">{m.text}</div>
         </div>
@@ -262,7 +257,7 @@ export function ContextBar({ title, meta }) {
 export function THead({ cols }) {
   return (
     <thead>
-      <tr className="text-[10px] font-mono uppercase tracking-wider text-ink-500 dark:text-ink-400">
+      <tr className="text-[10px] font-secondary uppercase tracking-wider text-ink-500 dark:text-ink-400">
         {cols.map((c, i) => (
           <th key={i} className="text-left py-2 border-b border-ink-200 dark:border-white/10 whitespace-nowrap">
             {c}

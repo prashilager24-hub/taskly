@@ -246,7 +246,7 @@ export default function QueryEmployee({ queries = [], currentUser, onRaise, onRa
           <tbody>
             {mine.map((q) => (
               <tr key={q.id} className="border-b border-ink-100 dark:border-white/10 last:border-0">
-                <td className="py-3 text-ink-500 dark:text-ink-400 font-mono text-xs">{q.id}</td>
+                <td className="py-3 text-ink-500 dark:text-ink-400 font-secondary text-xs">{q.id}</td>
                 <td className="py-3">{q.subject}</td>
                 <td className="py-3 text-[13px]">{q.team}</td>
                 <td className="py-3 text-ink-500 dark:text-ink-400 text-[13px]">{q.raisedOn}</td>

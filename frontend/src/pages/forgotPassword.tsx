@@ -146,19 +146,19 @@ export default function ResetPasswordPage() {
 
                             {/* Password Strength Checklist */}
                             <div className="text-sm mt-1 space-y-1">
-                                <p className={passwordValidity.passwordLength ? "text-green-600" : "text-red-500"}>
+                                <p className={passwordValidity.passwordLength ? "text-emerald-600" : "text-rose-500"}>
                                     {passwordValidity.passwordLength ? "✔" : "✖"} At least 8 characters
                                 </p>
-                                <p className={passwordValidity.containNumbers ? "text-green-600" : "text-red-500"}>
+                                <p className={passwordValidity.containNumbers ? "text-emerald-600" : "text-rose-500"}>
                                     {passwordValidity.containNumbers ? "✔" : "✖"} Contains number
                                 </p>
-                                <p className={passwordValidity.isUpperCase ? "text-green-600" : "text-red-500"}>
+                                <p className={passwordValidity.isUpperCase ? "text-emerald-600" : "text-rose-500"}>
                                     {passwordValidity.isUpperCase ? "✔" : "✖"} Uppercase letter
                                 </p>
-                                <p className={passwordValidity.isLowerCase ? "text-green-600" : "text-red-500"}>
+                                <p className={passwordValidity.isLowerCase ? "text-emerald-600" : "text-rose-500"}>
                                     {passwordValidity.isLowerCase ? "✔" : "✖"} Lowercase letter
                                 </p>
-                                <p className={passwordValidity.requireSymbols ? "text-green-600" : "text-red-500"}>
+                                <p className={passwordValidity.requireSymbols ? "text-emerald-600" : "text-rose-500"}>
                                     {passwordValidity.requireSymbols ? "✔" : "✖"} Special symbol
                                 </p>
                             </div>
@@ -175,7 +175,7 @@ export default function ResetPasswordPage() {
                             />
 
                             {!passwordMatch && (
-                                <p className="text-red-500 text-sm">Passwords do not match</p>
+                                <p className="text-rose-500 text-sm">Passwords do not match</p>
                             )}
 
                             <Button

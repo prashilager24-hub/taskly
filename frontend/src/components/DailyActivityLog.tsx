@@ -2705,7 +2705,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                             Add Target Entry
                                             {showMessage && (
 
-                                                <span className="ml-2 inline-flex items-center rounded-md bg-red-50 px-2 py-0.5 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                                                <span className="ml-2 inline-flex items-center rounded-md bg-rose-50 px-2 py-0.5 text-xs text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
                                                     Note: if your target is not present, it will be calculated automatically.Check your target achievement in performance insights report
                                                 </span>
 
@@ -2785,16 +2785,16 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
                                         <div className="mb-3">
                                             {currentActivity.targetName && frequencyValidation.message && (
-                                                <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700">
-                                                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                                                <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700">
+                                                    <p className="text-sm text-amber-800 dark:text-amber-200">
                                                         {frequencyValidation.message}
                                                     </p>
                                                 </div>
                                             )}
 
                                             {currentActivity.targetName && frequencyValidation.isValid && (
-                                                <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700">
-                                                    <p className="text-sm text-green-800 dark:text-green-200">
+                                                <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700">
+                                                    <p className="text-sm text-emerald-800 dark:text-emerald-200">
                                                         ✓ {frequencyValidation.targetFrequency} target - Date is valid for adding data
                                                     </p>
                                                 </div>
@@ -3407,7 +3407,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                             <span className="text-ink-600 dark:text-ink-400">
                                                 Total Logged
                                             </span>
-                                            <span className="text-blue-600 dark:text-blue-400 mx-2">
+                                            <span className="text-brand-600 dark:text-brand-400 mx-2">
                                                 {(() => {
                                                     const totalHours = activities.reduce((sum, a) => {
                                                         // Skip target-based tasks
@@ -3432,7 +3432,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                             <span className="text-ink-600 dark:text-ink-400">
                                                 Total Time Taken
                                             </span>
-                                            <span className="text-green-600 dark:text-green-400 mx-2">
+                                            <span className="text-emerald-600 dark:text-emerald-400 mx-2">
                                                 {(() => {
                                                     const totalTimeTaken = activities.reduce((sum, a) => {
                                                         return sum + Number(a.timeTaken || 0);
@@ -3566,7 +3566,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                             {/* Modern Table */}
                             <div className="overflow-x-auto overflow-y-auto max-h-[34rem] rounded-xl border border-ink-100 dark:border-ink-800 shadow-sm">
                                 <table className="min-w-full text-sm text-ink-800 dark:text-ink-200">
-                                    <thead className="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900" style={{ position: "sticky", top: 0, }}>
+                                    <thead className="bg-gradient-to-r from-ink-100 to-ink-50 dark:from-ink-800 dark:to-ink-900" style={{ position: "sticky", top: 0, }}>
                                         <tr className="text-left">
                                             <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                 No
@@ -3603,7 +3603,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                             <tr
                                                 key={activity.id}
                                                 className={`transition-all duration-150 ${activity.targetName
-                                                    ? "bg-blue-50/60 dark:bg-blue-900/30"
+                                                    ? "bg-brand-50/60 dark:bg-brand-900/30"
                                                     : "bg-white dark:bg-ink-950"
                                                     } `}
                                             >
@@ -3624,9 +3624,9 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
                                                 <td className="px-4 py-3">
                                                     <span className={`inline-flex px-2 py-1 text-xs rounded-md ${activity.isGoal
-                                                        ? "bg-purple-100 text-purple-700"
+                                                        ? "bg-brand-100 text-brand-700"
                                                         : activity.targetName
-                                                            ? "bg-blue-100 text-blue-700"
+                                                            ? "bg-brand-100 text-brand-700"
                                                             : "bg-ink-100 dark:bg-ink-800 text-ink-700 dark:text-ink-200"
                                                         }`}>
                                                         {activity.isGoal ? "Goal" : activity.targetName ? "Target" : "Task"}

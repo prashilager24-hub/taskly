@@ -148,7 +148,7 @@ const ColumnChart = ({
                                     >
                                         <div className="flex flex-col items-center text-xs leading-tight">
                                             <span className="font-semibold">{labels[i]}</span>
-                                            <span className="text-blue-300">Utilization: {values[i]}</span>
+                                            <span className="text-brand-300">Utilization: {values[i]}</span>
                                             <span className="text-ink-300">Goal: {goals[i]}</span>
                                         </div>
                                     </motion.div>
@@ -218,7 +218,7 @@ const ColumnChart = ({
                         // { label: "Total", value: totalValue },
                     ]
                         .map(({ label, value }) => (
-                            <div key={label} className="bg-blue-50 rounded-xl px-3 py-2.5">
+                            <div key={label} className="bg-brand-50 rounded-xl px-3 py-2.5">
                                 <p className="text-xs text-ink-400 uppercase tracking-wide mb-0.5">{label}</p>
                                 <p className="text-sm font-medium text-ink-900 dark:text-white">{value}</p>
                             </div>
@@ -275,7 +275,7 @@ const RADIAL_CHART_LABELS = [
     "Allocated Hrs",
     "Work Hrs",
     "average Goal"];
-const RADIAL_CHART_COLORS = ["#EF4444", "#10B981", "#F59E0B", "#8B5CF6", "#30328f"];
+const RADIAL_CHART_COLORS = ["#EF4444", "#10B981", "#F59E0B", "#ff8442", "#30328f"];
 
 const RADIAL_CHART_OPTIONS_BASE = {
     labels: RADIAL_CHART_LABELS,
@@ -390,29 +390,29 @@ const EfficiencyRules = memo(() => (
             </svg>
             Efficiency &amp; Utilization Rules
         </h2>
-        <div className="bg-yellow-50 dark:bg-yellow-500/10 border-l-4 border-yellow-400 p-3 rounded leading-tight">
+        <div className="bg-amber-50 dark:bg-amber-500/10 border-l-4 border-amber-400 p-3 rounded leading-tight">
             <strong>Note:</strong> Regular workday = 8 Hours. Half Day leave = 4 Hours.
         </div>
-        <div className="bg-yellow-50 dark:bg-yellow-500/10 border-l-4 border-yellow-400 p-3 rounded leading-tight">
+        <div className="bg-amber-50 dark:bg-amber-500/10 border-l-4 border-amber-400 p-3 rounded leading-tight">
             <strong>Efficiency Calculation</strong>
             <ul className="list-disc pl-4 mt-1">
                 <li>
-                    <span className="text-green-600 font-semibold">High:</span>&nbsp;
+                    <span className="text-emerald-600 font-semibold">High:</span>&nbsp;
                     Target Achieved ≥ <b>100%</b> AND Goal Achieved ≥ <b>80%</b> AND Time Taken ≤ Allocated Time
                 </li>
 
                 <li>
-                    <span className="text-yellow-600 font-semibold">At Par:</span>&nbsp;
+                    <span className="text-amber-600 font-semibold">At Par:</span>&nbsp;
                     Target Achieved ≥ <b>80%</b> AND Goal Achieved ≥ <b>50%</b> AND Time Taken ≤ Allocated Time
                 </li>
 
                 <li>
-                    <span className="text-red-600 font-semibold">Low:</span>&nbsp;
+                    <span className="text-rose-600 font-semibold">Low:</span>&nbsp;
                     All other conditions
                 </li>
             </ul>
         </div>
-        <div className="bg-yellow-50 dark:bg-yellow-500/10 border-l-4 border-yellow-400 p-3 rounded leading-tight">
+        <div className="bg-amber-50 dark:bg-amber-500/10 border-l-4 border-amber-400 p-3 rounded leading-tight">
             <strong>Utilization Calculation</strong>
             <ul className="list-disc pl-4 mt-1">
                 <li>
@@ -651,7 +651,7 @@ const MultiRingChart = ({ values = [], colors = [], size = 200, stroke = 12 }) =
     );
 };
 
-const RADIAL_LEGEND_COLORS = ["#4338ca", "#059669", "#92400e", "#a855f7", "#eab308"];
+const RADIAL_LEGEND_COLORS = ["#ff6a1f", "#059669", "#52525b", "#ffa06b", "#d97706"];
 const RADIAL_METRIC_LABELS = ["Target %", "Allocated Hrs", "Work Hrs", "Avg Goal"];
 
 const RadialSummaryCard = memo(({
@@ -1170,11 +1170,11 @@ export default function DashboardPage() {
                                                 <MultiRingChart
                                                     values={item.values}
                                                     colors={[
-                                                        "#4338ca",
+                                                        "#ff6a1f",
                                                         "#059669",
-                                                        "#92400e",
-                                                        "#a855f7",
-                                                        "#eab308",
+                                                        "#52525b",
+                                                        "#ffa06b",
+                                                        "#d97706",
                                                     ]}
                                                     size={220}
                                                     stroke={12}
@@ -1207,11 +1207,11 @@ export default function DashboardPage() {
                                                                 className="w-3 h-3 rounded-full"
                                                                 style={{
                                                                     background: [
-                                                                        "#4338ca",
+                                                                        "#ff6a1f",
                                                                         "#059669",
-                                                                        "#92400e",
-                                                                        "#a855f7",
-                                                                        "#eab308",
+                                                                        "#52525b",
+                                                                        "#ffa06b",
+                                                                        "#d97706",
                                                                     ][i],
                                                                 }}
                                                             />
@@ -1231,7 +1231,7 @@ export default function DashboardPage() {
                 px-4
                 py-2
                 rounded-xl
-                bg-blue-50
+                bg-brand-50
                 text-center
                 w-full
             ">
@@ -1240,7 +1240,7 @@ export default function DashboardPage() {
                     text-[11px]
                     uppercase
                     tracking-widest
-                    text-blue-400
+                    text-brand-400
                 ">
                                                         Efficiency
                                                     </p>
@@ -1248,7 +1248,7 @@ export default function DashboardPage() {
                                                     <h3 className="
                     text-2xl
                     font-bold
-                    text-blue-700
+                    text-brand-700
                     mt-1
                 ">
                                                         {item.subtitle}
@@ -1363,7 +1363,7 @@ export default function DashboardPage() {
                                                                 ? metric.label.includes("%")
                                                                     ? `${value}%`
                                                                     : value
-                                                                : value}
+                                                                : value ?? "—"}
 
                                                         </h3>
 
@@ -1393,12 +1393,12 @@ export default function DashboardPage() {
                                                                         : metric.color === "green"
                                                                             ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                             : metric.color === "yellow"
-                                                                                ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
+                                                                                ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
                                                                                 : metric.color === "purple"
-                                                                                    ? ["#f3e8ff", "#e9d5ff", "#d8b4fe", "#c084fc", "#7c3aed"]
+                                                                                    ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
                                                                                     : metric.color === "indigo"
-                                                                                        ? ["#e0e7ff", "#c7d2fe", "#a5b4fc", "#818cf8", "#4f46e5"]
-                                                                                        : ["#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0284c7"];
+                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
+                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
 
                                                                 return (
                                                                     <div
@@ -1605,22 +1605,22 @@ export default function DashboardPage() {
 
                                             {/* Col 2 – Stats panel (admin, no department) */}
                                             {!hasDepartment && companySummary && (
-                                                <div className="bg-white dark:bg-ink-900 rounded-xl p-4  text-[12px] flex">
+                                                <div className="flex p-1 text-[12px]">
                                                     <div className="w-full">
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                        <div className="grid grid-cols-2 gap-3">
                                                             {stats.map((item, i) => {
                                                                 const value = item.value;
 
                                                                 return (
                                                                     <div
                                                                         key={i}
-                                                                        className="bg-ink-50 dark:bg-ink-950 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                        className="flex min-h-[112px] flex-col justify-between border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/50"
                                                                     >
 
                                                                         {/* TOP ROW */}
                                                                         <div className="flex items-center justify-between">
-                                                                            <span className="text-[11px] font-semibold text-ink-500 dark:text-ink-400 tracking-wide">
-                                                                                {item.label.toUpperCase()}
+                                                                            <span className="pr-2 font-secondary text-[10px] font-medium uppercase leading-snug tracking-wider text-ink-500 dark:text-ink-400">
+                                                                                {item.label}
                                                                             </span>
 
                                                                             <div className="opacity-60">
@@ -1630,12 +1630,12 @@ export default function DashboardPage() {
 
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
-                                                                            <h2 className="text-2xl font-semibold text-ink-900 dark:text-white">
+                                                                            <h2 className="text-[28px] font-black leading-none tracking-tight text-ink-900 dark:text-white">
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
                                                                                         ? `${value}%`
                                                                                         : value
-                                                                                    : value}
+                                                                                    : value ?? "—"}
                                                                             </h2>
                                                                         </div>
 
@@ -1651,10 +1651,10 @@ export default function DashboardPage() {
                                                                                             : item.color === "green"
                                                                                                 ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                                 : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
+                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
                                                                                                     : item.color === "purple"
-                                                                                                        ? ["#f3e8ff", "#e9d5ff", "#d8b4fe", "#c084fc", "#7c3aed"]
-                                                                                                        : ["#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0284c7"];
+                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
+                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
 
                                                                                     return (
                                                                                         <div
@@ -1684,7 +1684,7 @@ export default function DashboardPage() {
 
                                                     <div className="w-full">
 
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                        <div className="grid grid-cols-2 gap-3">
 
                                                             {[
                                                                 {
@@ -1724,14 +1724,14 @@ export default function DashboardPage() {
                                                                 return (
                                                                     <div
                                                                         key={i}
-                                                                        className="bg-ink-50 dark:bg-ink-950 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                        className="flex min-h-[112px] flex-col justify-between border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/50"
                                                                     >
 
                                                                         {/* TOP ROW */}
                                                                         <div className="flex items-center justify-between">
 
-                                                                            <span className="text-[11px] font-semibold text-ink-500 dark:text-ink-400 tracking-wide">
-                                                                                {item.label.toUpperCase()}
+                                                                            <span className="pr-2 font-secondary text-[10px] font-medium uppercase leading-snug tracking-wider text-ink-500 dark:text-ink-400">
+                                                                                {item.label}
                                                                             </span>
 
                                                                             <div className="opacity-60">
@@ -1746,13 +1746,13 @@ export default function DashboardPage() {
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
 
-                                                                            <h2 className="text-2xl font-semibold text-ink-900 dark:text-white">
+                                                                            <h2 className="text-[28px] font-black leading-none tracking-tight text-ink-900 dark:text-white">
 
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
                                                                                         ? `${value}%`
                                                                                         : value
-                                                                                    : value}
+                                                                                    : value ?? "—"}
 
                                                                             </h2>
 
@@ -1776,10 +1776,10 @@ export default function DashboardPage() {
                                                                                             : item.color === "green"
                                                                                                 ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                                 : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
+                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
                                                                                                     : item.color === "purple"
-                                                                                                        ? ["#f3e8ff", "#e9d5ff", "#d8b4fe", "#c084fc", "#7c3aed"]
-                                                                                                        : ["#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0284c7"];
+                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
+                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
 
                                                                                     return (
                                                                                         <div
@@ -2059,22 +2059,22 @@ export default function DashboardPage() {
 
                                             {/* Col 2 – Stats panel (admin, no department) */}
                                             {!hasDepartment && companySummary && (
-                                                <div className="bg-white dark:bg-ink-900 rounded-xl p-4  text-[12px] flex">
+                                                <div className="flex p-1 text-[12px]">
                                                     <div className="w-full">
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                        <div className="grid grid-cols-2 gap-3">
                                                             {stats.map((item, i) => {
                                                                 const value = item.value;
 
                                                                 return (
                                                                     <div
                                                                         key={i}
-                                                                        className="bg-ink-50 dark:bg-ink-950 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                        className="flex min-h-[112px] flex-col justify-between border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/50"
                                                                     >
 
                                                                         {/* TOP ROW */}
                                                                         <div className="flex items-center justify-between">
-                                                                            <span className="text-[11px] font-semibold text-ink-500 dark:text-ink-400 tracking-wide">
-                                                                                {item.label.toUpperCase()}
+                                                                            <span className="pr-2 font-secondary text-[10px] font-medium uppercase leading-snug tracking-wider text-ink-500 dark:text-ink-400">
+                                                                                {item.label}
                                                                             </span>
 
                                                                             <div className="opacity-60">
@@ -2084,12 +2084,12 @@ export default function DashboardPage() {
 
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
-                                                                            <h2 className="text-2xl font-semibold text-ink-900 dark:text-white">
+                                                                            <h2 className="text-[28px] font-black leading-none tracking-tight text-ink-900 dark:text-white">
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
                                                                                         ? `${value}%`
                                                                                         : value
-                                                                                    : value}
+                                                                                    : value ?? "—"}
                                                                             </h2>
                                                                         </div>
 
@@ -2105,10 +2105,10 @@ export default function DashboardPage() {
                                                                                             : item.color === "green"
                                                                                                 ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                                 : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
+                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
                                                                                                     : item.color === "purple"
-                                                                                                        ? ["#f3e8ff", "#e9d5ff", "#d8b4fe", "#c084fc", "#7c3aed"]
-                                                                                                        : ["#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0284c7"];
+                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
+                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
 
                                                                                     return (
                                                                                         <div
@@ -2138,7 +2138,7 @@ export default function DashboardPage() {
 
                                                     <div className="w-full">
 
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                        <div className="grid grid-cols-2 gap-3">
 
                                                             {[
                                                                 {
@@ -2178,14 +2178,14 @@ export default function DashboardPage() {
                                                                 return (
                                                                     <div
                                                                         key={i}
-                                                                        className="bg-ink-50 dark:bg-ink-950 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                        className="flex min-h-[112px] flex-col justify-between border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/50"
                                                                     >
 
                                                                         {/* TOP ROW */}
                                                                         <div className="flex items-center justify-between">
 
-                                                                            <span className="text-[11px] font-semibold text-ink-500 dark:text-ink-400 tracking-wide">
-                                                                                {item.label.toUpperCase()}
+                                                                            <span className="pr-2 font-secondary text-[10px] font-medium uppercase leading-snug tracking-wider text-ink-500 dark:text-ink-400">
+                                                                                {item.label}
                                                                             </span>
 
                                                                             <div className="opacity-60">
@@ -2200,13 +2200,13 @@ export default function DashboardPage() {
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
 
-                                                                            <h2 className="text-2xl font-semibold text-ink-900 dark:text-white">
+                                                                            <h2 className="text-[28px] font-black leading-none tracking-tight text-ink-900 dark:text-white">
 
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
                                                                                         ? `${value}%`
                                                                                         : value
-                                                                                    : value}
+                                                                                    : value ?? "—"}
 
                                                                             </h2>
 
@@ -2230,10 +2230,10 @@ export default function DashboardPage() {
                                                                                             : item.color === "green"
                                                                                                 ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                                 : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
+                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
                                                                                                     : item.color === "purple"
-                                                                                                        ? ["#f3e8ff", "#e9d5ff", "#d8b4fe", "#c084fc", "#7c3aed"]
-                                                                                                        : ["#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0284c7"];
+                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
+                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
 
                                                                                     return (
                                                                                         <div
@@ -2513,22 +2513,22 @@ export default function DashboardPage() {
 
                                             {/* Col 2 – Stats panel (admin, no department) */}
                                             {!hasDepartment && companySummary && (
-                                                <div className="bg-white dark:bg-ink-900 rounded-xl p-4  text-[12px] flex">
+                                                <div className="flex p-1 text-[12px]">
                                                     <div className="w-full">
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                        <div className="grid grid-cols-2 gap-3">
                                                             {stats.map((item, i) => {
                                                                 const value = item.value;
 
                                                                 return (
                                                                     <div
                                                                         key={i}
-                                                                        className="bg-ink-50 dark:bg-ink-950 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                        className="flex min-h-[112px] flex-col justify-between border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/50"
                                                                     >
 
                                                                         {/* TOP ROW */}
                                                                         <div className="flex items-center justify-between">
-                                                                            <span className="text-[11px] font-semibold text-ink-500 dark:text-ink-400 tracking-wide">
-                                                                                {item.label.toUpperCase()}
+                                                                            <span className="pr-2 font-secondary text-[10px] font-medium uppercase leading-snug tracking-wider text-ink-500 dark:text-ink-400">
+                                                                                {item.label}
                                                                             </span>
 
                                                                             <div className="opacity-60">
@@ -2538,12 +2538,12 @@ export default function DashboardPage() {
 
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
-                                                                            <h2 className="text-2xl font-semibold text-ink-900 dark:text-white">
+                                                                            <h2 className="text-[28px] font-black leading-none tracking-tight text-ink-900 dark:text-white">
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
                                                                                         ? `${value}%`
                                                                                         : value
-                                                                                    : value}
+                                                                                    : value ?? "—"}
                                                                             </h2>
                                                                         </div>
 
@@ -2559,10 +2559,10 @@ export default function DashboardPage() {
                                                                                             : item.color === "green"
                                                                                                 ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                                 : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
+                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
                                                                                                     : item.color === "purple"
-                                                                                                        ? ["#f3e8ff", "#e9d5ff", "#d8b4fe", "#c084fc", "#7c3aed"]
-                                                                                                        : ["#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0284c7"];
+                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
+                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
 
                                                                                     return (
                                                                                         <div
@@ -2592,7 +2592,7 @@ export default function DashboardPage() {
 
                                                     <div className="w-full">
 
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                        <div className="grid grid-cols-2 gap-3">
 
                                                             {[
                                                                 {
@@ -2632,14 +2632,14 @@ export default function DashboardPage() {
                                                                 return (
                                                                     <div
                                                                         key={i}
-                                                                        className="bg-ink-50 dark:bg-ink-950 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                        className="flex min-h-[112px] flex-col justify-between border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/50"
                                                                     >
 
                                                                         {/* TOP ROW */}
                                                                         <div className="flex items-center justify-between">
 
-                                                                            <span className="text-[11px] font-semibold text-ink-500 dark:text-ink-400 tracking-wide">
-                                                                                {item.label.toUpperCase()}
+                                                                            <span className="pr-2 font-secondary text-[10px] font-medium uppercase leading-snug tracking-wider text-ink-500 dark:text-ink-400">
+                                                                                {item.label}
                                                                             </span>
 
                                                                             <div className="opacity-60">
@@ -2654,13 +2654,13 @@ export default function DashboardPage() {
                                                                         {/* VALUE */}
                                                                         <div className="mt-2">
 
-                                                                            <h2 className="text-2xl font-semibold text-ink-900 dark:text-white">
+                                                                            <h2 className="text-[28px] font-black leading-none tracking-tight text-ink-900 dark:text-white">
 
                                                                                 {typeof value === "number"
                                                                                     ? item.label.includes("%")
                                                                                         ? `${value}%`
                                                                                         : value
-                                                                                    : value}
+                                                                                    : value ?? "—"}
 
                                                                             </h2>
 
@@ -2684,10 +2684,10 @@ export default function DashboardPage() {
                                                                                             : item.color === "green"
                                                                                                 ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                                 : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
+                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
                                                                                                     : item.color === "purple"
-                                                                                                        ? ["#f3e8ff", "#e9d5ff", "#d8b4fe", "#c084fc", "#7c3aed"]
-                                                                                                        : ["#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0284c7"];
+                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
+                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
 
                                                                                     return (
                                                                                         <div
@@ -2968,22 +2968,22 @@ export default function DashboardPage() {
 
                                     {/* Col 2 – Stats panel (admin, no department) */}
                                     {!hasDepartment && companySummary && (
-                                        <div className="bg-white dark:bg-ink-900 rounded-xl p-4  text-[12px] flex">
+                                        <div className="flex p-1 text-[12px]">
                                             <div className="w-full">
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                <div className="grid grid-cols-2 gap-3">
                                                     {stats.map((item, i) => {
                                                         const value = item.value;
 
                                                         return (
                                                             <div
                                                                 key={i}
-                                                                className="bg-ink-50 dark:bg-ink-950 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                className="flex min-h-[112px] flex-col justify-between border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/50"
                                                             >
 
                                                                 {/* TOP ROW */}
                                                                 <div className="flex items-center justify-between">
-                                                                    <span className="text-[11px] font-semibold text-ink-500 dark:text-ink-400 tracking-wide">
-                                                                        {item.label.toUpperCase()}
+                                                                    <span className="pr-2 font-secondary text-[10px] font-medium uppercase leading-snug tracking-wider text-ink-500 dark:text-ink-400">
+                                                                        {item.label}
                                                                     </span>
 
                                                                     <div className="opacity-60">
@@ -2993,12 +2993,12 @@ export default function DashboardPage() {
 
                                                                 {/* VALUE */}
                                                                 <div className="mt-2">
-                                                                    <h2 className="text-2xl font-semibold text-ink-900 dark:text-white">
+                                                                    <h2 className="text-[28px] font-black leading-none tracking-tight text-ink-900 dark:text-white">
                                                                         {typeof value === "number"
                                                                             ? item.label.includes("%")
                                                                                 ? `${value}%`
                                                                                 : value
-                                                                            : value}
+                                                                            : value ?? "—"}
                                                                     </h2>
                                                                 </div>
 
@@ -3014,10 +3014,10 @@ export default function DashboardPage() {
                                                                                     : item.color === "green"
                                                                                         ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                         : item.color === "yellow"
-                                                                                            ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
+                                                                                            ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
                                                                                             : item.color === "purple"
-                                                                                                ? ["#f3e8ff", "#e9d5ff", "#d8b4fe", "#c084fc", "#7c3aed"]
-                                                                                                : ["#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0284c7"];
+                                                                                                ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
+                                                                                                : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
 
                                                                             return (
                                                                                 <div
@@ -3047,7 +3047,7 @@ export default function DashboardPage() {
 
                                             <div className="w-full">
 
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                <div className="grid grid-cols-2 gap-3">
 
                                                     {[
                                                         {
@@ -3087,14 +3087,14 @@ export default function DashboardPage() {
                                                         return (
                                                             <div
                                                                 key={i}
-                                                                className="bg-ink-50 dark:bg-ink-950 rounded-xl p-4 hover:shadow-md transition flex flex-col justify-between"
+                                                                className="flex min-h-[112px] flex-col justify-between border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/50"
                                                             >
 
                                                                 {/* TOP ROW */}
                                                                 <div className="flex items-center justify-between">
 
-                                                                    <span className="text-[11px] font-semibold text-ink-500 dark:text-ink-400 tracking-wide">
-                                                                        {item.label.toUpperCase()}
+                                                                    <span className="pr-2 font-secondary text-[10px] font-medium uppercase leading-snug tracking-wider text-ink-500 dark:text-ink-400">
+                                                                        {item.label}
                                                                     </span>
 
                                                                     <div className="opacity-60">
@@ -3109,13 +3109,13 @@ export default function DashboardPage() {
                                                                 {/* VALUE */}
                                                                 <div className="mt-2">
 
-                                                                    <h2 className="text-2xl font-semibold text-ink-900 dark:text-white">
+                                                                    <h2 className="text-[28px] font-black leading-none tracking-tight text-ink-900 dark:text-white">
 
                                                                         {typeof value === "number"
                                                                             ? item.label.includes("%")
                                                                                 ? `${value}%`
                                                                                 : value
-                                                                            : value}
+                                                                            : value ?? "—"}
 
                                                                     </h2>
 
@@ -3139,10 +3139,10 @@ export default function DashboardPage() {
                                                                                     : item.color === "green"
                                                                                         ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
                                                                                         : item.color === "yellow"
-                                                                                            ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#ca8a04"]
+                                                                                            ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
                                                                                             : item.color === "purple"
-                                                                                                ? ["#f3e8ff", "#e9d5ff", "#d8b4fe", "#c084fc", "#7c3aed"]
-                                                                                                : ["#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0284c7"];
+                                                                                                ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
+                                                                                                : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
 
                                                                             return (
                                                                                 <div

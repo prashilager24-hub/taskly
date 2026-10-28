@@ -34,6 +34,13 @@
     @apply font-secondary font-medium uppercase tracking-wider text-[11px] text-ink-500 dark:text-ink-400;
   }
 
+  /* Short values (names, dates, departments) stay on one line; tables scroll sideways instead.
+     Cells meant for long text opt back in with whitespace-normal. */
+  th,
+  td {
+    white-space: nowrap;
+  }
+
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #c7cddb; border-radius: 8px; }

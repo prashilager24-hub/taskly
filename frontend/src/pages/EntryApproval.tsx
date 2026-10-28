@@ -92,7 +92,7 @@ const getPriorityChip = (priority) => {
             return (
                 <Chip
                     size="sm"
-                    className="bg-red-100 text-red-600 font-medium"
+                    className="bg-rose-100 text-rose-600 font-medium"
                     radius="sm"
                 >
                     High
@@ -102,7 +102,7 @@ const getPriorityChip = (priority) => {
             return (
                 <Chip
                     size="sm"
-                    className="bg-blue-100 text-blue-600 font-medium"
+                    className="bg-brand-100 text-brand-600 font-medium"
                     radius="sm"
                 >
                     Medium
@@ -133,16 +133,16 @@ const getStatusChip = (status) => {
 
         case "Approved":
             return (
-                <div className="flex items-center gap-2 text-green-500 text-sm font-medium">
-                    <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                <div className="flex items-center gap-2 text-emerald-500 text-sm font-medium">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
                     Approved
                 </div>
             );
 
         case "Rejected":
             return (
-                <div className="flex items-center gap-2 text-red-500 text-sm font-medium">
-                    <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                <div className="flex items-center gap-2 text-rose-500 text-sm font-medium">
+                    <span className="h-2 w-2 rounded-full bg-rose-500"></span>
                     Rejected
                 </div>
             );

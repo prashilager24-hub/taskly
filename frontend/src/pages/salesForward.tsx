@@ -191,11 +191,11 @@ const SalesForward: React.FC = () => {
             renderCell: (row) => {
 
                 const colorMap = {
-                    SCHEDULED: "bg-purple-500",
-                    RESCHEDULED: "bg-yellow-500",
-                    COMPLETED: "bg-green-500",
-                    NO_SHOW: "bg-purple-500",
-                    CANCELLED_BY_PUBLISHER: "bg-red-500",
+                    SCHEDULED: "bg-brand-500",
+                    RESCHEDULED: "bg-amber-500",
+                    COMPLETED: "bg-emerald-500",
+                    NO_SHOW: "bg-brand-500",
+                    CANCELLED_BY_PUBLISHER: "bg-rose-500",
                     CANCELLED_BY_INTERNAL: "bg-ink-600",
                 };
 

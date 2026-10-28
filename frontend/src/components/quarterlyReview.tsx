@@ -2522,7 +2522,7 @@ export default function QuarterlyReview() {
                                 </div>
 
                                 {/* Quarterly Breakdown */}
-                                <div className="bg-red-100 border border-red-200 rounded-xl p-4">
+                                <div className="bg-rose-100 border border-rose-200 rounded-xl p-4">
                                     <p className="text-[10px] uppercase tracking-[.15em] text-default-700 -mt-1">
                                         Monthly Breakdown</p>
 

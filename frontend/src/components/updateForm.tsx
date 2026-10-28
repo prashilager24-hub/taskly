@@ -2171,7 +2171,7 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                             Add Target Entry
                                             {showMessage && (
 
-                                                <span className="ml-2 inline-flex items-center rounded-md bg-red-50 px-2 py-0.5 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                                                <span className="ml-2 inline-flex items-center rounded-md bg-rose-50 px-2 py-0.5 text-xs text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
                                                     Note: if your target is not present, it will be calculated automatically.Check your target achievement in performance insights report
                                                 </span>
 
@@ -2539,7 +2539,7 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                             <h3 className="text-ink-900 dark:text-white text-sm">
                                                 Add Goal Entry
                                             </h3>
-                                            {(DeptId == 14 || DeptId == 32 || DeptId == 31) && (<span className="ml-2 inline-flex items-center rounded-md bg-red-50 px-2 py-0.5 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                                            {(DeptId == 14 || DeptId == 32 || DeptId == 31) && (<span className="ml-2 inline-flex items-center rounded-md bg-rose-50 px-2 py-0.5 text-xs text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
                                                 Note: finance, finance-AP, finance-AR auto calculated
                                             </span>)
 
@@ -2629,7 +2629,7 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                             />
                                             {
                                                 DeptId == 5 || DeptId == 36 && (
-                                                    <span className="ml-2 inline-flex items-center rounded-md bg-red-50 px-2 py-0.5 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                                                    <span className="ml-2 inline-flex items-center rounded-md bg-rose-50 px-2 py-0.5 text-xs text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
                                                         Note: please enter .5 if it is a shared call
                                                     </span>
                                                 )
@@ -2717,7 +2717,7 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                             <span className="text-ink-600 dark:text-ink-400">
                                                 Total Logged
                                             </span>
-                                            <span className="text-blue-600 dark:text-blue-400 mx-2">
+                                            <span className="text-brand-600 dark:text-brand-400 mx-2">
                                                 {(() => {
                                                     const totalHours = activities.reduce((sum, a) => {
                                                         // Skip target-based tasks
@@ -2742,7 +2742,7 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                             <span className="text-ink-600 dark:text-ink-400">
                                                 Total Time Taken
                                             </span>
-                                            <span className="text-green-600 dark:text-green-400 mx-2">
+                                            <span className="text-emerald-600 dark:text-emerald-400 mx-2">
                                                 {(() => {
                                                     const totalTimeTaken = activities.reduce((sum, a) => {
                                                         return sum + Number(a.timeTaken || 0);
@@ -2887,10 +2887,10 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                                         <span
                                                             className={`text-xs px-2 py-1 rounded-full font-medium
                   ${job.status === "OPEN"
-                                                                    ? "bg-green-100 text-green-700"
+                                                                    ? "bg-emerald-100 text-emerald-700"
                                                                     : job.status === "CLOSED"
-                                                                        ? "bg-red-100 text-red-700"
-                                                                        : "bg-yellow-100 text-yellow-700"
+                                                                        ? "bg-rose-100 text-rose-700"
+                                                                        : "bg-amber-100 text-amber-700"
                                                                 }`}
                                                         >
                                                             {job.status}
@@ -3005,7 +3005,7 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                     {/* Modern Table */}
                                     <div className="overflow-x-auto overflow-y-auto max-h-[34rem] rounded-xl border border-ink-100 dark:border-ink-800 shadow-sm">
                                         <table className="min-w-full text-sm text-ink-800 dark:text-ink-200">
-                                            <thead className="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900" style={{ position: "sticky", top: 0, }}>
+                                            <thead className="bg-gradient-to-r from-ink-100 to-ink-50 dark:from-ink-800 dark:to-ink-900" style={{ position: "sticky", top: 0, }}>
                                                 <tr className="text-left">
                                                     <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
                                                         No
@@ -3039,7 +3039,7 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
                                                     <tr
                                                         key={activity.id}
                                                         className={`transition-all duration-150 ${activity.targetName
-                                                            ? "bg-blue-50/60 dark:bg-blue-900/30"
+                                                            ? "bg-brand-50/60 dark:bg-brand-900/30"
                                                             : "bg-white dark:bg-ink-950"
                                                             } `}
                                                     >
@@ -3056,9 +3056,9 @@ export default function UpdateForm({ task, DeptId, taskOptions = [], onSuccess }
 
                                                         <td className="px-4 py-3">
                                                             <span className={`inline-flex px-2 py-1 text-xs rounded-md ${activity.isGoal
-                                                                ? "bg-purple-100 text-purple-700"
+                                                                ? "bg-brand-100 text-brand-700"
                                                                 : activity.targetName
-                                                                    ? "bg-blue-100 text-blue-700"
+                                                                    ? "bg-brand-100 text-brand-700"
                                                                     : "bg-ink-100 dark:bg-ink-800 text-ink-700 dark:text-ink-200"
                                                                 }`}>
                                                                 {activity.isGoal ? "Goal" : activity.targetName ? "Target" : "Task"}

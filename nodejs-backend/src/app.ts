@@ -14,7 +14,7 @@ import { departmentsRouter, primaryDepartmentsRouter } from './modules/departmen
 import tasksRouter from './modules/tasks/tasks.routes';
 import goalsRouter from './modules/goals/goals.routes';
 import targetsRouter from './modules/targets/targets.routes';
-import { monthlyRouter, quarterlyRouter, goalEfficiencyRouter } from './modules/reviews/reviews.routes';
+import { monthlyRouter, quarterlyRouter, quarterlyAliasRouter, goalEfficiencyRouter } from './modules/reviews/reviews.routes';
 import hrRouter, { queryRouter, engagementRouter, onboardingRouter } from './modules/hr/hr.routes';
 import { salesCallsRouter, taCallsRouter, tamRouter } from './modules/sales/sales.routes';
 import pushRouter from './modules/push/push.routes';
@@ -111,6 +111,7 @@ app.use(`${BASE}/tech`, techRouter);
 // Java: /t2.0/authentificationUtilization/quarterly-review
 // Java: /t2.0/authentificationUtilization/goal-efficiency
 app.use(`${BASE}/monthly-reviews`, monthlyRouter);
+app.use(`${BASE}/quarterly-reviews`, quarterlyAliasRouter);
 app.use(`${BASE}/quarterly-review`, quarterlyRouter);
 app.use(`${BASE}/goal-efficiency`, goalEfficiencyRouter);
 

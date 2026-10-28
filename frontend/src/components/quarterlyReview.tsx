@@ -1977,7 +1977,7 @@ export default function QuarterlyReview() {
     //     Number(form.target || 0)
     // );
     return (
-        <div className="min-h-screen bg-default-50 p-6 font-sans">
+        <div className="pt-6 font-sans">
             <Modal
                 isOpen={isWeightOpen}
                 onOpenChange={onWeightOpenChange}
@@ -2261,7 +2261,7 @@ export default function QuarterlyReview() {
             <div className="mx-auto mb-7 flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
                     <div>
-                        <h1 className="text-xl font-semibold ">Quarterly Review</h1>
+                        <h2 className="text-lg font-bold uppercase tracking-wide text-ink-900 dark:text-white">Quarterly Review</h2>
                         <p className="text-[11px] mt-0.5">Manager · Consolidated Quarterly Assessment &amp; Performance Metrics</p>
                     </div>
                 </div>
@@ -2287,73 +2287,9 @@ export default function QuarterlyReview() {
                         </CardHeader>
 
                         <CardBody className="px-6 pt-5 pb-6 flex flex-col gap-4">
-                            <div className="bg-default-50 border border-divider rounded-xl p-4 flex flex-col gap-3">
-                                <div className="flex items-center gap-2">
-                                    <Divider className="flex-1" />
-                                    <p className="text-[10px] uppercase tracking-[.15em] text-default-700 whitespace-nowrap">
-                                        Star Performance &amp; Final Grade
-                                    </p>
-                                    <Divider className="flex-1" />
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-4 items-start">
-                                    <div className="flex flex-col items-center justify-center gap-2 bg-white dark:bg-ink-900 border border-divider rounded-xl p-3">
-                                        <p className="text-[10px] uppercase tracking-wider text-default-700">
-                                            Star Rating
-                                        </p>
-                                        <StarSelector
-                                            value={form.starRating}
-                                            onChange={set("starRating")}
-                                            isDisabled={finalRatingPercent <= 100}
-                                        />
-                                        <p className="text-[10px] text-default-700">
-                                            {form.starRating > 0
-                                                ? `${form.starRating} Star${form.starRating > 1 ? "s" : ""}`
-                                                : "None"}
-                                        </p>
-                                        {finalRatingPercent <= 100 && (
-                                            <p className="text-[9px] text-default-400 text-center leading-tight">
-                                                Only applicable when Final Rating exceeds 100%
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <Textarea
-                                        label="Star Rating Justification"
-                                        placeholder="Describe the exceptional performance that justifies this star rating..."
-                                        value={form.starDescription}
-                                        onChange={setE("starDescription")}
-                                        minRows={3}
-                                        size="sm"
-                                        radius="lg"
-                                        classNames={{ inputWrapper: "bg-white dark:bg-ink-900 border-default-200" }}
-                                    />
-                                </div>
-
-                                <div className="flex items-center justify-between bg-white dark:bg-ink-900 border border-divider rounded-xl px-4 py-3">
-                                    <div>
-                                        <p className="text-[10px] uppercase tracking-wider text-default-700">
-                                            Final Grade
-                                        </p>
-                                        <p className="text-sm font-semibold text-default-900">
-                                            {finalGrade.label}
-                                        </p>
-                                        <p className="text-[10px] text-default-700 mt-0.5">
-                                            Based on Final Rating ({finalRatingPercent.toFixed(1)}%)
-                                        </p>
-                                    </div>
-                                    <Chip
-                                        color={gradeColor(finalGrade.grade)}
-                                        variant="flat"
-                                        size="lg"
-                                        className="font-black text-base"
-                                    >
-                                        {finalGrade.display}
-                                    </Chip>
-                                </div>
-                            </div>
+                            <p className="eyebrow">1 · Who and when</p>
                             {/* Row 1 — Department + Employee + Quarter */}
-                            <div className="grid grid-cols-4 gap-4">
+                            <div className="grid grid-cols-1 items-end gap-4 sm:grid-cols-3">
                                 {/* <Autocomplete
                                 aria-label="filter by Reviewee Department"
                                 placeholder="Filter by Reviewee Department"
@@ -2378,8 +2314,10 @@ export default function QuarterlyReview() {
 
                                 <Autocomplete
                                     aria-label="filter by Reviewee"
-                                    placeholder="Filter by Reviewee"
-                                    className="max-w-xs"
+                                    placeholder="Select reviewee"
+                                    label="Reviewee"
+                                    labelPlacement="outside"
+                                    className="w-full"
                                     selectedKey={selectedFilterUser}
                                     inputValue={userSearch}
                                     onInputChange={(value) => {
@@ -2450,10 +2388,11 @@ export default function QuarterlyReview() {
                                 <DateRangeDropdown value={dateRange} onChange={setDateRange} />
                             </div>
 
+                            <p className="eyebrow mt-2">2 · Quarterly metrics</p>
                             {/* Info callout */}
-                            <div className="flex items-center gap-2.5 bg-primary-50 border border-primary-200 rounded-xl px-3.5 py-2.5 my-2">
+                            <div className="flex items-center gap-2.5 border border-brand-200 bg-brand-50 px-3.5 py-2.5 dark:border-brand-500/30 dark:bg-brand-500/10">
                                 <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
-                                <p className="text-xs text-primary-700">
+                                <p className="text-xs text-brand-700 dark:text-brand-300">
                                     Quarterly metrics
                                 </p>
                             </div>
@@ -2509,7 +2448,7 @@ export default function QuarterlyReview() {
                                 </div>
 
                                 {/* Quarterly Breakdown */}
-                                <div className="bg-rose-100 border border-rose-200 rounded-xl p-4">
+                                <div className="border border-ink-200 bg-white p-4 dark:border-white/10 dark:bg-ink-900">
                                     <p className="text-[10px] uppercase tracking-[.15em] text-default-700 -mt-1">
                                         Monthly Breakdown</p>
 
@@ -2639,9 +2578,74 @@ export default function QuarterlyReview() {
                                 </div>
                             </div>
                             <Divider />
-                            <p className="text-[10px] uppercase tracking-[.15em] text-default-700 -mt-1">
-                                Manager Qualitative Assessment
-                            </p>
+                            <p className="eyebrow">3 · Star rating &amp; final grade</p>
+                            <div className="bg-default-50 border border-divider rounded-xl p-4 flex flex-col gap-3">
+                                <div className="flex items-center gap-2">
+                                    <Divider className="flex-1" />
+                                    <p className="text-[10px] uppercase tracking-[.15em] text-default-700 whitespace-nowrap">
+                                        Star rating &amp; final grade
+                                    </p>
+                                    <Divider className="flex-1" />
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-4 items-start">
+                                    <div className="flex flex-col items-center justify-center gap-2 bg-white dark:bg-ink-900 border border-divider rounded-xl p-3">
+                                        <p className="text-[10px] uppercase tracking-wider text-default-700">
+                                            Star Rating
+                                        </p>
+                                        <StarSelector
+                                            value={form.starRating}
+                                            onChange={set("starRating")}
+                                            isDisabled={finalRatingPercent <= 100}
+                                        />
+                                        <p className="text-[10px] text-default-700">
+                                            {form.starRating > 0
+                                                ? `${form.starRating} Star${form.starRating > 1 ? "s" : ""}`
+                                                : "None"}
+                                        </p>
+                                        {finalRatingPercent <= 100 && (
+                                            <p className="text-[9px] text-default-400 text-center leading-tight">
+                                                Only applicable when Final Rating exceeds 100%
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <Textarea
+                                        label="Star Rating Justification"
+                                        placeholder="Describe the exceptional performance that justifies this star rating..."
+                                        value={form.starDescription}
+                                        onChange={setE("starDescription")}
+                                        minRows={3}
+                                        size="sm"
+                                        radius="lg"
+                                        classNames={{ inputWrapper: "bg-white dark:bg-ink-900 border-default-200" }}
+                                    />
+                                </div>
+
+                                <div className="flex items-center justify-between bg-white dark:bg-ink-900 border border-divider rounded-xl px-4 py-3">
+                                    <div>
+                                        <p className="text-[10px] uppercase tracking-wider text-default-700">
+                                            Final Grade
+                                        </p>
+                                        <p className="text-sm font-semibold text-default-900">
+                                            {finalGrade.label}
+                                        </p>
+                                        <p className="text-[10px] text-default-700 mt-0.5">
+                                            Based on Final Rating ({finalRatingPercent.toFixed(1)}%)
+                                        </p>
+                                    </div>
+                                    <Chip
+                                        color={gradeColor(finalGrade.grade)}
+                                        variant="flat"
+                                        size="lg"
+                                        className="font-black text-base"
+                                    >
+                                        {finalGrade.display}
+                                    </Chip>
+                                </div>
+                            </div>
+                            <Divider />
+                            <p className="eyebrow">4 · Manager qualitative assessment</p>
 
                             {/* Row 3 — Feedback Cat + Type */}
                             <div className="flex flex-col gap-4">

@@ -612,6 +612,7 @@ import {
 
 import { TrendingUp, Gauge, Target, Users } from "lucide-react";
 import { useState, useCallback } from "react";
+import { Segmented, SummaryBar } from "@/components/page";
 import DashboardFilters from "./pmsdashboardapi";
 import AdminAnalytics from "./AdminAnalytics";
 import {
@@ -1251,7 +1252,7 @@ export default function QuarterlyReviewDashboard() {
     const hasDeptId16 = Array.isArray(rawDeptID)
         ? rawDeptID.some((d) => Number(d) === 16)
         : Number(rawDeptID) === 16;
-    const isPrivileged = Number(authUser?.userID) === 1 || hasDeptId16;
+    const isPrivileged = authUser?.userRole === 1 || hasDeptId16;
 
     const isDepartmentSelected = Array.isArray(filters.departmentID)
         ? filters.departmentID.length > 0
@@ -1284,75 +1285,56 @@ export default function QuarterlyReviewDashboard() {
             : 0;
 
     return (
-        <div className="p-6 bg-default-50 min-h-screen">
+        <div className="pt-6">
 
-            {/* Header */}
-            <div className="mb-8">
-                <div className="flex items-center gap-4 mb-4">
-                    <h1 className="text-xl font-semibold ">Review Dashboard</h1>
-                    <Switch
-                        size="sm"
-                        value={monthly}
-                        onChange={(e) => setMonthly(e.target.checked)}
-                        color="success"
-                    >
-                        Manager's Review
-                    </Switch>
+            {/* Header: what is being reviewed is a clear two-way choice, not a hidden toggle */}
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+                <div>
+                    <h2 className="text-lg font-bold uppercase tracking-wide text-ink-900 dark:text-white">Review dashboard</h2>
+                    <p className="mt-1 text-sm text-ink-500 dark:text-ink-400">
+                        {monthly ? "Monthly manager feedback given to the selected person." : "Quarterly reviews, grades and metrics for the selected person."}
+                    </p>
                 </div>
-
-                <DashboardFilters reviews={reviews} setReviews={setReviews} monthly={monthly} onFiltersChange={handleFiltersChange} />
+                <Segmented
+                    label="Review type"
+                    value={monthly ? "manager" : "employee"}
+                    onChange={(v) => setMonthly(v === "manager")}
+                    options={[{ key: "employee", label: "Quarterly reviews" }, { key: "manager", label: "Manager feedback" }]}
+                />
             </div>
 
+            <DashboardFilters reviews={reviews} setReviews={setReviews} monthly={monthly} onFiltersChange={handleFiltersChange} />
 
             {/* Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-                <SummaryCard title="No of Reviews" value={totalEmployees} icon={<Users size={18} />} />
-                <SummaryCard title="Efficiency" value={`${avgEfficiency}%`} icon={<TrendingUp size={18} />} />
-                <SummaryCard title="Utilization" value={`${avgUtilization}%`} icon={<Gauge size={18} />} />
-                <SummaryCard title="Target" value={`${avgTarget}%`} icon={<Target size={18} />} />
-                <SummaryCard title="Goal" value={`${avgGoal}%`} icon={<Target size={18} />} />
-            </div>
-
-            {/* Empty */}
-            {reviews.length === 0 && (
-                <Card className="border border-default-200">
-                    <CardBody className="py-20 flex items-center justify-center">
-                        <div className="text-center">
-                            <h2 className="text-xl font-semibold">No Reviews</h2>
-                            <p className="text-default-500 mt-2">
-                                Select department, user, quarter and year
-                            </p>
-                        </div>
-                    </CardBody>
-                </Card>
-            )}
+            <SummaryBar
+                className="mt-6 lg:grid-cols-5"
+                items={[
+                    { label: "Reviews", value: totalEmployees },
+                    { label: "Efficiency", value: `${avgEfficiency}%` },
+                    { label: "Utilization", value: `${avgUtilization}%` },
+                    { label: "Target", value: `${avgTarget}%` },
+                    { label: "Goal", value: `${avgGoal}%` },
+                ]}
+            />
 
             {/* ── Card Grid ── */}
-            {isDepartmentSelected && isUserSelected ? (
-                <div className="grid grid-cols-1 xl:grid-cols-[1fr_288px] gap-5 items-start">
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {isDepartmentSelected && isUserSelected && reviews.length > 0 ? (
+                <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[1fr_288px]">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         {reviews.map((review) => (
                             <ReviewCard key={review.id} review={review} />
                         ))}
                     </div>
                     {showLivePreview && <LivePreviewSummary reviews={reviews} />}
-
                 </div>
             ) : (
-                <div className="grid grid-cols-1 xl:grid-cols-[1fr_288px] gap-5 items-start m-2">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Card className="border border-default-200">
-                            <CardBody className="py-20 flex items-center justify-center">
-                                <div className="text-center">
-                                    <h2 className="text-xl font-semibold">No Reviews</h2>
-                                    <p className="text-default-500 mt-2">
-                                        Select department and user to view reviews
-                                    </p>
-                                </div>
-                            </CardBody>
-                        </Card>
-                    </div>
+                <div className="border border-dashed border-ink-300 px-6 py-16 text-center dark:border-white/15">
+                    <h3 className="text-base font-bold text-ink-900 dark:text-white">
+                        {isDepartmentSelected && isUserSelected ? "No reviews for this selection" : "Pick a department and a person"}
+                    </h3>
+                    <p className="mt-2 text-sm text-ink-500 dark:text-ink-400">
+                        {isDepartmentSelected && isUserSelected ? "Try another quarter or year." : "Their reviews, grades and metrics will show here."}
+                    </p>
                 </div>
             )}
 

@@ -219,11 +219,11 @@ export default function GoalSetting() {
     }
 
     return (
-        <div className="p-6">
+        <div className="pt-6">
 
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h1 className="text-xl font-semibold">Goal Setting</h1>
+                    <h2 className="text-lg font-bold uppercase tracking-wide text-ink-900 dark:text-white">Goal Setting</h2>
                     <p className="text-sm text-default-500">
                         Set quarterly goals for employees (3–5 goals, total weight must equal 100%)
                     </p>

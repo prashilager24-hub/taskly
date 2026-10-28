@@ -1,3 +1,4 @@
+import { Segmented } from "@/components/page";
 import {
     Card,
     CardBody,
@@ -662,7 +663,7 @@ export default function PmsReport({ isReport = false }) {
             : 0;
     const user = JSON.parse(localStorage.getItem("authUserLD"));
     return (
-        <div className="p-6 bg-default-50 min-h-screen">
+        <div className="pt-6">
             {/* Header */}
             <div className="mb-8">
                 <ReviewStatus
@@ -674,16 +675,14 @@ export default function PmsReport({ isReport = false }) {
                     month={reportFilters.month}
                     quarter={reportFilters.quarter}
                 />
-                <div className="flex items-center gap-4 mb-4">
-                    <h1 className="text-xl font-semibold ">Reports</h1>
-                    <Switch
-                        size="sm"
-                        value={monthly}
-                        onChange={(e) => setMonthly(e.target.checked)}
-                        color="success"
-                    >
-                        Manager's Review
-                    </Switch>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+                    <h2 className="text-lg font-bold uppercase tracking-wide text-ink-900 dark:text-white">Review reports</h2>
+                    <Segmented
+                        label="Review type"
+                        value={monthly ? "manager" : "employee"}
+                        onChange={(v) => setMonthly(v === "manager")}
+                        options={[{ key: "employee", label: "Quarterly reviews" }, { key: "manager", label: "Manager feedback" }]}
+                    />
                 </div>
 
                 <DashboardFilters

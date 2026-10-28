@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { CalendarDays } from "lucide-react";
 import { parseDate, today, getLocalTimeZone, type DateValue } from "@internationalized/date";
 
@@ -16,6 +16,10 @@ const label = (s: string) => parseDate(s).toDate(tz).toLocaleDateString("en-GB",
 
 export default function DateRangeField({ value, onChange, maxToday = true }: { value: IsoRange; onChange: (r: IsoRange) => void; maxToday?: boolean }) {
     const [open, setOpen] = useState(false);
+    // Inside a canvas / modal the calendar renders within it, so a click on a day is not an
+    // "outside click" that would dismiss the canvas
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const [host, setHost] = useState<HTMLElement | undefined>(undefined);
     const now = today(tz);
 
     const apply = (start: DateValue, end: DateValue) => { onChange({ start: iso(start), end: iso(end) }); setOpen(false); };
@@ -29,9 +33,9 @@ export default function DateRangeField({ value, onChange, maxToday = true }: { v
     ];
 
     return (
-        <Popover placement="bottom-start" isOpen={open} onOpenChange={setOpen}>
+        <Popover placement={host ? "bottom-end" : "bottom-start"} isOpen={open} onOpenChange={(o) => { if (o) setHost((triggerRef.current?.closest("[role=dialog]") as HTMLElement | null) ?? undefined); setOpen(o); }} portalContainer={host}>
             <PopoverTrigger>
-                <Button variant="bordered" className="min-w-[280px] justify-between" startContent={<CalendarDays size={15} className="text-brand-600" />}>
+                <Button ref={triggerRef} variant="bordered" className="min-w-[280px] justify-between" startContent={<CalendarDays size={15} className="text-brand-600" />}>
                     <span className="flex-1 text-left">{label(value.start)} → {label(value.end)}</span>
                 </Button>
             </PopoverTrigger>
@@ -49,7 +53,7 @@ export default function DateRangeField({ value, onChange, maxToday = true }: { v
                     <div className="p-3">
                         <RangeCalendar
                             aria-label="Date range"
-                            visibleMonths={2}
+                            visibleMonths={host ? 1 : 2}
                             maxValue={maxToday ? now : undefined}
                             value={{ start: parseDate(value.start), end: parseDate(value.end) }}
                             onChange={(r) => apply(r.start, r.end)}

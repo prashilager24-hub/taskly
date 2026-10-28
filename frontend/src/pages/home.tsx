@@ -4,6 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { ArrowRight, ClipboardCheck, ClipboardList, LineChart, Target, UserX } from "lucide-react";
 
 import { hasModuleAccess } from "@/lib/permissions";
+import { PageTitle } from "@/components/page";
 import DashboardPage from "@/pages/dashboard";
 import PMSPage from "@/pages/pms";
 
@@ -76,6 +77,19 @@ export default function DashboardHome() {
 
     return (
         <div className="flex w-full flex-col gap-6">
+            {view === "pms" && (
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                    <PageTitle title="Performance management" subtitle="Goals, manager feedback and quarterly reviews for your people." />
+                    {showPms && (
+                        <div role="group" aria-label="Dashboard view" className="flex border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900">
+                            {seg("overview", "Overview")}
+                            {seg("pms", "PMS")}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {view === "overview" && (
             <section aria-label="Needs your attention">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                     <h2 className="eyebrow">Needs your attention</h2>
@@ -112,6 +126,7 @@ export default function DashboardHome() {
                     ))}
                 </div>
             </section>
+            )}
 
             {view === "pms" ? <PMSPage /> : <DashboardPage />}
         </div>

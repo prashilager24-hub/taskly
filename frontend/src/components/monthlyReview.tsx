@@ -1303,14 +1303,14 @@ export default function MonthlyReview() {
   );
 
   return (
-    <div className="min-h-screen bg-default-50 p-6 font-sans">
+    <div className="pt-6 font-sans">
 
       {/* ── Header ── */}
       <div className=" mx-auto mb-7 flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
 
           <div>
-            <h1 className="text-xl font-semibold ">Manager's Feedback</h1>
+            <h2 className="text-lg font-bold uppercase tracking-wide text-ink-900 dark:text-white">Manager's Feedback</h2>
             {/* <p className="text-[11px]   mt-0.5">Manager · Qualitative Feedback &amp; Taskly Metrics</p> */}
           </div>
         </div>
@@ -1338,7 +1338,8 @@ export default function MonthlyReview() {
             <CardBody className="px-6 pt-5 pb-6 flex flex-col gap-4">
 
               {/* Row 1 — Employee + Month */}
-              <div className="grid grid-cols-3 gap-4">
+              <p className="eyebrow">Who and when</p>
+              <div className="grid grid-cols-1 items-end gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {/* <Autocomplete
                   label="Employee"
                   placeholder="Search employee..."
@@ -1362,9 +1363,10 @@ export default function MonthlyReview() {
                   ))}
                 </Autocomplete> */}
                 <Autocomplete
-                  aria-label="filter by Reviewee Department"
-                  placeholder="Filter by Reviewee Department"
-                  className="max-w-xs"
+                  label="Department"
+                  labelPlacement="outside"
+                  placeholder="Select department"
+                  className="w-full"
                   selectedKey={filterStatus}
                   onSelectionChange={(key) => {
                     const dep = key as string;
@@ -1383,9 +1385,10 @@ export default function MonthlyReview() {
                     ))}
                 </Autocomplete>
                 <Autocomplete
-                  aria-label="filter by Reviewee"
-                  placeholder="Filter by Reviewee"
-                  className="max-w-xs"
+                  label="Reviewee"
+                  labelPlacement="outside"
+                  placeholder="Select reviewee"
+                  className="w-full"
                   selectedKey={selectedFilterUser}
                   inputValue={userSearch}
                   onInputChange={(value) => {
@@ -1426,7 +1429,10 @@ export default function MonthlyReview() {
                 >
                   {MONTHS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
                 </Select> */}
-                <DateRangeDropdown value={dateRange} onChange={setDateRange} />
+                <div className="flex flex-col gap-1.5">
+                  <span className="font-secondary text-[10.5px] font-medium uppercase tracking-label text-ink-500 dark:text-ink-400">Review period</span>
+                  <DateRangeDropdown value={dateRange} onChange={setDateRange} />
+                </div>
                 <Select
                   label="Year"
                   selectedKeys={

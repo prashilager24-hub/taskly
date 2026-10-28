@@ -32,8 +32,9 @@ export default function PMSPage() {
     // const isReportUser =
     //     Number(user?.userID) === 1 ||
     //     (user?.departments ?? []).some((d) => Number(d?.departmentID) === 16);
+    // Admin is role 1 (their userID is not 1), plus the department that owns the report
     const isReportUser =
-        Number(user?.userID) === 1 ||
+        user?.userRole === 1 ||
         Number(user?.departmentID) === 16 ||
         (Array.isArray(user?.departments) &&
             user.departments.some(

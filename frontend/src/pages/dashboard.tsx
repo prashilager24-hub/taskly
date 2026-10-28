@@ -382,15 +382,17 @@ const StatRow = memo(
     )
 );
 
-// Static – never changes, no props needed. Collapsed by default: people read it once.
+// Static – never changes, no props needed
 const EfficiencyRules = memo(() => (
-    <details className="group border border-ink-200 bg-white text-[12.5px] dark:border-white/10 dark:bg-ink-900">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-5 py-4 focus-ring">
-            <span className="text-sm font-bold uppercase tracking-wide text-ink-900 dark:text-white">How it is calculated</span>
-            <span aria-hidden className="text-ink-400 transition-transform group-open:rotate-180">⌄</span>
-        </summary>
-        <div className="flex flex-col gap-4 border-t border-ink-200 px-5 py-4 leading-snug text-ink-700 dark:border-white/10 dark:text-ink-200">
-            <p><strong>Workday:</strong> a regular day is 8 hours; a half-day leave counts as 4.</p>
+    <section className="border border-ink-200 bg-white text-[12.5px] dark:border-white/10 dark:bg-ink-900">
+        <h2 className="border-b border-ink-200 px-5 py-4 text-sm font-bold uppercase tracking-wide text-ink-900 dark:border-white/10 dark:text-white">
+            Efficiency &amp; Utilization Rules
+        </h2>
+        <div className="grid gap-6 px-5 py-4 leading-snug text-ink-700 dark:text-ink-200 md:grid-cols-3">
+            <div>
+                <p className="eyebrow mb-2">Workday</p>
+                <p>A regular day is 8 hours; a half-day leave counts as 4.</p>
+            </div>
             <div>
                 <p className="eyebrow mb-2">Efficiency</p>
                 <ul className="flex flex-col gap-2">
@@ -407,7 +409,7 @@ const EfficiencyRules = memo(() => (
                 </ul>
             </div>
         </div>
-    </details>
+    </section>
 ));
 
 // Radial chart + stat card column pair

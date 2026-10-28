@@ -1318,7 +1318,7 @@ export default function QuarterlyReviewDashboard() {
             />
 
             {/* ── Card Grid ── */}
-            {isDepartmentSelected && isUserSelected && reviews.length > 0 ? (
+            {reviews.length > 0 && (isPrivileged || (isDepartmentSelected && isUserSelected)) ? (
                 <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[1fr_288px]">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         {reviews.map((review) => (
@@ -1330,7 +1330,7 @@ export default function QuarterlyReviewDashboard() {
             ) : (
                 <div className="border border-dashed border-ink-300 px-6 py-16 text-center dark:border-white/15">
                     <h3 className="text-base font-bold text-ink-900 dark:text-white">
-                        {isDepartmentSelected && isUserSelected ? "No reviews for this selection" : "Pick a department and a person"}
+                        {isDepartmentSelected && isUserSelected ? "No reviews for this selection" : "No reviews loaded yet"}
                     </h3>
                     <p className="mt-2 text-sm text-ink-500 dark:text-ink-400">
                         {isDepartmentSelected && isUserSelected ? "Try another quarter or year." : "Their reviews, grades and metrics will show here."}

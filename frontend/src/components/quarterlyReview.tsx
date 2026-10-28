@@ -356,7 +356,7 @@ const LivePreview = memo(function LivePreview({ form, weightage }) {
     const managerRatingPercent = Math.min(managerRating * 10, 100);
     const finalRatingPercent = Math.min(score * 10, 100);
     return (
-        <Card className="sticky top-6 shadow-sm border border-divider" radius="lg">
+        <Card className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto shadow-none border border-divider" radius="lg">
             <CardHeader className="pb-0 pt-5 px-5 flex-col items-center gap-1">
                 <p className="text-[10px] uppercase tracking-[.18em] text-default-700 ">Quarterly Score</p>
                 {/* <span
@@ -2854,7 +2854,7 @@ export default function QuarterlyReview() {
                                                     </div>
 
                                                     {/* Ratings */}
-                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                                    <div className="mt-auto grid grid-cols-1 sm:grid-cols-3 gap-3">
 
                                                         {/* Assessor 1 */}
                                                         <div className="bg-white dark:bg-ink-900 border border-divider rounded-xl p-3">
@@ -2944,12 +2944,12 @@ export default function QuarterlyReview() {
                                                         </div>
 
                                                         {/* Average */}
-                                                        <div className="bg-primary-50 border border-primary-200 rounded-xl p-3 flex flex-col justify-center items-center">
-                                                            <p className="text-[11px] uppercase tracking-wider text-primary-500">
+                                                        <div className="flex flex-col items-center justify-center border border-dashed border-ink-300 p-3 dark:border-white/20">
+                                                            <p className="eyebrow">
                                                                 Average
                                                             </p>
 
-                                                            <p className="text-2xl font-black text-primary">
+                                                            <p className="text-2xl font-bold text-brand-600">
                                                                 {avg}
                                                             </p>
 
@@ -3037,7 +3037,7 @@ export default function QuarterlyReview() {
                 </div>
 
                 {/* ── RIGHT: Live Preview ── */}
-                <LivePreview form={form} weightage={weightage} />            </div>
+                <div className="self-stretch"><LivePreview form={form} weightage={weightage} /></div>            </div>
 
             {/* Delete Modal */}
             <Modal

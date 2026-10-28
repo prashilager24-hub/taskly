@@ -58,7 +58,7 @@ export const MENU: MenuItem[] = [
       { icon: MessageSquareText, label: "Query Report", href: "query-report", module: "queryReport" },
     ],
   },
-  { icon: Briefcase, label: "Sales Forward", href: "sales-forward", module: "salesfwd", departments: [21] },
+  { icon: Briefcase, label: "Sales Forward", href: "sales-forward", module: "salesfwd" },
   {
     icon: Settings,
     label: "Admin",
@@ -147,25 +147,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, current
 
   const hasAccess = (module: string, permission = "read") => rolePermissions?.[module]?.includes(permission);
 
-  // Filter based on user role
+  // The menu shows only what this person's access allows (role + department + their own access)
   const menu = useMemo(() => MENU
     .map((item) => item.children
-      ? {
-        ...item,
-        children: item.children.filter((child) => {
-          if (child.adminOnly) return authUserLD?.userRole === 1;
-          if (child.module === "hrfeedback") return true; // Support is open to every user
-          return hasAccess(child.module);
-        }),
-      }
+      ? { ...item, children: item.children.filter((child) => hasAccess(child.module)) }
       : item)
-    .filter((item) => {
-      if (item.adminOnly) return authUserLD?.userRole === 1;
-      if (item.module === "hrfeedback") return true;
-      if (item.departments?.length && !item.departments.includes(Number(authUserLD?.departmentID))) return false;
-      if (item.children) return item.children.length > 0;
-      return hasAccess(item.module);
-    }), [authUserLD, rolePermissions]);
+    .filter((item) => (item.children ? item.children.length > 0 : hasAccess(item.module))), [rolePermissions]);
 
   const active = norm(currentPage);
   const isActive = (href: string) => active === norm(href);

@@ -10,6 +10,9 @@ import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 
 // Route imports
 import authRouter from './modules/auth/auth.routes';
+import accessRouter from './modules/access/access.routes';
+import { authenticate } from './middlewares/auth';
+import { guardWrites } from './middlewares/permission';
 import { departmentsRouter, primaryDepartmentsRouter } from './modules/departments/departments.routes';
 import tasksRouter from './modules/tasks/tasks.routes';
 import goalsRouter from './modules/goals/goals.routes';
@@ -71,20 +74,22 @@ app.get('/health', (_req, res) => {
 const BASE = '/t2.0/authentificationUtilization';
 
 // ── Auth (login, users, AMRole) ───────────────────────────────────────────────
+app.use(`${BASE}/access`, accessRouter);
 app.use(BASE, authRouter);
 
 // ── Departments & PrimaryDepartments ─────────────────────────────────────────
 // Java: /t2.0/authentificationUtilization/Department
-app.use(`${BASE}/Department`, departmentsRouter);
-app.use(`${BASE}/PrimaryDepartment`, primaryDepartmentsRouter);
+// Changing departments / tasks / goals / targets needs access to that admin module; reading stays open for the forms
+app.use(`${BASE}/Department`, authenticate, guardWrites('deptmgmt'), departmentsRouter);
+app.use(`${BASE}/PrimaryDepartment`, authenticate, guardWrites('deptmgmt'), primaryDepartmentsRouter);
 
 // ── Department-scoped tasks / goals / targets ─────────────────────────────────
 // Java: /t2.0/authentificationUtilization/departmentTasks
 // Java: /t2.0/authentificationUtilization/departmentGoals
 // Java: /t2.0/authentificationUtilization/departmentTargets
-app.use(`${BASE}/departmentTasks`, tasksRouter);
-app.use(`${BASE}/departmentGoals`, goalsRouter);
-app.use(`${BASE}/departmentTargets`, targetsRouter);
+app.use(`${BASE}/departmentTasks`, authenticate, guardWrites('taskmgmt'), tasksRouter);
+app.use(`${BASE}/departmentGoals`, authenticate, guardWrites('goalmgmt'), goalsRouter);
+app.use(`${BASE}/departmentTargets`, authenticate, guardWrites('targetmgmt'), targetsRouter);
 
 // ── Monthly Targets ───────────────────────────────────────────────────────────
 // Java: /t2.0/authentificationUtilization/monthly-targets

@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { pool } from '../../config/db';
+import { effectivePrivileges, twoFactorRequired } from '../access/access.service';
 import { env } from '../../config/env';
 import { AppError } from '../../utils/AppError';
 import {
@@ -70,7 +71,7 @@ function signToken(user: UserRow, sessionId: string, expiresInSeconds: number): 
 const USER_SELECT = `
   SELECT UserID, UserEmail, UserName, UserPassword, RoleID, SecondaryRoleID,
          UserStatus, IsUserArchived, EmployeeID, ReportingManagerID,
-         ELManagerID, AppraisalCycle, FeedbackResolverTeam, ThemePreference
+         ELManagerID, AppraisalCycle, FeedbackResolverTeam, ThemePreference, TwoFactor
   FROM Users`;
 
 interface SessionDepartment {
@@ -106,7 +107,7 @@ async function departmentsOfMember(userId: number) {
   return rows.map((r) => ({ departmentID: r['DepartmentID'] as number, departmentName: r['DepartmentName'] as string }));
 }
 
-type SessionUser = UserRow & { FeedbackResolverTeam?: string | null; ThemePreference?: string | null };
+type SessionUser = UserRow & { FeedbackResolverTeam?: string | null; ThemePreference?: string | null; TwoFactor?: number | null };
 
 async function buildSessionPayload(user: SessionUser, token: string) {
   const session: Record<string, unknown> = {
@@ -156,6 +157,9 @@ async function buildSessionPayload(user: SessionUser, token: string) {
     }
   }
 
+  // What this person can open: role + department + own access (the menu and route guards use it)
+  session['permissions'] = await effectivePrivileges(user.UserID);
+
   return session;
 }
 
@@ -190,6 +194,15 @@ export async function login(input: LoginInput, client: ClientInfo) {
   if (user.UserStatus !== 1) return failed('Account is inactive');
 
   await logAuthEvent('PASSWORD_OK', { userId: user.UserID, email: user.UserEmail }, client);
+
+  // Two-factor can be off for everyone or for this person (Access Management → Security)
+  if (!(await twoFactorRequired(user))) {
+    const keepSignedIn = input.keepSignedIn === true;
+    const { sessionId, expiresInSeconds } = await startSession(user.UserID, keepSignedIn, client);
+    const session = await buildSessionPayload(user, signToken(user, sessionId, expiresInSeconds));
+    return { ...session, keepSignedIn, otpRequired: false, status: true, statusCode: 200 };
+  }
+
   const challenge = await createChallenge(user, input.keepSignedIn === true);
   await logAuthEvent('OTP_SENT', { userId: user.UserID, email: user.UserEmail }, client);
   return { status: true, statusCode: 200, otpRequired: true, ...challenge };

@@ -4,7 +4,6 @@ import { showOnboarding } from "@/lib/onboarding";
 import {
   BarChart3,
   Bell,
-  Briefcase,
   Building2,
   CheckCircle2,
   ClipboardCheck,
@@ -84,7 +83,6 @@ export const MENU: MenuItem[] = [
       { icon: MessageSquareText, label: "Query Report", href: "query-report", module: "queryReport" },
     ],
   },
-  { icon: Briefcase, label: "Sales Forward", href: "sales-forward", module: "salesfwd" },
   {
     icon: Settings,
     label: "Admin",

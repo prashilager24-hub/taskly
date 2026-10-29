@@ -54,7 +54,7 @@ async function main() {
   await pool.query('UPDATE AMRole SET RolePrivileges = ?, RoleDescription = ? WHERE RoleID = 2', [priv(employee), 'Standard employee access']);
   await pool.query('UPDATE AMRole SET RolePrivileges = ?, RoleDescription = ? WHERE RoleID = 3', [priv(leader), 'Executive Leader — their departments']);
   await pool.query('UPDATE AMRole SET RolePrivileges = ?, RoleDescription = ? WHERE RoleID = 4', [priv(leader), 'Reporting Manager — direct reports']);
-  await pool.query('UPDATE AMRole SET RolePrivileges = ?, RoleDescription = ? WHERE RoleID = 5', [priv({ ...employee, salesfwd: ALL }), 'Sales team']);
+  await pool.query('UPDATE AMRole SET RolePrivileges = ?, RoleDescription = ? WHERE RoleID = 5', [priv(employee), 'Sales team']);
   console.log('  ✓ Role privileges');
 
   // ── People: readable names for the base seed users + new colleagues ────────

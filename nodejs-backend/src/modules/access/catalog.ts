@@ -18,7 +18,6 @@ export const CATALOG: ModuleDef[] = [
       { id: 'queryReport', label: 'Query Report', description: 'Support queries report' },
     ],
   },
-  { id: 'salesfwd', label: 'Sales Forward', description: 'Sales calls, accounts and follow-ups' },
   {
     id: 'admin', label: 'Admin', description: 'The Admin section of the menu', children: [
       { id: 'accessmgmt', label: 'Access Management', description: 'Roles, users, departments and sign-in security' },

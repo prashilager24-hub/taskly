@@ -1287,6 +1287,8 @@ export default function QuarterlyReviewDashboard() {
 
     const sorted = useMemo(() => [...reviews].sort(newestFirst), [reviews]);
     const current = sorted.find((r) => r.id === pickedId) ?? sorted[0] ?? null;
+    // Tabs read in calendar order (Q1, Q2, …); the newest one is still the one opened by default
+    const tabs = useMemo(() => [...sorted].reverse(), [sorted]);
     useEffect(() => { setPickedId(null); }, [filters.userID, monthly]);
 
     const hasPerson = !!String(filters.userID ?? "").length;
@@ -1321,10 +1323,10 @@ export default function QuarterlyReviewDashboard() {
 
                     {sorted.length > 0 && current ? (
                         <>
-                            {/* Quarters, newest first */}
+                            {/* Quarters, in calendar order — the newest is selected by default */}
                             <div role="tablist" aria-label="Review period" className="flex flex-wrap items-center gap-2">
                                 <span className="eyebrow mr-1">{monthly ? "Month" : "Quarter"}</span>
-                                {sorted.map((r) => {
+                                {tabs.map((r) => {
                                     const on = r.id === current.id;
                                     return (
                                         <button key={r.id} type="button" role="tab" aria-selected={on} onClick={() => setPickedId(r.id)}

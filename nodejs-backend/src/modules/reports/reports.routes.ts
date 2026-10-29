@@ -11,7 +11,7 @@ import { sendJava } from '../../utils/javaCompat';
 const router = Router();
 router.use(authenticate);
 
-// The dashboard sends null for unset filters plus fields this port doesn't use yet (goal dates, departmentType)
+// The dashboard sends null for unset filters plus fields this port doesn't use yet (goal dates)
 const optNum = z.preprocess((v) => (v === "" ? null : v), z.coerce.number().int().nullish());
 const DashBoardFilterSchema = z.object({
   startDate: z.string(),

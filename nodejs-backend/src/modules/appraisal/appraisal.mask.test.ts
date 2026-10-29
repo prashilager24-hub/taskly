@@ -22,15 +22,26 @@ const has = (o: unknown, k: string) => Object.prototype.hasOwnProperty.call(o as
 const as = (o: Record<string, unknown>, k: string) => o[k] as Record<string, unknown>;
 
 describe('maskCycle: comments travel upwards only', () => {
-  it('EMPLOYEE: sees own proposal, PMS and later the approved hike; no assessor comment, rating, proposal or manager feedback, ever', () => {
+  it('EMPLOYEE: sees each assessor hike and comment once submitted; never their rating, manager feedback or quarter ratings', () => {
     for (const st of ['ASSESSOR_OPEN', 'OFFERED', 'ACCEPTED'] as const) {
       const m = maskCycle(full(st), 'EMPLOYEE');
-      for (const k of ['assessors', 'minimal', 'financeComment']) expect(has(m, k), `${st} ${k}`).toBe(false);
+      const a = m['assessors'] as Record<string, Record<string, unknown>>;
+      expect(a['A1'], st).toEqual({ comment: 'strong', submittedAt: 'x' });
+      expect(a['A2'], st).toEqual({ comment: 'fine', submittedAt: 'x' });
+      expect((m['minimal'] as Record<string, { annual: number }>)['A1']!.annual).toBe(50000);
+      expect(has(m, 'financeComment'), st).toBe(false);
       expect(has((m['quarters'] as object[])[0], 'ratings'), st).toBe(false);
       for (const k of ['self', 'request', 'pms', 'expected', 'target']) expect(has(m, k), k).toBe(true);
     }
     expect(has(maskCycle(full('ASSESSOR_OPEN'), 'EMPLOYEE'), 'approved')).toBe(false);
     expect(has(maskCycle(full('OFFERED'), 'EMPLOYEE'), 'approved')).toBe(true);
+  });
+  it('EMPLOYEE: a draft review shows nothing, neither hike nor comment', () => {
+    const f = full('ASSESSOR_OPEN');
+    f.assessors.A2 = { ...f.assessors.A2!, submittedAt: null };
+    const m = maskCycle(f, 'EMPLOYEE');
+    expect((m['assessors'] as Record<string, unknown>)['A2']).toBeNull();
+    expect((m['minimal'] as Record<string, unknown>)['A2']).toBeNull();
   });
   it('EMPLOYEE after the offer is told the EL decision only, never the words', () => {
     const rr = as(maskCycle(full('OFFERED'), 'EMPLOYEE'), 'requestReviews') as { DESIGNATION: Record<string, unknown> };

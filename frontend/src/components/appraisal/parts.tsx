@@ -76,10 +76,10 @@ export const ANSWER_QUESTIONS: [string, string][] = [
     ["goalsNotAchievedWhy", "Why were some goals or targets not achieved?"],
     ["howRatingAchieved", "How did you achieve this rating?"],
     ["difficultiesAndWhy", "What difficulties did you face, and why?"],
-    ["howUpdatingGoalsTargets", "How do you update your goals and targets?"],
+    ["howUpdatingGoalsTargets", "How are you updating your goals and targets?"],
     ["whoApprovesGoalsTargets", "Who approves your goals and targets?"],
     ["whyDeserveSalary", "Why do you think you deserve this salary?"],
-    ["whyExpectThisSalary", "Why do you expect this much salary?"],
     ["biggestMilestone", "Biggest milestone"],
     ["biggestAchievement", "Biggest achievement"],
+    ["whyExpectThisSalary", "Why do you expect this much salary?"],
 ];

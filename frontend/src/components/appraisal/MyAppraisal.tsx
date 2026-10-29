@@ -3,15 +3,15 @@ import { Spinner } from "@heroui/react";
 import { Award, CheckCircle2, Clock, Gift, Hourglass } from "lucide-react";
 
 import { Panel } from "@/components/page";
-import { Button, Chip, Tab, Tabs, addToast } from "@/components/ui";
+import { Button, Chip, Tab, Tabs, Textarea, addToast } from "@/components/ui";
 import { appraisalApi, errorText, type CycleView, type RequestField } from "./api";
 import { day, inr } from "./format";
 import { AcceptModal, RejectModal } from "./OfferModal";
-import { Banner, COLS2, HikeField, MoneyCard } from "./parts";
+import { ANSWER_QUESTIONS, Banner, COLS2, HikeField, MoneyCard, ReadText } from "./parts";
 import PmsTable from "./PmsTable";
 import QuarterGrid from "./QuarterGrid";
 
-type TabKey = "goals" | "hike" | "proposed";
+type TabKey = "goals" | "self" | "hike" | "proposed";
 
 /** A calm message for the Proposed Hike tab while there is nothing to decide yet */
 const Waiting = ({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) => (
@@ -49,6 +49,7 @@ export default function MyAppraisal() {
     const jumped = useRef(false);
     const formRef = useRef<HTMLDivElement>(null);
 
+    const [answers, setAnswers] = useState<Record<string, string>>({});
     const [expected, setExpected] = useState<number | null>(null);
     const [target, setTarget] = useState<number | null>(null);
 
@@ -57,6 +58,7 @@ export default function MyAppraisal() {
             const v = await appraisalApi.my();
             setView(v);
             if (v) {
+                setAnswers(v.self?.answers ?? {});
                 setExpected(v.expected?.annual ?? null);
                 setTarget(v.target?.annual ?? null);
                 // once the EL has approved the amount, the page opens straight on the Proposed hike tab
@@ -83,7 +85,7 @@ export default function MyAppraisal() {
     const save = async (submit: boolean) => {
         setSaving(submit ? "submit" : "draft");
         try {
-            await appraisalApi.selfReview(c.id, { answers: {}, quarters: [], expectedHike: expected, targetHike: target, submit });
+            await appraisalApi.selfReview(c.id, { answers, quarters: [], expectedHike: expected, targetHike: target, submit });
             addToast({ title: submit ? "Submitted for review" : "Draft saved", description: submit ? "You will see the approved amount in the Proposed hike tab." : undefined, color: "success" });
             await load();
             if (submit) setTab("proposed");
@@ -91,10 +93,19 @@ export default function MyAppraisal() {
         finally { setSaving(null); }
     };
 
+    // Save draft / Submit for review: in the Self review and the Hike proposal tabs, saving both
+    const saveBar = (
+        <div className="flex flex-wrap items-center justify-end gap-3 border-t border-ink-200 pt-4 dark:border-white/10">
+            <p className="mr-auto text-xs text-ink-500">{submitted ? `Submitted ${day(view.self?.submittedAt)}. You can change it until ${day(c.employeeWindowEnd)}.` : `Not submitted yet. Open until ${day(c.employeeWindowEnd)}.`}</p>
+            <Button variant="bordered" isLoading={saving === "draft"} isDisabled={saving !== null} onPress={() => save(false)}>Save draft</Button>
+            <Button color="primary" isLoading={saving === "submit"} isDisabled={saving !== null} onPress={() => save(true)}>Submit for review</Button>
+        </div>
+    );
+
     // The top card: one line on where the person is, and one button
     let icon = <Award size={26} />;
     let title = "Your appraisal is open";
-    let text = `Look at your four quarters and enter the hike you are asking for. This closes on ${day(c.employeeWindowEnd)}.`;
+    let text = `Look at your four quarters, answer the self review and enter the hike you are asking for. This closes on ${day(c.employeeWindowEnd)}.`;
     let action = <Button size="lg" color="primary" onPress={() => open("goals")}>Appeal for Appraisal</Button>;
     if (!editable && c.status === "EMPLOYEE_OPEN") {
         icon = <Clock size={26} />; title = "Your appraisal window has closed";
@@ -119,6 +130,22 @@ export default function MyAppraisal() {
         ...(view.request?.newDesignation ? [{ field: "DESIGNATION" as const, label: "Designation", value: view.request.newDesignation, why: view.request.designationComment }] : []),
         ...(view.request?.newTeam ? [{ field: "TEAM" as const, label: "Team", value: view.request.newTeam, why: view.request.teamComment }] : []),
     ];
+    // What the FL and the EL proposed for this person, and what they wrote, once each has submitted
+    const byAssessor = (["A1", "A2"] as const).map((k) => ({ k, who: (k === "A1" ? c.assessor1?.name : c.assessor2?.name) ?? (k === "A1" ? "FL / Manager" : "EL"), role: k === "A1" ? "FL / Manager" : "EL", money: view.minimal?.[k] ?? null, comment: view.assessors?.[k]?.comment ?? "" })).filter((x) => x.money || x.comment);
+    const assessorsBlock = byAssessor.length > 0 && (
+        <div className="flex flex-col gap-3">
+            <p className="eyebrow">What your assessors proposed</p>
+            <div className={COLS2}>
+                {byAssessor.map((x) => (
+                    <div key={x.k} className="flex flex-col gap-3 border border-ink-200 p-4 dark:border-white/10">
+                        <p className="text-sm font-semibold text-ink-900 dark:text-white">{x.who} <span className="font-normal text-ink-500">· {x.role}</span></p>
+                        {x.money && <p className="text-2xl font-bold leading-none text-ink-900 dark:text-white">{inr(x.money.annual)}<span className="ml-1.5 text-xs font-normal text-ink-500">per year · {inr(x.money.fixed)} fixed + {inr(x.money.variable)} variable</span></p>}
+                        <ReadText label="Comment" value={x.comment} />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
     let proposed: ReactNode;
     if (c.status === "OFFERED") {
         proposed = (
@@ -192,6 +219,17 @@ export default function MyAppraisal() {
                                         <QuarterGrid slots={view.slots ?? []} pms={view.pms ?? []} />
                                     </div>
                                 </Tab>
+                                <Tab key="self" title="Self review">
+                                    <div className="flex flex-col gap-5 pb-5 pt-3">
+                                        <p className="max-w-[72ch] text-sm text-ink-500 dark:text-ink-400">Look back at the whole year and all four quarters, and justify your rating and the salary you expect.</p>
+                                        {editable ? (
+                                            <div className={COLS2}>{ANSWER_QUESTIONS.map(([key, label]) => <Textarea key={key} label={label} minRows={3} value={answers[key] ?? ""} onValueChange={(v) => setAnswers((a) => ({ ...a, [key]: v }))} />)}</div>
+                                        ) : (
+                                            <div className={COLS2}>{ANSWER_QUESTIONS.map(([key, label]) => <ReadText key={key} label={label} value={answers[key]} />)}</div>
+                                        )}
+                                        {editable && saveBar}
+                                    </div>
+                                </Tab>
                                 <Tab key="hike" title="Hike proposal">
                                     <div className="flex flex-col gap-5 pb-5 pt-3">
                                         <p className="max-w-[72ch] text-sm text-ink-500 dark:text-ink-400">Enter each amount as an <b>annual</b> figure. It is split into fixed and variable pay for your level, so you never type the split.</p>
@@ -203,17 +241,11 @@ export default function MyAppraisal() {
                                         ) : (
                                             <div className={COLS2}><MoneyCard title="Expected hike" money={view.expected} /><MoneyCard title="Target hike" money={view.target} /></div>
                                         )}
-                                        {editable && (
-                                            <div className="flex flex-wrap items-center justify-end gap-3 border-t border-ink-200 pt-4 dark:border-white/10">
-                                                <p className="mr-auto text-xs text-ink-500">{submitted ? `Submitted ${day(view.self?.submittedAt)}. You can change it until ${day(c.employeeWindowEnd)}.` : `Not submitted yet. Open until ${day(c.employeeWindowEnd)}.`}</p>
-                                                <Button variant="bordered" isLoading={saving === "draft"} isDisabled={saving !== null} onPress={() => save(false)}>Save draft</Button>
-                                                <Button color="primary" isLoading={saving === "submit"} isDisabled={saving !== null} onPress={() => save(true)}>Submit for review</Button>
-                                            </div>
-                                        )}
+                                        {editable && saveBar}
                                     </div>
                                 </Tab>
                                 <Tab key="proposed" title={<span className="flex items-center gap-2">Proposed hike{c.status === "OFFERED" && <span className="h-2 w-2 bg-brand-600" aria-label="Ready" />}</span>}>
-                                    <div className="pb-5 pt-3">{proposed}</div>
+                                    <div className="flex flex-col gap-6 pb-5 pt-3">{proposed}{assessorsBlock}</div>
                                 </Tab>
                             </Tabs>
                         </div>

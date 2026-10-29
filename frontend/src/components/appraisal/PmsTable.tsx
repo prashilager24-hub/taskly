@@ -31,7 +31,7 @@ export default function PmsTable({ quarters, className }: { quarters: PmsQuarter
                                 <td className="px-4 py-3 text-right tabular-nums">{pct(q.targetPercent)}</td>
                                 <td className="px-4 py-3 text-right tabular-nums">{pct(q.goalAchievement)}</td>
                                 <td className="px-4 py-3 text-right tabular-nums">{pct(q.utilizationPercent)}</td>
-                                <td className="px-4 py-3 text-right tabular-nums">{pct(q.efficiencyPercent)}{q.efficiencyLabel && <span className="block text-xs text-ink-500">{q.efficiencyLabel}</span>}</td>
+                                <td className="px-4 py-3 text-right tabular-nums">{pct(q.efficiencyPercent)}</td>
                                 <td className="px-4 py-3 text-right tabular-nums">{num(q.systemGrade)}</td>
                                 <td className="px-4 py-3 text-right tabular-nums">{num(q.managerAvgRating)}</td>
                                 <td className="px-4 py-3 text-right font-semibold tabular-nums text-ink-900 dark:text-white">{num(q.finalRating)}</td>

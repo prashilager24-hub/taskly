@@ -8,7 +8,7 @@ import { Panel, Segmented } from "@/components/page";
 import { Button, Chip, Input, Textarea, addToast } from "@/components/ui";
 import { appraisalApi, errorText, type BudgetOverview, type CycleView, type Decision, type RequestField } from "./api";
 import { LEVEL_LABEL, addDaysIso, day, inr } from "./format";
-import { Banner, COLS2, HikeField, MoneyCard, ReadText } from "./parts";
+import { ANSWER_QUESTIONS, Banner, COLS2, HikeField, MoneyCard, ReadText } from "./parts";
 import PmsTable from "./PmsTable";
 import QuarterGrid from "./QuarterGrid";
 
@@ -137,6 +137,14 @@ export default function ReviewForm() {
                         <div className="flex flex-col gap-3"><p className="eyebrow">From PMS Quarterly Reviews</p><PmsTable quarters={view.pms} /></div>
                         {view.slots && <div className="flex flex-col gap-3"><p className="eyebrow">Comments, achievements and failures from PMS</p><QuarterGrid slots={view.slots} pms={view.pms} /></div>}
                     </div>
+                </Panel>
+            )}
+
+            {view.self !== undefined && (
+                <Panel title="Self review">
+                    {view.self?.submittedAt || Object.values(view.self?.answers ?? {}).some(Boolean)
+                        ? <div className={COLS2}>{ANSWER_QUESTIONS.map(([key, label]) => <ReadText key={key} label={label} value={view.self?.answers?.[key]} />)}</div>
+                        : <p className="text-sm text-ink-500">The employee has not written a self review yet.</p>}
                 </Panel>
             )}
 

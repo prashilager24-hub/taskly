@@ -96,11 +96,22 @@ export function maskCycle(full: FullCycle, role: ViewRole): Record<string, unkno
       out['expected'] = full.expected;
       out['target'] = full.target;
     }
-    // Proposed hikes: never the employee; the FL sees only their own; the EL and Finance see both
+    // Proposed hikes: the FL sees only their own; the EL and Finance see both; the person being appraised sees
+    // each assessor's hike and comment once that assessor has submitted (never a draft, never the manager feedback or rating)
+    const a1Done = !!full.assessors.A1?.submittedAt;
+    const a2Done = !!full.assessors.A2?.submittedAt;
     if (mineOnly) out['minimal'] = { A1: full.minimal.A1, A2: null };
-    else if (role !== 'EMPLOYEE') out['minimal'] = full.minimal;
+    else if (role === 'EMPLOYEE') out['minimal'] = { A1: a1Done ? full.minimal.A1 : null, A2: a2Done ? full.minimal.A2 : null };
+    else out['minimal'] = full.minimal;
 
-    // Overall rating, comment, manager feedback: never the employee; the FL their own; the EL both; Finance both
+    if (role === 'EMPLOYEE') {
+      out['assessors'] = {
+        A1: a1Done ? { comment: full.assessors.A1!.comment, submittedAt: full.assessors.A1!.submittedAt } : null,
+        A2: a2Done ? { comment: full.assessors.A2!.comment, submittedAt: full.assessors.A2!.submittedAt } : null,
+      };
+    }
+
+    // Overall rating, comment, manager feedback: the FL their own; the EL both; Finance both
     if (role !== 'EMPLOYEE') {
       const a1 = full.assessors.A1;
       const a2 = full.assessors.A2;

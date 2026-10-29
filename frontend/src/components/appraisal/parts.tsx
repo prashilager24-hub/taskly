@@ -1,48 +1,14 @@
 import type { ReactNode } from "react";
-import { Check, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
 import { cn } from "@heroui/theme";
 
 import { Chip, Input } from "@/components/ui";
-import type { CycleInfo, Level, Money, Status } from "./api";
-import { STATUS_COLOR, STATUS_LABEL, addDaysIso, day, inr, parseAmount, showAmount, splitPreview, VARIABLE_PCT } from "./format";
+import type { Level, Money, Status } from "./api";
+import { STATUS_COLOR, STATUS_LABEL, inr, parseAmount, showAmount, splitPreview, VARIABLE_PCT } from "./format";
 
 export const StatusChip = ({ status }: { status: Status }) => (
     <Chip size="sm" variant="flat" color={STATUS_COLOR[status]}>{STATUS_LABEL[status]}</Chip>
 );
-
-/** Where the cycle is: five steps on one row, the current one marked, finished ones ticked */
-export function Stepper({ cycle }: { cycle: CycleInfo }) {
-    const at: Record<Status, number> = { EMPLOYEE_OPEN: 0, ASSESSOR_OPEN: 1, FINANCE_REVIEW: 2, OFFERED: 3, ACCEPTED: 5, POSTPONED: 4 };
-    const now = at[cycle.status];
-    const steps = [
-        { title: "Employee window", sub: `${day(cycle.start)} → ${day(cycle.employeeWindowEnd)}` },
-        { title: "Assessor window", sub: `${day(addDaysIso(cycle.start, 15))} → ${day(cycle.assessorWindowEnd)}` },
-        { title: "Final approval", sub: cycle.level === "HEAD_EL" ? "By Finance" : "By the EL" },
-        { title: "Offer", sub: "Sent to the employee" },
-        { title: "Decision", sub: cycle.status === "POSTPONED" ? `Postponed to ${day(cycle.postponedUntil)}` : cycle.status === "ACCEPTED" ? "Accepted" : "Accept or reject" },
-    ];
-    return (
-        <ol className="grid grid-cols-1 border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 sm:grid-cols-2 lg:grid-cols-5">
-            {steps.map((s, i) => {
-                const done = i < now;
-                const current = i === now;
-                return (
-                    <li key={s.title} aria-current={current ? "step" : undefined}
-                        className={cn("flex items-start gap-3 px-4 py-3.5", i > 0 && "border-t border-ink-200 dark:border-white/10 sm:border-t-0 lg:border-l", current && "bg-brand-50 dark:bg-brand-600/10")}>
-                        <span className={cn("mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center text-[11px] font-bold",
-                            done ? "bg-emerald-600 text-white" : current ? "bg-brand-600 text-white" : "border border-ink-300 text-ink-500 dark:border-white/20")}>
-                            {done ? <Check size={13} /> : i + 1}
-                        </span>
-                        <div className="min-w-0">
-                            <p className={cn("text-[13px] font-semibold", current ? "text-brand-700 dark:text-brand-400" : "text-ink-900 dark:text-white")}>{s.title}</p>
-                            <p className="truncate text-xs text-ink-500 dark:text-ink-400">{s.sub}</p>
-                        </div>
-                    </li>
-                );
-            })}
-        </ol>
-    );
-}
 
 export const Banner = ({ tone = "info", children }: { tone?: "info" | "warn"; children: ReactNode }) => (
     <div role="status" className={cn("flex items-start gap-3 border-l-4 px-4 py-3 text-sm", tone === "warn" ? "border-amber-500 bg-amber-50 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200" : "border-brand-600 bg-brand-50 text-ink-800 dark:bg-brand-600/10 dark:text-ink-100")}>

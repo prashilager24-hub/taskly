@@ -30,9 +30,10 @@ const ANSWER_KEYS = ['goalsAchieved', 'goalsNotAchievedWhy', 'howRatingAchieved'
 const answers = z.object(Object.fromEntries(ANSWER_KEYS.map((k) => [k, text.optional()])) as Record<(typeof ANSWER_KEYS)[number], z.ZodOptional<z.ZodString>>).strict();
 
 const SelfReview = z.object({
-  answers,
-  // Part A comes from PMS now; the old typed quarter grid is still accepted but the screens no longer send it
-  quarters: z.array(z.object({ quarter: quarterNo, goals: text.optional(), targets: text.optional(), biggestAchievements: text.optional(), biggestFailures: text.optional() })).max(4).optional(),
+  // Part B (written answers) is no longer asked; still accepted from older clients
+  answers: answers.optional().default({}),
+  // Part A: the PMS numbers are read-only; per quarter the employee writes comments, biggest achievements and biggest failures
+  quarters: z.array(z.object({ quarter: quarterNo, goals: text.optional(), targets: text.optional(), comments: text.optional(), biggestAchievements: text.optional(), biggestFailures: text.optional() })).max(4).optional(),
   expectedHike: amount.nullable().optional(),
   targetHike: amount.nullable().optional(),
   request: z.object({ newDesignation: z.string().max(150).optional(), designationComment: text.optional(), newTeam: z.string().max(150).optional(), teamComment: text.optional() }).optional(),

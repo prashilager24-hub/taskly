@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, addMonths, cycleWindows, isAnniversary, splitHike, todayIST } from './appraisal.calc';
+import { addDays, addMonths, cycleWindows, isAnniversary, quarterSlots, splitHike, todayIST } from './appraisal.calc';
 
 describe('splitHike', () => {
   it('ASSOCIATE 100000 -> 90000 fixed + 10000 variable', () => {
@@ -36,6 +36,12 @@ describe('dates', () => {
     expect(isAnniversary('2024-02-29', '2026-02-28')).toBe(true);
     expect(isAnniversary('2024-02-29', '2028-02-29')).toBe(true);
     expect(isAnniversary('2024-02-29', '2028-02-28')).toBe(false);
+  });
+  it('quarter slots: the four quarters that ended before the cycle, oldest first', () => {
+    expect(quarterSlots('2026-10-29').map((s) => `${s.quarter} ${s.year}`)).toEqual(['Q4 2025', 'Q1 2026', 'Q2 2026', 'Q3 2026']);
+    expect(quarterSlots('2026-09-30').map((s) => `${s.quarter} ${s.year}`)).toEqual(['Q4 2025', 'Q1 2026', 'Q2 2026', 'Q3 2026']);
+    expect(quarterSlots('2026-02-10').map((s) => `${s.quarter} ${s.year}`)).toEqual(['Q1 2025', 'Q2 2025', 'Q3 2025', 'Q4 2025']);
+    expect(quarterSlots('2026-10-29').map((s) => s.n)).toEqual([1, 2, 3, 4]);
   });
   it('todayIST uses the India calendar day', () => {
     expect(todayIST(new Date('2026-10-28T20:00:00Z'))).toBe('2026-10-29');

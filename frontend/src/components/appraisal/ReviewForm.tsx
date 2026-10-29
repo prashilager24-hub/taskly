@@ -4,12 +4,13 @@ import { Spinner } from "@heroui/react";
 import { ArrowLeft } from "lucide-react";
 import { cn } from "@heroui/theme";
 
-import { Panel, Segmented, SummaryBar } from "@/components/page";
+import { Panel, Segmented } from "@/components/page";
 import { Button, Chip, Input, Textarea, addToast } from "@/components/ui";
 import { appraisalApi, errorText, type BudgetOverview, type CycleView, type Decision, type RequestField } from "./api";
-import { LEVEL_LABEL, STATUS_LABEL, addDaysIso, day, inr } from "./format";
-import { ANSWER_QUESTIONS, Banner, COLS2, HikeField, MoneyCard, ReadText, Stepper } from "./parts";
+import { LEVEL_LABEL, addDaysIso, day, inr } from "./format";
+import { Banner, COLS2, HikeField, MoneyCard, ReadText } from "./parts";
 import PmsTable from "./PmsTable";
+import QuarterGrid, { notesFrom } from "./QuarterGrid";
 
 type Ask = { comment: string; decision: Decision | "" };
 const rate = (s: string): number | null => { const n = parseFloat(s); return Number.isFinite(n) ? n : null; };
@@ -111,39 +112,21 @@ export default function ReviewForm() {
     return (
         <div className="flex flex-col gap-6">
             <div><Button size="sm" variant="light" startContent={<ArrowLeft size={14} />} onPress={() => nav(view.role === "FINANCE" ? "/appraisal/budget" : "/appraisal/team")}>Back</Button></div>
-            <SummaryBar className="mb-0" items={[
-                { label: "Employee", value: <span className="text-xl">{c.employeeName}</span>, hint: `${LEVEL_LABEL[c.level]} · cycle ${c.year}` },
-                { label: "Status", value: <span className="text-xl">{STATUS_LABEL[c.status]}</span> },
-                { label: "Assessor window", value: <span className="text-base">{day(addDaysIso(c.start, 15))} → {day(c.assessorWindowEnd)}</span> },
-                view.self !== undefined
-                    ? { label: "Self review", value: <span className="text-xl">{view.self?.submittedAt ? "Submitted" : c.late ? "Not submitted" : "In progress"}</span> }
-                    : { label: "Variable share", value: <span className="text-xl">{c.variablePct}%</span>, hint: "Of every hike, for this level" },
-            ]} />
-            <Stepper cycle={c} />
+            <div className="flex flex-col gap-1">
+                <h2 className="text-xl font-bold text-ink-900 dark:text-white">{c.employeeName}</h2>
+                <p className="text-sm text-ink-500 dark:text-ink-400">{LEVEL_LABEL[c.level]}{c.assessor1 ? ` · reports to ${c.assessor1.name}` : ""}</p>
+            </div>
 
             {editable ? <Banner>Your review is open until <b>{day(c.assessorWindowEnd)}</b>. You can change it until the window closes.</Banner>
                 : c.status === "EMPLOYEE_OPEN" ? <Banner tone="warn">This opens for you on {day(addDaysIso(c.start, 15))}, after the employee's window closes. Appraisal window is closed for you until then.</Banner>
                 : me && c.status === "ASSESSOR_OPEN" ? <Banner tone="warn">Appraisal window is closed. Your review is shown below as it was saved.</Banner> : null}
 
             {view.pms !== undefined && (
-                <Panel title="Part A · Quarters from PMS">
-                    <PmsTable quarters={view.pms} />
-                </Panel>
-            )}
-
-            {view.self !== undefined && (
-                <Panel title="Part B and C · The employee's self review">
-                    <details className="group" open>
-                        <summary className="cursor-pointer text-xs font-bold uppercase tracking-wide text-brand-700 focus-ring dark:text-brand-400">Show or hide</summary>
-                        <div className="mt-5 flex flex-col gap-6">
-                            <div className={COLS2}>{ANSWER_QUESTIONS.map(([key, label]) => <ReadText key={key} label={label} value={view.self?.answers?.[key]} />)}</div>
-                            {asked.length > 0 && (
-                                <div className={`${COLS2} border-t border-ink-200 pt-5 dark:border-white/10`}>
-                                    {asked.map((a) => <div key={a.field} className="flex flex-col gap-3"><ReadText label={`Asks for a new ${a.label}`} value={a.value} /><ReadText label="Why" value={a.why} /></div>)}
-                                </div>
-                            )}
-                        </div>
-                    </details>
+                <Panel title="Goals and targets by quarter">
+                    <div className="flex flex-col gap-6">
+                        <div className="flex flex-col gap-3"><p className="eyebrow">From PMS Quarterly Reviews</p><PmsTable quarters={view.pms} /></div>
+                        {view.slots && <div className="flex flex-col gap-3"><p className="eyebrow">What the employee wrote for each quarter</p><QuarterGrid slots={view.slots} values={notesFrom(view.quarters)} /></div>}
+                    </div>
                 </Panel>
             )}
 
@@ -213,20 +196,37 @@ export default function ReviewForm() {
             )}
 
             {!me && view.assessors && (
-                <Panel title="Assessor reviews">
+                <Panel title="Everything on this appraisal">
                     <div className="flex flex-col gap-6">
+                        {(view.expected || view.target) && <div className={COLS2}><MoneyCard title="Employee expects" money={view.expected} /><MoneyCard title="Employee's target" money={view.target} /></div>}
+                        {asked.length > 0 && (
+                            <div className="flex flex-col gap-4 border-t border-ink-200 pt-5 dark:border-white/10">
+                                <p className="eyebrow">Requested changes</p>
+                                {asked.map((a) => {
+                                    const rr = view.requestReviews?.[a.field];
+                                    return (
+                                        <div key={a.field} className="flex flex-col gap-2 border border-ink-200 p-4 dark:border-white/10">
+                                            <p className="text-sm font-semibold text-ink-900 dark:text-white">New {a.label}: {a.value}</p>
+                                            {a.why && <p className="text-sm text-ink-600 dark:text-ink-300">The employee says: {a.why}</p>}
+                                            {rr?.A1 && <p className="text-sm text-ink-600 dark:text-ink-300"><b>{c.assessor1?.name ?? "FL"}</b> says: {rr.A1.comment || "no comment"}</p>}
+                                            {rr?.A2 && <p className="text-sm text-ink-600 dark:text-ink-300"><b>{c.assessor2?.name ?? "EL"}</b> {rr.A2.decision === "APPROVED" ? "approved" : rr.A2.decision === "REJECTED" ? "rejected" : "has not decided"}: {rr.A2.comment || "no comment"}</p>}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                         {(["A1", "A2"] as const).map((k) => {
                             const a = view.assessors![k];
                             const who = k === "A1" ? c.assessor1?.name : c.assessor2?.name;
                             return (
-                                <div key={k} className="flex flex-col gap-3">
-                                    <p className="eyebrow">{k === "A1" ? "Assessor 1" : "Assessor 2"}{who ? ` · ${who}` : ""} · {a?.submittedAt ? "submitted" : "not submitted"}</p>
+                                <div key={k} className="flex flex-col gap-3 border-t border-ink-200 pt-5 dark:border-white/10">
+                                    <p className="eyebrow">{k === "A1" ? "FL / Manager" : "EL"}{who ? ` · ${who}` : ""} · {a?.submittedAt ? "submitted" : "not submitted"}</p>
                                     <div className={COLS2}><ReadText label="Overall rating" value={a?.overallRating?.toString()} /><ReadText label="Comment" value={a?.comment} /></div>
+                                    {a?.managerFeedback !== undefined && a.managerFeedback && <ReadText label="Manager feedback" value={a.managerFeedback} />}
                                     {view.minimal?.[k] && <MoneyCard title="Proposed hike" money={view.minimal[k]} />}
                                 </div>
                             );
                         })}
-                        {(view.expected || view.target) && <div className={`${COLS2} border-t border-ink-200 pt-5 dark:border-white/10`}><MoneyCard title="Employee expects" money={view.expected} /><MoneyCard title="Employee's target" money={view.target} /></div>}
                     </div>
                 </Panel>
             )}

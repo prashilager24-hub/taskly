@@ -31,6 +31,8 @@ Summary: yearly appraisal flow from the Appraisal Module spec, reworked after th
 - **Review form (FL / EL)**: the FL comments on each requested change and proposes a hike, with the team budget left shown while they type; the EL also approves or rejects each request, then gives the final approval of the hike. Finance gets the same approval for an EL's own hike, or writes a note to that EL.
 - **Budget page** ([Budget.tsx](../frontend/src/components/appraisal/Budget.tsx)), a different view per role: Finance gives each department a yearly budget (search, departments with a budget first) and sees EL hikes waiting; an EL splits their department budget between the FLs; an FL sees only their own share. An Associate sees nothing. The old Budget Approval page is gone.
 - The Associate sees the EL's decision and comment on each request once the offer is out (never the FL's comment).
+- **Associate screen, reworked after review**: no cycle / status / level / salary strip and no step bar. One button, **Appeal for Appraisal**, opens the appraisal on the page in two tabs: *Goals and targets by quarter* (PMS numbers read-only, then per quarter **Comments, Biggest achievements, Biggest failures** to fill in, [QuarterGrid.tsx](../frontend/src/components/appraisal/QuarterGrid.tsx)) and *Hike proposal* (expected / target hike, designation and team requests). The written self-review questions (Part B) are removed. The **only pop-up** is the offer, once the EL has approved: amount, fixed / variable / half-yearly, the approval state of each requested change, and Accept / Reject ([OfferModal.tsx](../frontend/src/components/appraisal/OfferModal.tsx)).
+- **Comments travel upwards only**: the Associate sees no assessor rating or comment (only the EL's decision on each request, as a tag); the FL sees their own review; the EL sees the FL's too; Finance sees everything (`maskCycle`).
 - The approval stage is labelled **Final approval** ("By the EL", or "By Finance" for an EL's own cycle) instead of "Finance / Budget approval".
 - The screens draw only the keys the API sent, so a field hidden for a role leaves no empty box.
 
@@ -47,6 +49,7 @@ Summary: yearly appraisal flow from the Appraisal Module spec, reworked after th
 
 ### Database
 - New migration [006_appraisal.sql](../nodejs-backend/src/config/migrations/006_appraisal.sql): adds `Users.DateOfJoining`, `Users.EmployeeLevel`, `Users.CurrentAnnualCtc`; creates `AppraisalCycle`, `AppraisalQuarter`, `AppraisalQuarterReview`, `AppraisalReview`, `AppraisalHike`, `AppraisalRequest`, `AppraisalResponse`, `AppraisalAudit`; gives every role except Admin `appraisal` read.
+- New migration [008_appraisal_quarter_comments.sql](../nodejs-backend/src/config/migrations/008_appraisal_quarter_comments.sql): `AppraisalQuarter.Comments`. The quarter rows are the four calendar quarters that ended before the cycle began (`quarterSlots`), returned as `slots`.
 - New migration [007_appraisal_budget_requests.sql](../nodejs-backend/src/config/migrations/007_appraisal_budget_requests.sql): `AppraisalRequestReview`, `AppraisalBudget`, `AppraisalBudgetAlloc`.
 - Backfills `EmployeeLevel` from the role (Executive Leader = HEAD_EL, Functional Leader / Manager / Lead = MANAGER, everyone else = ASSOCIATE; Admins are left empty). **`DateOfJoining` is empty for everyone**: set it in Appraisal Setup, or no cycle starts.
 - **After pulling, run `npm run db:migrate` in `nodejs-backend`.**
@@ -101,7 +104,7 @@ Summary: a batch of earlier work that was pushed without a changelog entry, writ
 
 ### Database
 - New migration [004_notifications_pms_tabs.sql](../nodejs-backend/src/config/migrations/004_notifications_pms_tabs.sql): creates `Notification` and `NotificationState`, and splits the `pms` privilege into the five PMS tab keys on `AMRole` so existing roles keep what they could see.
-- **After pulling, run `npm run db:migrate` in `nodejs-backend`** (applies 004 to 007; 005 is from the entry above).
+- **After pulling, run `npm run db:migrate` in `nodejs-backend`** (applies 004 to 008; 005 is from the entry above).
 - No schema change for the hierarchy: it only reads `Users`, `Department`, `DepartmentUser`, and writes one `AppSetting` row (`ceoUserId`).
 
 ### Env / config

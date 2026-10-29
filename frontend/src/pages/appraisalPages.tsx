@@ -18,7 +18,7 @@ const Page = ({ title, subtitle, children }: { title: string; subtitle: string; 
 
 export const MyAppraisalPage = () => <Page title="My appraisal" subtitle="Your yearly appraisal: fill your part while your window is open, then see your offer."><MyAppraisal /></Page>;
 export const TeamAppraisalsPage = () => <Page title="Team appraisals" subtitle="Everyone you assess, together: their PMS quarters, what they ask for, and the hike you propose."><TeamAppraisals /></Page>;
-export const ReviewFormPage = () => <Page title="Appraisal review" subtitle="Read the PMS quarters and the self review, comment on what the employee asks for, and propose a hike."><ReviewForm /></Page>;
+export const ReviewFormPage = () => <Page title="Appraisal review" subtitle="Read the PMS quarters, comment on what the employee asks for, and propose a hike."><ReviewForm /></Page>;
 export const BudgetPage = () => <Page title="Budget" subtitle="Finance gives each EL a hike budget, the EL splits it between FLs, and each FL proposes hikes inside their share."><Budget /></Page>;
 export const HrPostponementsPage = () => <Page title="HR postponements" subtitle="Offers that employees rejected, with their reason and what they expect."><HrPostponements /></Page>;
 export const AppraisalSetupPage = () => <Page title="Appraisal setup" subtitle="Joining dates start each person's cycle. Level sets the fixed and variable split."><PeopleSetup /></Page>;

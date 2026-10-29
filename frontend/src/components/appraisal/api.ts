@@ -25,6 +25,8 @@ export interface PmsQuarter {
     targetPercent: number | null; goalAchievement: number | null; utilizationPercent: number | null; efficiencyPercent: number | null; efficiencyLabel: string;
     systemGrade: number | null; managerAvgRating: number | null; finalRating: number | null; gradeLabel: string; feedback: { category: string; text: string }[];
 }
+/** What the employee wrote for one quarter of the year (slot n) */
+export interface QuarterData { quarter: number; comments?: string; biggestAchievements?: string; biggestFailures?: string }
 export type RequestField = "DESIGNATION" | "TEAM";
 export interface RequestReviews { A1?: { comment: string } | null; A2?: { comment: string; decision: Decision | null } | null }
 export interface Response { decision: "ACCEPT" | "REJECT"; postponeMonths: number | null; reason: string; expectations: string; comment: string; hrStatus: "PENDING" | "APPROVED" | "RETURNED" | null; hrComment: string; decidedAt: string }
@@ -35,6 +37,9 @@ export interface CycleView {
     self?: { answers: Record<string, string>; submittedAt: string | null } | null;
     request?: { newDesignation: string; designationComment: string; newTeam: string; teamComment: string } | null;
     pms?: PmsQuarter[];
+    /** The four quarters of the year, oldest first; quarters[n] is what the employee wrote for slot n */
+    slots?: { n: number; quarter: string; year: number }[];
+    quarters?: QuarterData[];
     requestReviews?: Record<RequestField, RequestReviews>;
     expected?: Money | null; target?: Money | null;
     /** What the FL / EL propose. Stored as the "minimal" hike; the screens call it the proposed hike. */
@@ -66,6 +71,7 @@ export type BudgetOverview =
 
 export interface SelfReviewBody {
     answers: Record<string, string>;
+    quarters: { quarter: number; comments: string; biggestAchievements: string; biggestFailures: string }[];
     expectedHike: number | null; targetHike: number | null;
     request: { newDesignation: string; designationComment: string; newTeam: string; teamComment: string };
     submit: boolean;

@@ -54,6 +54,26 @@ export function isAnniversary(joined: string, today: string): boolean {
   return jm === tm && jd === td;
 }
 
+/**
+ * The four calendar quarters the appraisal looks back on: the last four that had ended by `ref`, oldest first.
+ * The quarter `ref` falls in counts only when `ref` is its last day. n (1 to 4) is how a quarter is stored.
+ */
+export function quarterSlots(ref: string): { n: number; quarter: string; year: number }[] {
+  const [y, m, d] = ref.split('-').map(Number) as [number, number, number];
+  let q = Math.floor((m - 1) / 3);
+  let year = y;
+  const endMonth = q * 3 + 3;
+  const lastDay = new Date(Date.UTC(y, endMonth, 0)).getUTCDate();
+  if (!(m === endMonth && d === lastDay)) { q -= 1; if (q < 0) { q = 3; year -= 1; } }
+  const out: { quarter: string; year: number }[] = [];
+  for (let i = 0; i < 4; i++) {
+    out.unshift({ quarter: `Q${q + 1}`, year });
+    q -= 1;
+    if (q < 0) { q = 3; year -= 1; }
+  }
+  return out.map((s, i) => ({ n: i + 1, ...s }));
+}
+
 /** The two windows of a cycle: employee days 1 to 15, assessors days 16 to 30 */
 export function cycleWindows(start: string) {
   return { employeeWindowEnd: addDays(start, 14), assessorWindowEnd: addDays(start, 29) };

@@ -29,11 +29,13 @@ export interface FullCycle {
   };
   self: { answers: Record<string, string>; submittedAt: string | null } | null;
   quarters: {
-    quarter: number; goals: string; targets: string; biggestAchievements: string; biggestFailures: string;
+    quarter: number; goals: string; targets: string; comments: string; biggestAchievements: string; biggestFailures: string;
     ratings: { A1: { finalRating: number | null; comments: string } | null; A2: { finalRating: number | null; comments: string } | null };
   }[];
   request: { newDesignation: string; designationComment: string; newTeam: string; teamComment: string } | null;
   pms: PmsQuarter[];
+  /** The four quarters of the year the appraisal looks back on, oldest first; quarter n of `quarters` is slot n */
+  slots: { n: number; quarter: string; year: number }[];
   requestReviews: Record<RequestField, RequestReviews>;
   expected: Money | null;
   target: Money | null;
@@ -62,47 +64,54 @@ export function maskCycle(full: FullCycle, role: ViewRole): Record<string, unkno
 
   // HR sees the person and the decision, nothing of the review itself
   if (role !== 'HR') {
-    const ratingsVisible = role !== 'EMPLOYEE' || offerShown(c.status);
-    const sees = role === 'EMPLOYEE' || role === 'A1' || role === 'A2';
+    // Comments travel upwards only: the employee sees none of them, the FL sees their own, the EL sees the FL's too, Finance sees everything.
+    const upper = role === 'A2' || role === 'FINANCE';
+    const all = role === 'FINANCE';
+    const mineOnly = role === 'A1';
 
-    // Self review text and the quarter grid the employee wrote: employee, A1, A2
-    if (sees) {
-      out['self'] = full.self;
-      out['request'] = full.request;
-      out['pms'] = full.pms;
-    }
-    // What the FL and EL said about the requested changes: the assessors see both; the employee sees only the EL's decision and comment, once the offer is out
-    if (role === 'A1' || role === 'A2') out['requestReviews'] = full.requestReviews;
+    // What the employee wrote and the PMS quarters (Part A): the employee and everyone above
+    out['self'] = full.self;
+    out['request'] = full.request;
+    out['pms'] = full.pms;
+    out['slots'] = full.slots;
+
+    // What the FL and the EL said about the requested changes
+    if (upper) out['requestReviews'] = full.requestReviews;
+    else if (mineOnly) out['requestReviews'] = { DESIGNATION: { A1: full.requestReviews.DESIGNATION.A1, A2: null }, TEAM: { A1: full.requestReviews.TEAM.A1, A2: null } };
     else if (role === 'EMPLOYEE' && offerShown(c.status)) {
-      const only = (f: RequestField) => ({ A2: full.requestReviews[f].A2 });
-      out['requestReviews'] = { DESIGNATION: only('DESIGNATION'), TEAM: only('TEAM') };
+      // the employee is told the decision only, never the assessor's words
+      const decision = (f: RequestField) => { const d = full.requestReviews[f].A2; return { A2: d && d.decision ? { decision: d.decision } : null }; };
+      out['requestReviews'] = { DESIGNATION: decision('DESIGNATION'), TEAM: decision('TEAM') };
     }
     out['quarters'] = full.quarters.map((q) => ({
       quarter: q.quarter,
-      ...(sees ? { goals: q.goals, targets: q.targets, biggestAchievements: q.biggestAchievements, biggestFailures: q.biggestFailures } : {}),
-      ...(ratingsVisible ? { ratings: q.ratings } : {}),
+      ...(role === 'EMPLOYEE' || upper || mineOnly ? { goals: q.goals, targets: q.targets, comments: q.comments, biggestAchievements: q.biggestAchievements, biggestFailures: q.biggestFailures } : {}),
+      ...(role === 'EMPLOYEE' ? {} : { ratings: mineOnly ? { A1: q.ratings.A1, A2: null } : q.ratings }),
     }));
 
     // Expected and target: the employee and Finance only
-    if (role === 'EMPLOYEE' || role === 'FINANCE') {
+    if (role === 'EMPLOYEE' || all) {
       out['expected'] = full.expected;
       out['target'] = full.target;
     }
-    // Minimal: assessors and Finance, never the employee
-    if (role !== 'EMPLOYEE') out['minimal'] = full.minimal;
+    // Proposed hikes: never the employee; the FL sees only their own; the EL and Finance see both
+    if (mineOnly) out['minimal'] = { A1: full.minimal.A1, A2: null };
+    else if (role !== 'EMPLOYEE') out['minimal'] = full.minimal;
 
-    // Overall rating and comment: assessors and Finance always, the employee once the offer is out. Manager feedback: A1 and A2 only.
-    if (ratingsVisible) {
+    // Overall rating, comment, manager feedback: never the employee; the FL their own; the EL both; Finance both
+    if (role !== 'EMPLOYEE') {
+      const a1 = full.assessors.A1;
+      const a2 = full.assessors.A2;
       out['assessors'] = {
-        A1: full.assessors.A1 && { overallRating: full.assessors.A1.overallRating, comment: full.assessors.A1.comment, submittedAt: full.assessors.A1.submittedAt, ...(role === 'A1' || role === 'A2' ? { managerFeedback: full.assessors.A1.managerFeedback } : {}) },
-        A2: full.assessors.A2 && { overallRating: full.assessors.A2.overallRating, comment: full.assessors.A2.comment, submittedAt: full.assessors.A2.submittedAt },
+        A1: a1 && { overallRating: a1.overallRating, comment: a1.comment, submittedAt: a1.submittedAt, managerFeedback: a1.managerFeedback },
+        A2: mineOnly ? null : a2 && { overallRating: a2.overallRating, comment: a2.comment, submittedAt: a2.submittedAt },
       };
     }
 
-    // Approved hike: A2 and Finance always, the employee after the offer, A1 never
-    if (role === 'A2' || role === 'FINANCE' || (role === 'EMPLOYEE' && offerShown(c.status))) out['approved'] = full.approved;
+    // Approved hike: the EL and Finance always, the employee once the offer is out, the FL never
+    if (upper || (role === 'EMPLOYEE' && offerShown(c.status))) out['approved'] = full.approved;
     // Finance's note about the budget goes to the EL only: Finance itself, and the EL when it is the EL's own appraisal
-    if (role === 'FINANCE' || (role === 'EMPLOYEE' && c.level === 'HEAD_EL')) out['financeComment'] = full.financeComment;
+    if (all || (role === 'EMPLOYEE' && c.level === 'HEAD_EL')) out['financeComment'] = full.financeComment;
   }
 
   out['response'] = full.response;
@@ -119,7 +128,7 @@ export interface TeamRow {
   expected: Money | null; minimal: { A1: Money | null; A2: Money | null }; approved: Money | null;
 }
 
-/** A1 sees no hike figures but their own minimal; A2 sees minimal and approved; Finance sees everything but the review text */
+/** A1 sees no hike figures but their own proposal; A2 sees both proposals and the approved hike; Finance sees everything */
 export function maskTeamRow(row: TeamRow): Record<string, unknown> {
   const base = {
     cycleId: row.cycleId, userId: row.userId, employeeName: row.employeeName, level: row.level, status: row.status, start: row.start,

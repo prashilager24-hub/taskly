@@ -3,7 +3,7 @@ import { pool } from '../../config/db';
 import { env } from '../../config/env';
 import { AppError } from '../../utils/AppError';
 import { assessorsOf } from '../access/hierarchy';
-import { addDays, addMonths, cycleWindows, splitHike, todayIST, VARIABLE_PCT, type EmployeeLevel } from './appraisal.calc';
+import { addDays, addMonths, cycleWindows, quarterSlots, splitHike, todayIST, VARIABLE_PCT, type EmployeeLevel } from './appraisal.calc';
 import { maskCycle, maskTeamRow, type FullCycle, type Money, type PmsQuarter, type RequestField, type RequestReviews, type Status, type TeamRow, type ViewRole } from './appraisal.mask';
 
 type Row = mysql.RowDataPacket;
@@ -111,9 +111,10 @@ export async function loadFull(cycleId: number, db: Db = pool): Promise<FullCycl
     self: self ? { answers: self['AnswersJson'] ? (typeof self['AnswersJson'] === 'string' ? JSON.parse(self['AnswersJson']) : self['AnswersJson']) : {}, submittedAt: iso(self['SubmittedAt']) } : null,
     quarters: [1, 2, 3, 4].map((n) => {
       const q = qs.find((x) => x['Quarter'] === n);
-      return { quarter: n, goals: q?.['Goals'] ?? '', targets: q?.['Targets'] ?? '', biggestAchievements: q?.['BiggestAchievements'] ?? '', biggestFailures: q?.['BiggestFailures'] ?? '', ratings: { A1: rating(n, 'A1'), A2: rating(n, 'A2') } };
+      return { quarter: n, goals: q?.['Goals'] ?? '', targets: q?.['Targets'] ?? '', comments: q?.['Comments'] ?? '', biggestAchievements: q?.['BiggestAchievements'] ?? '', biggestFailures: q?.['BiggestFailures'] ?? '', ratings: { A1: rating(n, 'A1'), A2: rating(n, 'A2') } };
     }),
     pms,
+    slots: quarterSlots(c['PmsRef'] as string),
     requestReviews: {
       DESIGNATION: requestReviewsOf(rr, 'DESIGNATION'),
       TEAM: requestReviewsOf(rr, 'TEAM'),
@@ -234,7 +235,7 @@ export async function hrList() {
 
 export interface SelfReviewInput {
   answers: Record<string, string>;
-  quarters?: { quarter: number; goals?: string; targets?: string; biggestAchievements?: string; biggestFailures?: string }[];
+  quarters?: { quarter: number; goals?: string; targets?: string; comments?: string; biggestAchievements?: string; biggestFailures?: string }[];
   expectedHike?: number | null; targetHike?: number | null;
   request?: { newDesignation?: string; designationComment?: string; newTeam?: string; teamComment?: string };
   submit: boolean;
@@ -279,9 +280,9 @@ export async function saveSelfReview(cycleId: number, userId: number, input: Sel
 
     for (const q of input.quarters ?? []) {
       await c.execute(
-        `INSERT INTO AppraisalQuarter (CycleID, Quarter, Goals, Targets, BiggestAchievements, BiggestFailures) VALUES (?, ?, ?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE Goals = VALUES(Goals), Targets = VALUES(Targets), BiggestAchievements = VALUES(BiggestAchievements), BiggestFailures = VALUES(BiggestFailures)`,
-        [cycleId, q.quarter, q.goals ?? null, q.targets ?? null, q.biggestAchievements ?? null, q.biggestFailures ?? null]);
+        `INSERT INTO AppraisalQuarter (CycleID, Quarter, Goals, Targets, Comments, BiggestAchievements, BiggestFailures) VALUES (?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE Goals = VALUES(Goals), Targets = VALUES(Targets), Comments = VALUES(Comments), BiggestAchievements = VALUES(BiggestAchievements), BiggestFailures = VALUES(BiggestFailures)`,
+        [cycleId, q.quarter, q.goals ?? null, q.targets ?? null, q.comments ?? null, q.biggestAchievements ?? null, q.biggestFailures ?? null]);
     }
     await putHike(c, cycleId, 'EXPECTED', 'EMPLOYEE', input.expectedHike, cy.level, userId);
     await putHike(c, cycleId, 'TARGET', 'EMPLOYEE', input.targetHike, cy.level, userId);

@@ -1,17 +1,14 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, ClipboardCheck, ClipboardList, LineChart, Target, UserX } from "lucide-react";
 
 import { hasModuleAccess } from "@/lib/permissions";
-import { PageTitle } from "@/components/page";
 import DashboardPage from "@/pages/dashboard";
-import PMSPage from "@/pages/pms";
 
-// Dashboard home (requirements DASH / PMS-01). Flow: first the work that needs you, then the
+// Taskly overview dashboard (requirements DASH). Flow: first the work that needs you, then the
 // numbers. "Needs your attention" shows live counts and links straight to the page that clears
-// them; the view switch (Overview / PMS) sits beside it instead of a second full-width tab bar.
-// ?view=pms selects PMS so the old /pms URL can redirect here.
+// them. PMS is its own menu item and page (/pms); old ?view=pms links are sent there.
 
 const API = "/t2.0/authentificationUtilization";
 const readUser = () => {
@@ -56,49 +53,16 @@ function useAttention(user: any): Action[] {
 }
 
 export default function DashboardHome() {
-    const [params, setParams] = useSearchParams();
-    const showPms = hasModuleAccess("pms");
-    const view = showPms && params.get("view") === "pms" ? "pms" : "overview";
+    const [params] = useSearchParams();
     const user = readUser();
     const actions = useAttention(user);
-
-    const seg = (key: "overview" | "pms", label: string) => (
-        <button
-            type="button"
-            onClick={() => setParams(key === "pms" ? { view: "pms" } : {}, { replace: true })}
-            aria-pressed={view === key}
-            className={`h-9 px-4 text-xs font-bold uppercase tracking-wide transition-colors focus-ring ${
-                view === key ? "bg-brand-600 text-white" : "text-ink-600 hover:text-brand-600 dark:text-ink-300"
-            }`}
-        >
-            {label}
-        </button>
-    );
+    if (params.get("view") === "pms") return <Navigate to="/pms" replace />;
 
     return (
         <div className="flex w-full flex-col gap-6">
-            {view === "pms" && (
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                    <PageTitle title="Performance management" subtitle="Goals, manager feedback and quarterly reviews for your people." />
-                    {showPms && (
-                        <div role="group" aria-label="Dashboard view" className="flex border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900">
-                            {seg("overview", "Overview")}
-                            {seg("pms", "PMS")}
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {view === "overview" && (
             <section aria-label="Needs your attention">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                     <h2 className="eyebrow">Needs your attention</h2>
-                    {showPms && (
-                        <div role="group" aria-label="Dashboard view" className="flex border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900">
-                            {seg("overview", "Overview")}
-                            {seg("pms", "PMS")}
-                        </div>
-                    )}
                 </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
                     {actions.map((a) => (
@@ -126,9 +90,8 @@ export default function DashboardHome() {
                     ))}
                 </div>
             </section>
-            )}
 
-            {view === "pms" ? <PMSPage /> : <DashboardPage />}
+            <DashboardPage />
         </div>
     );
 }

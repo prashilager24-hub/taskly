@@ -20,6 +20,7 @@ import {
   Smile,
   Sparkles,
   Target,
+  TrendingUp,
   Users,
   X,
 } from "lucide-react";
@@ -45,7 +46,8 @@ interface MenuItem {
 }
 
 export const MENU: MenuItem[] = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "dashboard", module: "dashboard" },
+  { icon: LayoutDashboard, label: "Taskly", href: "dashboard", module: "dashboard" },
+  { icon: TrendingUp, label: "PMS", href: "pms", module: "pms" },
   { icon: ClipboardList, label: "Daily Activity", href: "daily-activity", module: "dataentry" },
   {
     icon: BarChart3,
@@ -95,7 +97,6 @@ const norm = (path: string) => path.replace(/^\/+|\/+$/g, "").toLowerCase();
 // Pages reached from inside other pages, not from the menu
 const EXTRA_PAGES: Record<string, { section: string; label: string }> = {
   "activity-log": { section: "Workspace", label: "Activity Log" },
-  pms: { section: "Workspace", label: "Performance Reviews" },
   "hr-feedback": { section: "Support", label: "HR Feedback" },
   support: { section: "Support", label: "Support" },
 };

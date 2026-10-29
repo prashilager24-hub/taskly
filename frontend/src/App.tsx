@@ -11,6 +11,7 @@ import ReportsPage from "@/pages/reports";
 import History from "@/pages/History";
 import AccessManagementPage from "@/pages/access-management";
 import NotificationsPage from "@/pages/notifications";
+import PmsHome from "@/pages/pmsHome";
 import Efficiency from "./pages/efficiency";
 import ResetPasswordPage from "./pages/forgotPassword";
 import TargetManagement from "./pages/targetManagement";
@@ -62,7 +63,7 @@ function App() {
         <Route path="/efficiency-report" element={<ProtectedRoute module="perf"><Efficiency /></ProtectedRoute>} />
         <Route path="/sales-forward" element={<ProtectedRoute module="salesfwd"><SalesForward /></ProtectedRoute>} />
         <Route path="/Goal-management" element={<ProtectedRoute module="goalmgmt"><GoalManagement /></ProtectedRoute>} />
-        <Route path="/pms" element={<Navigate to="/dashboard?view=pms" replace />} />
+        <Route path="/pms" element={<ProtectedRoute module="pms"><PmsHome /></ProtectedRoute>} />
         <Route path="/Entry-Approval" element={<ProtectedRoute module="entryApproval"><EntryApproval /></ProtectedRoute>} />
         <Route path="/User-History" element={<ProtectedRoute module="userHistory"><History /></ProtectedRoute>} />
         <Route path="/Query-Report" element={<ProtectedRoute module="queryReport"><QueryReport /></ProtectedRoute>} />

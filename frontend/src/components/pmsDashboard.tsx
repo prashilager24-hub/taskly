@@ -607,7 +607,11 @@ import {
     Progress,
     Avatar,
     Divider,
-    Switch
+    Switch,
+    Popover,
+    PopoverTrigger,
+    PopoverContent,
+    Button,
 } from "@/components/ui";
 
 import { TrendingUp, Gauge, Target, Users } from "lucide-react";
@@ -694,7 +698,7 @@ const newestFirst = (a: any, b: any) => {
     return String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? ""));
 };
 
-function LivePreviewSummary({ reviews }) {
+function LivePreviewSummary({ reviews, compact = false }: { reviews: any[]; compact?: boolean }) {
     const parsedGrades = reviews.map((r) => {
         const grade =
             typeof r.grade === "string"
@@ -746,6 +750,61 @@ function LivePreviewSummary({ reviews }) {
 
     const scoreColorMap = { success: "#17c964", primary: "#006FEE", warning: "#f5a524", danger: "#f31260" };
     const scoreColor = count > 0 ? scoreColorMap[band.color] : "#d4d4d8";
+
+    if (compact) {
+        const cell = "flex min-w-0 flex-col justify-center gap-1.5 px-5 py-4";
+        const Bar = ({ value, color }: { value: number; color: string }) => (
+            <div className="h-1.5 w-full bg-default-100"><div className="h-full transition-[width] duration-500" style={{ width: `${Math.max(0, Math.min(100, value))}%`, background: color }} /></div>
+        );
+        return (
+            <section aria-label="Live preview" className="grid grid-cols-1 divide-y divide-default-100 border border-default-200 bg-content1 sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-[1.1fr_1fr_1fr_1fr_auto] lg:divide-x">
+                <div className={cell}>
+                    <p className="text-[10px] font-medium uppercase tracking-[.18em] text-default-500">Live preview</p>
+                    <div className="flex items-center gap-3">
+                        <span className="text-4xl font-black leading-none tracking-tight" style={{ color: scoreColor }}>{count > 0 ? `${finalGradePercent.toFixed(0)}%` : "—"}</span>
+                        {count > 0 && <Chip color={band.color} variant="flat" size="sm" className="font-semibold">{band.label}</Chip>}
+                    </div>
+                    <p className="text-[11px] text-default-400">Average across {count} review{count !== 1 ? "s" : ""}</p>
+                </div>
+                <div className={cell}>
+                    <p className="text-[10px] font-medium uppercase tracking-[.18em] text-default-500">A · System grade</p>
+                    <p className="text-lg font-bold text-default-900">{count > 0 ? `${systemGradePercent.toFixed(1)}%` : "—"}</p>
+                    <Bar value={systemGradePercent} color="#ff6b1a" />
+                    <p className="text-[11px] text-default-400">Weighted target + goal</p>
+                </div>
+                <div className={cell}>
+                    <p className="text-[10px] font-medium uppercase tracking-[.18em] text-default-500">B · Manager rating</p>
+                    <p className="text-lg font-bold text-default-900">{count > 0 ? `${managerRatingPercent.toFixed(1)}%` : "—"}</p>
+                    <Bar value={managerRatingPercent} color="#7c3aed" />
+                    <p className="text-[11px] text-default-400">Behaviour ratings</p>
+                </div>
+                <div className={cell}>
+                    <p className="text-[10px] font-medium uppercase tracking-[.18em] text-default-500">Final rating</p>
+                    <p className="text-lg font-bold text-success">{count > 0 ? `${(finalGradePercent / 10).toFixed(1)} / 10` : "—"}</p>
+                    <Bar value={finalGradePercent} color={scoreColor} />
+                    <p className="text-[11px] text-default-400">95% × A + 5% × B</p>
+                </div>
+                <div className="flex items-center justify-center px-5 py-4">
+                    <Popover placement="bottom-end">
+                        <PopoverTrigger>
+                            <Button size="sm" variant="bordered">Grading guide</Button>
+                        </PopoverTrigger>
+                        <PopoverContent>
+                            <div className="flex w-[340px] flex-col gap-1.5 p-3 text-xs">
+                                <p className="mb-1 text-[10px] font-bold uppercase tracking-[.15em] text-default-500">Final grading guide</p>
+                                {GRADE_GUIDE.map((g) => (
+                                    <div key={g.grade} className="flex items-center justify-between gap-3">
+                                        <span>{g.range}</span>
+                                        <Chip size="sm" color={g.color as any} variant="flat">Grade {g.grade}</Chip>
+                                    </div>
+                                ))}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                </div>
+            </section>
+        );
+    }
 
     return (
         <Card className="sticky top-6 shadow-sm border border-divider" radius="lg">
@@ -1022,7 +1081,7 @@ function ReviewCard({ review, wide = false }: { review: any; wide?: boolean }) {
                 </div>
 
                 <div className={wide ? "grid lg:grid-cols-2 lg:divide-x lg:divide-default-100" : ""}>
-                <div>
+                <div className={wide ? "flex flex-col" : ""}>
                 {/* ── Metric Strip ── */}
                 <div className="grid grid-cols-4 border-y border-default-100">
                     {metrics.map((m, i) => (
@@ -1041,7 +1100,7 @@ function ReviewCard({ review, wide = false }: { review: any; wide?: boolean }) {
                 </div>
 
                 {/* ── Progress Bars ── */}
-                <div className="px-4 py-3 flex flex-col gap-2">
+                <div className={`px-4 py-3 flex flex-col gap-2 ${wide ? "flex-1 justify-center py-5" : ""}`}>
                     {bars.map((b) => (
                         <div key={b.label} className="flex items-center gap-2">
                             <span className="text-[11px] text-default-400 w-16 shrink-0">
@@ -1337,6 +1396,7 @@ export default function QuarterlyReviewDashboard() {
                                 })}
                             </div>
 
+                            <LivePreviewSummary reviews={sorted} compact />
                             <ReviewCard key={current.id} review={current} wide />
                         </>
                     ) : (

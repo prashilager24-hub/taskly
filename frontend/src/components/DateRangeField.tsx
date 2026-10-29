@@ -1,6 +1,6 @@
 import type React from "react";
 import { useRef, useState } from "react";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, ChevronDown } from "lucide-react";
 import { parseDate, today, getLocalTimeZone, type CalendarDate, type DateValue } from "@internationalized/date";
 
 import { Button, Popover, PopoverContent, PopoverTrigger, RangeCalendar } from "@/components/ui";
@@ -17,7 +17,11 @@ const iso = (d: DateValue) => d.toString();
 const safe = (s?: string | null): CalendarDate | null => { try { return s ? parseDate(s) : null; } catch { return null; } };
 const label = (d: DateValue) => d.toDate(tz).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 
-export default function DateRangeField({ value, onChange, maxToday = true, compact = false }: { value: IsoRange; onChange: (r: IsoRange) => void; maxToday?: boolean; compact?: boolean }) {
+/**
+ * `label` turns the trigger into a form field that matches the Select / Autocomplete boxes next to it:
+ * same height, label on top inside the box, value below, chevron on the right.
+ */
+export default function DateRangeField({ value, onChange, maxToday = true, compact = false, label: fieldLabel }: { value: IsoRange; onChange: (r: IsoRange) => void; maxToday?: boolean; compact?: boolean; label?: string }) {
     const [open, setOpen] = useState(false);
     // Inside a canvas / modal the calendar renders within it, so a click on a day is not an
     // "outside click" that would dismiss the canvas
@@ -40,9 +44,23 @@ export default function DateRangeField({ value, onChange, maxToday = true, compa
     return (
         <Popover placement={host ? "bottom-end" : "bottom-start"} isOpen={open} onOpenChange={(o) => { if (o) setHost((triggerRef.current?.closest("[role=dialog]") as HTMLElement | null) ?? undefined); setOpen(o); }} portalContainer={host}>
             <PopoverTrigger>
-                <Button ref={triggerRef} variant="bordered" size={compact ? "sm" : undefined} className={compact ? "w-full justify-between" : "min-w-[280px] justify-between"} startContent={<CalendarDays size={15} className="text-brand-600" />}>
-                    <span className="flex-1 text-left">{chosen ? `${label(chosen.start)} → ${label(chosen.end)}` : "All dates"}</span>
-                </Button>
+                {fieldLabel ? (
+                    <Button ref={triggerRef} variant="bordered" aria-label={fieldLabel}
+                        className="h-14 min-h-14 w-full justify-between rounded-lg border-ink-200 bg-white px-3 data-[hover=true]:border-ink-300 dark:border-white/10 dark:bg-ink-900"
+                        endContent={<ChevronDown size={16} className="shrink-0 text-ink-400" />}>
+                        <span className="flex min-w-0 flex-1 flex-col items-start justify-center gap-0.5 text-left">
+                            <span className="font-secondary text-[10.5px] font-normal uppercase tracking-label text-ink-500 dark:text-ink-400">{fieldLabel}</span>
+                            <span className="flex items-center gap-2 text-sm font-normal normal-case text-ink-900 dark:text-white">
+                                <CalendarDays size={14} className="shrink-0 text-brand-600" />
+                                <span className="truncate">{chosen ? `${label(chosen.start)} → ${label(chosen.end)}` : "All dates"}</span>
+                            </span>
+                        </span>
+                    </Button>
+                ) : (
+                    <Button ref={triggerRef} variant="bordered" size={compact ? "sm" : undefined} className={compact ? "w-full justify-between" : "min-w-[280px] justify-between"} startContent={<CalendarDays size={15} className="text-brand-600" />}>
+                        <span className="flex-1 text-left">{chosen ? `${label(chosen.start)} → ${label(chosen.end)}` : "All dates"}</span>
+                    </Button>
+                )}
             </PopoverTrigger>
             <PopoverContent className="p-0">
                 <div className="flex flex-col sm:flex-row">

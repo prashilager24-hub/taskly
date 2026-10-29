@@ -521,7 +521,7 @@ export default function DashboardFilters({
 
     const DateRangeDropdown = useCallback(
         ({ value, onChange }: { value: DateRange; onChange: (r: DateRange) => void }) => (
-            <CustomDateRangePicker value={value} onChange={onChange} />
+            <CustomDateRangePicker value={value} onChange={onChange} label="Review period" />
         ),
         []
     );

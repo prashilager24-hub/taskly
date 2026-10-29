@@ -71,8 +71,11 @@ export interface FlLine { userId: number; name: string; allocation: number; used
 export interface DeptBudget { departmentId: number; name: string; el: { userId: number; name: string } | null; budget: number | null; comment: string; allocated: number; used: number; fls: FlLine[] }
 export interface MyShare { departmentId: number; name: string; allocation: number; used: number; remaining: number; associates: number }
 export type BudgetOverview =
-    | { year: number; role: "FINANCE" | "EL"; departments: DeptBudget[] }
+    | { year: number; role: "FINANCE" | "EL"; departments: DeptBudget[]; /** Finance Head who also leads departments: theirs, to split between FLs */ led?: DeptBudget[] }
     | { year: number; role: "FL" | "NONE"; shares: MyShare[] };
+
+/** Who acts as Finance: chosen in Appraisal Setup, or the head of the Strategic Financial Management department */
+export interface FinanceHead { userId: number | null; name: string | null; email: string | null; source: "setting" | "department" | "none"; department: string }
 
 export interface SelfReviewBody {
     answers: Record<string, string>;
@@ -113,6 +116,8 @@ export const appraisalApi = {
     decideRequests: (id: number, body: { designation?: { decision: Decision; comment?: string }; team?: { decision: Decision; comment?: string } }) => axios.put(`${BASE}/cycles/${id}/request-decision`, body),
     reject: (id: number, body: { postponeMonths: 3 | 6; reason: string; expectations: string; comment?: string }) => axios.post(`${BASE}/cycles/${id}/respond`, { decision: "REJECT", ...body }),
     hrDecide: (id: number, body: { status: "APPROVED" | "RETURNED"; comment?: string }) => axios.put(`${BASE}/cycles/${id}/hr-decision`, body),
+    financeHead: () => unwrap<FinanceHead>(axios.get(`${BASE}/finance-head`)),
+    setFinanceHead: (userId: number) => unwrap<FinanceHead>(axios.put(`${BASE}/finance-head`, { userId })),
     budget: (year?: number) => unwrap<BudgetOverview>(axios.get(`${BASE}/budget`, { params: year ? { year } : {} })),
     setDepartmentBudget: (body: { year: number; departmentId: number; amount: number; comment?: string }) => axios.put(`${BASE}/budget/department`, body),
     setAllocation: (body: { year: number; departmentId: number; flUserId: number; amount: number }) => axios.put(`${BASE}/budget/allocation`, body),

@@ -14,7 +14,49 @@ const csv = (v: string) => new Set(v.split(',').map((s) => Number(s.trim())).fil
 const FINANCE_ROLES = csv(env.APPRAISAL_FINANCE_ROLE_IDS);
 const HR_ROLES = csv(env.APPRAISAL_HR_ROLE_IDS);
 /** Admins can always act as Finance and HR, so the module works before those roles are named in the env */
-export const isFinance = (role: number) => role === 1 || FINANCE_ROLES.has(role);
+/** Stands in for the signed-in user's role inside the appraisal module when that user is the Finance Head */
+export const FINANCE_HEAD_ROLE = -1;
+export const isFinance = (role: number) => role === 1 || role === FINANCE_HEAD_ROLE || FINANCE_ROLES.has(role);
+
+// ── The Finance Head ────────────────────────────────────────────────────────────────────────────────
+// The person who gives each EL a budget, approves ELs' hikes and sees every appraisal. Chosen in Appraisal Setup
+// (AppSetting financeHeadUserId); until someone chooses, it is the head of the Strategic Financial Management department.
+const FINANCE_DEPT = 'Strategic Financial Management';
+let headCache: { at: number; id: number | null; source: 'setting' | 'department' | 'none' } | null = null;
+
+async function loadFinanceHead() {
+  if (headCache && Date.now() - headCache.at < 30_000) return headCache;
+  const [[set]] = await pool.execute<Row[]>("SELECT SettingValue FROM AppSetting WHERE SettingKey = 'financeHeadUserId'") as unknown as [Row[]];
+  let id = set ? Number(set['SettingValue']) || null : null;
+  let source: 'setting' | 'department' | 'none' = id ? 'setting' : 'none';
+  if (!id) {
+    const [d] = await pool.execute<Row[]>('SELECT ExecutiveLeaderID FROM Department WHERE DepartmentName = ? AND IsDepartmentArchived = 0 AND ExecutiveLeaderID IS NOT NULL LIMIT 1', [FINANCE_DEPT]);
+    id = (d[0]?.['ExecutiveLeaderID'] as number | undefined) ?? null;
+    if (id) source = 'department';
+  }
+  headCache = { at: Date.now(), id, source };
+  return headCache;
+}
+
+export async function isFinanceHead(userId: number) {
+  return (await loadFinanceHead()).id === userId;
+}
+
+export async function financeHead() {
+  const h = await loadFinanceHead();
+  if (!h.id) return { userId: null, name: null, email: null, source: h.source, department: FINANCE_DEPT };
+  const [u] = await pool.execute<Row[]>('SELECT UserName, UserEmail FROM Users WHERE UserID = ?', [h.id]);
+  return { userId: h.id, name: (u[0]?.['UserName'] as string) ?? null, email: (u[0]?.['UserEmail'] as string) ?? null, source: h.source, department: FINANCE_DEPT };
+}
+
+export async function setFinanceHead(appRole: number, userId: number) {
+  if (appRole !== 1) throw AppError.forbidden('Only an Admin chooses the Finance Head');
+  const [u] = await pool.execute<Row[]>('SELECT 1 FROM Users WHERE UserID = ? AND IsUserArchived = 0 AND UserStatus = 1', [userId]);
+  if (!u.length) throw AppError.notFound('User not found');
+  await pool.execute("INSERT INTO AppSetting (SettingKey, SettingValue) VALUES ('financeHeadUserId', ?) ON DUPLICATE KEY UPDATE SettingValue = VALUES(SettingValue)", [String(userId)]);
+  headCache = null;
+  return financeHead();
+}
 export const isHr = (role: number) => role === 1 || HR_ROLES.has(role);
 
 const CLOSED = 'Appraisal window is closed';
@@ -564,7 +606,8 @@ export async function availability(userId: number, appRole: number) {
   const [hrr] = hr ? await pool.execute<Row[]>("SELECT COUNT(*) AS n, SUM(r.HrStatus = 'PENDING') AS pending FROM AppraisalCycle c JOIN AppraisalResponse r ON r.CycleID = c.CycleID WHERE c.Status = 'POSTPONED' AND r.Decision = 'REJECT' AND c.UserID <> ?", [userId]) : [[]];
   const num = (r: Row | undefined, k: string) => Number(r?.[k] ?? 0);
   const my = { show: mine.length > 0, status: (mine[0]?.['Status'] as Status | undefined) ?? null, cycleId: (mine[0]?.['CycleID'] as number | undefined) ?? null };
-  const teamN = { show: num(asr[0], 'n') > 0, open: num(asr[0], 'open') };
+  const [anyCycle] = fin ? await pool.execute<Row[]>(`SELECT 1 FROM AppraisalCycle c WHERE c.UserID <> ? AND ${ACTIVE} LIMIT 1`, [userId]) : [[]];
+  const teamN = { show: num(asr[0], 'n') > 0 || anyCycle.length > 0, open: num(asr[0], 'open') };
   // Budget: Finance sets it, an EL splits it, an FL sees the share they were given. An Associate never sees one.
   const budget = { show: fin || leads.length > 0 || alloc.length > 0, pending: num(bud[0], 'pending') };
   const hrN = { show: hr && num(hrr[0], 'n') > 0, pending: num(hrr[0], 'pending') };

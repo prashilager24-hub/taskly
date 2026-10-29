@@ -63,7 +63,8 @@ export default function TeamAppraisals() {
         for (const r of shown) { const k = r.myRole === "A1" ? "Reporting to me" : r.assessor1Name ?? "No first assessor"; g.set(k, [...(g.get(k) ?? []), r]); }
         return [...g.entries()];
     }, [shown]);
-    const isEl = budget?.role === "EL" || rows.some((r) => r.myRole === "A2");
+    const isFin = budget?.role === "FINANCE";
+    const isEl = isFin || budget?.role === "EL" || rows.some((r) => r.myRole === "A2");
     const flLine = (name: string): FlLine | undefined => (budget && "departments" in budget ? budget.departments.flatMap((d) => d.fls).find((f) => f.name === name) : undefined);
     const share = budget && "shares" in budget ? budget.shares[0] : null;
 
@@ -72,12 +73,12 @@ export default function TeamAppraisals() {
         <div className="flex flex-col gap-6">
             <SummaryBar className="mb-0" items={[
                 { label: "Waiting for me", value: todo.length, hint: "Reviews to write, or hikes to approve" },
-                { label: isEl ? "People in my departments" : "In my team", value: rows.length },
+                { label: isFin ? "All appraisals" : isEl ? "People in my departments" : "In my team", value: rows.length },
                 ...(share ? [{ label: "My team budget", value: inr(share.allocation), hint: `${inr(share.used)} proposed or approved · ${inr(share.remaining)} left` }] : []),
-                ...(budget && "departments" in budget && budget.departments.length ? [{ label: "Department budget", value: inr(budget.departments.reduce((t, d) => t + (d.budget ?? 0), 0)), hint: `${inr(budget.departments.reduce((t, d) => t + d.used, 0))} proposed or approved` }] : []),
+                ...(budget && "departments" in budget && budget.departments.length ? [{ label: isFin ? "Budgets given" : "Department budget", value: inr(budget.departments.reduce((t, d) => t + (d.budget ?? 0), 0)), hint: `${inr(budget.departments.reduce((t, d) => t + d.used, 0))} proposed or approved` }] : []),
             ]} />
             {(budget && (("departments" in budget && budget.departments.length > 0) || share)) && (
-                <p className="text-sm text-ink-500 dark:text-ink-400">{isEl ? "Give each FL a share of the budget on the " : "Your share was set by your EL. See it on the "}<Link to="/appraisal/budget" className="font-semibold text-brand-700 hover:underline dark:text-brand-400">Budget page</Link>.</p>
+                <p className="text-sm text-ink-500 dark:text-ink-400">{isFin ? "Set each department's budget, and approve EL hikes, on the " : isEl ? "Give each FL a share of the budget on the " : "Your share was set by your EL. See it on the "}<Link to="/appraisal/budget" className="font-semibold text-brand-700 hover:underline dark:text-brand-400">Budget page</Link>.</p>
             )}
 
             <Panel flush title="Appraisals" actions={<Segmented size="sm" label="Show" value={filter} onChange={setFilter} options={[{ key: "todo", label: `Waiting for me (${todo.length})` }, { key: "all", label: "Everyone" }]} />}>
@@ -88,7 +89,7 @@ export default function TeamAppraisals() {
                             {isEl && (
                                 <div className="flex flex-wrap items-center justify-between gap-2 bg-ink-50 px-5 py-3 dark:bg-ink-800">
                                     <p className="text-sm font-bold text-ink-900 dark:text-white">{name}<span className="ml-2 text-xs font-normal text-ink-500">{list.length} {list.length === 1 ? "person" : "people"}</span></p>
-                                    {line && <p className="text-xs text-ink-600 dark:text-ink-300">Budget {inr(line.allocation)} · used {inr(line.used)} · <span className={line.remaining < 0 ? "font-semibold text-rose-600" : "font-semibold text-emerald-600"}>left {inr(line.remaining)}</span></p>}
+                                    {line && (line.allocation > 0 || line.used > 0) && <p className="text-xs text-ink-600 dark:text-ink-300">Budget {inr(line.allocation)} · used {inr(line.used)} · <span className={line.remaining < 0 ? "font-semibold text-rose-600" : "font-semibold text-emerald-600"}>left {inr(line.remaining)}</span></p>}
                                 </div>
                             )}
                             <div className="overflow-x-auto">

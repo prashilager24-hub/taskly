@@ -12,9 +12,14 @@ import { todayIST } from './appraisal.calc';
 
 const router = Router();
 router.use(authenticate, requireModule('appraisal', 'read'));
+// The Finance Head acts as Finance in this module, whatever their role is elsewhere (an Admin stays an Admin)
+router.use((req, _res, next) => {
+  if (Number(req.user?.role) === 1) return next();
+  svc.isFinanceHead(Number(req.user?.sub)).then((yes) => { if (yes) (req as Request & { appraisalRole?: number }).appraisalRole = svc.FINANCE_HEAD_ROLE; next(); }).catch(next);
+});
 
 const me = (req: Request) => Number(req.user?.sub);
-const roleOf = (req: Request) => Number(req.user?.role);
+const roleOf = (req: Request) => (req as Request & { appraisalRole?: number }).appraisalRole ?? Number(req.user?.role);
 const handler = (fn: (req: Request, res: Response) => Promise<unknown>) => (req: Request, res: Response, next: NextFunction) => { fn(req, res).catch(next); };
 const cycleId = (req: Request) => Number(req.params['cycleId']);
 
@@ -72,6 +77,8 @@ const TeamQuery = z.object({ status: z.enum(['EMPLOYEE_OPEN', 'ASSESSOR_OPEN', '
 
 // ── Routes ────────────────────────────────────────────────────────────────────────────────────────
 
+router.get('/finance-head', handler(async (_req, res) => { sendSuccess(res, await svc.financeHead()); }));
+router.put('/finance-head', validate(z.object({ userId: z.number().int().positive() })), handler(async (req, res) => { sendSuccess(res, await svc.setFinanceHead(roleOf(req), req.body.userId)); }));
 router.get('/availability', handler(async (req, res) => { sendSuccess(res, await svc.availability(me(req), roleOf(req))); }));
 router.get('/my', handler(async (req, res) => { sendSuccess(res, await svc.myCycle(me(req), roleOf(req))); }));
 router.get('/team', validate(TeamQuery, 'query'), handler(async (req, res) => { sendSuccess(res, await svc.team(me(req), roleOf(req), (req.query as { status?: string }).status)); }));

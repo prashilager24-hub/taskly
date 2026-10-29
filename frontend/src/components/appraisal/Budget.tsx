@@ -161,7 +161,17 @@ export default function Budget() {
 
     if (loading) return <div className="flex justify-center py-20"><Spinner /></div>;
     if (!data || data.role === "NONE") return <Panel><p className="py-10 text-center text-sm text-ink-500">There is no budget for you to see.</p></Panel>;
-    if (data.role === "FINANCE") return <FinanceView year={year} departments={data.departments} onChanged={load} />;
+    if (data.role === "FINANCE") return (
+        <div className="flex flex-col gap-8">
+            <FinanceView year={year} departments={data.departments} onChanged={load} />
+            {data.led && data.led.length > 0 && (
+                <div className="flex flex-col gap-4">
+                    <div><h2 className="text-lg font-bold text-ink-900 dark:text-white">Your own departments</h2><p className="text-sm text-ink-500 dark:text-ink-400">You also lead these. Give each FL / Manager a share of the budget you set for them.</p></div>
+                    <ElView year={year} departments={data.led} onChanged={load} />
+                </div>
+            )}
+        </div>
+    );
     if (data.role === "EL") return <ElView year={year} departments={data.departments} onChanged={load} />;
     return <FlView shares={data.shares} />;
 }

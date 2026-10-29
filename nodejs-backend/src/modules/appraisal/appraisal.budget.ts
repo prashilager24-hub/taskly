@@ -78,7 +78,7 @@ async function build(year: number, where: string, params: number[]): Promise<Dep
 }
 
 export async function overview(userId: number, appRole: number, year: number) {
-  if (isFinance(appRole)) return { year, role: 'FINANCE' as BudgetRole, departments: await build(year, '', []) };
+  if (isFinance(appRole)) return { year, role: 'FINANCE' as BudgetRole, departments: await build(year, '', []), led: await build(year, 'AND d.ExecutiveLeaderID = ?', [userId]) };
 
   const led = await build(year, 'AND d.ExecutiveLeaderID = ?', [userId]);
   if (led.length) return { year, role: 'EL' as BudgetRole, departments: led };

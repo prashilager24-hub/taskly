@@ -4,7 +4,7 @@ import { Search } from "lucide-react";
 
 import { Panel, SummaryBar } from "@/components/page";
 import { Button, addToast } from "@/components/ui";
-import { appraisalApi, errorText, type Level, type PersonSetup } from "./api";
+import { appraisalApi, errorText, type FinanceHead, type Level, type PersonSetup } from "./api";
 import { LEVEL_LABEL, parseAmount, showAmount } from "./format";
 
 const inputCls = "h-9 w-full border border-ink-200 bg-transparent px-2.5 text-[13px] text-ink-900 outline-none focus:border-brand-500 dark:border-white/10 dark:bg-ink-900 dark:text-white";
@@ -50,6 +50,45 @@ function Row({ p, onSaved }: { p: PersonSetup; onSaved: () => void }) {
     );
 }
 
+const isAdmin = () => { try { return JSON.parse(localStorage.getItem("authUserLD") || "{}").userRole === 1; } catch { return false; } };
+
+/** The Finance Head: gives each EL a budget, approves ELs' hikes and sees every appraisal. An Admin can change who it is. */
+function FinanceHeadCard({ people }: { people: PersonSetup[] }) {
+    const [head, setHead] = useState<FinanceHead | null>(null);
+    const [pick, setPick] = useState("");
+    const [busy, setBusy] = useState(false);
+    useEffect(() => { appraisalApi.financeHead().then((h) => { setHead(h); setPick(h.userId ? String(h.userId) : ""); }).catch(() => setHead(null)); }, []);
+    const admin = isAdmin();
+    const save = async () => {
+        setBusy(true);
+        try { const h = await appraisalApi.setFinanceHead(Number(pick)); setHead(h); addToast({ title: `${h.name} is now the Finance Head`, color: "success" }); }
+        catch (e) { addToast({ title: "Could not change the Finance Head", description: errorText(e), color: "danger" }); }
+        finally { setBusy(false); }
+    };
+    return (
+        <Panel title="Finance Head">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+                <div className="flex flex-col gap-1">
+                    <p className="text-lg font-bold text-ink-900 dark:text-white">{head?.name ?? "Not set"}</p>
+                    <p className="text-sm text-ink-500 dark:text-ink-400">
+                        {head?.source === "department" ? `Head of ${head.department}. ` : head?.source === "setting" ? "Chosen in this setup. " : `Nobody leads ${head?.department ?? "Strategic Financial Management"} yet. `}
+                        Gives each EL a budget, approves the ELs' hikes and sees every appraisal.
+                    </p>
+                </div>
+                {admin && (
+                    <div className="flex items-center gap-2">
+                        <select aria-label="Finance Head" className={inputCls + " w-64"} value={pick} onChange={(e) => setPick(e.target.value)}>
+                            <option value="">Choose a person</option>
+                            {people.map((p) => <option key={p.userId} value={p.userId}>{p.name}</option>)}
+                        </select>
+                        <Button color="primary" size="sm" isLoading={busy} isDisabled={!pick || Number(pick) === head?.userId} onPress={save}>Save</Button>
+                    </div>
+                )}
+            </div>
+        </Panel>
+    );
+}
+
 // Appraisal setup: the joining date starts each person's yearly cycle; the level decides the fixed / variable split.
 export default function PeopleSetup() {
     const [people, setPeople] = useState<PersonSetup[]>([]);
@@ -67,6 +106,7 @@ export default function PeopleSetup() {
     const noJoin = people.filter((p) => !p.dateOfJoining).length;
     return (
         <div className="flex flex-col gap-6">
+            <FinanceHeadCard people={people} />
             <SummaryBar className="mb-0" items={[{ label: "People", value: people.length }, { label: "Without a joining date", value: noJoin, hint: "No cycle starts for them" }, { label: "Without a level", value: people.filter((p) => !p.level).length, hint: "The split needs a level" }]} />
             <Panel flush title="Joining date, level and CTC" actions={
                 <label className="relative block w-56">

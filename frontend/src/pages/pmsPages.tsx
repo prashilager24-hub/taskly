@@ -12,11 +12,11 @@ import PmsReport from "@/components/pmsReport";
 // Access Management (pms_dashboard, pms_goals, pms_feedback, pms_quarterly, pms_report).
 
 const ORDER = [
-    { module: "pms_dashboard", to: "/pms/dashboard" },
     { module: "pms_goals", to: "/pms/goal-setting" },
     { module: "pms_feedback", to: "/pms/manager-feedback" },
     { module: "pms_quarterly", to: "/pms/quarterly-review" },
     { module: "pms_report", to: "/pms/report" },
+    { module: "pms_dashboard", to: "/pms/dashboard" },
 ];
 
 /** /pms opens the first PMS page this person can use */

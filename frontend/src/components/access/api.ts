@@ -27,6 +27,11 @@ const unwrap = <T,>(p: Promise<{ data: { response: T } }>) => p.then((r) => r.da
 
 export const errorText = (err: any, fallback = "Something went wrong.") => err?.response?.data?.message || err?.message || fallback;
 
+export type Level = "admin" | "el" | "fl" | "employee" | "intern";
+export interface PersonRef { userId: number; name: string; level: Level }
+export interface HierarchyPerson { userId: number; name: string; email: string; roleName: string; level: Level; departments: string[]; accessor1: PersonRef | null; accessor2: PersonRef | null; accessor2Allowed: boolean; missing: boolean }
+export interface HierarchyData { levels: { key: Level; label: string; description: string; count: number }[]; ceo: PersonRef | null; people: HierarchyPerson[]; missing: number }
+
 export const accessApi = {
     catalog: () => unwrap<ModuleDef[]>(axios.get(`${BASE}/access/catalog`)),
     roles: () => unwrap<RoleRow[]>(axios.get(`${BASE}/access/roles`)),
@@ -41,6 +46,8 @@ export const accessApi = {
     setTwoFactor: (userIds: number[], value: "default" | "on" | "off") => axios.put(`${BASE}/access/users/two-factor`, { userIds, value }),
     security: () => unwrap<{ twoFactorDefault: "on" | "off"; totals: { users: number; withTwoFactor: number; withoutTwoFactor: number } }>(axios.get(`${BASE}/access/security`)),
     setDefaultTwoFactor: (value: "on" | "off") => axios.put(`${BASE}/access/security`, { twoFactorDefault: value }),
+    hierarchy: () => unwrap<HierarchyData>(axios.get(`${BASE}/access/hierarchy`)),
+    setCeo: (userId: number) => unwrap<HierarchyData>(axios.put(`${BASE}/access/hierarchy/ceo`, { userId })),
     log: () => unwrap<LogRow[]>(axios.get(`${BASE}/access/log`)),
 };
 

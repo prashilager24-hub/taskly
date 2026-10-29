@@ -6,13 +6,15 @@ import { addToast } from "@/components/ui";
 import { accessApi, errorText, type DepartmentRow, type ModuleDef, type RoleRow } from "@/components/access/api";
 import { DepartmentsTab, RolesTab } from "@/components/access/RolesTab";
 import SecurityTab from "@/components/access/SecurityTab";
+import HierarchyTab from "@/components/access/HierarchyTab";
 import UsersTab from "@/components/access/UsersTab";
 
-type Tab = "users" | "roles" | "departments" | "security";
+type Tab = "users" | "roles" | "departments" | "hierarchy" | "security";
 const TABS: { key: Tab; label: string }[] = [
     { key: "users", label: "Users" },
     { key: "roles", label: "Roles" },
     { key: "departments", label: "Departments" },
+    { key: "hierarchy", label: "Hierarchy" },
     { key: "security", label: "Security" },
 ];
 
@@ -44,6 +46,7 @@ export default function AccessManagementPage() {
             {tab === "users" && <UsersTab catalog={catalog} roles={roles} departments={departments} onChanged={load} />}
             {tab === "roles" && <RolesTab catalog={catalog} roles={roles} onChanged={load} />}
             {tab === "departments" && <DepartmentsTab catalog={catalog} departments={departments} onChanged={load} />}
+            {tab === "hierarchy" && <HierarchyTab />}
             {tab === "security" && <SecurityTab onChanged={load} />}
         </div>
     );

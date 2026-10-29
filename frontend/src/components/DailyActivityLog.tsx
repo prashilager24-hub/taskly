@@ -379,6 +379,11 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
         ([14, 31, 32].includes(DeptId) && ![1, 141].includes(authUser.userID));
 
     const isSkipTargetStep = [19, 20, 35].includes(DeptId) && authUser.userRole !== 1;
+    // Task entry is a person's own: when a manager or leader logs a team member's day they enter Target and Goal only
+    const forTeamMember = selectedUserId !== undefined && selectedUserId !== null && Number(selectedUserId) !== Number(authUser.userID);
+    useEffect(() => {
+        if (forTeamMember && entryStep === "TASK") setEntryStep(isSkipTargetStep ? "GOAL" : "TARGET");
+    }, [forTeamMember, entryStep, isSkipTargetStep]);
 
     const [jdForm, setJdForm] = useState({
         positionName: "",
@@ -1245,7 +1250,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                     return {
                         leaveType: "FULL_DAY",
                         workDate: toYYYYMMDD(workDate),
-                        userID: authUser.userRole == 1 ? Number(selectedUserId) : Number(authUser.userID),
+                        userID: forTeamMember ? Number(selectedUserId) : Number(authUser.userID),
                         departmentID: Number(DeptId || getPrimaryDepartmentId(authUser) || 0),
                         activities: [],
                         goals: [],
@@ -1265,9 +1270,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                     if (activity.isGoal) {
                         const goalPayload: any = {
                             goalID: Number(activity.goalID),
-                            userID: authUser.userRole === 1
-                                ?
-                                Number(selectedUserId || authUser.userID) : Number(authUser.userID),
+                            userID: forTeamMember ? Number(selectedUserId) : Number(authUser.userID),
                             departmentID: Number(DeptId || getPrimaryDepartmentId(authUser) || 0),
                             workDate: activity.workDate || toYYYYMMDD(workDate),
                             achievedGoal: achievedUnit,
@@ -2045,7 +2048,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                 const kindOf = (a: ActivityEntry): EntryStep => (a.isGoal ? "GOAL" : a.targetID || a.targetName ? "TARGET" : "TASK");
                 const count = (k: EntryStep) => activities.filter((a) => kindOf(a) === k).length;
                 const steps: { key: EntryStep; label: string; hint: string }[] = [
-                    { key: "TASK", label: "Task entry", hint: "What you worked on" },
+                    ...(forTeamMember ? [] : [{ key: "TASK" as EntryStep, label: "Task entry", hint: "What you worked on" }]),
                     ...(isSkipTargetStep ? [] : [{ key: "TARGET" as EntryStep, label: "Target entry", hint: "Units against targets" }]),
                     ...(isSkipGoalStep && authUser.userRole !== 1 ? [] : [{ key: "GOAL" as EntryStep, label: "Goal entry", hint: "Progress on goals" }]),
                 ];
@@ -2107,7 +2110,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                     <p className="mt-0.5 text-xs text-ink-500 dark:text-ink-400">Fill the form and press Preview. Save the entry to add it to your day, or keep editing.</p>
                                 </div>
                                 {(() => {
-                                    const order: EntryStep[] = ["TASK", ...(isSkipTargetStep ? [] : ["TARGET" as EntryStep]), ...(isSkipGoalStep && authUser.userRole !== 1 ? [] : ["GOAL" as EntryStep])];
+                                    const order: EntryStep[] = [...(forTeamMember ? [] : ["TASK" as EntryStep]), ...(isSkipTargetStep ? [] : ["TARGET" as EntryStep]), ...(isSkipGoalStep && authUser.userRole !== 1 ? [] : ["GOAL" as EntryStep])];
                                     const i = order.indexOf(entryStep);
                                     const names: Record<string, string> = { TASK: "Task entry", TARGET: "Target entry", GOAL: "Goal entry" };
                                     const next = order[i + 1];

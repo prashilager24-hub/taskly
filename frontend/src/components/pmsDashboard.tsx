@@ -1335,10 +1335,7 @@ export default function QuarterlyReviewDashboard() {
                                 })}
                             </div>
 
-                            <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
-                                <ReviewCard key={current.id} review={current} wide />
-                                <div className="xl:sticky xl:top-4"><LivePreviewSummary reviews={sorted} /></div>
-                            </div>
+                            <ReviewCard key={current.id} review={current} wide />
                         </>
                     ) : (
                         <div className="border border-dashed border-ink-300 px-6 py-14 text-center dark:border-white/15">

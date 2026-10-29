@@ -1179,18 +1179,27 @@ export default function QuarterlyReview() {
         );
     }, [form.empId, usersAll]);
 
-    const assessorInfo = useMemo(() => {
-        if (!selectedUser) return { assessor1: null, assessor2: null };
-
-        const assessor1 = usersAll.find(
-            (u) => u.userID === selectedUser.reportingManagerId
-        ) || null;
-
-        const assessor2 = usersAll.find(
-            (u) => u.userID === selectedUser.elManagerId
-        ) || null;
-        return { assessor1, assessor2 };
-    }, [selectedUser, usersAll]);
+    // Who reviews this person follows the hierarchy: employee -> manager then EL; FL -> EL then CEO (optional); EL -> CEO
+    const [assessorInfo, setAssessorInfo] = useState<{ assessor1: any; assessor2: any }>({ assessor1: null, assessor2: null });
+    useEffect(() => {
+        if (!selectedUser) { setAssessorInfo({ assessor1: null, assessor2: null }); return; }
+        let live = true;
+        axios.get(`/t2.0/authentificationUtilization/access/assessors/${selectedUser.userID}`, { headers: { Authorization: `Bearer ${authUser?.token ?? ""}` } })
+            .then((r) => {
+                if (!live) return;
+                const d = r.data?.response;
+                const pick = (x: any) => (x ? { userID: x.userId, userName: x.name } : null);
+                setAssessorInfo({ assessor1: pick(d?.accessor1), assessor2: pick(d?.accessor2) });
+            })
+            .catch(() => {
+                if (!live) return;
+                setAssessorInfo({
+                    assessor1: usersAll.find((u) => u.userID === selectedUser.reportingManagerId) || null,
+                    assessor2: usersAll.find((u) => u.userID === selectedUser.elManagerId) || null,
+                });
+            });
+        return () => { live = false; };
+    }, [selectedUser?.userID]);
 
     useEffect(() => {
         if (!assessorInfo.assessor1 && !assessorInfo.assessor2) return;

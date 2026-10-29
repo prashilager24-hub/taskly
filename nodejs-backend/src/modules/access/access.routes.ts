@@ -7,6 +7,7 @@ import { validate } from '../../middlewares/validate';
 import { pool } from '../../config/db';
 import type mysql from 'mysql2/promise';
 import * as svc from './access.service';
+import * as hier from './hierarchy';
 
 const router = Router();
 router.use(authenticate);
@@ -58,6 +59,14 @@ router.get('/users/:id', read, async (req, res, next) => { try { ok(res, await s
 router.put('/users/:id', write, validate(z.object({ grants: z.record(z.array(z.string())).optional(), denies: z.record(z.array(z.string())).optional() })), async (req, res, next) => {
   try { await svc.setUserAccess(actor(req), Number(req.params['id']), req.body); ok(res, await svc.explainUser(Number(req.params['id']))); } catch (e) { next(e); }
 });
+// ── Hierarchy: the reporting ladder and each person's assessors
+router.get('/hierarchy', read, async (_req, res, next) => { try { ok(res, await hier.hierarchy()); } catch (e) { next(e); } });
+router.put('/hierarchy/ceo', write, validate(z.object({ userId: z.number().int() })), async (req, res, next) => {
+  try { await hier.setCeo(actor(req), req.body.userId); ok(res, await hier.hierarchy()); } catch (e) { next(e); }
+});
+// Who reviews this person (used by the review screens; any signed-in person may ask)
+router.get('/assessors/:userId', async (req, res, next) => { try { ok(res, await hier.assessorsOf(Number(req.params['userId']))); } catch (e) { next(e); } });
+
 // ── Security
 router.get('/security', read, async (_req, res, next) => { try { ok(res, await svc.security()); } catch (e) { next(e); } });
 router.put('/security', write, validate(z.object({ twoFactorDefault: z.enum(['on', 'off']) })), async (req, res, next) => {

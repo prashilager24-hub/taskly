@@ -63,7 +63,6 @@ export const MENU: MenuItem[] = [
     href: "pms",
     module: "pms",
     children: [
-      { icon: LayoutDashboard, label: "Dashboard", href: "pms/dashboard", module: "pms_dashboard" },
       { icon: Goal, label: "Goal Setting", href: "pms/goal-setting", module: "pms_goals" },
       { icon: MessageSquareText, label: "Manager Feedback", href: "pms/manager-feedback", module: "pms_feedback" },
       { icon: ClipboardList, label: "Quarterly Review", href: "pms/quarterly-review", module: "pms_quarterly" },

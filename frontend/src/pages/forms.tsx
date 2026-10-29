@@ -206,7 +206,7 @@ export default function FormPage() {
         const fetchDepartmentTask = async () => {
             try {
                 const bodyData = {
-                    departmentId: filterStatus, roleId: [1, 3, 4].includes(user.userRole)
+                    departmentId: filterStatus, roleId: [1, 3, 4, 7, 23].includes(user.userRole)
                         ? (users.find((u) => u.userID === selectedUserId)?.roleID ?? null)
                         : user.userRole
                 };
@@ -276,9 +276,7 @@ export default function FormPage() {
             {!(
                 user.userRole == 2 ||
                 user.userRole == 5 ||
-                user.userRole == 6 ||
-                user.userRole == 7 ||
-                user.userRole == 23
+                user.userRole == 6
             ) && (
                 <section aria-label="Whose activity" className="mb-6 border border-ink-200 bg-white p-5 dark:border-white/10 dark:bg-ink-900">
                     <p className="eyebrow mb-3">Logging for</p>
@@ -313,7 +311,7 @@ export default function FormPage() {
                                                 </AutocompleteItem>
                                             ))}
                                     </Autocomplete>
-                        {(user.userRole === 3 || user.userRole === 4 || user.userRole === 1) && (
+                        {(user.userRole === 3 || user.userRole === 4 || user.userRole === 7 || user.userRole === 23 || user.userRole === 1) && (
                             <Autocomplete
                                             label="Person"
                                 labelPlacement="outside"

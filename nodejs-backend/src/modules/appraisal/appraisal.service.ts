@@ -149,7 +149,40 @@ export async function cycleFor(cycleId: number, userId: number, appRole: number)
 
 // ── Team, budget and HR lists ─────────────────────────────────────────────────────────────────────
 
-const sumOf = (list: (Money | null | undefined)[]) => list.reduce((s, m) => (m ? { annual: s.annual + m.annual, fixed: s.fixed + m.fixed, variable: s.variable + m.variable, count: s.count + 1 } : s), { annual: 0, fixed: 0, variable: 0, count: 0 });
+export type BudgetScope = 'all' | 'department' | 'team';
+export interface Budget { scope: BudgetScope; label: string; annual: number; fixed: number; variable: number; count: number; byDepartment?: { department: string; annual: number; fixed: number; variable: number; count: number }[] }
+
+const BUDGET_STATUSES = "c.Status IN ('OFFERED', 'ACCEPTED')";
+const toBudget = (r: Row | undefined) => ({ annual: Number(r?.['a'] ?? 0), fixed: Number(r?.['f'] ?? 0), variable: Number(r?.['v'] ?? 0), count: Number(r?.['n'] ?? 0) });
+
+/**
+ * The budget this person may see: approved hikes that are on offer or accepted (a postponed hike is not budgeted).
+ *   Finance / Admin : every appraisal
+ *   EL              : the whole department(s) they lead, plus anyone they assess as Assessor 2
+ *   FL / Manager    : their own team, the people they assess as Assessor 1
+ *   Associate       : none
+ */
+export async function budgetFor(userId: number, appRole: number): Promise<Budget | null> {
+  const q = (where: string, params: number[]) => pool.execute<Row[]>(
+    `SELECT COUNT(*) AS n, SUM(h.AnnualAmount) AS a, SUM(h.FixedAmount) AS f, SUM(h.VariableAmount) AS v
+       FROM AppraisalHike h JOIN AppraisalCycle c ON c.CycleID = h.CycleID
+      WHERE h.Kind = 'APPROVED' AND ${BUDGET_STATUSES} AND c.UserID <> ? AND ${where}`, [userId, ...params]);
+  if (isFinance(appRole)) { const [r] = await q('1 = 1', []); return { scope: 'all', label: 'Company budget', ...toBudget(r[0]) }; }
+
+  const [led] = await pool.execute<Row[]>('SELECT DepartmentID, DepartmentName FROM Department WHERE ExecutiveLeaderID = ? AND IsDepartmentArchived = 0', [userId]);
+  const [asA2] = await pool.execute<Row[]>('SELECT 1 FROM AppraisalCycle WHERE Assessor2UserID = ? LIMIT 1', [userId]);
+  if (led.length || asA2.length) {
+    const [r] = await q('(c.UserID IN (SELECT du.UserID FROM DepartmentUser du JOIN Department d ON d.DepartmentID = du.DepartmentID WHERE d.ExecutiveLeaderID = ?) OR c.Assessor2UserID = ?)', [userId, userId]);
+    const [by] = await pool.execute<Row[]>(
+      `SELECT d.DepartmentName AS name, COUNT(*) AS n, SUM(h.AnnualAmount) AS a, SUM(h.FixedAmount) AS f, SUM(h.VariableAmount) AS v
+         FROM AppraisalHike h JOIN AppraisalCycle c ON c.CycleID = h.CycleID JOIN DepartmentUser du ON du.UserID = c.UserID JOIN Department d ON d.DepartmentID = du.DepartmentID
+        WHERE h.Kind = 'APPROVED' AND ${BUDGET_STATUSES} AND c.UserID <> ? AND d.ExecutiveLeaderID = ? GROUP BY d.DepartmentID, d.DepartmentName ORDER BY d.DepartmentName`, [userId, userId]);
+    return { scope: 'department', label: 'Department budget', ...toBudget(r[0]), byDepartment: by.map((x) => ({ department: x['name'] as string, ...toBudget(x) })) };
+  }
+  const [asA1] = await pool.execute<Row[]>('SELECT 1 FROM AppraisalCycle WHERE Assessor1UserID = ? LIMIT 1', [userId]);
+  if (asA1.length) { const [r] = await q('c.Assessor1UserID = ?', [userId]); return { scope: 'team', label: 'Team budget', ...toBudget(r[0]) }; }
+  return null; // an Associate never sees a budget
+}
 
 export async function team(userId: number, appRole: number, status?: string) {
   const fin = isFinance(appRole);
@@ -170,13 +203,7 @@ export async function team(userId: number, appRole: number, status?: string) {
       expected: f.expected, minimal: f.minimal, approved: f.approved,
     });
   }
-  const sumRows = fin ? rows : rows.filter((r) => r.myRole === 'A2');
-  const showSum = fin || rows.some((r) => r.myRole === 'A2');
-  return {
-    items: rows.map(maskTeamRow),
-    // Finance sums everyone; an EL sums their own team's approved hikes; a first assessor sees no totals
-    sumTotal: showSum ? sumOf(sumRows.map((r) => r.approved)) : null,
-  };
+  return { items: rows.map(maskTeamRow), sumTotal: await budgetFor(userId, appRole) };
 }
 
 /** Rejected offers waiting for (or past) HR */

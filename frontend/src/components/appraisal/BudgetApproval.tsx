@@ -56,7 +56,7 @@ export default function BudgetApproval() {
     useEffect(() => { load(); }, [load]);
 
     const pending = useMemo(() => rows.filter((r) => r.status === "FINANCE_REVIEW"), [rows]);
-    const decided = useMemo(() => rows.filter((r) => r.approved), [rows]);
+    const decided = useMemo(() => rows.filter((r) => r.approved && (r.status === "OFFERED" || r.status === "ACCEPTED")), [rows]);
     const proposed = useMemo(() => pending.reduce((s, r) => s + (typed[r.cycleId] ?? 0), 0), [pending, typed]);
 
     if (loading) return <div className="flex justify-center py-20"><Spinner /></div>;
@@ -64,7 +64,7 @@ export default function BudgetApproval() {
         <div className="flex flex-col gap-6">
             <SummaryBar className="mb-0" items={[
                 { label: "Waiting for approval", value: pending.length },
-                { label: "Sum Total approved", value: inr(sum?.annual ?? 0), hint: sum ? `${inr(sum.fixed)} fixed + ${inr(sum.variable)} variable, ${sum.count} hike${sum.count === 1 ? "" : "s"}` : undefined },
+                { label: "Sum Total on offer or accepted", value: inr(sum?.annual ?? 0), hint: sum ? `${inr(sum.fixed)} fixed + ${inr(sum.variable)} variable, ${sum.count} hike${sum.count === 1 ? "" : "s"}` : undefined },
                 { label: "Typed, not yet approved", value: inr(proposed), hint: "Adds up what you have entered below" },
             ]} />
             <Panel flush title="Waiting for approval">
@@ -72,7 +72,7 @@ export default function BudgetApproval() {
                     <ApproveRow key={r.cycleId} row={r} value={typed[r.cycleId] ?? null} onChange={(v) => setTyped((t) => ({ ...t, [r.cycleId]: v }))} onApproved={load} />
                 )) : <p className="px-5 py-12 text-center text-sm text-ink-500">Nothing is waiting for budget approval.</p>}
             </Panel>
-            <Panel flush title="Approved">
+            <Panel flush title="On offer or accepted">
                 <div className="overflow-x-auto">
                     <table className="w-full min-w-[720px] text-sm">
                         <thead><tr className="border-b border-ink-200 bg-ink-50 dark:border-white/10 dark:bg-ink-800">{["Person", "Status", "Approved per year", "Fixed", "Variable", "Window ended"].map((h) => <th key={h} className="px-4 py-2.5 text-left">{h}</th>)}</tr></thead>

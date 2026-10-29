@@ -41,7 +41,10 @@ export interface TeamItem {
     selfSubmitted: boolean; a1Submitted: boolean; a2Submitted: boolean; myRole: "A1" | "A2" | "FINANCE";
     expected?: Money | null; minimal?: { A1: Money | null; A2: Money | null }; approved?: Money | null;
 }
-export interface SumTotal { annual: number; fixed: number; variable: number; count: number }
+export interface SumTotal {
+    scope: "all" | "department" | "team"; label: string; annual: number; fixed: number; variable: number; count: number;
+    byDepartment?: { department: string; annual: number; fixed: number; variable: number; count: number }[];
+}
 export interface Availability {
     my: { show: boolean; status: Status | null; cycleId: number | null };
     team: { show: boolean; open: number }; budget: { show: boolean; pending: number }; hr: { show: boolean; pending: number }; setup: { show: boolean }; any: boolean;

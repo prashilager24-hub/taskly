@@ -6,7 +6,7 @@ import { cn } from "@heroui/theme";
 
 import { Panel, Segmented, SummaryBar } from "@/components/page";
 import { Button, addToast } from "@/components/ui";
-import { appraisalApi, errorText, type TeamItem } from "./api";
+import { appraisalApi, errorText, type SumTotal, type TeamItem } from "./api";
 import { LEVEL_LABEL, day, inr } from "./format";
 import { StatusChip } from "./parts";
 
@@ -24,7 +24,7 @@ const needsMe = (r: TeamItem) => r.status === "ASSESSOR_OPEN" && ((r.myRole === 
 export default function TeamAppraisals() {
     const nav = useNavigate();
     const [rows, setRows] = useState<TeamItem[]>([]);
-    const [sum, setSum] = useState<{ annual: number; count: number } | null>(null);
+    const [sum, setSum] = useState<SumTotal | null>(null);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<Filter>("todo");
 
@@ -44,8 +44,21 @@ export default function TeamAppraisals() {
             <SummaryBar className="mb-0" items={[
                 { label: "Waiting for my review", value: todo.length, hint: "Open in the assessor window" },
                 { label: "In my team", value: rows.length },
-                ...(sum ? [{ label: "Approved so far", value: inr(sum.annual), hint: `${sum.count} approved hike${sum.count === 1 ? "" : "s"}, per year` }] : []),
+                ...(sum ? [{ label: sum.label, value: inr(sum.annual), hint: `${inr(sum.fixed)} fixed + ${inr(sum.variable)} variable · ${sum.count} hike${sum.count === 1 ? "" : "s"} on offer or accepted, per year` }] : []),
             ]} />
+            {sum?.byDepartment && sum.byDepartment.length > 0 && (
+                <Panel flush title="Budget by department">
+                    <table className="w-full text-sm">
+                        <thead><tr className="border-b border-ink-200 bg-ink-50 dark:border-white/10 dark:bg-ink-800">{["Department", "Hikes", "Per year", "Fixed", "Variable"].map((h) => <th key={h} className="px-4 py-2.5 text-left">{h}</th>)}</tr></thead>
+                        <tbody>{sum.byDepartment.map((d) => (
+                            <tr key={d.department} className="border-b border-ink-100 last:border-0 dark:border-white/5">
+                                <td className="px-4 py-3 font-semibold text-ink-900 dark:text-white">{d.department}</td><td className="px-4 py-3">{d.count}</td>
+                                <td className="px-4 py-3 font-semibold">{inr(d.annual)}</td><td className="px-4 py-3">{inr(d.fixed)}</td><td className="px-4 py-3">{inr(d.variable)}</td>
+                            </tr>))}
+                        </tbody>
+                    </table>
+                </Panel>
+            )}
             <Panel flush title="Appraisals" actions={<Segmented size="sm" label="Show" value={filter} onChange={setFilter} options={[{ key: "todo", label: `Needs my review (${todo.length})` }, { key: "all", label: "Everyone" }]} />}>
                 <div className="overflow-x-auto">
                     <table className="w-full min-w-[760px] text-sm">

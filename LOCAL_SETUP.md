@@ -63,6 +63,8 @@ cd nodejs-backend
 npm run db:migrate
 ```
 
+To try Appraisal with test people, run `npx tsx src/scripts/appraisalTest.ts seed` in `nodejs-backend` (see the header of that file for `advance`, `status` and `reset`), then put the printed Finance and HR RoleIDs in `.env` and restart the backend.
+
 Appraisal (`006_appraisal.sql`) adds `DateOfJoining`, `EmployeeLevel` and `CurrentAnnualCtc` to `Users` and creates the `Appraisal*` tables. Set each person's joining date in **Appraisal > Appraisal Setup**; a cycle starts on the anniversary.
 
 ---

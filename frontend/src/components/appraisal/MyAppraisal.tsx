@@ -184,7 +184,7 @@ export default function MyAppraisal() {
     } else if (c.status === "POSTPONED") {
         proposed = <Waiting icon={<Clock size={22} />} title={`Postponed to ${day(c.postponedUntil)}`}>You rejected the offer. {view.response?.hrStatus === "APPROVED" ? "HR has approved the postponement." : "HR has been asked to follow up."}</Waiting>;
     } else if (submitted || c.status === "ASSESSOR_OPEN" || c.status === "FINANCE_REVIEW") {
-        proposed = <Waiting icon={<Hourglass size={22} />} title="Waiting for approval">Your hike proposal is with your manager and your EL. As soon as the EL approves the final amount it appears here, and you can accept or reject it.</Waiting>;
+        proposed = <Waiting icon={<Hourglass size={22} />} title="Waiting for the final amount">Your hike proposal is with your reviewers. As soon as their reviews are in, the final amount appears here and you can accept or reject it.</Waiting>;
     } else {
         proposed = <Waiting icon={<Hourglass size={22} />} title="Nothing to show yet">Submit your hike proposal first. Once it has been reviewed and the EL approves the final amount, it appears here.</Waiting>;
     }

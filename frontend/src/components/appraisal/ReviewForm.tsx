@@ -62,6 +62,8 @@ export default function ReviewForm() {
     const c = view.cycle;
     const me = view.role === "A1" || view.role === "A2" ? view.role : null;
     const editable = !!view.can.assessorReview;
+    // the EL decides: the amount they give is the final hike (an EL's own hike is decided by Finance instead)
+    const decides = c.level !== "HEAD_EL" && me === (c.level === "ASSOCIATE" ? "A2" : "A1");
     const other = me === "A1" ? "A2" : "A1";
     const asked: { field: RequestField; label: string; value: string; why: string }[] = [
         ...(view.request?.newDesignation ? [{ field: "DESIGNATION" as const, label: "designation", value: view.request.newDesignation, why: view.request.designationComment }] : []),
@@ -127,7 +129,7 @@ export default function ReviewForm() {
                 <p className="text-sm text-ink-500 dark:text-ink-400">{LEVEL_LABEL[c.level]}{c.assessor1 ? ` · reports to ${c.assessor1.name}` : ""}</p>
             </div>
 
-            {editable ? <Banner>{view.timed ? <>Your review is open until <b>{day(c.assessorWindowEnd)}</b>. You can change it until the window closes.</> : "Your review is open. You can change it until the final hike is approved."}</Banner>
+            {editable ? <Banner>{view.timed ? <>Your review is open until <b>{day(c.assessorWindowEnd)}</b>. You can change it until the window closes.</> : decides ? "You decide this hike. When you submit (and the FL has submitted), your amount goes to the employee as the final hike." : "Your review is open. You can change it until the final hike is approved."}</Banner>
                 : c.status === "EMPLOYEE_OPEN" ? <Banner tone="warn">{view.timed ? <>This opens for you on {day(addDaysIso(c.start, 15))}, after the employee's window closes. Appraisal window is closed for you until then.</> : "Waiting for the employee to submit. It comes to you as soon as they do."}</Banner>
                 : me && c.status === "ASSESSOR_OPEN" ? <Banner tone="warn">Appraisal window is closed. Your review is shown below as it was saved.</Banner> : null}
 
@@ -173,7 +175,7 @@ export default function ReviewForm() {
 
                         <div className={COLS2}>
                             {editable ? ratingBox("Overall rating", overall, setOverall) : <ReadText label="Overall rating" value={overall} />}
-                            <div>{editable ? <HikeField label="Proposed hike (per year)" value={proposed} onChange={setProposed} level={c.level} /> : <MoneyCard title="Proposed hike" money={view.minimal?.[me]} />}</div>
+                            <div>{editable ? <HikeField label={decides ? "Final hike (per year)" : "Proposed hike (per year)"} value={proposed} onChange={setProposed} level={c.level} hint={decides ? "The amount you give is the final hike" : undefined} /> : <MoneyCard title="Proposed hike" money={view.minimal?.[me]} />}</div>
                             <div className="md:col-span-2">{editable ? <Textarea label="Comment" minRows={3} value={comment} onValueChange={setComment} /> : <ReadText label="Comment" value={comment} />}</div>
                             {me === "A1" && <div className="md:col-span-2">{editable ? <Textarea label="Manager feedback (the employee never sees this)" minRows={3} value={feedback} onValueChange={setFeedback} /> : <ReadText label="Manager feedback" value={feedback} />}</div>}
                         </div>

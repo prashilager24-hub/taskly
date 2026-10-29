@@ -295,7 +295,8 @@ export async function hrList() {
 // ── Writing: self review ──────────────────────────────────────────────────────────────────────────
 
 /**
- * Without date windows: once everyone who must review has submitted, the cycle moves to the final approval.
+ * Without date windows: once everyone who must review has submitted, the EL's amount is the approved hike and goes to the employee
+ * (an EL's own appraisal goes to Finance for the final approval instead).
  * Associate: Assessor 1 (FL) and Assessor 2 (EL). FL: Assessor 1 (the EL). EL: nobody, it goes straight to Finance.
  */
 async function moveOnWhenReviewed(c: Conn, cycleId: number, actor: number) {
@@ -309,6 +310,17 @@ async function moveOnWhenReviewed(c: Conn, cycleId: number, actor: number) {
   if (!needed.every((r) => submitted.has(r))) return;
   await c.execute("UPDATE AppraisalCycle SET Status = 'FINANCE_REVIEW' WHERE CycleID = ? AND Status = 'ASSESSOR_OPEN'", [cycleId]);
   await audit(c, cycleId, actor, 'STATUS_CHANGE', { from: 'ASSESSOR_OPEN', to: 'FINANCE_REVIEW' });
+  // The EL decides: the amount the EL gave in their review is the approved hike and goes straight to the employee.
+  // An EL's own hike is the exception: Finance approves it.
+  if (level === 'HEAD_EL') return;
+  const slot = deciderRole(level);
+  const deciderId = (slot === 'A2' ? cy['Assessor2UserID'] : cy['Assessor1UserID']) as number | null;
+  const [p] = await c.execute<Row[]>("SELECT AnnualAmount FROM AppraisalHike WHERE CycleID = ? AND Kind = 'MINIMAL' AND ByRole = ?", [cycleId, slot]);
+  if (!deciderId || !p[0]) return; // nobody to decide, or no amount: it waits for a manual final approval
+  await putHike(c, cycleId, 'APPROVED', 'FINANCE', Number(p[0]['AnnualAmount']), level, deciderId);
+  await c.execute("UPDATE AppraisalCycle SET Status = 'OFFERED' WHERE CycleID = ? AND Status = 'FINANCE_REVIEW'", [cycleId]);
+  await audit(c, cycleId, deciderId, 'HIKE_SET', { kind: 'APPROVED', annual: Number(p[0]['AnnualAmount']), from: 'EL review' });
+  await audit(c, cycleId, deciderId, 'STATUS_CHANGE', { from: 'FINANCE_REVIEW', to: 'OFFERED' });
 }
 
 export interface SelfReviewInput {

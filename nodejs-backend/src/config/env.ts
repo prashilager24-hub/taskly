@@ -45,6 +45,8 @@ const EnvSchema = z.object({
   APPRAISAL_FINANCE_ROLE_IDS: z.string().default(''),
   APPRAISAL_HR_ROLE_IDS: z.string().default(''),
   APPRAISAL_JOB_ENABLED: z.string().default('true').transform((v) => v !== 'false' && v !== '0'),
+  // Date windows (employee days 1-15, assessors 16-30). Off: submitting sends the appraisal straight on, no waiting for dates.
+  APPRAISAL_TIME_WINDOWS: z.string().default('false').transform((v) => v === 'true' || v === '1'),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

@@ -84,7 +84,7 @@ async function seed() {
   await pool.execute('UPDATE Department SET ExecutiveLeaderID = ?, FunctionalLeaderID = ? WHERE DepartmentID = ?', [id['el'], id['fl'], deptId]);
   for (const k of ['el', 'fl', 'emp1', 'emp2', 'emp3']) await pool.execute('INSERT IGNORE INTO DepartmentUser (DepartmentID, UserID) VALUES (?, ?)', [deptId, id[k]]);
 
-  for (const k of ['emp1', 'emp2', 'emp3']) await seedPms(id[k]!, k);
+  for (const k of ['emp1', 'emp2', 'emp3', 'fl', 'el']) await seedPms(id[k]!, k);
   const first = await startCycle(id['emp1']!);
   console.log(JSON.stringify({ departmentId: deptId, financeRoleId: financeRole, hrRoleId: hrRole, users: id, emp1Cycle: first }, null, 1));
   console.log(`\nAPPRAISAL_FINANCE_ROLE_IDS=${financeRole}   APPRAISAL_HR_ROLE_IDS=${hrRole}   (in nodejs-backend/.env, then restart the backend)`);
@@ -93,7 +93,7 @@ async function seed() {
 
 /** Four PMS quarterly reviews (Q4 2025 to Q3 2026) so Part A of the appraisal has data to show. Numbers differ a little per person. */
 async function seedPms(uid: number, key: string) {
-  const bump = key === 'emp1' ? 0 : key === 'emp2' ? -8 : 6;
+  const bump = ({ emp1: 0, emp2: -8, emp3: 6, fl: 4, el: 8 } as Record<string, number>)[key] ?? 0;
   const quarters = [
     { q: 'Q4', y: 2025, s: '2025-10-01', e: '2025-12-31', t: 82, g: 76, u: 71, ef: 96, sg: 7, mr: 6.2 },
     { q: 'Q1', y: 2026, s: '2026-01-01', e: '2026-03-31', t: 88, g: 81, u: 74, ef: 99, sg: 8, mr: 6.8 },
@@ -144,6 +144,15 @@ async function advance(who: string, stage: string) {
     await pool.execute("UPDATE AppraisalCycle SET PostponedUntil = ? WHERE CycleID = ? AND Status = 'POSTPONED'", [addDays(today, -1), id]);
   } else throw new Error('Stage must be assessor, finance or return');
   console.log(JSON.stringify(await runAppraisalCycle()));
+  // with date windows off the job moves nothing by date, so set the next status directly
+  if (!env.APPRAISAL_TIME_WINDOWS) {
+    const move: Record<string, [string, string]> = { assessor: ['EMPLOYEE_OPEN', 'ASSESSOR_OPEN'], finance: ['ASSESSOR_OPEN', 'FINANCE_REVIEW'] };
+    const m = move[stage];
+    if (m) {
+      const [res] = await pool.execute<mysql.ResultSetHeader>('UPDATE AppraisalCycle SET Status = ? WHERE CycleID = ? AND Status = ?', [m[1], id, m[0]]);
+      if (res.affectedRows) await pool.execute('INSERT INTO AppraisalAudit (CycleID, ActorID, Action, Detail) VALUES (?, NULL, ?, ?)', [id, 'STATUS_CHANGE', JSON.stringify({ from: m[0], to: m[1], by: 'test tool' })]);
+    }
+  }
   await status();
 }
 

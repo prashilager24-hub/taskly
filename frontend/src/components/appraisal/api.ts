@@ -36,6 +36,8 @@ export interface Abilities { selfReview?: boolean; assessorReview?: boolean; app
 
 export interface CycleView {
     role: ViewRole; cycle: CycleInfo; can: Abilities; today: string;
+    /** Date windows on: the employee has days 1-15, the assessors 16-30. Off: each step moves on as soon as the previous one is done. */
+    timed?: boolean;
     self?: { answers: Record<string, string>; submittedAt: string | null } | null;
     request?: { newDesignation: string; designationComment: string; newTeam: string; teamComment: string } | null;
     pms?: PmsQuarter[];

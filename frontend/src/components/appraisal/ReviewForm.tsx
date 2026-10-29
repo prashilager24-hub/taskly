@@ -127,8 +127,8 @@ export default function ReviewForm() {
                 <p className="text-sm text-ink-500 dark:text-ink-400">{LEVEL_LABEL[c.level]}{c.assessor1 ? ` · reports to ${c.assessor1.name}` : ""}</p>
             </div>
 
-            {editable ? <Banner>Your review is open until <b>{day(c.assessorWindowEnd)}</b>. You can change it until the window closes.</Banner>
-                : c.status === "EMPLOYEE_OPEN" ? <Banner tone="warn">This opens for you on {day(addDaysIso(c.start, 15))}, after the employee's window closes. Appraisal window is closed for you until then.</Banner>
+            {editable ? <Banner>{view.timed ? <>Your review is open until <b>{day(c.assessorWindowEnd)}</b>. You can change it until the window closes.</> : "Your review is open. You can change it until the final hike is approved."}</Banner>
+                : c.status === "EMPLOYEE_OPEN" ? <Banner tone="warn">{view.timed ? <>This opens for you on {day(addDaysIso(c.start, 15))}, after the employee's window closes. Appraisal window is closed for you until then.</> : "Waiting for the employee to submit. It comes to you as soon as they do."}</Banner>
                 : me && c.status === "ASSESSOR_OPEN" ? <Banner tone="warn">Appraisal window is closed. Your review is shown below as it was saved.</Banner> : null}
 
             {view.pms !== undefined && (

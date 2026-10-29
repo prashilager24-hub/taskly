@@ -89,10 +89,12 @@ async function reminders(today: string, enteredFinance: number[]) {
 /** One run of the job. `today` is injectable so a run can be tried on any date. */
 export async function runAppraisalCycle(today: string = todayIST()) {
   const created = await createCycles(today);
-  const toAssessors = await moveWhere('EMPLOYEE_OPEN', 'ASSESSOR_OPEN', 'CycleStartDate <= ?', [addDays(today, -15)]);
-  const toFinance = await moveWhere('ASSESSOR_OPEN', 'FINANCE_REVIEW', 'AssessorWindowEnd < ?', [today]);
+  // with date windows off (APPRAISAL_TIME_WINDOWS), submitting moves a cycle on; the job only creates cycles and returns postponed offers
+  const timed = env.APPRAISAL_TIME_WINDOWS;
+  const toAssessors = timed ? await moveWhere('EMPLOYEE_OPEN', 'ASSESSOR_OPEN', 'CycleStartDate <= ?', [addDays(today, -15)]) : [];
+  const toFinance = timed ? await moveWhere('ASSESSOR_OPEN', 'FINANCE_REVIEW', 'AssessorWindowEnd < ?', [today]) : [];
   const returned = await moveWhere('POSTPONED', 'ASSESSOR_OPEN', 'PostponedUntil <= ?', [today], ', AssessorWindowEnd = ?', [addDays(today, 14)]);
-  await reminders(today, toFinance);
+  if (timed) await reminders(today, toFinance);
   const summary = { today, created, toAssessors: toAssessors.length, toFinance: toFinance.length, returned: returned.length };
   logger.info(summary, 'Appraisal job finished');
   return summary;

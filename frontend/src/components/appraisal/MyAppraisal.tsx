@@ -96,7 +96,7 @@ export default function MyAppraisal() {
     // Save draft / Submit for review, at the end of the Hike proposal tab
     const saveBar = (
         <div className="flex flex-wrap items-center justify-end gap-3 border-t border-ink-200 pt-4 dark:border-white/10">
-            <p className="mr-auto text-xs text-ink-500">{submitted ? `Submitted ${day(view.self?.submittedAt)}. You can change it until ${day(c.employeeWindowEnd)}.` : `Not submitted yet. Open until ${day(c.employeeWindowEnd)}.`}</p>
+            <p className="mr-auto text-xs text-ink-500">{submitted ? `Submitted ${day(view.self?.submittedAt)}.` : view.timed ? `Not submitted yet. Open until ${day(c.employeeWindowEnd)}.` : "Not submitted yet. Submitting sends it to your FL, your EL and Finance."}</p>
             <Button variant="bordered" isLoading={saving === "draft"} isDisabled={saving !== null} onPress={() => save(false)}>Save draft</Button>
             <Button color="primary" isLoading={saving === "submit"} isDisabled={saving !== null} onPress={() => save(true)}>Submit for review</Button>
         </div>
@@ -105,7 +105,7 @@ export default function MyAppraisal() {
     // The top card: one line on where the person is, and one button
     let icon = <Award size={26} />;
     let title = "Your appraisal is open";
-    let text = `Look at your four quarters and enter the hike you are asking for, with your reasons. This closes on ${day(c.employeeWindowEnd)}.`;
+    let text = `Look at your four quarters and enter the hike you are asking for, with your reasons.${view.timed ? ` This closes on ${day(c.employeeWindowEnd)}.` : ""}`;
     let action = <Button size="lg" color="primary" onPress={() => open("goals")}>Appeal for Appraisal</Button>;
     if (!editable && c.status === "EMPLOYEE_OPEN") {
         icon = <Clock size={26} />; title = "Your appraisal window has closed";

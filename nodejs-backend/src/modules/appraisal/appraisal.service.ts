@@ -152,13 +152,23 @@ export function roleIn(full: FullCycle, userId: number, appRole: number): ViewRo
  * who checks it against the budget. Admins can always step in.
  */
 export const canApproveHike = (level: EmployeeLevel, viewRole: ViewRole, appRole: number) =>
-  appRole === 1 || (level === 'HEAD_EL' ? isFinance(appRole) : viewRole === 'A2');
+  appRole === 1 || (level === 'HEAD_EL' ? isFinance(appRole) : viewRole === deciderRole(level));
+
+/** Whoever is the EL for this person: Assessor 2 for an Associate, Assessor 1 for an FL (their assessor 1 is the EL), Assessor 1 (the CEO) for an EL */
+export const deciderRole = (level: EmployeeLevel): 'A1' | 'A2' => (level === 'ASSOCIATE' ? 'A2' : 'A1');
+
+/** Date windows on or off (APPRAISAL_TIME_WINDOWS). Off: no dates are checked and each step moves on as soon as the previous one is done. */
+export const TIMED = env.APPRAISAL_TIME_WINDOWS;
 
 /** Changes the employee asked for when accepting that the EL has not decided yet */
 export const pendingRequests = (f: FullCycle): RequestField[] =>
   ([['DESIGNATION', f.request?.newDesignation], ['TEAM', f.request?.newTeam]] as const).filter(([field, asked]) => !!asked && !f.requestReviews[field].A2?.decision).map(([field]) => field);
 
-const windowState = (c: FullCycle['cycle'], today: string) => ({
+const windowState = (c: FullCycle['cycle'], today: string) => (!TIMED ? {
+  employeeOpen: c.status === 'EMPLOYEE_OPEN',
+  // without dates the assessors may write until the hike is approved
+  assessorOpen: c.status === 'ASSESSOR_OPEN' || c.status === 'FINANCE_REVIEW',
+} : {
   employeeOpen: c.status === 'EMPLOYEE_OPEN' && today <= c.employeeWindowEnd,
   assessorOpen: c.status === 'ASSESSOR_OPEN' && today >= addDays(c.start, 15) && today <= c.assessorWindowEnd,
 });
@@ -172,13 +182,13 @@ function abilities(full: FullCycle, role: ViewRole, appRole: number, today: stri
     financeNote: role !== 'EMPLOYEE' && full.cycle.level === 'HEAD_EL' && isFinance(appRole) && full.cycle.status === 'FINANCE_REVIEW',
     respond: role === 'EMPLOYEE' && full.cycle.status === 'OFFERED',
     hrDecision: isHr(appRole) && role !== 'EMPLOYEE' && full.cycle.status === 'POSTPONED' && full.response?.decision === 'REJECT',
-    decideRequests: role !== 'EMPLOYEE' && (role === 'A2' || appRole === 1) && full.cycle.status === 'ACCEPTED' && pendingRequests(full).length > 0,
+    decideRequests: role !== 'EMPLOYEE' && (role === deciderRole(full.cycle.level) || appRole === 1) && full.cycle.status === 'ACCEPTED' && pendingRequests(full).length > 0,
   };
 }
 
 function shaped(full: FullCycle, role: ViewRole, appRole: number) {
   const today = todayIST();
-  return { ...maskCycle(full, role), can: abilities(full, role, appRole, today), today };
+  return { ...maskCycle(full, role), can: abilities(full, role, appRole, today), today, timed: TIMED };
 }
 
 export async function myCycle(userId: number, appRole: number) {
@@ -220,7 +230,7 @@ export async function team(userId: number, appRole: number, status?: string) {
       asksDesignation: !!f.request?.newDesignation, asksTeam: !!f.request?.newTeam,
       canApprove: f.cycle.status === 'FINANCE_REVIEW' && canApproveHike(f.cycle.level, myRole === 'FINANCE' ? 'FINANCE' : myRole, appRole),
       requestsPending: f.cycle.status === 'ACCEPTED' && pendingRequests(f).length > 0,
-      canDecideRequests: f.cycle.status === 'ACCEPTED' && pendingRequests(f).length > 0 && (myRole === 'A2' || appRole === 1),
+      canDecideRequests: f.cycle.status === 'ACCEPTED' && pendingRequests(f).length > 0 && (myRole === deciderRole(f.cycle.level) || appRole === 1),
       expected: f.expected, minimal: f.minimal, approved: f.approved,
     });
   }
@@ -241,6 +251,23 @@ export async function hrList() {
 }
 
 // ── Writing: self review ──────────────────────────────────────────────────────────────────────────
+
+/**
+ * Without date windows: once everyone who must review has submitted, the cycle moves to the final approval.
+ * Associate: Assessor 1 (FL) and Assessor 2 (EL). FL: Assessor 1 (the EL). EL: nobody, it goes straight to Finance.
+ */
+async function moveOnWhenReviewed(c: Conn, cycleId: number, actor: number) {
+  const [rows] = await c.execute<Row[]>('SELECT Status, EmployeeLevel, Assessor1UserID, Assessor2UserID FROM AppraisalCycle WHERE CycleID = ?', [cycleId]);
+  const cy = rows[0];
+  if (!cy || cy['Status'] !== 'ASSESSOR_OPEN') return;
+  const level = cy['EmployeeLevel'] as EmployeeLevel;
+  const needed = level === 'HEAD_EL' ? [] : level === 'MANAGER' ? (cy['Assessor1UserID'] ? ['A1'] : []) : [...(cy['Assessor1UserID'] ? ['A1'] : []), ...(cy['Assessor2UserID'] ? ['A2'] : [])];
+  const [done] = await c.execute<Row[]>('SELECT ReviewerRole FROM AppraisalReview WHERE CycleID = ? AND SubmittedAt IS NOT NULL', [cycleId]);
+  const submitted = new Set(done.map((d) => d['ReviewerRole'] as string));
+  if (!needed.every((r) => submitted.has(r))) return;
+  await c.execute("UPDATE AppraisalCycle SET Status = 'FINANCE_REVIEW' WHERE CycleID = ? AND Status = 'ASSESSOR_OPEN'", [cycleId]);
+  await audit(c, cycleId, actor, 'STATUS_CHANGE', { from: 'ASSESSOR_OPEN', to: 'FINANCE_REVIEW' });
+}
 
 export interface SelfReviewInput {
   answers: Record<string, string>;
@@ -278,7 +305,7 @@ export async function saveSelfReview(cycleId: number, userId: number, input: Sel
     if (cy.userId !== userId) throw AppError.forbidden('Only the employee can fill the self review');
     const today = todayIST();
     // status and date must both say open
-    if (cy.status !== 'EMPLOYEE_OPEN' || today > cy.empEnd) throw AppError.conflict(CLOSED);
+    if (cy.status !== 'EMPLOYEE_OPEN' || (TIMED && today > cy.empEnd)) throw AppError.conflict(CLOSED);
     if (input.submit && (input.expectedHike == null || input.targetHike == null)) throw new AppError('Enter your expected and target hike before you submit', 422);
 
     const [old] = await c.execute<Row[]>("SELECT SubmittedAt FROM AppraisalReview WHERE CycleID = ? AND ReviewerRole = 'SELF'", [cycleId]);
@@ -303,6 +330,12 @@ export async function saveSelfReview(cycleId: number, userId: number, input: Sel
         [cycleId, r.newDesignation || null, r.designationComment || null, r.newTeam || null, r.teamComment || null]);
     }
     await audit(c, cycleId, userId, input.submit ? 'SELF_SUBMIT' : 'SELF_DRAFT');
+    if (input.submit && !TIMED) {
+      // straight to the assessors; an EL has none that must review first, so it goes on to Finance
+      await c.execute("UPDATE AppraisalCycle SET Status = 'ASSESSOR_OPEN' WHERE CycleID = ?", [cycleId]);
+      await audit(c, cycleId, userId, 'STATUS_CHANGE', { from: 'EMPLOYEE_OPEN', to: 'ASSESSOR_OPEN' });
+      await moveOnWhenReviewed(c, cycleId, userId);
+    }
   });
 }
 
@@ -321,7 +354,7 @@ export async function saveAssessorReview(cycleId: number, userId: number, input:
     const role: 'A1' | 'A2' | null = cy.a1 === userId ? 'A1' : cy.a2 === userId ? 'A2' : null;
     if (!role) throw AppError.forbidden('You are not an assessor of this appraisal');
     const today = todayIST();
-    if (cy.status !== 'ASSESSOR_OPEN' || today < addDays(cy.start, 15) || today > cy.assEnd) throw AppError.conflict(CLOSED);
+    if (TIMED ? (cy.status !== 'ASSESSOR_OPEN' || today < addDays(cy.start, 15) || today > cy.assEnd) : (cy.status !== 'ASSESSOR_OPEN' && cy.status !== 'FINANCE_REVIEW')) throw AppError.conflict(CLOSED);
     if (input.submit && (input.overallRating == null || input.minimalHike == null)) throw new AppError('Give an overall rating and a minimal hike before you submit', 422);
 
     for (const q of input.quarters ?? []) {
@@ -353,6 +386,7 @@ export async function saveAssessorReview(cycleId: number, userId: number, input:
         [cycleId, field, role, r.comment ?? null, role === 'A2' ? r.decision ?? null : null, role === 'A2' ? userId : null]);
     }
     await audit(c, cycleId, userId, input.submit ? `${role}_SUBMIT` : `${role}_DRAFT`);
+    if (input.submit && !TIMED) await moveOnWhenReviewed(c, cycleId, userId);
   });
 }
 
@@ -432,7 +466,8 @@ export async function decideRequests(cycleId: number, userId: number, appRole: n
   await tx(async (c) => {
     const cy = await lock(c, cycleId);
     if (cy.userId === userId) throw AppError.forbidden('You cannot decide on your own requests');
-    if (cy.a2 !== userId && appRole !== 1) throw AppError.forbidden('Only the EL decides on a designation or team change');
+    const decider = deciderRole(cy.level) === 'A2' ? cy.a2 : cy.a1;
+    if (decider !== userId && appRole !== 1) throw AppError.forbidden('Only the EL decides on a designation or team change');
     if (cy.status !== 'ACCEPTED') throw AppError.conflict('Changes are decided after the employee accepts the hike');
     const [asked] = await c.execute<Row[]>('SELECT NewDesignation, NewTeam FROM AppraisalRequest WHERE CycleID = ?', [cycleId]);
     const [done] = await c.execute<Row[]>("SELECT Field FROM AppraisalRequestReview WHERE CycleID = ? AND ReviewerRole = 'A2' AND Decision IS NOT NULL", [cycleId]);

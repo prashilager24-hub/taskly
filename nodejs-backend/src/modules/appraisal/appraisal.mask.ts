@@ -69,7 +69,9 @@ export function maskCycle(full: FullCycle, role: ViewRole): Record<string, unkno
     // Comments travel upwards only: the employee sees none of them, the FL sees their own, the EL sees the FL's too, Finance sees everything.
     const upper = role === 'A2' || role === 'FINANCE';
     const all = role === 'FINANCE';
-    const mineOnly = role === 'A1';
+    // Assessor 1 sees only their own part, unless they are the one who decides (the EL on an FL appraisal, the CEO on an EL's)
+    const decides = role === (c.level === 'ASSOCIATE' ? 'A2' : 'A1');
+    const mineOnly = role === 'A1' && !decides;
 
     // What the employee wrote and the PMS quarters (Part A): the employee and everyone above
     out['self'] = full.self;
@@ -78,7 +80,7 @@ export function maskCycle(full: FullCycle, role: ViewRole): Record<string, unkno
     out['slots'] = full.slots;
 
     // What the FL and the EL said about the requested changes
-    if (upper) out['requestReviews'] = full.requestReviews;
+    if (upper || decides) out['requestReviews'] = full.requestReviews;
     else if (mineOnly) out['requestReviews'] = { DESIGNATION: { A1: full.requestReviews.DESIGNATION.A1, A2: null }, TEAM: { A1: full.requestReviews.TEAM.A1, A2: null } };
     else if (role === 'EMPLOYEE' && offerShown(c.status)) {
       // the employee is told the decision only, never the assessor's words
@@ -122,7 +124,7 @@ export function maskCycle(full: FullCycle, role: ViewRole): Record<string, unkno
     }
 
     // Approved hike: the EL and Finance always, the employee once the offer is out, the FL never
-    if (upper || (role === 'EMPLOYEE' && offerShown(c.status))) out['approved'] = full.approved;
+    if (upper || decides || (role === 'EMPLOYEE' && offerShown(c.status))) out['approved'] = full.approved;
     // Finance's note about the budget goes to the EL only: Finance itself, and the EL when it is the EL's own appraisal
     if (all || (role === 'EMPLOYEE' && c.level === 'HEAD_EL')) out['financeComment'] = full.financeComment;
   }

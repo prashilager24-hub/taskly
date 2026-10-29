@@ -10,7 +10,7 @@ import { appraisalApi, errorText, type BudgetOverview, type CycleView, type Deci
 import { LEVEL_LABEL, addDaysIso, day, inr } from "./format";
 import { Banner, COLS2, HikeField, MoneyCard, ReadText } from "./parts";
 import PmsTable from "./PmsTable";
-import QuarterGrid, { notesFrom } from "./QuarterGrid";
+import QuarterGrid from "./QuarterGrid";
 
 type Ask = { comment: string; decision: Decision | "" };
 const rate = (s: string): number | null => { const n = parseFloat(s); return Number.isFinite(n) ? n : null; };
@@ -78,7 +78,6 @@ export default function ReviewForm() {
         try {
             await appraisalApi.assessorReview(c.id, {
                 overallRating: rate(overall), comment, ...(me === "A1" ? { managerFeedback: feedback } : {}), minimalHike: proposed,
-                requests: Object.fromEntries(asked.map((a) => [a.field === "DESIGNATION" ? "designation" : "team", { comment: asks[a.field].comment, ...(me === "A2" ? { decision: asks[a.field].decision || null } : {}) }])),
                 submit,
             });
             addToast({ title: submit ? "Review submitted" : "Draft saved", color: "success" });
@@ -95,6 +94,17 @@ export default function ReviewForm() {
             addToast({ title: "Hike approved", description: "The offer is now with the employee.", color: "success" });
             await load();
         } catch (e) { addToast({ title: "Could not approve", description: errorText(e), color: "danger" }); }
+        finally { setSaving(null); }
+    };
+
+    const decide = async () => {
+        const pick = (f: RequestField) => (asked.some((a) => a.field === f) && asks[f].decision ? { decision: asks[f].decision as Decision, comment: asks[f].comment.trim() || undefined } : undefined);
+        setSaving("approve");
+        try {
+            await appraisalApi.decideRequests(c.id, { designation: pick("DESIGNATION"), team: pick("TEAM") });
+            addToast({ title: "Decision saved", description: "The employee can see it now.", color: "success" });
+            await load();
+        } catch (e) { addToast({ title: "Could not save the decision", description: errorText(e), color: "danger" }); }
         finally { setSaving(null); }
     };
 
@@ -125,7 +135,7 @@ export default function ReviewForm() {
                 <Panel title="Goals and targets by quarter">
                     <div className="flex flex-col gap-6">
                         <div className="flex flex-col gap-3"><p className="eyebrow">From PMS Quarterly Reviews</p><PmsTable quarters={view.pms} /></div>
-                        {view.slots && <div className="flex flex-col gap-3"><p className="eyebrow">What the employee wrote for each quarter</p><QuarterGrid slots={view.slots} values={notesFrom(view.quarters)} /></div>}
+                        {view.slots && <div className="flex flex-col gap-3"><p className="eyebrow">Comments, achievements and failures from PMS</p><QuarterGrid slots={view.slots} pms={view.pms} /></div>}
                     </div>
                 </Panel>
             )}
@@ -154,32 +164,6 @@ export default function ReviewForm() {
                             {me === "A1" && <div className="md:col-span-2">{editable ? <Textarea label="Manager feedback (the employee never sees this)" minRows={3} value={feedback} onValueChange={setFeedback} /> : <ReadText label="Manager feedback" value={feedback} />}</div>}
                         </div>
 
-                        {asked.length > 0 && (
-                            <div className="flex flex-col gap-5 border-t border-ink-200 pt-5 dark:border-white/10">
-                                <p className="eyebrow">Requested changes{me === "A2" ? ": comment and decide on each" : ": your comment on each"}</p>
-                                {asked.map((a) => {
-                                    const mine = asks[a.field];
-                                    const theirs = me === "A2" ? view.requestReviews?.[a.field]?.A1 : null;
-                                    return (
-                                        <div key={a.field} className="flex flex-col gap-3 border border-ink-200 p-4 dark:border-white/10">
-                                            <div className="flex flex-wrap items-center justify-between gap-2">
-                                                <p className="text-sm font-semibold text-ink-900 dark:text-white">New {a.label}: {a.value}</p>
-                                                {!editable && me === "A2" && mine.decision && <Chip size="sm" variant="flat" color={mine.decision === "APPROVED" ? "success" : "danger"}>{mine.decision === "APPROVED" ? "Approved" : "Rejected"}</Chip>}
-                                            </div>
-                                            {a.why && <p className="text-sm text-ink-600 dark:text-ink-300">The employee says: {a.why}</p>}
-                                            {theirs && <p className="text-sm text-ink-600 dark:text-ink-300"><b>{c.assessor1?.name ?? "Assessor 1"}</b> says: {theirs.comment || "no comment"}</p>}
-                                            {editable ? (
-                                                <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
-                                                    <Textarea label="Your comment" minRows={2} value={mine.comment} onValueChange={(v) => setAsk(a.field, { comment: v })} />
-                                                    {me === "A2" && <Segmented label={`Decision on the ${a.label} change`} value={(mine.decision || "") as Decision} onChange={(v) => setAsk(a.field, { decision: v })} options={[{ key: "APPROVED", label: "Approve" }, { key: "REJECTED", label: "Reject" }]} />}
-                                                </div>
-                                            ) : <ReadText label="Your comment" value={mine.comment} />}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-
                         {view.assessors?.[other] && (
                             <div className="flex flex-col gap-3 border-t border-ink-200 pt-5 dark:border-white/10">
                                 <p className="eyebrow">{other === "A1" ? "Assessor 1" : "Assessor 2"} · {view.assessors[other]!.submittedAt ? "submitted" : "draft"}</p>
@@ -199,22 +183,6 @@ export default function ReviewForm() {
                 <Panel title="Everything on this appraisal">
                     <div className="flex flex-col gap-6">
                         {(view.expected || view.target) && <div className={COLS2}><MoneyCard title="Employee expects" money={view.expected} /><MoneyCard title="Employee's target" money={view.target} /></div>}
-                        {asked.length > 0 && (
-                            <div className="flex flex-col gap-4 border-t border-ink-200 pt-5 dark:border-white/10">
-                                <p className="eyebrow">Requested changes</p>
-                                {asked.map((a) => {
-                                    const rr = view.requestReviews?.[a.field];
-                                    return (
-                                        <div key={a.field} className="flex flex-col gap-2 border border-ink-200 p-4 dark:border-white/10">
-                                            <p className="text-sm font-semibold text-ink-900 dark:text-white">New {a.label}: {a.value}</p>
-                                            {a.why && <p className="text-sm text-ink-600 dark:text-ink-300">The employee says: {a.why}</p>}
-                                            {rr?.A1 && <p className="text-sm text-ink-600 dark:text-ink-300"><b>{c.assessor1?.name ?? "FL"}</b> says: {rr.A1.comment || "no comment"}</p>}
-                                            {rr?.A2 && <p className="text-sm text-ink-600 dark:text-ink-300"><b>{c.assessor2?.name ?? "EL"}</b> {rr.A2.decision === "APPROVED" ? "approved" : rr.A2.decision === "REJECTED" ? "rejected" : "has not decided"}: {rr.A2.comment || "no comment"}</p>}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
                         {(["A1", "A2"] as const).map((k) => {
                             const a = view.assessors![k];
                             const who = k === "A1" ? c.assessor1?.name : c.assessor2?.name;
@@ -250,6 +218,38 @@ export default function ReviewForm() {
                                 <div className="flex justify-end"><Button color="primary" isLoading={saving === "approve"} isDisabled={saving !== null || approved == null} onPress={approve}>Approve and send the offer</Button></div>
                             </>
                         ) : <MoneyCard title="Approved hike" money={view.approved} accent />}
+                    </div>
+                </Panel>
+            )}
+
+            {asked.length > 0 && (c.status === "ACCEPTED" || view.can.decideRequests) && (
+                <Panel title="Requested changes">
+                    <div className="flex flex-col gap-4">
+                        <p className="max-w-[72ch] text-sm text-ink-500 dark:text-ink-400">{view.can.decideRequests ? "The employee accepted the hike and asked for these changes. Give the final decision on each; it is shown to the employee." : "Asked for by the employee when accepting the hike. The EL gives the final decision."}</p>
+                        {asked.map((a) => {
+                            const d = view.requestReviews?.[a.field]?.A2;
+                            const open = !!view.can.decideRequests && !d?.decision;
+                            return (
+                                <div key={a.field} className="flex flex-col gap-3 border border-ink-200 p-4 dark:border-white/10">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <p className="text-sm font-semibold text-ink-900 dark:text-white">New {a.label}: {a.value}</p>
+                                        {d?.decision && <Chip size="sm" variant="flat" color={d.decision === "APPROVED" ? "success" : "danger"}>{d.decision === "APPROVED" ? "Approved" : "Not approved"}</Chip>}
+                                        {!d?.decision && !open && view.role !== "A1" && <Chip size="sm" variant="flat" color="warning">Waiting for EL decision</Chip>}
+                                    </div>
+                                    {a.why && <p className="text-sm text-ink-600 dark:text-ink-300">The employee says: {a.why}</p>}
+                                    {d?.comment && <p className="text-sm text-ink-600 dark:text-ink-300"><b>{c.assessor2?.name ?? "EL"}</b>: {d.comment}</p>}
+                                    {open && (
+                                        <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
+                                            <Textarea label="Your comment (optional)" minRows={2} value={asks[a.field].comment} onValueChange={(v) => setAsk(a.field, { comment: v })} />
+                                            <Segmented label={`Decision on the ${a.label} change`} value={(asks[a.field].decision || "") as Decision} onChange={(v) => setAsk(a.field, { decision: v })} options={[{ key: "APPROVED", label: "Approve" }, { key: "REJECTED", label: "Reject" }]} />
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                        {view.can.decideRequests && (
+                            <div className="flex justify-end"><Button color="primary" isLoading={saving === "approve"} isDisabled={saving !== null || !asked.some((a) => !view.requestReviews?.[a.field]?.A2?.decision && asks[a.field].decision)} onPress={decide}>Save final decision</Button></div>
+                        )}
                     </div>
                 </Panel>
             )}

@@ -24,13 +24,15 @@ export interface PmsQuarter {
     quarter: string; year: number; start: string; end: string;
     targetPercent: number | null; goalAchievement: number | null; utilizationPercent: number | null; efficiencyPercent: number | null; efficiencyLabel: string;
     systemGrade: number | null; managerAvgRating: number | null; finalRating: number | null; gradeLabel: string; feedback: { category: string; text: string }[];
+    /** From the PMS manager feedback: Meets -> comments, Exceeds -> achievements, Needs Improvement -> failures */
+    comments: string; achievements: string; failures: string;
 }
 /** What the employee wrote for one quarter of the year (slot n) */
 export interface QuarterData { quarter: number; comments?: string; biggestAchievements?: string; biggestFailures?: string }
 export type RequestField = "DESIGNATION" | "TEAM";
 export interface RequestReviews { A1?: { comment: string } | null; A2?: { comment: string; decision: Decision | null } | null }
 export interface Response { decision: "ACCEPT" | "REJECT"; postponeMonths: number | null; reason: string; expectations: string; comment: string; hrStatus: "PENDING" | "APPROVED" | "RETURNED" | null; hrComment: string; decidedAt: string }
-export interface Abilities { selfReview?: boolean; assessorReview?: boolean; approve?: boolean; financeNote?: boolean; respond?: boolean; hrDecision?: boolean }
+export interface Abilities { selfReview?: boolean; assessorReview?: boolean; approve?: boolean; financeNote?: boolean; respond?: boolean; hrDecision?: boolean; decideRequests?: boolean }
 
 export interface CycleView {
     role: ViewRole; cycle: CycleInfo; can: Abilities; today: string;
@@ -54,6 +56,7 @@ export interface TeamItem {
     cycleId: number; userId: number; employeeName: string; level: Level; status: Status; start: string; employeeWindowEnd: string; assessorWindowEnd: string; late: boolean;
     selfSubmitted: boolean; a1Submitted: boolean; a2Submitted: boolean; myRole: "A1" | "A2" | "FINANCE";
     assessor1Name: string | null; pmsFinalAvg: number | null; pmsQuarters: number; asksDesignation: boolean; asksTeam: boolean; canApprove: boolean;
+    requestsPending: boolean; canDecideRequests: boolean;
     expected?: Money | null; minimal?: { A1: Money | null; A2: Money | null }; approved?: Money | null;
 }
 export interface Availability {
@@ -73,7 +76,7 @@ export interface SelfReviewBody {
     answers: Record<string, string>;
     quarters: { quarter: number; comments: string; biggestAchievements: string; biggestFailures: string }[];
     expectedHike: number | null; targetHike: number | null;
-    request: { newDesignation: string; designationComment: string; newTeam: string; teamComment: string };
+    request?: { newDesignation: string; designationComment: string; newTeam: string; teamComment: string };
     submit: boolean;
 }
 export interface AssessorBody {
@@ -103,7 +106,9 @@ export const appraisalApi = {
     /** The EL approves an Associate / FL hike; Finance approves an EL's */
     approve: (id: number, body: { approvedHike: number; comment?: string }) => axios.put(`${BASE}/cycles/${id}/budget-approval`, body),
     financeNote: (id: number, comment: string) => axios.put(`${BASE}/cycles/${id}/finance-note`, { comment }),
-    accept: (id: number, comment?: string) => axios.post(`${BASE}/cycles/${id}/respond`, { decision: "ACCEPT", comment }),
+    /** Accept the hike; the employee may ask for a designation / team change at the same time (the EL decides it) */
+    accept: (id: number, request?: { newDesignation?: string; designationComment?: string; newTeam?: string; teamComment?: string }) => axios.post(`${BASE}/cycles/${id}/respond`, { decision: "ACCEPT", request }),
+    decideRequests: (id: number, body: { designation?: { decision: Decision; comment?: string }; team?: { decision: Decision; comment?: string } }) => axios.put(`${BASE}/cycles/${id}/request-decision`, body),
     reject: (id: number, body: { postponeMonths: 3 | 6; reason: string; expectations: string; comment?: string }) => axios.post(`${BASE}/cycles/${id}/respond`, { decision: "REJECT", ...body }),
     hrDecide: (id: number, body: { status: "APPROVED" | "RETURNED"; comment?: string }) => axios.put(`${BASE}/cycles/${id}/hr-decision`, body),
     budget: (year?: number) => unwrap<BudgetOverview>(axios.get(`${BASE}/budget`, { params: year ? { year } : {} })),

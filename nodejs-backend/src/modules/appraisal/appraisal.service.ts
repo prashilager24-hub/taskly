@@ -54,8 +54,10 @@ async function pmsQuarters(db: Db, userId: number, start: string): Promise<PmsQu
   return rows.map((r) => {
     const grade = parseJson<{ finalGradeLabel?: string }[]>(r['grade'], [])[0];
     const feedback = parseJson<{ feedbackCat?: string; feedback?: string }[]>(r['feedback'], []).filter((f) => f.feedback && f.feedback.trim()).map((f) => ({ category: f.feedbackCat ?? '', text: f.feedback!.trim() }));
+    const by = (cats: string[]) => feedback.filter((f) => cats.includes(f.category)).map((f) => f.text).join('\n');
     return {
       quarter: r['quarter'], year: Number(r['quarter_year']), start: r['s'], end: r['e'],
+      comments: by(['Meets Expectations', '']), achievements: by(['Exceeds Expectations']), failures: by(['Needs Improvement']),
       targetPercent: numOrNull(r['target_percent']), goalAchievement: numOrNull(r['goal_achievement']), utilizationPercent: numOrNull(r['utilization_percent']), efficiencyPercent: numOrNull(r['efficiency_percent']),
       efficiencyLabel: r['efficiency_label'] ?? '', systemGrade: numOrNull(r['system_grade']), managerAvgRating: numOrNull(r['manager_avg_rating']), finalRating: numOrNull(r['final_rating']), gradeLabel: grade?.finalGradeLabel ?? '', feedback,
     };
@@ -152,6 +154,10 @@ export function roleIn(full: FullCycle, userId: number, appRole: number): ViewRo
 export const canApproveHike = (level: EmployeeLevel, viewRole: ViewRole, appRole: number) =>
   appRole === 1 || (level === 'HEAD_EL' ? isFinance(appRole) : viewRole === 'A2');
 
+/** Changes the employee asked for when accepting that the EL has not decided yet */
+export const pendingRequests = (f: FullCycle): RequestField[] =>
+  ([['DESIGNATION', f.request?.newDesignation], ['TEAM', f.request?.newTeam]] as const).filter(([field, asked]) => !!asked && !f.requestReviews[field].A2?.decision).map(([field]) => field);
+
 const windowState = (c: FullCycle['cycle'], today: string) => ({
   employeeOpen: c.status === 'EMPLOYEE_OPEN' && today <= c.employeeWindowEnd,
   assessorOpen: c.status === 'ASSESSOR_OPEN' && today >= addDays(c.start, 15) && today <= c.assessorWindowEnd,
@@ -166,6 +172,7 @@ function abilities(full: FullCycle, role: ViewRole, appRole: number, today: stri
     financeNote: role !== 'EMPLOYEE' && full.cycle.level === 'HEAD_EL' && isFinance(appRole) && full.cycle.status === 'FINANCE_REVIEW',
     respond: role === 'EMPLOYEE' && full.cycle.status === 'OFFERED',
     hrDecision: isHr(appRole) && role !== 'EMPLOYEE' && full.cycle.status === 'POSTPONED' && full.response?.decision === 'REJECT',
+    decideRequests: role !== 'EMPLOYEE' && (role === 'A2' || appRole === 1) && full.cycle.status === 'ACCEPTED' && pendingRequests(full).length > 0,
   };
 }
 
@@ -212,6 +219,8 @@ export async function team(userId: number, appRole: number, status?: string) {
       pmsFinalAvg: f.pms.length ? Math.round((f.pms.reduce((t, q) => t + (q.finalRating ?? 0), 0) / f.pms.length) * 100) / 100 : null, pmsQuarters: f.pms.length,
       asksDesignation: !!f.request?.newDesignation, asksTeam: !!f.request?.newTeam,
       canApprove: f.cycle.status === 'FINANCE_REVIEW' && canApproveHike(f.cycle.level, myRole === 'FINANCE' ? 'FINANCE' : myRole, appRole),
+      requestsPending: f.cycle.status === 'ACCEPTED' && pendingRequests(f).length > 0,
+      canDecideRequests: f.cycle.status === 'ACCEPTED' && pendingRequests(f).length > 0 && (myRole === 'A2' || appRole === 1),
       expected: f.expected, minimal: f.minimal, approved: f.approved,
     });
   }
@@ -380,7 +389,8 @@ export async function financeNote(cycleId: number, userId: number, appRole: numb
   });
 }
 
-export type RespondInput = { decision: 'ACCEPT'; comment?: string } | { decision: 'REJECT'; postponeMonths: 3 | 6; reason: string; expectations: string; comment?: string };
+export interface ChangeRequest { newDesignation?: string; designationComment?: string; newTeam?: string; teamComment?: string }
+export type RespondInput = { decision: 'ACCEPT'; comment?: string; request?: ChangeRequest } | { decision: 'REJECT'; postponeMonths: 3 | 6; reason: string; expectations: string; comment?: string };
 
 export async function respond(cycleId: number, userId: number, input: RespondInput) {
   return tx(async (c) => {
@@ -395,6 +405,15 @@ export async function respond(cycleId: number, userId: number, input: RespondInp
         [cycleId, input.comment ?? null, now]);
       await c.execute("UPDATE AppraisalCycle SET Status = 'ACCEPTED', PostponedUntil = NULL WHERE CycleID = ?", [cycleId]);
       await audit(c, cycleId, userId, 'STATUS_CHANGE', { from: 'OFFERED', to: 'ACCEPTED' });
+      // While accepting, the employee may ask for a new designation and / or team. Those go to the EL for the final decision.
+      await c.execute('DELETE FROM AppraisalRequestReview WHERE CycleID = ?', [cycleId]);
+      await c.execute('DELETE FROM AppraisalRequest WHERE CycleID = ?', [cycleId]);
+      const q = input.request ?? {};
+      if (q.newDesignation?.trim() || q.newTeam?.trim()) {
+        await c.execute('INSERT INTO AppraisalRequest (CycleID, NewDesignation, DesignationComment, NewTeam, TeamComment) VALUES (?, ?, ?, ?, ?)',
+          [cycleId, q.newDesignation?.trim() || null, q.newDesignation?.trim() ? q.designationComment?.trim() || null : null, q.newTeam?.trim() || null, q.newTeam?.trim() ? q.teamComment?.trim() || null : null]);
+        await audit(c, cycleId, userId, 'CHANGE_REQUESTED', { designation: q.newDesignation ?? null, team: q.newTeam ?? null });
+      }
       return { status: 'ACCEPTED' as const, postponedUntil: null };
     }
     const until = addMonths(todayIST(), input.postponeMonths);
@@ -405,6 +424,32 @@ export async function respond(cycleId: number, userId: number, input: RespondInp
     await c.execute("UPDATE AppraisalCycle SET Status = 'POSTPONED', PostponedUntil = ? WHERE CycleID = ?", [until, cycleId]);
     await audit(c, cycleId, userId, 'STATUS_CHANGE', { from: 'OFFERED', to: 'POSTPONED', months: input.postponeMonths, until });
     return { status: 'POSTPONED' as const, postponedUntil: until };
+  });
+}
+
+/** After the employee accepted: the EL gives the final decision on each designation / team change they asked for. A decision is final. */
+export async function decideRequests(cycleId: number, userId: number, appRole: number, input: { designation?: { decision: 'APPROVED' | 'REJECTED'; comment?: string }; team?: { decision: 'APPROVED' | 'REJECTED'; comment?: string } }) {
+  await tx(async (c) => {
+    const cy = await lock(c, cycleId);
+    if (cy.userId === userId) throw AppError.forbidden('You cannot decide on your own requests');
+    if (cy.a2 !== userId && appRole !== 1) throw AppError.forbidden('Only the EL decides on a designation or team change');
+    if (cy.status !== 'ACCEPTED') throw AppError.conflict('Changes are decided after the employee accepts the hike');
+    const [asked] = await c.execute<Row[]>('SELECT NewDesignation, NewTeam FROM AppraisalRequest WHERE CycleID = ?', [cycleId]);
+    const [done] = await c.execute<Row[]>("SELECT Field FROM AppraisalRequestReview WHERE CycleID = ? AND ReviewerRole = 'A2' AND Decision IS NOT NULL", [cycleId]);
+    const decided = new Set(done.map((d) => d['Field'] as string));
+    let n = 0;
+    for (const [field, key, col] of [['DESIGNATION', 'designation', 'NewDesignation'], ['TEAM', 'team', 'NewTeam']] as const) {
+      const d = input[key];
+      if (!d) continue;
+      if (!asked[0]?.[col]) throw AppError.badRequest(`No ${key} change was asked for`);
+      if (decided.has(field)) throw AppError.conflict(`The ${key} change is already decided`);
+      await c.execute(
+        `INSERT INTO AppraisalRequestReview (CycleID, Field, ReviewerRole, Comment, Decision, DecidedBy) VALUES (?, ?, 'A2', ?, ?, ?)
+         ON DUPLICATE KEY UPDATE Comment = VALUES(Comment), Decision = VALUES(Decision), DecidedBy = VALUES(DecidedBy)`, [cycleId, field, d.comment ?? null, d.decision, userId]);
+      n++;
+    }
+    if (!n) throw AppError.badRequest('Choose a decision');
+    await audit(c, cycleId, userId, 'CHANGE_DECIDED', input);
   });
 }
 

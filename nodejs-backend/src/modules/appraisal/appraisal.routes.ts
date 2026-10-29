@@ -55,7 +55,7 @@ const AssessorReview = z.object({
 const Budget = z.object({ approvedHike: amount, comment: text.optional() });
 
 const Respond = z.discriminatedUnion('decision', [
-  z.object({ decision: z.literal('ACCEPT'), comment: text.optional() }),
+  z.object({ decision: z.literal('ACCEPT'), comment: text.optional(), request: z.object({ newDesignation: z.string().max(150).optional(), designationComment: text.optional(), newTeam: z.string().max(150).optional(), teamComment: text.optional() }).optional() }),
   z.object({ decision: z.literal('REJECT'), postponeMonths: z.union([z.literal(3), z.literal(6)]), reason: z.string().trim().min(1, 'Give a reason').max(4000), expectations: z.string().trim().min(1, 'Say what you expect').max(4000), comment: text.optional() }),
 ]);
 
@@ -63,6 +63,8 @@ const FinanceNote = z.object({ comment: z.string().trim().min(1, 'Write the note
 const Year = z.object({ year: z.coerce.number().int().min(2000).max(2100).optional() });
 const DeptBudget = z.object({ year: z.number().int().min(2000).max(2100), departmentId: z.number().int().positive(), amount: amount, comment: text.optional() });
 const Alloc = z.object({ year: z.number().int().min(2000).max(2100), departmentId: z.number().int().positive(), flUserId: z.number().int().positive(), amount: amount });
+const finalDecision = z.object({ decision: z.enum(['APPROVED', 'REJECTED']), comment: text.optional() });
+const RequestDecision = z.object({ designation: finalDecision.optional(), team: finalDecision.optional() });
 const HrDecision = z.object({ status: z.enum(['APPROVED', 'RETURNED']), comment: text.optional() });
 const NewCycle = z.object({ userId: z.number().int().positive(), cycleStartDate: date });
 const Person = z.object({ dateOfJoining: date.nullable(), level: z.enum(['ASSOCIATE', 'MANAGER', 'HEAD_EL']).nullable(), currentAnnualCtc: amount.nullable() });
@@ -91,6 +93,7 @@ router.get('/budget', validate(Year, 'query'), handler(async (req, res) => { sen
 router.put('/budget/department', validate(DeptBudget), handler(async (req, res) => { await budget.setDepartmentBudget(me(req), roleOf(req), req.body); sendSuccess(res, true); }));
 router.put('/budget/allocation', validate(Alloc), handler(async (req, res) => { await budget.setAllocation(me(req), roleOf(req), req.body); sendSuccess(res, true); }));
 router.post('/cycles/:cycleId/respond', validate(Respond), handler(async (req, res) => { sendSuccess(res, await svc.respond(cycleId(req), me(req), req.body)); }));
+router.put('/cycles/:cycleId/request-decision', validate(RequestDecision), handler(async (req, res) => { await svc.decideRequests(cycleId(req), me(req), roleOf(req), req.body); sendSuccess(res, true); }));
 router.put('/cycles/:cycleId/hr-decision', validate(HrDecision), handler(async (req, res) => { await svc.hrDecision(cycleId(req), me(req), roleOf(req), req.body); sendSuccess(res, true); }));
 router.post('/cycles', validate(NewCycle), handler(async (req, res) => { sendSuccess(res, await svc.createCycle(me(req), roleOf(req), req.body), 201); }));
 

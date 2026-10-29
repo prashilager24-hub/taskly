@@ -9,7 +9,7 @@ const full = (status: Status): FullCycle => ({
   self: { answers: { goalsAchieved: 'all' }, submittedAt: '2026-11-10 10:00:00' },
   quarters: [{ quarter: 1, goals: 'g', targets: 't', comments: 'c', biggestAchievements: 'a', biggestFailures: 'f', ratings: { A1: { finalRating: 4, comments: 'good' }, A2: { finalRating: 3.5, comments: 'ok' } } }],
   request: { newDesignation: 'Lead', designationComment: 'c', newTeam: '', teamComment: '' },
-  pms: [{ quarter: 'Q3', year: 2026, start: '2026-07-01', end: '2026-09-30', targetPercent: 90, goalAchievement: 80, utilizationPercent: 70, efficiencyPercent: 100, efficiencyLabel: 'At Par', systemGrade: 8, managerAvgRating: 6, finalRating: 8, gradeLabel: 'Meets Expectations', feedback: [] }],
+  pms: [{ quarter: 'Q3', year: 2026, start: '2026-07-01', end: '2026-09-30', targetPercent: 90, goalAchievement: 80, utilizationPercent: 70, efficiencyPercent: 100, efficiencyLabel: 'At Par', systemGrade: 8, managerAvgRating: 6, finalRating: 8, gradeLabel: 'Meets Expectations', feedback: [], comments: '', achievements: '', failures: '' }],
   slots: [{ n: 1, quarter: 'Q3', year: 2026 }],
   requestReviews: { DESIGNATION: { A1: { comment: 'fl says yes' }, A2: { comment: 'el decides', decision: 'APPROVED' } }, TEAM: { A1: null, A2: null } },
   expected: money(100000), target: money(80000), minimal: { A1: money(50000), A2: money(60000) }, approved: money(70000),
@@ -81,7 +81,7 @@ describe('maskCycle: comments travel upwards only', () => {
 });
 
 describe('maskTeamRow', () => {
-  const row = (myRole: TeamRow['myRole']): TeamRow => ({ cycleId: 1, userId: 10, employeeName: 'Asha', level: 'ASSOCIATE', status: 'FINANCE_REVIEW', start: '2026-11-02', employeeWindowEnd: 'a', assessorWindowEnd: 'b', late: false, selfSubmitted: true, a1Submitted: true, a2Submitted: false, myRole, assessor1Name: 'Ben', pmsFinalAvg: 8, pmsQuarters: 1, asksDesignation: true, asksTeam: false, canApprove: false, expected: money(1), minimal: { A1: money(2), A2: null }, approved: money(3) });
+  const row = (myRole: TeamRow['myRole']): TeamRow => ({ cycleId: 1, userId: 10, employeeName: 'Asha', level: 'ASSOCIATE', status: 'FINANCE_REVIEW', start: '2026-11-02', employeeWindowEnd: 'a', assessorWindowEnd: 'b', late: false, selfSubmitted: true, a1Submitted: true, a2Submitted: false, myRole, assessor1Name: 'Ben', pmsFinalAvg: 8, pmsQuarters: 1, asksDesignation: true, asksTeam: false, canApprove: false, requestsPending: false, canDecideRequests: false, expected: money(1), minimal: { A1: money(2), A2: null }, approved: money(3) });
   it('A1 sees no expected or approved', () => { const m = maskTeamRow(row('A1')); expect(has(m, 'expected')).toBe(false); expect(has(m, 'approved')).toBe(false); });
   it('A2 sees approved but not expected', () => { const m = maskTeamRow(row('A2')); expect(has(m, 'approved')).toBe(true); expect(has(m, 'expected')).toBe(false); });
   it('FINANCE sees all three', () => { const m = maskTeamRow(row('FINANCE')); for (const k of ['expected', 'minimal', 'approved']) expect(has(m, k)).toBe(true); });

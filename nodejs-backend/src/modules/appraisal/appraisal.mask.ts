@@ -16,6 +16,8 @@ export interface PmsQuarter {
   quarter: string; year: number; start: string; end: string;
   targetPercent: number | null; goalAchievement: number | null; utilizationPercent: number | null; efficiencyPercent: number | null; efficiencyLabel: string;
   systemGrade: number | null; managerAvgRating: number | null; finalRating: number | null; gradeLabel: string; feedback: { category: string; text: string }[];
+  /** Filled from the PMS manager feedback, never typed: Meets Expectations -> comments, Exceeds -> achievements, Needs Improvement -> failures */
+  comments: string; achievements: string; failures: string;
 }
 export type RequestField = 'DESIGNATION' | 'TEAM';
 export interface RequestReviews { A1: { comment: string } | null; A2: { comment: string; decision: 'APPROVED' | 'REJECTED' | null } | null }
@@ -125,6 +127,8 @@ export interface TeamRow {
   employeeWindowEnd: string; assessorWindowEnd: string; late: boolean;
   selfSubmitted: boolean; a1Submitted: boolean; a2Submitted: boolean; myRole: 'A1' | 'A2' | 'FINANCE';
   assessor1Name: string | null; pmsFinalAvg: number | null; pmsQuarters: number; asksDesignation: boolean; asksTeam: boolean; canApprove: boolean;
+  /** The employee accepted and asked for a designation / team change the EL has not decided yet */
+  requestsPending: boolean; canDecideRequests: boolean;
   expected: Money | null; minimal: { A1: Money | null; A2: Money | null }; approved: Money | null;
 }
 
@@ -135,6 +139,7 @@ export function maskTeamRow(row: TeamRow): Record<string, unknown> {
     employeeWindowEnd: row.employeeWindowEnd, assessorWindowEnd: row.assessorWindowEnd, late: row.late,
     selfSubmitted: row.selfSubmitted, a1Submitted: row.a1Submitted, a2Submitted: row.a2Submitted, myRole: row.myRole,
     assessor1Name: row.assessor1Name, pmsFinalAvg: row.pmsFinalAvg, pmsQuarters: row.pmsQuarters, asksDesignation: row.asksDesignation, asksTeam: row.asksTeam, canApprove: row.canApprove,
+    requestsPending: row.requestsPending, canDecideRequests: row.canDecideRequests,
   };
   if (row.myRole === 'A1') return { ...base, minimal: row.minimal };
   if (row.myRole === 'A2') return { ...base, minimal: row.minimal, approved: row.approved };

@@ -1,18 +1,17 @@
 import { cn } from "@heroui/theme";
 
-export interface Slot { n: number; quarter: string; year: number }
-export interface QuarterNote { comments: string; biggestAchievements: string; biggestFailures: string }
-export const EMPTY_NOTE: QuarterNote = { comments: "", biggestAchievements: "", biggestFailures: "" };
+import type { PmsQuarter } from "./api";
 
-const COLS: [keyof QuarterNote, string][] = [["comments", "Comments"], ["biggestAchievements", "Biggest achievements"], ["biggestFailures", "Biggest failures"]];
-const cell = "block w-full resize-y border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 outline-none placeholder:text-ink-400 focus:border-brand-500 dark:border-white/10 dark:bg-ink-900 dark:text-white";
+export interface Slot { n: number; quarter: string; year: number }
+
+const COLS: [keyof Pick<PmsQuarter, "comments" | "achievements" | "failures">, string][] = [["comments", "Comments"], ["achievements", "Biggest achievements"], ["failures", "Biggest failures"]];
 
 /**
- * What the employee writes for each quarter of the year: comments, biggest achievements, biggest failures.
- * Editable for the employee while the window is open; read-only for the FL, the EL and Finance.
+ * Comments, biggest achievements and biggest failures for each quarter of the year.
+ * Filled automatically from the PMS Quarterly Review manager feedback; nobody types here.
  */
-export default function QuarterGrid({ slots, values, onChange }: { slots: Slot[]; values: Record<number, QuarterNote>; onChange?: (n: number, patch: Partial<QuarterNote>) => void }) {
-    const editable = !!onChange;
+export default function QuarterGrid({ slots, pms }: { slots: Slot[]; pms: PmsQuarter[] }) {
+    const find = (s: Slot) => pms.find((p) => p.quarter === s.quarter && p.year === s.year);
     return (
         <div className="overflow-x-auto border border-ink-200 dark:border-white/10">
             <table className="w-full min-w-[760px] table-fixed text-sm">
@@ -25,18 +24,13 @@ export default function QuarterGrid({ slots, values, onChange }: { slots: Slot[]
                 </thead>
                 <tbody>
                     {slots.map((s) => {
-                        const v = values[s.n] ?? EMPTY_NOTE;
+                        const p = find(s);
                         return (
                             <tr key={s.n} className="border-b border-ink-100 align-top last:border-0 dark:border-white/5">
                                 <td className="px-4 py-3 font-semibold text-ink-900 dark:text-white">{s.quarter} {s.year}</td>
-                                {COLS.map(([key, label]) => (
-                                    <td key={key} className="px-2 py-2">
-                                        {editable ? (
-                                            <textarea aria-label={`${label}, ${s.quarter} ${s.year}`} rows={3} className={cell} value={v[key]} placeholder={label}
-                                                onChange={(e) => onChange!(s.n, { [key]: e.target.value })} />
-                                        ) : (
-                                            <p className={cn("whitespace-pre-wrap px-2 py-1", v[key] ? "text-ink-900 dark:text-ink-100" : "text-ink-400")}>{v[key] || "Nothing written"}</p>
-                                        )}
+                                {COLS.map(([key]) => (
+                                    <td key={key} className="px-4 py-3">
+                                        <p className={cn("whitespace-pre-wrap", p?.[key] ? "text-ink-900 dark:text-ink-100" : "text-ink-400")}>{p ? p[key] || "Nothing recorded in PMS" : "No PMS review for this quarter"}</p>
                                     </td>
                                 ))}
                             </tr>
@@ -47,7 +41,3 @@ export default function QuarterGrid({ slots, values, onChange }: { slots: Slot[]
         </div>
     );
 }
-
-/** The notes the server sent, keyed by quarter number */
-export const notesFrom = (quarters: { quarter: number; comments?: string; biggestAchievements?: string; biggestFailures?: string }[] | undefined): Record<number, QuarterNote> =>
-    Object.fromEntries((quarters ?? []).map((q) => [q.quarter, { comments: q.comments ?? "", biggestAchievements: q.biggestAchievements ?? "", biggestFailures: q.biggestFailures ?? "" }]));

@@ -109,7 +109,11 @@ async function seedPms(uid: number, key: string) {
       `INSERT INTO quarterlyreview SET emp_id = ?, quarter = ?, quarter_year = ?, quarter_start_date = ?, quarter_end_date = ?, target_percent = ?, goal_achievement = ?, utilization_percent = ?,
          efficiency_percent = ?, efficiency_label = ?, system_grade = ?, manager_avg_rating = ?, final_rating = ?, manager_ratings = ?, feedback = ?, status = 'On Track', grade = ?, created_at = NOW(), updated_at = NOW()`,
       [uid, x.q, x.y, x.s, x.e, target, goal, x.u, x.ef, x.ef >= 100 ? 'High' : 'At Par', x.sg, x.mr, final, '{}',
-        JSON.stringify([{ feedbackCat: 'Meets Expectations', feedbackType: 'Productivity', feedback: `${x.q} ${x.y}: steady delivery, good ownership of the sprint goals.` }]),
+        JSON.stringify([
+          { feedbackCat: 'Meets Expectations', feedbackType: 'Productivity', feedback: `${x.q} ${x.y}: steady delivery, good ownership of the sprint goals.` },
+          { feedbackCat: 'Exceeds Expectations', feedbackType: 'Quality', feedback: ['Shipped the billing export ahead of plan.', 'Cut report time from 40 to 6 minutes.', 'Zero-downtime release of the platform move.', 'Mentored two interns to independent delivery.'][quarters.indexOf(x)]! },
+          { feedbackCat: 'Needs Improvement', feedbackType: 'Communication', feedback: ['One estimate missed by a week.', 'QA sign-off came late twice.', 'Documentation lagged behind the release.', 'Status updates to stakeholders were irregular.'][quarters.indexOf(x)]! },
+        ]),
         JSON.stringify([{ finalGrade: final, finalGradeLabel: label, starRating: 0, starDescription: '', goalWeight: 60, targetWeight: 40 }])]);
   }
 }

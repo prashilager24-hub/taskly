@@ -18,7 +18,7 @@ const Tick = ({ on, label }: { on: boolean; label: string }) => (
     </span>
 );
 
-const needsMe = (r: TeamItem) => (r.status === "ASSESSOR_OPEN" && ((r.myRole === "A1" && !r.a1Submitted) || (r.myRole === "A2" && !r.a2Submitted))) || r.canApprove;
+const needsMe = (r: TeamItem) => (r.status === "ASSESSOR_OPEN" && ((r.myRole === "A1" && !r.a1Submitted) || (r.myRole === "A2" && !r.a2Submitted))) || r.canApprove || r.canDecideRequests;
 const proposedBy = (r: TeamItem) => (r.myRole === "A2" ? r.minimal?.A2 ?? r.minimal?.A1 : r.minimal?.A1) ?? null;
 
 function Row({ r }: { r: TeamItem }) {
@@ -32,7 +32,7 @@ function Row({ r }: { r: TeamItem }) {
             <td className="px-4 py-3 text-right tabular-nums">{p ? <span className="font-semibold">{inr(p.annual)}</span> : <span className="text-xs text-ink-400">Not proposed</span>}</td>
             <td className="px-4 py-3"><StatusChip status={r.status} /></td>
             <td className="px-4 py-3"><div className="flex items-center gap-3"><Tick on={r.selfSubmitted} label="Self" /><Tick on={r.a1Submitted} label="FL" /><Tick on={r.a2Submitted} label="EL" /></div></td>
-            <td className="px-4 py-3 text-right"><Button size="sm" color={needsMe(r) ? "primary" : "default"} variant={needsMe(r) ? "solid" : "bordered"} onPress={() => nav(`/appraisal/team/${r.cycleId}`)}>{r.canApprove ? "Approve" : needsMe(r) ? "Review" : "Open"}</Button></td>
+            <td className="px-4 py-3 text-right"><Button size="sm" color={needsMe(r) ? "primary" : "default"} variant={needsMe(r) ? "solid" : "bordered"} onPress={() => nav(`/appraisal/team/${r.cycleId}`)}>{r.canApprove ? "Approve" : r.canDecideRequests ? "Decide changes" : needsMe(r) ? "Review" : "Open"}</Button></td>
         </tr>
     );
 }

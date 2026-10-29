@@ -7,7 +7,7 @@ const num = (n: number | null) => (n == null ? "—" : String(Math.round(n * 100
 
 /**
  * Part A: the four quarters of the year, taken from the person's PMS Quarterly Reviews. Read-only for everyone.
- * A quarter with no PMS review is said so, never left blank.
+ * A quarter with no PMS review is said so, never left blank. The manager feedback is shown by QuarterGrid, split into comments, achievements and failures.
  */
 export default function PmsTable({ quarters, className }: { quarters: PmsQuarter[]; className?: string }) {
     if (!quarters.length) {
@@ -43,16 +43,6 @@ export default function PmsTable({ quarters, className }: { quarters: PmsQuarter
                     </tbody>
                 </table>
             </div>
-            {quarters.some((q) => q.feedback.length > 0) && (
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {quarters.filter((q) => q.feedback.length > 0).map((q) => (
-                        <div key={`${q.quarter}${q.year}`} className="border border-ink-200 p-4 dark:border-white/10">
-                            <p className="eyebrow">Manager feedback · {q.quarter} {q.year}</p>
-                            <ul className="mt-2 flex flex-col gap-1.5 text-sm text-ink-800 dark:text-ink-100">{q.feedback.map((f, i) => <li key={i}>{f.category && <span className="mr-1.5 text-xs font-semibold text-ink-500">{f.category}:</span>}{f.text}</li>)}</ul>
-                        </div>
-                    ))}
-                </div>
-            )}
         </div>
     );
 }

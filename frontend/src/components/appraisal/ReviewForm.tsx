@@ -141,10 +141,16 @@ export default function ReviewForm() {
             )}
 
             {view.self !== undefined && (
-                <Panel title="Hike proposal · the employee's reasons">
-                    {ANSWER_QUESTIONS.some(([k]) => view.self?.answers?.[k])
-                        ? <div className={COLS2}>{ANSWER_QUESTIONS.map(([key, label]) => <ReadText key={key} label={label} value={view.self?.answers?.[key]} />)}</div>
-                        : <p className="text-sm text-ink-500">The employee has not written their reasons yet.</p>}
+                <Panel title="The employee's hike proposal" actions={view.self?.submittedAt ? <Chip size="sm" variant="flat" color="success">Submitted {day(view.self.submittedAt)}</Chip> : <Chip size="sm" variant="flat" color="warning">Not submitted yet</Chip>}>
+                    <div className="flex flex-col gap-6">
+                        <div className={COLS2}><MoneyCard title="Expected hike" money={view.expected} /><MoneyCard title="Target hike" money={view.target} /></div>
+                        <div className="flex flex-col gap-4 border-t border-ink-200 pt-5 dark:border-white/10">
+                            <p className="eyebrow">Why this hike</p>
+                            {ANSWER_QUESTIONS.some(([k]) => view.self?.answers?.[k])
+                                ? <div className={COLS2}>{ANSWER_QUESTIONS.map(([key, label]) => <ReadText key={key} label={label} value={view.self?.answers?.[key]} />)}</div>
+                                : <p className="text-sm text-ink-500">No reasons written yet.</p>}
+                        </div>
+                    </div>
                 </Panel>
             )}
 
@@ -190,7 +196,6 @@ export default function ReviewForm() {
             {!me && view.assessors && (
                 <Panel title="Everything on this appraisal">
                     <div className="flex flex-col gap-6">
-                        {(view.expected || view.target) && <div className={COLS2}><MoneyCard title="Employee expects" money={view.expected} /><MoneyCard title="Employee's target" money={view.target} /></div>}
                         {(["A1", "A2"] as const).map((k) => {
                             const a = view.assessors![k];
                             const who = k === "A1" ? c.assessor1?.name : c.assessor2?.name;

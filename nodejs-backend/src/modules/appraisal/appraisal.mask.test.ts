@@ -49,10 +49,10 @@ describe('maskCycle: comments travel upwards only', () => {
     expect(rr.DESIGNATION['A2']).toEqual({ decision: 'APPROVED' });
     expect(has(maskCycle(full('ASSESSOR_OPEN'), 'EMPLOYEE'), 'requestReviews')).toBe(false);
   });
-  it('FL (A1): sees the Associate and their own review only; nothing the EL wrote, no expected / target / approved', () => {
+  it('FL (A1): sees the Associate incl. expected / target hike and their own review; nothing the EL wrote, no approved hike', () => {
     const m = maskCycle(full('ASSESSOR_OPEN'), 'A1');
-    for (const k of ['expected', 'target', 'approved', 'financeComment']) expect(has(m, k), k).toBe(false);
-    for (const k of ['self', 'request', 'pms']) expect(has(m, k), k).toBe(true);
+    for (const k of ['approved', 'financeComment']) expect(has(m, k), k).toBe(false);
+    for (const k of ['self', 'request', 'pms', 'expected', 'target']) expect(has(m, k), k).toBe(true);
     expect(as(m, 'assessors')['A2']).toBeNull();
     expect(has(as(m, 'assessors')['A1'] as object, 'managerFeedback')).toBe(true);
     expect(as(m, 'minimal')['A2']).toBeNull();
@@ -62,10 +62,10 @@ describe('maskCycle: comments travel upwards only', () => {
     expect(rr.DESIGNATION['A1']).toEqual({ comment: 'fl says yes' });
     expect((m['quarters'] as { ratings: Record<string, unknown> }[])[0]!.ratings['A2']).toBeNull();
   });
-  it('EL (A2): sees the Associate, the FL review with manager feedback, both proposals and the approved hike; no expected / target', () => {
+  it('EL (A2): sees the Associate incl. expected / target, the FL review with manager feedback, both proposals and the approved hike', () => {
     const m = maskCycle(full('FINANCE_REVIEW'), 'A2');
-    for (const k of ['expected', 'target', 'financeComment']) expect(has(m, k), k).toBe(false);
-    expect(has(m, 'approved')).toBe(true);
+    expect(has(m, 'financeComment')).toBe(false);
+    for (const k of ['expected', 'target', 'approved']) expect(has(m, k), k).toBe(true);
     expect(has(as(m, 'assessors')['A1'] as object, 'managerFeedback')).toBe(true);
     expect(as(m, 'assessors')['A2']).not.toBeNull();
     expect(as(m, 'minimal')['A1']).not.toBeNull();
@@ -93,7 +93,7 @@ describe('maskCycle: comments travel upwards only', () => {
 
 describe('maskTeamRow', () => {
   const row = (myRole: TeamRow['myRole']): TeamRow => ({ cycleId: 1, userId: 10, employeeName: 'Asha', level: 'ASSOCIATE', status: 'FINANCE_REVIEW', start: '2026-11-02', employeeWindowEnd: 'a', assessorWindowEnd: 'b', late: false, selfSubmitted: true, a1Submitted: true, a2Submitted: false, myRole, assessor1Name: 'Ben', pmsFinalAvg: 8, pmsQuarters: 1, asksDesignation: true, asksTeam: false, canApprove: false, requestsPending: false, canDecideRequests: false, expected: money(1), minimal: { A1: money(2), A2: null }, approved: money(3) });
-  it('A1 sees no expected or approved', () => { const m = maskTeamRow(row('A1')); expect(has(m, 'expected')).toBe(false); expect(has(m, 'approved')).toBe(false); });
-  it('A2 sees approved but not expected', () => { const m = maskTeamRow(row('A2')); expect(has(m, 'approved')).toBe(true); expect(has(m, 'expected')).toBe(false); });
+  it('A1 sees the expected hike but not the approved one', () => { const m = maskTeamRow(row('A1')); expect(has(m, 'expected')).toBe(true); expect(has(m, 'approved')).toBe(false); });
+  it('A2 sees expected and approved', () => { const m = maskTeamRow(row('A2')); expect(has(m, 'approved')).toBe(true); expect(has(m, 'expected')).toBe(true); });
   it('FINANCE sees all three', () => { const m = maskTeamRow(row('FINANCE')); for (const k of ['expected', 'minimal', 'approved']) expect(has(m, k)).toBe(true); });
 });

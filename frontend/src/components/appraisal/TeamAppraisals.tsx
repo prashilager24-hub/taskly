@@ -28,8 +28,9 @@ function Row({ r }: { r: TeamItem }) {
         <tr className="border-b border-ink-100 last:border-0 dark:border-white/5">
             <td className="px-4 py-3"><p className="font-semibold text-ink-900 dark:text-white">{r.employeeName}</p><p className="text-xs text-ink-500">{LEVEL_LABEL[r.level]}</p></td>
             <td className="px-4 py-3 text-right tabular-nums">{r.pmsFinalAvg != null ? <><span className="font-semibold">{r.pmsFinalAvg}</span><span className="block text-xs text-ink-500">{r.pmsQuarters} quarter{r.pmsQuarters === 1 ? "" : "s"}</span></> : <span className="text-xs text-ink-400">No PMS</span>}</td>
-            <td className="px-4 py-3"><div className="flex flex-wrap gap-1.5">{r.asksDesignation && <Chip size="sm" variant="flat">Designation</Chip>}{r.asksTeam && <Chip size="sm" variant="flat">Team</Chip>}{!r.asksDesignation && !r.asksTeam && <span className="text-xs text-ink-400">None</span>}</div></td>
+            <td className="px-4 py-3 text-right tabular-nums">{r.expected ? <span className="font-semibold">{inr(r.expected.annual)}</span> : <span className="text-xs text-ink-400">Not entered</span>}</td>
             <td className="px-4 py-3 text-right tabular-nums">{p ? <span className="font-semibold">{inr(p.annual)}</span> : <span className="text-xs text-ink-400">Not proposed</span>}</td>
+            <td className="px-4 py-3"><div className="flex flex-wrap gap-1.5">{r.asksDesignation && <Chip size="sm" variant="flat">Designation</Chip>}{r.asksTeam && <Chip size="sm" variant="flat">Team</Chip>}{!r.asksDesignation && !r.asksTeam && <span className="text-xs text-ink-400">None</span>}</div></td>
             <td className="px-4 py-3"><StatusChip status={r.status} /></td>
             <td className="px-4 py-3"><div className="flex items-center gap-3"><Tick on={r.selfSubmitted} label="Self" /><Tick on={r.a1Submitted} label="FL" /><Tick on={r.a2Submitted} label="EL" /></div></td>
             <td className="px-4 py-3 text-right"><Button size="sm" color={needsMe(r) ? "primary" : "default"} variant={needsMe(r) ? "solid" : "bordered"} onPress={() => nav(`/appraisal/team/${r.cycleId}`)}>{r.canApprove ? "Approve" : r.canDecideRequests ? "Decide changes" : needsMe(r) ? "Review" : "Open"}</Button></td>
@@ -37,7 +38,7 @@ function Row({ r }: { r: TeamItem }) {
     );
 }
 
-const HEAD = ["Person", "PMS final (avg)", "Asks for", "Proposed hike", "Status", "Progress", ""];
+const HEAD = ["Person", "PMS final (avg)", "Expected hike", "Proposed hike", "Asks for", "Status", "Progress", ""];
 
 // Team Appraisals: everyone I assess, together. An FL sees the team and its budget; an EL sees every FL's team, one group per FL.
 export default function TeamAppraisals() {
@@ -92,7 +93,7 @@ export default function TeamAppraisals() {
                             )}
                             <div className="overflow-x-auto">
                                 <table className="w-full min-w-[900px] text-sm">
-                                    <thead><tr className="border-b border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900">{HEAD.map((h, i) => <th key={h + i} className={cn("px-4 py-2.5", i === 1 || i === 3 ? "text-right" : "text-left")}>{h}</th>)}</tr></thead>
+                                    <thead><tr className="border-b border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900">{HEAD.map((h, i) => <th key={h + i} className={cn("px-4 py-2.5", i === 1 || i === 2 || i === 3 ? "text-right" : "text-left")}>{h}</th>)}</tr></thead>
                                     <tbody>{list.map((r) => <Row key={r.cycleId} r={r} />)}</tbody>
                                 </table>
                             </div>

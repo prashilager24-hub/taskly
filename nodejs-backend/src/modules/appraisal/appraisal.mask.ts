@@ -91,8 +91,8 @@ export function maskCycle(full: FullCycle, role: ViewRole): Record<string, unkno
       ...(role === 'EMPLOYEE' ? {} : { ratings: mineOnly ? { A1: q.ratings.A1, A2: null } : q.ratings }),
     }));
 
-    // Expected and target: the employee and Finance only
-    if (role === 'EMPLOYEE' || all) {
+    // Expected and target hike: the employee and everyone reviewing them (FL, EL, Finance)
+    {
       out['expected'] = full.expected;
       out['target'] = full.target;
     }
@@ -143,7 +143,7 @@ export interface TeamRow {
   expected: Money | null; minimal: { A1: Money | null; A2: Money | null }; approved: Money | null;
 }
 
-/** A1 sees no hike figures but their own proposal; A2 sees both proposals and the approved hike; Finance sees everything */
+/** A1 sees the employee's expected hike and their own proposal, never the approved one; A2 sees both proposals and the approved hike; Finance sees everything */
 export function maskTeamRow(row: TeamRow): Record<string, unknown> {
   const base = {
     cycleId: row.cycleId, userId: row.userId, employeeName: row.employeeName, level: row.level, status: row.status, start: row.start,
@@ -152,7 +152,7 @@ export function maskTeamRow(row: TeamRow): Record<string, unknown> {
     assessor1Name: row.assessor1Name, pmsFinalAvg: row.pmsFinalAvg, pmsQuarters: row.pmsQuarters, asksDesignation: row.asksDesignation, asksTeam: row.asksTeam, canApprove: row.canApprove,
     requestsPending: row.requestsPending, canDecideRequests: row.canDecideRequests,
   };
-  if (row.myRole === 'A1') return { ...base, minimal: row.minimal };
-  if (row.myRole === 'A2') return { ...base, minimal: row.minimal, approved: row.approved };
+  if (row.myRole === 'A1') return { ...base, expected: row.expected, minimal: row.minimal };
+  if (row.myRole === 'A2') return { ...base, expected: row.expected, minimal: row.minimal, approved: row.approved };
   return { ...base, expected: row.expected, minimal: row.minimal, approved: row.approved };
 }

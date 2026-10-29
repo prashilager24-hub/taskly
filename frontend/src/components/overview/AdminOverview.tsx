@@ -23,7 +23,7 @@ const arc = (from: number, to: number, r = R) => {
 const DIAL_MAX = 120;
 const angleOf = (v: number) => 180 - (Math.min(Math.max(v, 0), DIAL_MAX) / DIAL_MAX) * 180;
 
-function Speedometer({ value }: { value: number }) {
+export function Speedometer({ value }: { value: number }) {
     const reduce = useReducedMotion();
     const rot = 90 - angleOf(value); // needle drawn pointing up, rotated from there
     const zones: [number, number, string][] = [[0, 80, "#f43f5e"], [80, 100, "#f59e0b"], [100, 120, "#10b981"]];
@@ -56,7 +56,7 @@ function Speedometer({ value }: { value: number }) {
 }
 
 /** A bar with a marker for where it should be, e.g. utilization against 100% */
-function Bullet({ label, value, max, marker, display, tone = "bg-brand-600", delay = 0 }: { label: string; value: number; max: number; marker?: number; display: string; tone?: string; delay?: number }) {
+export function Bullet({ label, value, max, marker, display, tone = "bg-brand-600", delay = 0 }: { label: string; value: number; max: number; marker?: number; display: string; tone?: string; delay?: number }) {
     return (
         <div>
             <div className="mb-1 flex items-baseline justify-between text-xs">
@@ -72,9 +72,9 @@ function Bullet({ label, value, max, marker, display, tone = "bg-brand-600", del
 }
 
 // ── Department map: every department as a bubble, utilization across, target up, size = people ────
-interface Bubble { id: number; name: string; users: number; target: number; util: number; hours: number; level: Level }
+export interface Bubble { id: number; name: string; users: number; target: number; util: number; hours: number; level: Level; sub?: string }
 
-function DeptMap({ items, hover, onHover }: { items: Bubble[]; hover: number | null; onHover: (id: number | null) => void }) {
+export function DeptMap({ items, hover, onHover }: { items: Bubble[]; hover: number | null; onHover: (id: number | null) => void }) {
     const reduce = useReducedMotion();
     const box = useRef<HTMLDivElement>(null);
     const [size, setSize] = useState({ w: 640, h: 400 });
@@ -134,7 +134,7 @@ function DeptMap({ items, hover, onHover }: { items: Bubble[]; hover: number | n
 type Side = "top" | "attention" | "leaders";
 
 /** One compact ranked row: name, a small bar, the number */
-function RankRow({ name, sub, value, level, active, onEnter, index }: { name: string; sub: string; value: number; level: Level; active?: boolean; onEnter?: () => void; index: number }) {
+export function RankRow({ name, sub, value, level, active, onEnter, index }: { name: string; sub: string; value: number; level: Level; active?: boolean; onEnter?: () => void; index: number }) {
     return (
         <li onMouseEnter={onEnter} className={cn("grid grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-x-2.5 px-3 py-2 transition-colors", active ? "bg-ink-50 dark:bg-white/5" : "hover:bg-ink-50/70 dark:hover:bg-white/[0.03]")}>
             <span className="text-[11px] font-bold text-ink-400">{index + 1}</span>
@@ -150,7 +150,18 @@ function RankRow({ name, sub, value, level, active, onEnter, index }: { name: st
     );
 }
 
-const RULE = "border-l-4 border-amber-400 bg-amber-50 px-2.5 py-1.5 text-[11px] leading-snug text-ink-800 dark:border-amber-500 dark:bg-amber-500/10 dark:text-ink-100";
+export const RULE = "border-l-4 border-amber-400 bg-amber-50 px-2.5 py-1.5 text-[11px] leading-snug text-ink-800 dark:border-amber-500 dark:bg-amber-500/10 dark:text-ink-100";
+
+export function Rules() {
+    return (
+        <section className="space-y-1 border-t border-ink-200 p-2.5 dark:border-white/10">
+            <h2 className="text-[11px] font-bold uppercase tracking-wide text-ink-900 dark:text-white">Efficiency &amp; Utilization Rules</h2>
+            <div className={RULE}><b>Note:</b> Regular workday = 8 hours. Half day leave = 4 hours.</div>
+            <div className={RULE}><b>Efficiency:</b> <span className="font-semibold text-emerald-600">High</span> target ≥ 100%, goal ≥ 80%, time ≤ allocated · <span className="font-semibold text-amber-600">At Par</span> target ≥ 80%, goal ≥ 50%, time ≤ allocated · <span className="font-semibold text-rose-600">Low</span> otherwise</div>
+            <div className={RULE}><b>Utilization:</b> Time taken / standard time × 100 (capped at 100% when efficiency is Low)</div>
+        </section>
+    );
+}
 
 // The company view for Super Admin, built to fit one screen: pulse (left), department map (middle), ranked lists and the rules (right).
 export default function AdminOverview({ company, departments, executiveLeaders, functionalLeaders, scope, onScope, loading, onWiden }: {
@@ -229,12 +240,7 @@ export default function AdminOverview({ company, departments, executiveLeaders, 
                                 ? leaders.map((l, i) => <RankRow key={l.id} index={i} name={l.name} sub={`${l.depts} ${l.depts === 1 ? "department" : "departments"} · util ${l.util.toFixed(0)}%`} value={l.target} level={levelOf(l.target)} />)
                                 : (side === "top" ? top : attention).map((d, i) => <RankRow key={d.id} index={i} name={d.name} sub={`${d.users} ${d.users === 1 ? "person" : "people"} · util ${d.util.toFixed(0)}% · ${d.hours.toFixed(1)}h`} value={d.target} level={d.level} active={hover === d.id} onEnter={() => setHover(d.id)} />)}
                         </ul>
-                        <section className="space-y-1 border-t border-ink-200 p-2.5 dark:border-white/10">
-                            <h2 className="text-[11px] font-bold uppercase tracking-wide text-ink-900 dark:text-white">Efficiency &amp; Utilization Rules</h2>
-                            <div className={RULE}><b>Note:</b> Regular workday = 8 hours. Half day leave = 4 hours.</div>
-                            <div className={RULE}><b>Efficiency:</b> <span className="font-semibold text-emerald-600">High</span> target ≥ 100%, goal ≥ 80%, time ≤ allocated · <span className="font-semibold text-amber-600">At Par</span> target ≥ 80%, goal ≥ 50%, time ≤ allocated · <span className="font-semibold text-rose-600">Low</span> otherwise</div>
-                            <div className={RULE}><b>Utilization:</b> Time taken / standard time × 100 (capped at 100% when efficiency is Low)</div>
-                        </section>
+                        <Rules />
                     </Reveal>
                 </div>
             )}

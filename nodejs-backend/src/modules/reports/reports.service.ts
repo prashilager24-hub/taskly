@@ -1,6 +1,7 @@
 import { pool } from '../../config/db';
 import type mysql from 'mysql2/promise';
 import ExcelJS from 'exceljs';
+import { computeRollup } from './dashboardRollup';
 
 // ── Dashboard filter shape (mirrors Java DashBoardFilter) ─────────────────────
 export interface DashBoardFilter {
@@ -13,6 +14,17 @@ export interface DashBoardFilter {
   roleID?: number;
   isHeExecutiveLeader?: boolean;
   isHeFunctionalLeader?: boolean;
+  departmentType?: string | null; // "business" | "support" | "all"
+  goalStartDate?: string | null;
+  goalEndDate?: string | null;
+}
+
+// Business / Support split (Java buildDepartmentFilter): keep only departments whose
+// PrimaryDepartment.Type matches. Whitelisted, so the literal below is safe to inline.
+function deptTypeCond(filter: DashBoardFilter, col: string): string {
+  const type = String(filter.departmentType ?? '').toLowerCase();
+  if (type !== 'business' && type !== 'support') return '';
+  return ` AND ${col} IN (SELECT d2.DepartmentID FROM Department d2 JOIN PrimaryDepartment pd ON d2.PrimaryDepartmentId = pd.PrimaryDepartmentId WHERE pd.Type = '${type.toUpperCase()}')`;
 }
 
 // ── EfficiencySummaryFilter (mirrors Java EfficiencySummaryFilterRequest) ─────
@@ -112,12 +124,11 @@ export async function listEfficiencySummaryNewData(filter: DashBoardFilter) {
     return { departmentSummary: deptSummary, departmentGoalSummary: deptGoalSummary };
   }
 
+  // A leader's own team: leader -> departments -> users, rolled up the same way as the company view
   if (isFL && filter.isHeFunctionalLeader) {
-    const [flUsers, flGoal] = await Promise.all([
-      getFLSummaryUsers(filter),
-      getFLGoalSummary(filter),
-    ]);
-    return { flUsersSummary: flUsers, flGoalSummary: flGoal };
+    const { fls } = await computeRollup(filter, (col) => deptTypeCond(filter, col));
+    const mine = fls.filter((fl) => fl.FLID === filter.flID);
+    return { flUsersSummary: mine, flGoalSummary: mine.map((fl) => ({ FLID: fl.FLID, AvgGoalEfficiency: fl.AvgGoalEfficiency })) };
   }
 
   if (isFL) {
@@ -126,11 +137,9 @@ export async function listEfficiencySummaryNewData(filter: DashBoardFilter) {
   }
 
   if (isEL && filter.isHeExecutiveLeader) {
-    const [elUsers, elGoal] = await Promise.all([
-      getELSummaryUsers(filter),
-      getELGoalSummaryAdmin(filter),
-    ]);
-    return { elUsersSummary: elUsers, elGoalSummary: elGoal };
+    const { els } = await computeRollup(filter, (col) => deptTypeCond(filter, col));
+    const mine = els.filter((el) => el.ELID === filter.elID);
+    return { elUsersSummary: mine, elGoalSummary: mine.map((el) => ({ ELID: el.ELID, AvgGoalEfficiency: el.AvgGoalEfficiency })) };
   }
 
   if (isEL) {
@@ -139,9 +148,10 @@ export async function listEfficiencySummaryNewData(filter: DashBoardFilter) {
   }
 
   // Company-wide: aggregate all levels
-  const [companySummary, elList, elGoalList, flList, flGoalList, deptList, deptGoalList] =
+  const [companyCounts, rollup, elList, elGoalList, flList, flGoalList, deptList, deptGoalList] =
     await Promise.all([
       getCompanySummary(filter),
+      computeRollup(filter, (col) => deptTypeCond(filter, col)),
       getELSummary(filter),
       getELGoalSummaryAdmin(filter),
       getFLSummary(filter),
@@ -149,6 +159,10 @@ export async function listEfficiencySummaryNewData(filter: DashBoardFilter) {
       getDepartmentSummary(filter),
       getDepartmentGoalSummary(filter),
     ]);
+
+  // Averages come from the user -> department -> EL roll-up (Java getCompanySummary); the flat
+  // query only supplies the headcounts.
+  const companySummary = { ...companyCounts, ...rollup.company };
 
   // Merge goal efficiency into EL list
   const elGoalMap = new Map(elGoalList.map((r: mysql.RowDataPacket) => [r['ELID'], r['AvgGoalEfficiency'] ?? 0]));
@@ -170,7 +184,7 @@ export async function listEfficiencySummaryNewData(filter: DashBoardFilter) {
   };
 
   if (filter.roleID === 1) {
-    response['elSummaryAdmin'] = { eldata: await getELSummaryUsers(filter) };
+    response['elSummaryAdmin'] = { eldata: rollup.els };
   }
 
   return response;
@@ -256,7 +270,7 @@ async function getCompanySummary(filter: DashBoardFilter) {
        COUNT(DISTINCT e.UserID)              AS TotalUsers,
        COUNT(DISTINCT e.DepartmentID)        AS TotalDepartments
      FROM EfficiencyUtilizationSummary e
-     WHERE e.DayType = 'Working' AND e.WorkDate BETWEEN ? AND ?`,
+     WHERE e.DayType = 'Working' AND e.WorkDate BETWEEN ? AND ?${deptTypeCond(filter, 'e.DepartmentID')}`,
     [filter.startDate, filter.endDate],
   );
   return rows[0] ?? {};
@@ -299,11 +313,19 @@ async function getDepartmentSummary(filter: DashBoardFilter) {
     `SELECT e.DepartmentID, d.DepartmentName,
        ROUND(AVG(e.TargetAchievedPercent),2) AS AvgTargetPercent,
        ROUND(AVG(e.UtilizationPercent),2)    AS AvgUtilizationPercent,
+       ROUND(AVG(e.AllocatedTimeHrs),2)      AS AvgAllocatedHrs,
        ROUND(AVG(e.TotalTimeOfWork),2)       AS AvgTotalWork,
+       CASE
+         WHEN ROUND(AVG(e.TargetAchievedPercent),2) >= 100 AND ROUND(AVG(e.UtilizationPercent),2) >= 80
+              AND ROUND(AVG(e.TotalTimeOfWork),2) <= ROUND(AVG(e.AllocatedTimeHrs),2) THEN 'High'
+         WHEN ROUND(AVG(e.TargetAchievedPercent),2) >= 80 AND ROUND(AVG(e.UtilizationPercent),2) >= 50
+              AND ROUND(AVG(e.TotalTimeOfWork),2) <= ROUND(AVG(e.AllocatedTimeHrs),2) THEN 'At Par'
+         ELSE 'Low'
+       END AS EfficiencyLevel,
        COUNT(DISTINCT e.UserID)              AS TotalUsers
      FROM EfficiencyUtilizationSummary e
      JOIN Department d ON d.DepartmentID = e.DepartmentID
-     WHERE ${conds.join(' AND ')}
+     WHERE ${conds.join(' AND ')}${deptTypeCond(filter, 'e.DepartmentID')}
      GROUP BY e.DepartmentID, d.DepartmentName`,
     params,
   );
@@ -319,7 +341,7 @@ async function getDepartmentGoalSummary(filter: DashBoardFilter) {
     `SELECT g.DepartmentID,
        ROUND(AVG(CASE WHEN g.FixedGoal > 0 THEN g.AchievedGoal / g.FixedGoal * 100 END),2) AS AvgGoalEfficiency
      FROM UserGoalData g
-     WHERE ${conds.join(' AND ')}
+     WHERE ${conds.join(' AND ')}${deptTypeCond(filter, 'g.DepartmentID')}
      GROUP BY g.DepartmentID`,
     params,
   );
@@ -335,29 +357,22 @@ async function getELSummary(filter: DashBoardFilter) {
     `SELECT d.ExecutiveLeaderID AS ELID, u.UserName AS ELName,
        ROUND(AVG(e.TargetAchievedPercent),2) AS AvgTargetPercent,
        ROUND(AVG(e.UtilizationPercent),2)    AS AvgUtilizationPercent,
+       ROUND(AVG(e.AllocatedTimeHrs),2)      AS AvgAllocatedHrs,
+       ROUND(AVG(e.TotalTimeOfWork),2)       AS AvgTotalWork,
+       CASE
+         WHEN ROUND(AVG(e.TargetAchievedPercent),2) >= 100 AND ROUND(AVG(e.UtilizationPercent),2) >= 80
+              AND ROUND(AVG(e.TotalTimeOfWork),2) <= ROUND(AVG(e.AllocatedTimeHrs),2) THEN 'High'
+         WHEN ROUND(AVG(e.TargetAchievedPercent),2) >= 80 AND ROUND(AVG(e.UtilizationPercent),2) >= 50
+              AND ROUND(AVG(e.TotalTimeOfWork),2) <= ROUND(AVG(e.AllocatedTimeHrs),2) THEN 'At Par'
+         ELSE 'Low'
+       END AS EfficiencyLevel,
        COUNT(DISTINCT e.DepartmentID)        AS TotalDepts
      FROM EfficiencyUtilizationSummary e
      JOIN Department d ON d.DepartmentID = e.DepartmentID
      JOIN Users u ON u.UserID = d.ExecutiveLeaderID
-     WHERE ${conds.join(' AND ')} AND d.ExecutiveLeaderID IS NOT NULL
+     WHERE ${conds.join(' AND ')} AND u.RoleID = 3 AND d.ExecutiveLeaderID IS NOT NULL${deptTypeCond(filter, 'd.DepartmentID')}
      GROUP BY d.ExecutiveLeaderID, u.UserName`,
     params,
-  );
-  return rows;
-}
-
-async function getELSummaryUsers(filter: DashBoardFilter) {
-  const [rows] = await pool.query<mysql.RowDataPacket[]>(
-    `SELECT e.UserID, u.UserName, e.DepartmentID, d.DepartmentName,
-       ROUND(AVG(e.TargetAchievedPercent),2) AS AvgTargetPercent,
-       ROUND(AVG(e.UtilizationPercent),2)    AS AvgUtilizationPercent
-     FROM EfficiencyUtilizationSummary e
-     JOIN Users u ON u.UserID = e.UserID
-     JOIN Department d ON d.DepartmentID = e.DepartmentID
-     WHERE e.DayType = 'Working' AND e.WorkDate BETWEEN ? AND ?
-       AND d.ExecutiveLeaderID = ?
-     GROUP BY e.UserID, u.UserName, e.DepartmentID, d.DepartmentName`,
-    [filter.startDate, filter.endDate, filter.elID],
   );
   return rows;
 }
@@ -368,7 +383,7 @@ async function getELGoalSummaryAdmin(filter: DashBoardFilter) {
        ROUND(AVG(CASE WHEN g.FixedGoal > 0 THEN g.AchievedGoal / g.FixedGoal * 100 END),2) AS AvgGoalEfficiency
      FROM UserGoalData g
      JOIN Department d ON d.DepartmentID = g.DepartmentID
-     WHERE g.WorkDate BETWEEN ? AND ? AND d.ExecutiveLeaderID IS NOT NULL
+     WHERE g.WorkDate BETWEEN ? AND ? AND d.ExecutiveLeaderID IS NOT NULL${deptTypeCond(filter, 'd.DepartmentID')}
      GROUP BY d.ExecutiveLeaderID`,
     [filter.startDate, filter.endDate],
   );
@@ -384,29 +399,22 @@ async function getFLSummary(filter: DashBoardFilter) {
     `SELECT d.FunctionalLeaderID AS FLID, u.UserName AS FLName,
        ROUND(AVG(e.TargetAchievedPercent),2) AS AvgTargetPercent,
        ROUND(AVG(e.UtilizationPercent),2)    AS AvgUtilizationPercent,
+       ROUND(AVG(e.AllocatedTimeHrs),2)      AS AvgAllocatedHrs,
+       ROUND(AVG(e.TotalTimeOfWork),2)       AS AvgTotalWork,
+       CASE
+         WHEN ROUND(AVG(e.TargetAchievedPercent),2) >= 100 AND ROUND(AVG(e.UtilizationPercent),2) >= 80
+              AND ROUND(AVG(e.TotalTimeOfWork),2) <= ROUND(AVG(e.AllocatedTimeHrs),2) THEN 'High'
+         WHEN ROUND(AVG(e.TargetAchievedPercent),2) >= 80 AND ROUND(AVG(e.UtilizationPercent),2) >= 50
+              AND ROUND(AVG(e.TotalTimeOfWork),2) <= ROUND(AVG(e.AllocatedTimeHrs),2) THEN 'At Par'
+         ELSE 'Low'
+       END AS EfficiencyLevel,
        COUNT(DISTINCT e.DepartmentID)        AS TotalDepts
      FROM EfficiencyUtilizationSummary e
      JOIN Department d ON d.DepartmentID = e.DepartmentID
      JOIN Users u ON u.UserID = d.FunctionalLeaderID
-     WHERE ${conds.join(' AND ')} AND d.FunctionalLeaderID IS NOT NULL
+     WHERE ${conds.join(' AND ')} AND u.RoleID = 4 AND d.FunctionalLeaderID IS NOT NULL${deptTypeCond(filter, 'd.DepartmentID')}
      GROUP BY d.FunctionalLeaderID, u.UserName`,
     params,
-  );
-  return rows;
-}
-
-async function getFLSummaryUsers(filter: DashBoardFilter) {
-  const [rows] = await pool.query<mysql.RowDataPacket[]>(
-    `SELECT e.UserID, u.UserName, e.DepartmentID, d.DepartmentName,
-       ROUND(AVG(e.TargetAchievedPercent),2) AS AvgTargetPercent,
-       ROUND(AVG(e.UtilizationPercent),2)    AS AvgUtilizationPercent
-     FROM EfficiencyUtilizationSummary e
-     JOIN Users u ON u.UserID = e.UserID
-     JOIN Department d ON d.DepartmentID = e.DepartmentID
-     WHERE e.DayType = 'Working' AND e.WorkDate BETWEEN ? AND ?
-       AND d.FunctionalLeaderID = ?
-     GROUP BY e.UserID, u.UserName, e.DepartmentID, d.DepartmentName`,
-    [filter.startDate, filter.endDate, filter.flID],
   );
   return rows;
 }
@@ -417,7 +425,7 @@ async function getFLGoalSummary(filter: DashBoardFilter) {
        ROUND(AVG(CASE WHEN g.FixedGoal > 0 THEN g.AchievedGoal / g.FixedGoal * 100 END),2) AS AvgGoalEfficiency
      FROM UserGoalData g
      JOIN Department d ON d.DepartmentID = g.DepartmentID
-     WHERE g.WorkDate BETWEEN ? AND ? AND d.FunctionalLeaderID IS NOT NULL
+     WHERE g.WorkDate BETWEEN ? AND ? AND d.FunctionalLeaderID IS NOT NULL${deptTypeCond(filter, 'd.DepartmentID')}
      GROUP BY d.FunctionalLeaderID`,
     [filter.startDate, filter.endDate],
   );

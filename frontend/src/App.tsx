@@ -21,7 +21,6 @@ import { Outlet } from "react-router-dom";
 import Logout from "./pages/logout";
 import EntryApproval from "./pages/EntryApproval";
 import FormPage from "./pages/forms";
-import SalesForward from "./pages/salesForward";
 
 import GoalManagement from "./pages/goalManagement";
 import Goals from "./pages/goals";
@@ -61,7 +60,6 @@ function App() {
         <Route path="/notifications" element={<ProtectedRoute module="notifications"><NotificationsPage /></ProtectedRoute>} />
         <Route path="/access-management" element={<ProtectedRoute module="accessmgmt"><AccessManagementPage /></ProtectedRoute>} />
         <Route path="/efficiency-report" element={<ProtectedRoute module="perf"><Efficiency /></ProtectedRoute>} />
-        <Route path="/sales-forward" element={<ProtectedRoute module="salesfwd"><SalesForward /></ProtectedRoute>} />
         <Route path="/Goal-management" element={<ProtectedRoute module="goalmgmt"><GoalManagement /></ProtectedRoute>} />
         <Route path="/pms" element={<ProtectedRoute module="pms"><PmsIndex /></ProtectedRoute>} />
         <Route path="/pms/dashboard" element={<ProtectedRoute module="pms_dashboard"><PmsDashboardPage /></ProtectedRoute>} />

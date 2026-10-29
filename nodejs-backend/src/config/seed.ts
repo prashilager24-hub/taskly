@@ -17,7 +17,7 @@ async function seed() {
   const ALL_ACTIONS = ['read', 'create', 'update', 'delete'];
   const MODULE_IDS = [
     'dashboard', 'reports', 'perf', 'mydata', 'goals', 'entryApproval', 'userHistory', 'queryReport',
-    'dataentry', 'salesfwd', 'admin', 'accessmgmt', 'deptmgmt', 'taskmgmt', 'targetmgmt', 'goalmgmt',
+    'dataentry', 'admin', 'accessmgmt', 'deptmgmt', 'taskmgmt', 'targetmgmt', 'goalmgmt',
     'pms', 'hrfeedback',
   ];
   const rootPrivileges = JSON.stringify(Object.fromEntries(MODULE_IDS.map((m) => [m, ALL_ACTIONS])));

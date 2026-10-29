@@ -11,6 +11,15 @@ export type HikeKind = 'EXPECTED' | 'TARGET' | 'MINIMAL' | 'APPROVED';
 export interface Money { annual: number; fixed: number; variable: number; variablePct: number; variablePerHalfYear: number }
 export interface Person { userId: number; name: string }
 
+/** One quarter of the PMS review that Part A shows. Taken from PMS, never typed in the appraisal. */
+export interface PmsQuarter {
+  quarter: string; year: number; start: string; end: string;
+  targetPercent: number | null; goalAchievement: number | null; utilizationPercent: number | null; efficiencyPercent: number | null; efficiencyLabel: string;
+  systemGrade: number | null; managerAvgRating: number | null; finalRating: number | null; gradeLabel: string; feedback: { category: string; text: string }[];
+}
+export type RequestField = 'DESIGNATION' | 'TEAM';
+export interface RequestReviews { A1: { comment: string } | null; A2: { comment: string; decision: 'APPROVED' | 'REJECTED' | null } | null }
+
 /** Everything about a cycle, before masking */
 export interface FullCycle {
   cycle: {
@@ -24,6 +33,8 @@ export interface FullCycle {
     ratings: { A1: { finalRating: number | null; comments: string } | null; A2: { finalRating: number | null; comments: string } | null };
   }[];
   request: { newDesignation: string; designationComment: string; newTeam: string; teamComment: string } | null;
+  pms: PmsQuarter[];
+  requestReviews: Record<RequestField, RequestReviews>;
   expected: Money | null;
   target: Money | null;
   minimal: { A1: Money | null; A2: Money | null };
@@ -58,6 +69,13 @@ export function maskCycle(full: FullCycle, role: ViewRole): Record<string, unkno
     if (sees) {
       out['self'] = full.self;
       out['request'] = full.request;
+      out['pms'] = full.pms;
+    }
+    // What the FL and EL said about the requested changes: the assessors see both; the employee sees only the EL's decision and comment, once the offer is out
+    if (role === 'A1' || role === 'A2') out['requestReviews'] = full.requestReviews;
+    else if (role === 'EMPLOYEE' && offerShown(c.status)) {
+      const only = (f: RequestField) => ({ A2: full.requestReviews[f].A2 });
+      out['requestReviews'] = { DESIGNATION: only('DESIGNATION'), TEAM: only('TEAM') };
     }
     out['quarters'] = full.quarters.map((q) => ({
       quarter: q.quarter,
@@ -83,7 +101,8 @@ export function maskCycle(full: FullCycle, role: ViewRole): Record<string, unkno
 
     // Approved hike: A2 and Finance always, the employee after the offer, A1 never
     if (role === 'A2' || role === 'FINANCE' || (role === 'EMPLOYEE' && offerShown(c.status))) out['approved'] = full.approved;
-    if (role === 'FINANCE') out['financeComment'] = full.financeComment;
+    // Finance's note about the budget goes to the EL only: Finance itself, and the EL when it is the EL's own appraisal
+    if (role === 'FINANCE' || (role === 'EMPLOYEE' && c.level === 'HEAD_EL')) out['financeComment'] = full.financeComment;
   }
 
   out['response'] = full.response;
@@ -96,6 +115,7 @@ export interface TeamRow {
   cycleId: number; userId: number; employeeName: string; level: EmployeeLevel; status: Status; start: string;
   employeeWindowEnd: string; assessorWindowEnd: string; late: boolean;
   selfSubmitted: boolean; a1Submitted: boolean; a2Submitted: boolean; myRole: 'A1' | 'A2' | 'FINANCE';
+  assessor1Name: string | null; pmsFinalAvg: number | null; pmsQuarters: number; asksDesignation: boolean; asksTeam: boolean; canApprove: boolean;
   expected: Money | null; minimal: { A1: Money | null; A2: Money | null }; approved: Money | null;
 }
 
@@ -105,6 +125,7 @@ export function maskTeamRow(row: TeamRow): Record<string, unknown> {
     cycleId: row.cycleId, userId: row.userId, employeeName: row.employeeName, level: row.level, status: row.status, start: row.start,
     employeeWindowEnd: row.employeeWindowEnd, assessorWindowEnd: row.assessorWindowEnd, late: row.late,
     selfSubmitted: row.selfSubmitted, a1Submitted: row.a1Submitted, a2Submitted: row.a2Submitted, myRole: row.myRole,
+    assessor1Name: row.assessor1Name, pmsFinalAvg: row.pmsFinalAvg, pmsQuarters: row.pmsQuarters, asksDesignation: row.asksDesignation, asksTeam: row.asksTeam, canApprove: row.canApprove,
   };
   if (row.myRole === 'A1') return { ...base, minimal: row.minimal };
   if (row.myRole === 'A2') return { ...base, minimal: row.minimal, approved: row.approved };

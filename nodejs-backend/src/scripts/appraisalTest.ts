@@ -8,10 +8,11 @@
  *        assessor : employee window over, assessors' window open (day 16)
  *        finance  : assessors' window over, with Finance (day 31)
  *        return   : a postponed offer comes back to the assessors
- *   npx tsx src/scripts/appraisalTest.ts reset [name]      delete all test cycles, or one person's, e.g. reset emp1 (people stay)
+ *   npx tsx src/scripts/appraisalTest.ts reset [name]      delete all test cycles (and the test budget), or one person's cycle, e.g. reset emp1 (people stay)
+ *   npx tsx src/scripts/appraisalTest.ts reset-budget      clear the test department's budget and allocations
  *   npx tsx src/scripts/appraisalTest.ts remove            delete the cycles, people, department and roles
  *
- * Test people are appraisal.*@tapmind.test, password Test@12345.
+ * Test people are appraisal.*@tapmind.test, password Test@12345. Seeding also writes PMS quarterly reviews for the three associates (Part A reads them).
  */
 import bcrypt from 'bcryptjs';
 import type mysql from 'mysql2/promise';
@@ -83,10 +84,34 @@ async function seed() {
   await pool.execute('UPDATE Department SET ExecutiveLeaderID = ?, FunctionalLeaderID = ? WHERE DepartmentID = ?', [id['el'], id['fl'], deptId]);
   for (const k of ['el', 'fl', 'emp1', 'emp2', 'emp3']) await pool.execute('INSERT IGNORE INTO DepartmentUser (DepartmentID, UserID) VALUES (?, ?)', [deptId, id[k]]);
 
+  for (const k of ['emp1', 'emp2', 'emp3']) await seedPms(id[k]!, k);
   const first = await startCycle(id['emp1']!);
   console.log(JSON.stringify({ departmentId: deptId, financeRoleId: financeRole, hrRoleId: hrRole, users: id, emp1Cycle: first }, null, 1));
   console.log(`\nAPPRAISAL_FINANCE_ROLE_IDS=${financeRole}   APPRAISAL_HR_ROLE_IDS=${hrRole}   (in nodejs-backend/.env, then restart the backend)`);
   console.log(`configured now: finance=[${env.APPRAISAL_FINANCE_ROLE_IDS}] hr=[${env.APPRAISAL_HR_ROLE_IDS}]`);
+}
+
+/** Four PMS quarterly reviews (Q4 2025 to Q3 2026) so Part A of the appraisal has data to show. Numbers differ a little per person. */
+async function seedPms(uid: number, key: string) {
+  const bump = key === 'emp1' ? 0 : key === 'emp2' ? -8 : 6;
+  const quarters = [
+    { q: 'Q4', y: 2025, s: '2025-10-01', e: '2025-12-31', t: 82, g: 76, u: 71, ef: 96, sg: 7, mr: 6.2 },
+    { q: 'Q1', y: 2026, s: '2026-01-01', e: '2026-03-31', t: 88, g: 81, u: 74, ef: 99, sg: 8, mr: 6.8 },
+    { q: 'Q2', y: 2026, s: '2026-04-01', e: '2026-06-30', t: 93, g: 85, u: 78, ef: 103, sg: 8, mr: 7.1 },
+    { q: 'Q3', y: 2026, s: '2026-07-01', e: '2026-09-30', t: 97, g: 90, u: 80, ef: 105, sg: 9, mr: 7.6 },
+  ];
+  await pool.execute('DELETE FROM quarterlyreview WHERE emp_id = ?', [uid]);
+  for (const x of quarters) {
+    const target = x.t + bump, goal = x.g + bump;
+    const final = Math.round(((target * 0.4 + goal * 0.6) / 10) * 100) / 100;
+    const label = final >= 8.5 ? 'Exceeds Expectations' : final >= 7 ? 'Meets Expectations' : 'Approaching Expectations';
+    await pool.execute(
+      `INSERT INTO quarterlyreview SET emp_id = ?, quarter = ?, quarter_year = ?, quarter_start_date = ?, quarter_end_date = ?, target_percent = ?, goal_achievement = ?, utilization_percent = ?,
+         efficiency_percent = ?, efficiency_label = ?, system_grade = ?, manager_avg_rating = ?, final_rating = ?, manager_ratings = ?, feedback = ?, status = 'On Track', grade = ?, created_at = NOW(), updated_at = NOW()`,
+      [uid, x.q, x.y, x.s, x.e, target, goal, x.u, x.ef, x.ef >= 100 ? 'High' : 'At Par', x.sg, x.mr, final, '{}',
+        JSON.stringify([{ feedbackCat: 'Meets Expectations', feedbackType: 'Productivity', feedback: `${x.q} ${x.y}: steady delivery, good ownership of the sprint goals.` }]),
+        JSON.stringify([{ finalGrade: final, finalGradeLabel: label, starRating: 0, starDescription: '', goalWeight: 60, targetWeight: 40 }])]);
+  }
 }
 
 async function startCycle(uid: number) {
@@ -129,11 +154,13 @@ async function reset(who?: string) {
   const like = who ? email(who.replace(/^appraisal\.|@tapmind\.test$/g, '')) : EMAIL_LIKE;
   await pool.execute('DELETE FROM AppraisalAudit WHERE CycleID IN (SELECT CycleID FROM AppraisalCycle WHERE UserID IN (SELECT UserID FROM Users WHERE UserEmail LIKE ?))', [like]);
   const [res] = await pool.execute<mysql.ResultSetHeader>('DELETE FROM AppraisalCycle WHERE UserID IN (SELECT UserID FROM Users WHERE UserEmail LIKE ?)', [like]);
-  console.log(`deleted ${res.affectedRows} cycles`);
+  if (!who) await pool.execute('DELETE FROM AppraisalBudget WHERE DepartmentID IN (SELECT DepartmentID FROM Department WHERE DepartmentName = ?)', [DEPT]).then(() => pool.execute('DELETE FROM AppraisalBudgetAlloc WHERE DepartmentID IN (SELECT DepartmentID FROM Department WHERE DepartmentName = ?)', [DEPT]));
+  console.log(`deleted ${res.affectedRows} cycles${who ? '' : ' and the test budget'}`);
 }
 
 async function remove() {
   await reset();
+  await pool.execute('DELETE FROM quarterlyreview WHERE emp_id IN (SELECT UserID FROM Users WHERE UserEmail LIKE ?)', [EMAIL_LIKE]);
   await pool.execute('DELETE FROM DepartmentUser WHERE DepartmentID IN (SELECT DepartmentID FROM Department WHERE DepartmentName = ?)', [DEPT]);
   await pool.execute('DELETE FROM Department WHERE DepartmentName = ?', [DEPT]);
   await pool.execute('DELETE FROM UserSession WHERE UserID IN (SELECT UserID FROM Users WHERE UserEmail LIKE ?)', [EMAIL_LIKE]).catch(() => undefined);
@@ -150,7 +177,8 @@ async function remove() {
   else if (cmd === 'start') { console.log(await startCycle(await userId((a ?? '').replace(/^appraisal\.|@tapmind\.test$/g, '')))); await status(); }
   else if (cmd === 'advance') await advance(a ?? '', b ?? '');
   else if (cmd === 'reset') await reset(a);
+  else if (cmd === 'reset-budget') { await pool.execute('DELETE FROM AppraisalBudgetAlloc WHERE DepartmentID IN (SELECT DepartmentID FROM Department WHERE DepartmentName = ?)', [DEPT]); await pool.execute('DELETE FROM AppraisalBudget WHERE DepartmentID IN (SELECT DepartmentID FROM Department WHERE DepartmentName = ?)', [DEPT]); console.log('test budget cleared'); }
   else if (cmd === 'remove') await remove();
-  else console.log('Commands: seed | status | start <email> | advance <email> <assessor|finance|return> | reset [name] | remove');
+  else console.log('Commands: seed | status | start <email> | advance <email> <assessor|finance|return> | reset [name] | reset-budget | remove');
   process.exit(0);
 })().catch((e) => { console.error(String(e.message ?? e)); process.exit(1); });

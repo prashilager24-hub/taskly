@@ -85,7 +85,7 @@ export const MENU: MenuItem[] = [
     children: [
       { icon: Award, label: "My Appraisal", href: "appraisal", module: "appraisal", avail: "my" },
       { icon: UserCheck, label: "Team Appraisals", href: "appraisal/team", module: "appraisal", avail: "team", prefix: true },
-      { icon: Wallet, label: "Budget Approval", href: "appraisal/budget", module: "appraisal", avail: "budget" },
+      { icon: Wallet, label: "Budget", href: "appraisal/budget", module: "appraisal", avail: "budget" },
       { icon: ShieldCheck, label: "HR Postponements", href: "appraisal/hr", module: "appraisal", avail: "hr" },
       { icon: UserCog, label: "Appraisal Setup", href: "appraisal/setup", module: "appraisal", avail: "setup" },
     ],

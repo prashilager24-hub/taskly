@@ -7,6 +7,8 @@ import { validate } from '../../middlewares/validate';
 import { sendSuccess } from '../../utils/response';
 import { MAX_AMOUNT } from './appraisal.calc';
 import * as svc from './appraisal.service';
+import * as budget from './appraisal.budget';
+import { todayIST } from './appraisal.calc';
 
 const router = Router();
 router.use(authenticate, requireModule('appraisal', 'read'));
@@ -29,19 +31,23 @@ const answers = z.object(Object.fromEntries(ANSWER_KEYS.map((k) => [k, text.opti
 
 const SelfReview = z.object({
   answers,
-  quarters: z.array(z.object({ quarter: quarterNo, goals: text.optional(), targets: text.optional(), biggestAchievements: text.optional(), biggestFailures: text.optional() })).max(4),
+  // Part A comes from PMS now; the old typed quarter grid is still accepted but the screens no longer send it
+  quarters: z.array(z.object({ quarter: quarterNo, goals: text.optional(), targets: text.optional(), biggestAchievements: text.optional(), biggestFailures: text.optional() })).max(4).optional(),
   expectedHike: amount.nullable().optional(),
   targetHike: amount.nullable().optional(),
   request: z.object({ newDesignation: z.string().max(150).optional(), designationComment: text.optional(), newTeam: z.string().max(150).optional(), teamComment: text.optional() }).optional(),
   submit: z.boolean(),
 });
 
+const requestReview = z.object({ comment: text.optional(), decision: z.enum(['APPROVED', 'REJECTED']).nullable().optional() });
+
 const AssessorReview = z.object({
-  quarters: z.array(z.object({ quarter: quarterNo, finalRating: rating.nullable().optional(), comments: text.optional() })).max(4),
+  quarters: z.array(z.object({ quarter: quarterNo, finalRating: rating.nullable().optional(), comments: text.optional() })).max(4).optional(),
   overallRating: rating.nullable().optional(),
   comment: text.optional(),
   managerFeedback: text.optional(),
   minimalHike: amount.nullable().optional(),
+  requests: z.object({ designation: requestReview.optional(), team: requestReview.optional() }).optional(),
   submit: z.boolean(),
 });
 
@@ -52,6 +58,10 @@ const Respond = z.discriminatedUnion('decision', [
   z.object({ decision: z.literal('REJECT'), postponeMonths: z.union([z.literal(3), z.literal(6)]), reason: z.string().trim().min(1, 'Give a reason').max(4000), expectations: z.string().trim().min(1, 'Say what you expect').max(4000), comment: text.optional() }),
 ]);
 
+const FinanceNote = z.object({ comment: z.string().trim().min(1, 'Write the note').max(4000) });
+const Year = z.object({ year: z.coerce.number().int().min(2000).max(2100).optional() });
+const DeptBudget = z.object({ year: z.number().int().min(2000).max(2100), departmentId: z.number().int().positive(), amount: amount, comment: text.optional() });
+const Alloc = z.object({ year: z.number().int().min(2000).max(2100), departmentId: z.number().int().positive(), flUserId: z.number().int().positive(), amount: amount });
 const HrDecision = z.object({ status: z.enum(['APPROVED', 'RETURNED']), comment: text.optional() });
 const NewCycle = z.object({ userId: z.number().int().positive(), cycleStartDate: date });
 const Person = z.object({ dateOfJoining: date.nullable(), level: z.enum(['ASSOCIATE', 'MANAGER', 'HEAD_EL']).nullable(), currentAnnualCtc: amount.nullable() });
@@ -72,7 +82,13 @@ router.get('/cycles/:cycleId', handler(async (req, res) => { sendSuccess(res, aw
 
 router.put('/cycles/:cycleId/self-review', validate(SelfReview), handler(async (req, res) => { await svc.saveSelfReview(cycleId(req), me(req), req.body); sendSuccess(res, true); }));
 router.put('/cycles/:cycleId/assessor-review', validate(AssessorReview), handler(async (req, res) => { await svc.saveAssessorReview(cycleId(req), me(req), req.body); sendSuccess(res, true); }));
-router.put('/cycles/:cycleId/budget-approval', validate(Budget), handler(async (req, res) => { await svc.approveBudget(cycleId(req), me(req), roleOf(req), req.body); sendSuccess(res, true); }));
+router.put('/cycles/:cycleId/budget-approval', validate(Budget), handler(async (req, res) => { await svc.approveHike(cycleId(req), me(req), roleOf(req), req.body); sendSuccess(res, true); }));
+router.put('/cycles/:cycleId/finance-note', validate(FinanceNote), handler(async (req, res) => { await svc.financeNote(cycleId(req), me(req), roleOf(req), req.body.comment); sendSuccess(res, true); }));
+
+// Budget: Finance sets a department's, its EL splits it, an FL sees only their own share
+router.get('/budget', validate(Year, 'query'), handler(async (req, res) => { sendSuccess(res, await budget.overview(me(req), roleOf(req), (req.query as { year?: number }).year ?? Number(todayIST().slice(0, 4)))); }));
+router.put('/budget/department', validate(DeptBudget), handler(async (req, res) => { await budget.setDepartmentBudget(me(req), roleOf(req), req.body); sendSuccess(res, true); }));
+router.put('/budget/allocation', validate(Alloc), handler(async (req, res) => { await budget.setAllocation(me(req), roleOf(req), req.body); sendSuccess(res, true); }));
 router.post('/cycles/:cycleId/respond', validate(Respond), handler(async (req, res) => { sendSuccess(res, await svc.respond(cycleId(req), me(req), req.body)); }));
 router.put('/cycles/:cycleId/hr-decision', validate(HrDecision), handler(async (req, res) => { await svc.hrDecision(cycleId(req), me(req), roleOf(req), req.body); sendSuccess(res, true); }));
 router.post('/cycles', validate(NewCycle), handler(async (req, res) => { sendSuccess(res, await svc.createCycle(me(req), roleOf(req), req.body), 201); }));

@@ -17,6 +17,55 @@ Summary: one or two lines on what and why.
 
 ---
 
+## 2026-10-29 — PMS section, Notifications, Hierarchy and assessors, Daily Activity by level  (commits: 658905c, 40e7a81, a9b0e72, c09d2d0, e70016d, ef2fb89, 2bbdaab)
+
+Summary: a batch of earlier work that was pushed without a changelog entry, written up now so it is not lost. PMS becomes its own sidebar section, admins can send Notifications, the reporting ladder decides who reviews whom, and team members get a reduced Daily Activity form. Merged with the dashboard work above; the Taskly dashboard still shows the production numbers after the merge.
+
+### Frontend
+- Sidebar ([components/sidebar.tsx](../frontend/src/components/sidebar.tsx), [App.tsx](../frontend/src/App.tsx))
+  - **Dashboard** group with two items: Taskly (`/dashboard`) and PMS Dashboard (`/pms/dashboard`). **PMS** is its own group: Goal Setting, Manager Feedback, Quarterly Review, Report. Routes are `/pms/dashboard`, `/pms/goal-setting`, `/pms/manager-feedback`, `/pms/quarterly-review`, `/pms/report`; `/pms` redirects to the first tab the person may open. [pages/pmsPages.tsx](../frontend/src/pages/pmsPages.tsx) holds the page wrappers.
+  - The old in-page PMS tabs and the sidebar announcement are gone. Onboarding is hidden 45 days after the join date ([lib/onboarding.ts](../frontend/src/lib/onboarding.ts); `joinedAt` is now in the login session).
+- Notifications: [pages/notifications.tsx](../frontend/src/pages/notifications.tsx) (Admin screen to create / edit / end a notification for everyone, departments, roles or named people) and [components/notifications/](../frontend/src/components/notifications) (the bell in the top bar; a person can close a notification and it stays closed).
+- PMS pages
+  - [goalSetting.tsx](../frontend/src/components/goalSetting.tsx) rewritten; [monthlyReview.tsx](../frontend/src/components/monthlyReview.tsx) (Manager Feedback) made compact.
+  - [pmsDashboard.tsx](../frontend/src/components/pmsDashboard.tsx): starts on a chosen department and employee instead of everyone; newest quarter first (your colleague then reversed the quarter tabs to oldest first, newest still selected); a compact **live preview strip** above the review, with the grading guide in a popover.
+  - [pmsReport.tsx](../frontend/src/components/pmsReport.tsx) reduced to the report cards only. Monthly Breakdown in Quarterly Review now shows data (see Backend).
+  - [quarterlyReview.tsx](../frontend/src/components/quarterlyReview.tsx) takes the assessors from the server (see Backend). The form layout itself is **not** redesigned yet.
+- Access Management: new **Hierarchy** tab ([access/HierarchyTab.tsx](../frontend/src/components/access/HierarchyTab.tsx)): the ladder with counts, who reviews whom, who is the CEO / CBO, and everyone with their two assessors.
+- Daily Activity ([DailyActivityLog.tsx](../frontend/src/components/DailyActivityLog.tsx), [pages/forms.tsx](../frontend/src/pages/forms.tsx)): Managers, Leads and above can pick a team member; for a team member's day only **Target** and **Goal** entry are shown. A person's own day keeps Task, Target and Goal.
+- Date range filter: [DateRangeField.tsx](../frontend/src/components/DateRangeField.tsx) takes an optional `label`. With a label it renders as a field (height `h-14`, label inside, chevron) so it lines up with the Select boxes beside it. Used by the PMS dashboard filters. It also copes with an empty range ("All dates") instead of crashing.
+- Crash guards for missing data in [History.tsx](../frontend/src/pages/History.tsx), [QueryReport.tsx](../frontend/src/pages/QueryReport.tsx), [salesForward.tsx](../frontend/src/pages/salesForward.tsx). Query & HR inbox redesigned (`HR - Modules Taskly/.../QueryEmployee.jsx`).
+
+### Backend
+- Hierarchy: [access/hierarchy.ts](../nodejs-backend/src/modules/access/hierarchy.ts) (new). Ladder: Admin (CEO / CBO) > Executive Leader > Functional Leader / Manager / Lead > Employee > Intern. Assessors:
+  - Employee / Intern: accessor 1 = their manager or FL, accessor 2 = their EL.
+  - FL / Manager / Lead: accessor 1 = the EL of their department, accessor 2 = CEO / CBO (optional).
+  - EL: accessor 1 = CEO / CBO, no accessor 2.
+  - A manager or EL set on the person (`ReportingManagerID`, `ELManagerID`) wins over the department's leaders. The CEO / CBO is `AppSetting.ceoUserId`, else the first real Admin account.
+- New routes in [access/access.routes.ts](../nodejs-backend/src/modules/access/access.routes.ts): `GET /access/hierarchy`, `PUT /access/hierarchy/ceo`, `GET /access/assessors/:userId`.
+- Notifications: [modules/notifications/](../nodejs-backend/src/modules/notifications) (new), mounted at `/notifications` in [app.ts](../nodejs-backend/src/app.ts). Timestamps are written from Node, not MySQL `NOW()`, to avoid a time-zone shift.
+- [access/catalog.ts](../nodejs-backend/src/modules/access/catalog.ts): PMS is split into `pms_goals`, `pms_feedback`, `pms_quarterly`, `pms_dashboard`, `pms_report`; new `notifications` module under Admin.
+- [reports/reports.service.ts](../nodejs-backend/src/modules/reports/reports.service.ts) `getUserSummary` returns the aggregates plus `DailyData` (it used to return raw rows, which showed zeros / NaN on the employee dashboard).
+- [reports/efficiencySummary.service.ts](../nodejs-backend/src/modules/reports/efficiencySummary.service.ts) and [userGoalData/userGoalData.service.ts](../nodejs-backend/src/modules/userGoalData/userGoalData.service.ts): `monthlyBreakdown`, `isQuarterly`, `revisedGoal` so Monthly Breakdown fills in.
+- [auth/auth.service.ts](../nodejs-backend/src/modules/auth/auth.service.ts): `joinedAt` (from `UserCreateTime`) in the session.
+
+### Database
+- New migration [004_notifications_pms_tabs.sql](../nodejs-backend/src/config/migrations/004_notifications_pms_tabs.sql): creates `Notification` and `NotificationState`, and splits the `pms` privilege into the five PMS tab keys on `AMRole` so existing roles keep what they could see.
+- **After pulling, run `npm run db:migrate` in `nodejs-backend`** (applies 004 and 005; 005 is from the entry above).
+- No schema change for the hierarchy: it only reads `Users`, `Department`, `DepartmentUser`, and writes one `AppSetting` row (`ceoUserId`).
+
+### Env / config
+- None.
+
+### Notes
+- Verified in a headless browser as Super Admin: Taskly and PMS dashboards, the Hierarchy tab, Notifications, date range alignment (light and dark). Notifications targeting and the hierarchy assessors were checked through the API.
+- **Not tested:** submitting a Daily Activity log as a manager, the Grading guide popover, the manager / EL / FL dashboards after the merge.
+- Open: Quarterly Review form layout; default module access per level is not driven by the hierarchy yet.
+- Local test accounts `superadmin1@tapmind.com` / `superadmin2@tapmind.com` are created by hand in the local database; they are not part of the repo.
+- Source files use CRLF line endings.
+
+---
+
 ## 2026-10-29 — Dashboard matches production, role-based overviews, Sales Forward removed  (commits: 7edc52e, b0f9468, d5fbc95)
 
 Summary: the Node `DashBoardAll` numbers now match the Java backend (production). Executive Leaders, Functional Leaders and everyone else get the same overview design as Admin, scoped to their own data. Sales Forward is removed from the menu and from Access Management.

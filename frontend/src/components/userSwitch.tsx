@@ -58,24 +58,12 @@ export async function switchToUser(userID: number, currentToken: string) {
 
     localStorage.setItem(CURRENT_KEY, JSON.stringify(newUserData));
 
-    // Fetch AMRole for the switched user
-    const roleId = newUserData.userRole;
-    if (roleId) {
-        try {
-            const roleRes = await axios.get(
-                `/t2.0/authentificationUtilization/AMRole/${roleId}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${newUserData.token}`,
-                    },
-                }
-            );
-            if (roleRes.data?.status) {
-                localStorage.setItem(ROLES_KEY, JSON.stringify(roleRes.data.response || {}));
-            }
-        } catch (err) {
-            console.error("AMRole fetch failed during switch:", err);
-        }
+    // What the switched user may open (role + department + their own access)
+    try {
+        const access = await axios.get("/t2.0/authentificationUtilization/access/me", { headers: { Authorization: `Bearer ${newUserData.token}` } });
+        if (access.data?.status) localStorage.setItem(ROLES_KEY, JSON.stringify(access.data.response || {}));
+    } catch (err) {
+        console.error("Access fetch failed during switch:", err);
     }
 
     return newUserData;

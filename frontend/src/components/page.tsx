@@ -56,3 +56,26 @@ export function Panel({ title, actions, children, className, flush }: { title?: 
         </section>
     );
 }
+
+/** Compact segmented switch (2–4 options) for views that replace each other */
+export function Segmented<T extends string>({ value, onChange, options, label, size = "md" }: { value: T; onChange: (v: T) => void; options: { key: T; label: ReactNode }[]; label: string; size?: "sm" | "md" }) {
+    return (
+        <div role="group" aria-label={label} className="inline-flex border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900">
+            {options.map((o) => (
+                <button
+                    key={o.key}
+                    type="button"
+                    aria-pressed={value === o.key}
+                    onClick={() => onChange(o.key)}
+                    className={cn(
+                        "px-4 text-xs font-bold uppercase tracking-wide transition-colors focus-ring",
+                        size === "sm" ? "h-8" : "h-10",
+                        value === o.key ? "bg-brand-600 text-white" : "text-ink-600 hover:text-brand-600 dark:text-ink-300",
+                    )}
+                >
+                    {o.label}
+                </button>
+            ))}
+        </div>
+    );
+}

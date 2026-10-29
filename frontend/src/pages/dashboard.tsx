@@ -1,14 +1,14 @@
 
 
 import { PageTitle } from "@/components/page";
-import React, { useEffect, useState, useMemo, useCallback, memo, lazy, Suspense } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef, memo, lazy, Suspense } from "react";
 import { useDashboardStore } from "./../store/commonStore";
 import { Card, CardBody } from "@/components/ui";
 import { Switch } from "@/components/ui";
 import { motion, AnimatePresence } from "framer-motion";
 const ReactApexChart = React.lazy(() => import("react-apexcharts"));
 import { format } from "date-fns";
-import CustomDateRangePicker from "../components/CustomDateRangePicker";
+import CustomDateRangePicker from "../components/customDateRangePicker";
 import {
     Autocomplete,
     AutocompleteItem,
@@ -33,6 +33,8 @@ import axios from "axios";
 import { EmptyContainer } from "@/components";
 import EfficiencyTable from "@/components/table2";
 import ELDashboard from "@/components/ElDashboard";
+import DailyBars from "@/components/DailyBars";
+import AdminOverview from "@/components/overview/AdminOverview";
 import { dateMatchModifiers } from "react-day-picker";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -383,48 +385,36 @@ const StatRow = memo(
 );
 
 // Static – never changes, no props needed
+const RULE_CARD = "border-l-4 border-amber-400 bg-amber-50 p-4 leading-snug text-ink-800 dark:border-amber-500 dark:bg-amber-500/10 dark:text-ink-100";
 const EfficiencyRules = memo(() => (
-    <div className="bg-white dark:bg-ink-900 rounded-xl p-4  flex flex-col gap-4 text-[12px]">
-        <h2 className="text-sm font-semibold text-ink-800 dark:text-white flex items-center gap-2">
-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+    <section className="flex flex-col gap-4 text-[12.5px]">
+        <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-900 dark:text-white">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" aria-hidden>
                 <path d="M3 17L9 11L13 15L21 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
             Efficiency &amp; Utilization Rules
         </h2>
-        <div className="bg-amber-50 dark:bg-amber-500/10 border-l-4 border-amber-400 p-3 rounded leading-tight">
-            <strong>Note:</strong> Regular workday = 8 Hours. Half Day leave = 4 Hours.
+        <div className="flex flex-col gap-4">
+            <div className={RULE_CARD}>
+                <strong>Note:</strong> Regular workday = 8 hours. Half day leave = 4 hours.
+            </div>
+            <div className={RULE_CARD}>
+                <strong>Efficiency Calculation</strong>
+                <ul className="mt-2 list-disc space-y-1.5 pl-4">
+                    <li><span className="font-semibold text-emerald-600">High:</span> Target Achieved ≥ <b>100%</b> AND Goal Achieved ≥ <b>80%</b> AND Time Taken ≤ Allocated Time</li>
+                    <li><span className="font-semibold text-amber-600">At Par:</span> Target Achieved ≥ <b>80%</b> AND Goal Achieved ≥ <b>50%</b> AND Time Taken ≤ Allocated Time</li>
+                    <li><span className="font-semibold text-rose-600">Low:</span> All other conditions</li>
+                </ul>
+            </div>
+            <div className={RULE_CARD}>
+                <strong>Utilization Calculation</strong>
+                <ul className="mt-2 list-disc space-y-1.5 pl-4">
+                    <li><b>If Efficiency is High or At Par:</b> Time Taken / Standard Time × 100</li>
+                    <li><b>If Efficiency is Low:</b> Time Taken / Standard Time × 100 (capped to <b>100%</b>)</li>
+                </ul>
+            </div>
         </div>
-        <div className="bg-amber-50 dark:bg-amber-500/10 border-l-4 border-amber-400 p-3 rounded leading-tight">
-            <strong>Efficiency Calculation</strong>
-            <ul className="list-disc pl-4 mt-1">
-                <li>
-                    <span className="text-emerald-600 font-semibold">High:</span>&nbsp;
-                    Target Achieved ≥ <b>100%</b> AND Goal Achieved ≥ <b>80%</b> AND Time Taken ≤ Allocated Time
-                </li>
-
-                <li>
-                    <span className="text-amber-600 font-semibold">At Par:</span>&nbsp;
-                    Target Achieved ≥ <b>80%</b> AND Goal Achieved ≥ <b>50%</b> AND Time Taken ≤ Allocated Time
-                </li>
-
-                <li>
-                    <span className="text-rose-600 font-semibold">Low:</span>&nbsp;
-                    All other conditions
-                </li>
-            </ul>
-        </div>
-        <div className="bg-amber-50 dark:bg-amber-500/10 border-l-4 border-amber-400 p-3 rounded leading-tight">
-            <strong>Utilization Calculation</strong>
-            <ul className="list-disc pl-4 mt-1">
-                <li>
-                    <b>If Efficiency is High or At Par:</b>&nbsp;Time Taken / Standard Time × 100
-                </li>
-                <li>
-                    <b>If Efficiency is Low:</b>&nbsp;Time Taken / Standard Time × 100 (capped to <b>100%</b>)
-                </li>
-            </ul>
-        </div>
-    </div>
+    </section>
 ));
 
 // Radial chart + stat card column pair
@@ -507,10 +497,10 @@ function useDashboardData(
                         title: u.UserName,
                         subtitle: u.EfficiencyLevel,
                         values: [
-                            Number(u.AvgTargetPercent),
-                            Number(u.AvgUtilizationPercent),
-                            Number(u.AvgAllocatedHrs),
-                            Number(u.AvgTotalWork),
+                            Number(u.AvgTargetPercent) || 0,
+                            Number(u.AvgUtilizationPercent) || 0,
+                            Number(u.AvgAllocatedHrs) || 0,
+                            Number(u.AvgTotalWork) || 0,
                         ],
                     }))
                 );
@@ -587,7 +577,9 @@ function useDashboardData(
                         data.companySummary?.AvgTotalWork,
                         data.companySummary?.AvgGoalEfficiency
                     ],
-                });
+                    totalUsers: data.companySummary?.TotalUsers,
+                    totalDepartments: data.companySummary?.TotalDepartments,
+                } as SummaryItem);
             } catch (err: any) {
                 if (!axios.isCancel(err))
                     console.error("Dashboard fetch error:", err);
@@ -652,69 +644,82 @@ const MultiRingChart = ({ values = [], colors = [], size = 200, stroke = 12 }) =
     );
 };
 
-const RADIAL_LEGEND_COLORS = ["#ff6a1f", "#059669", "#52525b", "#ffa06b", "#d97706"];
-const RADIAL_METRIC_LABELS = ["Target %", "Allocated Hrs", "Work Hrs", "Avg Goal"];
+// One clear gauge for the headline number, then plain bars for the rest (each in its own unit).
+// company: values = [target %, allocated hrs/day, working hrs/day, avg goal %]
+// employee: values = [target %, utilization %, allocated hrs, working hrs]
+const Gauge = ({ value }: { value: number }) => {
+    const size = 200, stroke = 16, r = (size - stroke) / 2, c = 2 * Math.PI * r;
+    const pct = Math.max(0, Math.min(100, value));
+    const tone = value >= 100 ? "#059669" : value >= 80 ? "#ff6a1f" : "#d97706";
+    return (
+        <div className="relative" style={{ width: size, height: size }}>
+            <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`Target achieved ${value}%`}>
+                <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={stroke} className="stroke-ink-100 dark:stroke-white/10" />
+                <circle
+                    cx={size / 2} cy={size / 2} r={r} fill="none" stroke={tone} strokeWidth={stroke} strokeLinecap="butt"
+                    strokeDasharray={c} strokeDashoffset={c * (1 - pct / 100)} transform={`rotate(-90 ${size / 2} ${size / 2})`}
+                    className="transition-[stroke-dashoffset] duration-700 ease-out"
+                />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-4xl font-bold leading-none text-ink-900 dark:text-white">{Number.isInteger(value) ? value : value.toFixed(1)}%</span>
+                <span className="eyebrow mt-2">Target achieved</span>
+            </div>
+        </div>
+    );
+};
+
+const MetricBar = ({ label, value, unit, max }: { label: string; value: number; unit: "h" | "%"; max: number }) => (
+    <div>
+        <div className="mb-1.5 flex items-baseline justify-between text-xs">
+            <span className="text-ink-600 dark:text-ink-300">{label}</span>
+            <span className="font-bold text-ink-900 dark:text-white">{unit === "h" ? `${value.toFixed(2)} h` : `${value.toFixed(0)}%`}</span>
+        </div>
+        <div className="h-2 w-full bg-ink-100 dark:bg-white/10">
+            <div className="h-full bg-brand-600 transition-[width] duration-700 ease-out" style={{ width: `${Math.max(0, Math.min(100, (value / max) * 100))}%` }} />
+        </div>
+    </div>
+);
 
 const RadialSummaryCard = memo(({
     title,
     values,
     subtitle,
     loading,
+    kind = "company",
 }: {
     title: string;
     values: number[];
     subtitle?: string;
     loading: boolean;
+    kind?: "company" | "employee";
 }) => {
-    const isEmpty = !values || values.every((v) => !v);
-    const safeValues = isEmpty ? [0, 0, 0, 0, 0] : values;
+    const v = (values ?? []).map((x) => Number(x) || 0);
+    const isEmpty = v.length === 0 || v.every((x) => !x);
+    const at = (i: number) => v[i] ?? 0;
+    const hoursMax = Math.max(8, ...(kind === "company" ? [at(1), at(2)] : [at(2), at(3)]));
+    const bars = kind === "company"
+        ? [{ label: "Allocated hours per day", value: at(1), unit: "h" as const, max: hoursMax }, { label: "Working hours per day", value: at(2), unit: "h" as const, max: hoursMax }, { label: "Average goal achieved", value: at(3), unit: "%" as const, max: 100 }]
+        : [{ label: "Utilization", value: at(1), unit: "%" as const, max: 100 }, { label: "Allocated hours", value: at(2), unit: "h" as const, max: hoursMax }, { label: "Working hours", value: at(3), unit: "h" as const, max: hoursMax }];
 
     return (
-        <div className="bg-white dark:bg-ink-900 rounded-2xl p-6 flex flex-col items-center w-full relative">
+        <section className="flex w-full flex-col gap-5 border border-ink-200 bg-white p-5 dark:border-white/10 dark:bg-ink-900">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-ink-900 dark:text-white">{title}</h2>
             {loading ? (
                 <RadialBarSkeleton />
             ) : (
                 <>
-                    <h2 className="text-xs tracking-widest text-ink-400 mb-4">
-                        {title}
-                    </h2>
-
-                    <div className="relative">
-                        <MultiRingChart
-                            values={safeValues}
-                            colors={RADIAL_LEGEND_COLORS}
-                            size={220}
-                            stroke={12}
-                        />
-                        {isEmpty && (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <span className="text-xs text-ink-400 bg-white/80 dark:bg-ink-900/80 px-2 py-1 rounded-full">
-                                    No data
-                                </span>
-                            </div>
-                        )}
+                    <div className="flex justify-center">
+                        <Gauge value={at(0)} />
                     </div>
-
-                    <div className="grid grid-cols-2 gap-3 mt-4 text-xs">
-                        {RADIAL_METRIC_LABELS.map((label, i) => (
-                            <div key={i} className="flex items-center gap-2">
-                                <span
-                                    className="w-3 h-3 rounded-full"
-                                    style={{ background: RADIAL_LEGEND_COLORS[i] }}
-                                />
-                                <span className="text-ink-600 dark:text-ink-300">
-                                    {label}{!isEmpty ? ` - ${safeValues[i]}%` : ""}
-                                </span>
-                            </div>
-                        ))}
+                    {isEmpty && <p className="text-center text-xs text-ink-400">No data for this range yet.</p>}
+                    <div className="flex flex-col gap-4 border-t border-ink-200 pt-4 dark:border-white/10">
+                        {bars.map((b) => <MetricBar key={b.label} {...b} />)}
                     </div>
-
-                    {!isEmpty && subtitle && (
-                        <p className="text-xs text-ink-400 mt-4 text-center">{subtitle}</p>
-                    )}
+                    {!isEmpty && subtitle && <p className="text-center text-xs text-ink-500 dark:text-ink-400">{subtitle}</p>}
                 </>
             )}
-        </div>
+        </section>
     );
 });
 
@@ -845,14 +850,25 @@ export default function DashboardPage() {
     // Parse user once
     const user = useMemo<any>(() => {
         const raw = localStorage.getItem("authUserLD");
-        return raw ? JSON.parse(raw) : null;
+        const u = raw ? JSON.parse(raw) : null;
+        if (!u) return u;
+        // A person with an Executive / Functional Leader role who does not actually lead a department
+        // sees the same personal dashboard as any employee: their own summary, in the admin layout
+        const leads = (u.departments ?? []).some((d: any) => Number(d.executiveLeaderID) === Number(u.userID) || Number(d.functionalLeaderID) === Number(u.userID));
+        if ((u.userRole === 3 || u.userRole === 4) && !leads) {
+            const own = u.departmentID ?? u.departments?.[0]?.departmentID;
+            const ownName = u.departmentName ?? u.departments?.[0]?.departmentName;
+            return { ...u, userRole: 2, isHeExecutiveLeader: false, isHeFunctionalLeader: false, departmentID: own, departmentName: ownName };
+        }
+        return u;
     }, []);
     const dateModification = useDashboardStore((state) => state.dateModification);
     const toggleDateModification = useDashboardStore((state) => state.toggleDateModification);
     const [isLogDrawerOpen, setIsLogDrawerOpen] = useState(false);
     const [logUsers, setLogUsers] = useState<any[]>([]);
     const [refresh, setRefresh] = useState(false);
-    const [dateRange, setDateRange] = useState<DateRange>(() => getTodayRange(7));
+    // Company view starts on a month so there is something to see; people see their last week
+    const [dateRange, setDateRange] = useState<DateRange>(() => getTodayRange(user?.userRole === 1 ? 30 : 7));
     const [goalDateRange, setGoalDateRange] = useState<DateRange>(() => getTodayRange(7));
     const [dateRangeLog, setDateRangeLog] = useState<DateRange>(() => getTodayRange(7));
     const [selectedDepartment, setSelectedDepartment] = useState(
@@ -989,22 +1005,26 @@ export default function DashboardPage() {
     }, [selectedDepartment]);
 
     // ── Actions ───────────────────────────────────────────────────────────────
+    // Runs by itself when the admin opens the dashboard, so the numbers are always current
     const handleRunReport = useCallback(async () => {
         setLoading(true);
         try {
             const res = await axios.get("/t2.0/authentificationUtilization/calculateAll", {
                 headers: { "Content-Type": "application/json" },
             });
-            if (res.status === 200) {
-                setRefresh((r) => !r);
-                addToast({ title: "Success", description: "Report Successfully Executed", color: "success" });
-            }
+            if (res.status === 200) setRefresh((r) => !r);
         } catch (err) {
-            addToast({ title: "Error", description: String(err), color: "danger" });
+            addToast({ title: "Could not refresh the report", description: String(err), color: "danger" });
         } finally {
             setLoading(false);
         }
     }, []);
+    const autoRan = useRef(false);
+    useEffect(() => {
+        if (autoRan.current || user?.userRole !== 1 || user?.departmentID) return;
+        autoRan.current = true;
+        handleRunReport();
+    }, [handleRunReport]);
 
     const handleLog = useCallback(async () => {
         setLoading(true);
@@ -1053,20 +1073,7 @@ export default function DashboardPage() {
     // ── Date range picker dropdown (shared pattern) ───────────────────────────
     const DateRangeDropdown = useCallback(
         ({ value, onChange }: { value: DateRange; onChange: (r: DateRange) => void }) => (
-            <Dropdown placement="bottom-start">
-                <DropdownTrigger>
-                    <Button variant="flat" size="sm" className="w-[260px] justify-between border border-ink-300 bg-white dark:border-white/15 dark:bg-ink-900">
-                        {value.startDate && value.endDate
-                            ? `${format(new Date(value.startDate), "dd MMM yyyy")} → ${format(new Date(value.endDate), "dd MMM yyyy")}`
-                            : "Select Date Range"}
-                    </Button>
-                </DropdownTrigger>
-                <DropdownMenu aria-label="Date range" closeOnSelect={false} className="p-0">
-                    <DropdownItem key="calendar" className="p-0">
-                        <CustomDateRangePicker value={value} onChange={onChange} />
-                    </DropdownItem>
-                </DropdownMenu>
-            </Dropdown>
+            <CustomDateRangePicker value={value} onChange={onChange} />
         ),
         []
     );
@@ -1445,7 +1452,7 @@ export default function DashboardPage() {
             ">
 
                     <div className="h-full">
-                        <EfficiencyRules />
+                        <div className="lg:col-start-2"><EfficiencyRules /></div>
                     </div>
 
                 </div>
@@ -1499,8 +1506,8 @@ export default function DashboardPage() {
             </Drawer>
 
             {/* ── Page Header ─────────────────────────────────────────────────── */}
-            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-                <PageTitle title="Dashboard" subtitle="View detailed insights into your department's daily work" />
+            <div className="mb-3 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                <PageTitle title="Taskly overview" subtitle="View detailed insights into your department's daily work" />
 
                 <div className="flex items-center gap-2 whitespace-nowrap">
                     <Button
@@ -1513,6 +1520,11 @@ export default function DashboardPage() {
                         View goal & target
                     </Button>
 
+                    {user?.userRole === 1 && !user?.departmentID && (
+                        <Button size="sm" variant="bordered" onPress={() => setIsLogDrawerOpen(true)}>
+                            Missing logs
+                        </Button>
+                    )}
                     <DateRangeDropdown
                         value={dateRange}
                         onChange={setDateRange}
@@ -1524,1428 +1536,41 @@ export default function DashboardPage() {
 
             {/*  Main Grid  */}
             {isAdmin ? (
-                <Tabs
-                    aria-label="Admin tabs"
-                    variant="full"
-                    onSelectionChange={(selected) => {
-                        const typeMap: { [key: string]: "all" | "business" | "support" } = {
-                            "Overview": "all",
-                            "Business": "business",
-                            "Support": "support"
-                        };
-                        setDepartmentType(typeMap[selected as string] || "all");
-                    }}
-                >                    <Tab key="Overview" title="Overview" className="flex flex-col items-end">
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                            <Card className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10 rounded-xl shadow-sm col-span-3">
-                                <CardBody>
-
-                                    {/* Admin / Employee top section */}
-                                    {(isAdmin || isEmployee) && (
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-                                            {/* Col 1 – actions + chart */}
-                                            <div className="flex flex-col gap-3">
-                                                {/* Run Report & Missing Logs only for admin */}
-
-                                                {isAdmin && !hasDepartment && (
-                                                    <>
-                                                        <Button
-                                                            variant="flat" size="sm" color="primary"
-                                                            className="px-4 h-8 w-fit"
-                                                            isDisabled={loading}
-                                                            onClick={handleRunReport}
-                                                        >
-                                                            {loading ? (
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                                                                    Processing...
-                                                                </div>
-                                                            ) : (
-                                                                "Run Report"
-                                                            )}
-                                                        </Button>
-
-                                                        {/* <Switch isSelected={dateModification} size="sm" onValueChange={toggleDateModification}>
-                                                Toggle Date selection
-                                            </Switch> */}
-                                                        <Button
-                                                            variant="flat" size="sm" color="primary"
-                                                            className="px-4 h-8 w-fit"
-                                                            onClick={() => setIsLogDrawerOpen(true)}
-                                                        >
-                                                            View Missing Logs
-                                                        </Button>
-                                                    </>
-                                                )}
-
-                                                {/* Employee radial chart */}
-                                                {isEmployee && (
-                                                    <RadialSummaryCard
-                                                        title={currentUserSummary.title || "EMPLOYEE SUMMARY"}
-                                                        values={currentUserSummary.values}
-                                                        subtitle={currentUserSummary.subtitle}
-                                                        loading={loading}
-                                                    />
-                                                )}
-
-                                                {/* Company radial chart */}
-                                                {!hasDepartment && (
-                                                    <RadialSummaryCard
-                                                        title="GLOBAL SUMMARY"
-                                                        values={stats.map((s) => Number(s.value) || 0)}
-                                                        loading={loading}
-                                                    />
-                                                )}
-                                            </div>
-
-                                            {/* Col 2 – Stats panel (admin, no department) */}
-                                            {!hasDepartment && companySummary && (
-                                                <div className="flex p-1 text-[12px]">
-                                                    <div className="w-full">
-                                                        <div className="grid grid-cols-2 gap-3">
-                                                            {stats.map((item, i) => {
-                                                                const value = item.value;
-
-                                                                return (
-                                                                    <div
-                                                                        key={i}
-                                                                        className="flex min-h-[112px] flex-col justify-between border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/50"
-                                                                    >
-
-                                                                        {/* TOP ROW */}
-                                                                        <div className="flex items-center justify-between">
-                                                                            <span className="pr-2 font-secondary text-[10px] font-medium uppercase leading-snug tracking-wider text-ink-500 dark:text-ink-400">
-                                                                                {item.label}
-                                                                            </span>
-
-                                                                            <div className="opacity-60">
-                                                                                <IconSet type={item.icon} stroke="#6b7280" />
-                                                                            </div>
-                                                                        </div>
-
-                                                                        {/* VALUE */}
-                                                                        <div className="mt-2">
-                                                                            <h2 className="text-[26px] font-semibold leading-none text-ink-900 dark:text-white">
-                                                                                {typeof value === "number"
-                                                                                    ? item.label.includes("%")
-                                                                                        ? `${value}%`
-                                                                                        : value
-                                                                                    : value ?? "—"}
-                                                                            </h2>
-                                                                        </div>
-
-                                                                        {/* MINI BAR GRAPH */}
-                                                                        {typeof value === "number" && (
-                                                                            <div className="mt-3 flex items-end gap-1 h-8">
-                                                                                {[20, 40, 60, 80, 100].map((v, idx) => {
-                                                                                    const height = Math.max(10, (value / 100) * v);
-
-                                                                                    const color =
-                                                                                        item.color === "red"
-                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
-                                                                                            : item.color === "green"
-                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
-                                                                                                : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
-                                                                                                    : item.color === "purple"
-                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
-                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
-
-                                                                                    return (
-                                                                                        <div
-                                                                                            key={idx}
-                                                                                            className="flex-1 rounded-sm"
-                                                                                            style={{
-                                                                                                height: `${height}%`,
-                                                                                                background: color[idx],
-                                                                                            }}
-                                                                                        />
-                                                                                    );
-                                                                                })}
-                                                                            </div>
-                                                                        )}
-
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* Col 2 – Employee stat card (with department) */}
-                                            {hasDepartment && isEmployee && (
-                                                <div className="bg-white dark:bg-ink-900 rounded-xl p-4 text-[12px] flex w-full">
-
-                                                    <div className="w-full">
-
-                                                        <div className="grid grid-cols-2 gap-3">
-
-                                                            {[
-                                                                {
-                                                                    label: "Target %",
-                                                                    value: currentUserSummary.values[0],
-                                                                    color: "red",
-                                                                    icon: "target",
-                                                                },
-                                                                // {
-                                                                //     label: "Utilization %",
-                                                                //     value: currentUserSummary.values[1],
-                                                                //     color: "green",
-                                                                //     icon: "pulse",
-                                                                // },
-                                                                {
-                                                                    label: "Allocated Hrs",
-                                                                    value: currentUserSummary.values[2],
-                                                                    color: "yellow",
-                                                                    icon: "clock",
-                                                                },
-                                                                {
-                                                                    label: "Work Hrs",
-                                                                    value: currentUserSummary.values[3],
-                                                                    color: "purple",
-                                                                    icon: "briefcase",
-                                                                },
-                                                                {
-                                                                    label: "Efficiency",
-                                                                    value: currentUserSummary.subtitle,
-                                                                    color: "blue",
-                                                                    icon: "brain",
-                                                                },
-                                                            ].map((item, i) => {
-
-                                                                const value = item.value;
-
-                                                                return (
-                                                                    <div
-                                                                        key={i}
-                                                                        className="flex min-h-[112px] flex-col justify-between border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/50"
-                                                                    >
-
-                                                                        {/* TOP ROW */}
-                                                                        <div className="flex items-center justify-between">
-
-                                                                            <span className="pr-2 font-secondary text-[10px] font-medium uppercase leading-snug tracking-wider text-ink-500 dark:text-ink-400">
-                                                                                {item.label}
-                                                                            </span>
-
-                                                                            <div className="opacity-60">
-                                                                                <IconSet
-                                                                                    type={item.icon}
-                                                                                    stroke="#6b7280"
-                                                                                />
-                                                                            </div>
-
-                                                                        </div>
-
-                                                                        {/* VALUE */}
-                                                                        <div className="mt-2">
-
-                                                                            <h2 className="text-[26px] font-semibold leading-none text-ink-900 dark:text-white">
-
-                                                                                {typeof value === "number"
-                                                                                    ? item.label.includes("%")
-                                                                                        ? `${value}%`
-                                                                                        : value
-                                                                                    : value ?? "—"}
-
-                                                                            </h2>
-
-                                                                        </div>
-
-                                                                        {/* MINI BAR GRAPH */}
-                                                                        {typeof value === "number" && (
-
-                                                                            <div className="mt-3 flex items-end gap-1 h-8">
-
-                                                                                {[20, 40, 60, 80, 100].map((v, idx) => {
-
-                                                                                    const height = Math.max(
-                                                                                        10,
-                                                                                        (value / 100) * v
-                                                                                    );
-
-                                                                                    const color =
-                                                                                        item.color === "red"
-                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
-                                                                                            : item.color === "green"
-                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
-                                                                                                : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
-                                                                                                    : item.color === "purple"
-                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
-                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
-
-                                                                                    return (
-                                                                                        <div
-                                                                                            key={idx}
-                                                                                            className="flex-1 rounded-sm"
-                                                                                            style={{
-                                                                                                height: `${height}%`,
-                                                                                                background: color[idx],
-                                                                                            }}
-                                                                                        />
-                                                                                    );
-                                                                                })}
-
-                                                                            </div>
-                                                                        )}
-
-                                                                    </div>
-                                                                );
-                                                            })}
-
-                                                        </div>
-
-                                                    </div>
-
-                                                </div>
-                                            )}
-
-                                            {/* Col 3 – Rules (always visible in admin/employee view) */}
-                                            <EfficiencyRules />
-                                        </div>
-                                    )}
-
-                                    {/* EL Summary Grid */}
-                                    {isEL && ELUserSummaryGraph && (
-                                        <LeaderSummaryGrid data={ELUserSummaryGraph} loading={loading} />
-                                    )}
-
-                                    {/* FL Summary Grid */}
-                                    {isFL && FLUserSummaryGraph && (
-                                        <LeaderSummaryGrid data={FLUserSummaryGraph} loading={loading} />
-                                    )}
-                                </CardBody>
-                            </Card>
-
-                            {/* ── EL Department Tabs ─────────────────────────────────────────── */}
-                            {/* {isEL && (
-                    <div className="col-span-3 flex justify-center mt-4">
-                        <Card className="w-full">
-                            <CardBody>
-                                <Tabs aria-label="EL departments" variant="full">
-                                    {ELUserSummary?.[0]?.departments?.map((ele: any) => (
-                                        <Tab key={ele.DepartmentName} title={ele.DepartmentName} className="flex flex-col items-start">
-                                            <EfficiencyTable data={ele.users} type="ELU" />
-                                        </Tab>
-                                    ))}
-                                    <Tab key="ALL_DEPARTMENTS" title="All Departments" className="flex flex-col items-start">
-                                        <EfficiencyTable data={allUser} type="ELU" />
-                                    </Tab>
-                                </Tabs>
-                            </CardBody>
-                        </Card>
-                    </div>
-                )} */}
-
-                            {/* {isEL && (
-                                <div className="col-span-3 flex justify-center mt-4">
-                                    <Card className="w-full">
-                                        <CardBody>
-
-                                            <div className="flex flex-col w-full justify-between gap-4">
-
-                                                <Card>
-                                                    <CardBody>
-                                                        <ColumnChart
-                                                            dept={false}
-                                                            labels={
-                                                                ELUserSummary?.[0]?.departments?.map(
-                                                                    (ele: any) => ele.DepartmentName
-                                                                ) || []
-                                                            }
-                                                            values={
-                                                                ELUserSummary?.[0]?.departments?.map(
-                                                                    (ele: any) => Number(ele.AvgTargetPercent || 0)
-                                                                ) || []
-                                                            }
-                                                            goals={
-                                                                ELUserSummary?.[0]?.departments?.map(
-                                                                    (ele: any) => Number(ele.AvgGoalEfficiency || 0)
-                                                                ) || []
-                                                            }
-                                                        />
-                                                    </CardBody>
-                                                </Card>
-
-                                                <ELDashboard data={ELUserSummary || []} />
-
-                                            </div>
-
-                                        </CardBody>
-                                    </Card>
-                                </div>
-                            )} */}
-
-                            {/* ── FL Department Tabs ─────────────────────────────────────────── */}
-                            {/* {isFL && (
-                                <div className="col-span-3 flex justify-center mt-4">
-                                    <Card className="w-full">
-                                        <CardBody>
-                                            <Tabs aria-label="FL departments" variant="full">
-                                                {FLUserSummary?.[0]?.departments?.map((ele: any) => (
-                                                    <Tab key={ele.DepartmentName} title={ele.DepartmentName} className="flex flex-col items-start">
-                                                        <EfficiencyTable data={ele.users} type="ELU" />
-                                                    </Tab>
-                                                ))}
-                                                <Tab key="ALL_DEPARTMENTS" title="All Departments" className="flex flex-col items-start">
-                                                    <EfficiencyTable data={allUser} type="ELU" />
-                                                </Tab>
-                                            </Tabs>
-                                        </CardBody>
-                                    </Card>
-                                </div>
-                            )} */}
-
-                            {/* ── Admin Tabs (Department / EL) ───────────────────────────────── */}
-                            {/* {isAdmin && (
-
-                                <div className="col-span-3 flex justify-center mt-4">
-                                    <Card className="w-full">
-                                        <CardBody>
-                                            <Tabs aria-label="Admin tabs" variant="full">
-                                                <Tab key="EXECUTIVE LEADER" title="EXECUTIVE LEADER" className="flex flex-col items-end">
-                                                    <div className="flex flex-col w-full justify-between gap-4">
-                                                        
-                                                        
-                                                        {
-                                                            isAdmin && (
-                                                                <ELDashboard data={elData} />
-
-                                                            )
-                                                        }
-                                                    </div>
-
-                                                </Tab>
-                                                <Tab key="DEPARTMENT" title="DEPARTMENT" className="flex flex-col items-end">
-                                        {!hasDepartment && (
-                                            <div className="flex flex-col w-full justify-between gap-4">
-                                                <Autocomplete
-                                                    aria-label="Filter by Department"
-                                                    placeholder="Filter by Department"
-                                                    className="max-w-xs mr-4"
-                                                    selectedKey={selectedDepartment}
-                                                    onSelectionChange={(key) => setSelectedDepartment(key as string)}
-                                                >
-                                                    {departmentList
-                                                        .filter((d) => d.status === "Active")
-                                                        .map((d) => (
-                                                            <AutocompleteItem key={d.key} value={d.name}>
-                                                                {d.name.replace(/([A-Z])/g, " $1").trim()}
-                                                            </AutocompleteItem>
-                                                        ))}
-                                                </Autocomplete>
-                                                <Card>
-                                                    <CardBody>
-                                                        <ColumnChart
-                                                            dept={true}
-
-                                                            labels={Object.values(departmentSummaryFiltered).map((ele: any) => ele.DepartmentName)}
-                                                            values={Object.values(departmentSummaryFiltered).map((ele: any) => ele.AvgTargetPercent) as number[]}
-                                                            goals={Object.values(departmentSummaryFiltered).map((ele: any) => ele.AvgGoalEfficiency) as number[]}
-
-                                                        />
-                                                    </CardBody>
-                                                </Card>
-
-                                            </div>
-
-                                        )}
-
-                                        <EfficiencyTable data={departmentSummaryFiltered} type="department" />
-                                    </Tab>
-
-
-                                            </Tabs>
-                                        </CardBody>
-                                    </Card>
-                                </div>
-                            )} */}
-
-                            {/* ── Employee daily data table ──────────────────────────────────── */}
-                            {/* {isEmployee && (
-                                <div className="col-span-3 flex justify-center mt-4">
-                                    <Card className="w-full">
-                                        <CardBody>
-                                            <EfficiencyTable data={userSummaryData} type="user" />
-                                        </CardBody>
-                                    </Card>
-                                </div>
-                            )} */}
-                        </div>
-                    </Tab>
-                    <Tab key="Business" title="Business" className="flex flex-col items-end">
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                            <Card className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10 rounded-xl shadow-sm col-span-3">
-                                <CardBody>
-
-                                    {/* Admin / Employee top section */}
-                                    {(isAdmin || isEmployee) && (
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-                                            {/* Col 1 – actions + chart */}
-                                            <div className="flex flex-col gap-3">
-                                                {/* Run Report & Missing Logs only for admin */}
-
-                                                {isAdmin && !hasDepartment && (
-                                                    <>
-                                                        <div className="flex gap-2">
-                                                            <Button
-                                                                variant="flat" size="sm" color="primary"
-                                                                className="px-4 h-8 w-fit"
-                                                                isDisabled={loading}
-                                                                onClick={handleRunReport}
-                                                            >
-                                                                {loading ? (
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                                                                        Processing...
-                                                                    </div>
-                                                                ) : (
-                                                                    "Run Report"
-                                                                )}
-                                                            </Button>
-
-                                                            {/* <Button
-                                                                variant="flat"
-                                                                size="sm"
-                                                                color="primary"
-                                                                className="px-4 h-8 w-fit"
-                                                                isDisabled={loading || hasDepartment}
-                                                                onClick={handleDownload}
-                                                            >
-                                                                Download
-                                                            </Button> */}
-                                                        </div>
-
-                                                        {/* <Switch isSelected={dateModification} size="sm" onValueChange={toggleDateModification}>
-                                                Toggle Date selection
-                                            </Switch> */}
-                                                        <Button
-                                                            variant="flat" size="sm" color="primary"
-                                                            className="px-4 h-8 w-fit"
-                                                            onClick={() => setIsLogDrawerOpen(true)}
-                                                        >
-                                                            View Missing Logs
-                                                        </Button>
-                                                    </>
-                                                )}
-
-                                                {/* Employee radial chart */}
-                                                {isEmployee && (
-                                                    <RadialSummaryCard
-                                                        title={currentUserSummary.title || "EMPLOYEE SUMMARY"}
-                                                        values={currentUserSummary.values}
-                                                        subtitle={currentUserSummary.subtitle}
-                                                        loading={loading}
-                                                    />
-                                                )}
-
-                                                {/* Company radial chart */}
-                                                {!hasDepartment && (
-                                                    <RadialSummaryCard
-                                                        title="GLOBAL SUMMARY"
-                                                        values={stats.map((s) => Number(s.value) || 0)}
-                                                        loading={loading}
-                                                    />
-                                                )}
-                                            </div>
-
-                                            {/* Col 2 – Stats panel (admin, no department) */}
-                                            {!hasDepartment && companySummary && (
-                                                <div className="flex p-1 text-[12px]">
-                                                    <div className="w-full">
-                                                        <div className="grid grid-cols-2 gap-3">
-                                                            {stats.map((item, i) => {
-                                                                const value = item.value;
-
-                                                                return (
-                                                                    <div
-                                                                        key={i}
-                                                                        className="flex min-h-[112px] flex-col justify-between border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/50"
-                                                                    >
-
-                                                                        {/* TOP ROW */}
-                                                                        <div className="flex items-center justify-between">
-                                                                            <span className="pr-2 font-secondary text-[10px] font-medium uppercase leading-snug tracking-wider text-ink-500 dark:text-ink-400">
-                                                                                {item.label}
-                                                                            </span>
-
-                                                                            <div className="opacity-60">
-                                                                                <IconSet type={item.icon} stroke="#6b7280" />
-                                                                            </div>
-                                                                        </div>
-
-                                                                        {/* VALUE */}
-                                                                        <div className="mt-2">
-                                                                            <h2 className="text-[26px] font-semibold leading-none text-ink-900 dark:text-white">
-                                                                                {typeof value === "number"
-                                                                                    ? item.label.includes("%")
-                                                                                        ? `${value}%`
-                                                                                        : value
-                                                                                    : value ?? "—"}
-                                                                            </h2>
-                                                                        </div>
-
-                                                                        {/* MINI BAR GRAPH */}
-                                                                        {typeof value === "number" && (
-                                                                            <div className="mt-3 flex items-end gap-1 h-8">
-                                                                                {[20, 40, 60, 80, 100].map((v, idx) => {
-                                                                                    const height = Math.max(10, (value / 100) * v);
-
-                                                                                    const color =
-                                                                                        item.color === "red"
-                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
-                                                                                            : item.color === "green"
-                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
-                                                                                                : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
-                                                                                                    : item.color === "purple"
-                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
-                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
-
-                                                                                    return (
-                                                                                        <div
-                                                                                            key={idx}
-                                                                                            className="flex-1 rounded-sm"
-                                                                                            style={{
-                                                                                                height: `${height}%`,
-                                                                                                background: color[idx],
-                                                                                            }}
-                                                                                        />
-                                                                                    );
-                                                                                })}
-                                                                            </div>
-                                                                        )}
-
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* Col 2 – Employee stat card (with department) */}
-                                            {hasDepartment && isEmployee && (
-                                                <div className="bg-white dark:bg-ink-900 rounded-xl p-4 text-[12px] flex w-full">
-
-                                                    <div className="w-full">
-
-                                                        <div className="grid grid-cols-2 gap-3">
-
-                                                            {[
-                                                                {
-                                                                    label: "Target %",
-                                                                    value: currentUserSummary.values[0],
-                                                                    color: "red",
-                                                                    icon: "target",
-                                                                },
-                                                                // {
-                                                                //     label: "Utilization %",
-                                                                //     value: currentUserSummary.values[1],
-                                                                //     color: "green",
-                                                                //     icon: "pulse",
-                                                                // },
-                                                                {
-                                                                    label: "Allocated Hrs",
-                                                                    value: currentUserSummary.values[2],
-                                                                    color: "yellow",
-                                                                    icon: "clock",
-                                                                },
-                                                                {
-                                                                    label: "Work Hrs",
-                                                                    value: currentUserSummary.values[3],
-                                                                    color: "purple",
-                                                                    icon: "briefcase",
-                                                                },
-                                                                {
-                                                                    label: "Efficiency",
-                                                                    value: currentUserSummary.subtitle,
-                                                                    color: "blue",
-                                                                    icon: "brain",
-                                                                },
-                                                            ].map((item, i) => {
-
-                                                                const value = item.value;
-
-                                                                return (
-                                                                    <div
-                                                                        key={i}
-                                                                        className="flex min-h-[112px] flex-col justify-between border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/50"
-                                                                    >
-
-                                                                        {/* TOP ROW */}
-                                                                        <div className="flex items-center justify-between">
-
-                                                                            <span className="pr-2 font-secondary text-[10px] font-medium uppercase leading-snug tracking-wider text-ink-500 dark:text-ink-400">
-                                                                                {item.label}
-                                                                            </span>
-
-                                                                            <div className="opacity-60">
-                                                                                <IconSet
-                                                                                    type={item.icon}
-                                                                                    stroke="#6b7280"
-                                                                                />
-                                                                            </div>
-
-                                                                        </div>
-
-                                                                        {/* VALUE */}
-                                                                        <div className="mt-2">
-
-                                                                            <h2 className="text-[26px] font-semibold leading-none text-ink-900 dark:text-white">
-
-                                                                                {typeof value === "number"
-                                                                                    ? item.label.includes("%")
-                                                                                        ? `${value}%`
-                                                                                        : value
-                                                                                    : value ?? "—"}
-
-                                                                            </h2>
-
-                                                                        </div>
-
-                                                                        {/* MINI BAR GRAPH */}
-                                                                        {typeof value === "number" && (
-
-                                                                            <div className="mt-3 flex items-end gap-1 h-8">
-
-                                                                                {[20, 40, 60, 80, 100].map((v, idx) => {
-
-                                                                                    const height = Math.max(
-                                                                                        10,
-                                                                                        (value / 100) * v
-                                                                                    );
-
-                                                                                    const color =
-                                                                                        item.color === "red"
-                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
-                                                                                            : item.color === "green"
-                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
-                                                                                                : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
-                                                                                                    : item.color === "purple"
-                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
-                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
-
-                                                                                    return (
-                                                                                        <div
-                                                                                            key={idx}
-                                                                                            className="flex-1 rounded-sm"
-                                                                                            style={{
-                                                                                                height: `${height}%`,
-                                                                                                background: color[idx],
-                                                                                            }}
-                                                                                        />
-                                                                                    );
-                                                                                })}
-
-                                                                            </div>
-                                                                        )}
-
-                                                                    </div>
-                                                                );
-                                                            })}
-
-                                                        </div>
-
-                                                    </div>
-
-                                                </div>
-                                            )}
-
-                                            {/* Col 3 – Rules (always visible in admin/employee view) */}
-                                            <EfficiencyRules />
-                                        </div>
-                                    )}
-
-                                    {/* EL Summary Grid */}
-                                    {isEL && ELUserSummaryGraph && (
-                                        <LeaderSummaryGrid data={ELUserSummaryGraph} loading={loading} />
-                                    )}
-
-                                    {/* FL Summary Grid */}
-                                    {isFL && FLUserSummaryGraph && (
-                                        <LeaderSummaryGrid data={FLUserSummaryGraph} loading={loading} />
-                                    )}
-                                </CardBody>
-                            </Card>
-
-                            {/* ── EL Department Tabs ─────────────────────────────────────────── */}
-                            {/* {isEL && (
-                    <div className="col-span-3 flex justify-center mt-4">
-                        <Card className="w-full">
-                            <CardBody>
-                                <Tabs aria-label="EL departments" variant="full">
-                                    {ELUserSummary?.[0]?.departments?.map((ele: any) => (
-                                        <Tab key={ele.DepartmentName} title={ele.DepartmentName} className="flex flex-col items-start">
-                                            <EfficiencyTable data={ele.users} type="ELU" />
-                                        </Tab>
-                                    ))}
-                                    <Tab key="ALL_DEPARTMENTS" title="All Departments" className="flex flex-col items-start">
-                                        <EfficiencyTable data={allUser} type="ELU" />
-                                    </Tab>
-                                </Tabs>
-                            </CardBody>
-                        </Card>
-                    </div>
-                )} */}
-
-                            {/* {isEL && (
-                                <div className="col-span-3 flex justify-center mt-4">
-                                    <Card className="w-full">
-                                        <CardBody>
-
-                                            <div className="flex flex-col w-full justify-between gap-4">
-
-                                                <Card>
-                                                    <CardBody>
-                                                        <ColumnChart
-                                                            dept={false}
-                                                            labels={
-                                                                ELUserSummary?.[0]?.departments?.map(
-                                                                    (ele: any) => ele.DepartmentName
-                                                                ) || []
-                                                            }
-                                                            values={
-                                                                ELUserSummary?.[0]?.departments?.map(
-                                                                    (ele: any) => Number(ele.AvgTargetPercent || 0)
-                                                                ) || []
-                                                            }
-                                                            goals={
-                                                                ELUserSummary?.[0]?.departments?.map(
-                                                                    (ele: any) => Number(ele.AvgGoalEfficiency || 0)
-                                                                ) || []
-                                                            }
-                                                        />
-                                                    </CardBody>
-                                                </Card>
-
-                                                <ELDashboard data={ELUserSummary || []} />
-
-                                            </div>
-
-                                        </CardBody>
-                                    </Card>
-                                </div>
-                            )} */}
-
-                            {/* ── FL Department Tabs ─────────────────────────────────────────── */}
-                            {/* {isFL && (
-                                <div className="col-span-3 flex justify-center mt-4">
-                                    <Card className="w-full">
-                                        <CardBody>
-                                            <Tabs aria-label="FL departments" variant="full">
-                                                {FLUserSummary?.[0]?.departments?.map((ele: any) => (
-                                                    <Tab key={ele.DepartmentName} title={ele.DepartmentName} className="flex flex-col items-start">
-                                                        <EfficiencyTable data={ele.users} type="ELU" />
-                                                    </Tab>
-                                                ))}
-                                                <Tab key="ALL_DEPARTMENTS" title="All Departments" className="flex flex-col items-start">
-                                                    <EfficiencyTable data={allUser} type="ELU" />
-                                                </Tab>
-                                            </Tabs>
-                                        </CardBody>
-                                    </Card>
-                                </div>
-                            )} */}
-
-                            {/* ── Admin Tabs (Department / EL) ───────────────────────────────── */}
-                            {/* {isAdmin && (
-
-                                <div className="col-span-3 flex justify-center mt-4">
-                                    <Card className="w-full">
-                                        <CardBody>
-                                            <Tabs aria-label="Admin tabs" variant="full">
-                                                <Tab key="EXECUTIVE LEADER" title="EXECUTIVE LEADER" className="flex flex-col items-end">
-                                                    <div className="flex flex-col w-full justify-between gap-4">
-                                                        
-                                                        
-                                                        {
-                                                            isAdmin && (
-                                                                <ELDashboard data={elData} />
-
-                                                            )
-                                                        }
-                                                    </div>
-
-                                                </Tab>
-                                                <Tab key="DEPARTMENT" title="DEPARTMENT" className="flex flex-col items-end">
-                                        {!hasDepartment && (
-                                            <div className="flex flex-col w-full justify-between gap-4">
-                                                <Autocomplete
-                                                    aria-label="Filter by Department"
-                                                    placeholder="Filter by Department"
-                                                    className="max-w-xs mr-4"
-                                                    selectedKey={selectedDepartment}
-                                                    onSelectionChange={(key) => setSelectedDepartment(key as string)}
-                                                >
-                                                    {departmentList
-                                                        .filter((d) => d.status === "Active")
-                                                        .map((d) => (
-                                                            <AutocompleteItem key={d.key} value={d.name}>
-                                                                {d.name.replace(/([A-Z])/g, " $1").trim()}
-                                                            </AutocompleteItem>
-                                                        ))}
-                                                </Autocomplete>
-                                                <Card>
-                                                    <CardBody>
-                                                        <ColumnChart
-                                                            dept={true}
-
-                                                            labels={Object.values(departmentSummaryFiltered).map((ele: any) => ele.DepartmentName)}
-                                                            values={Object.values(departmentSummaryFiltered).map((ele: any) => ele.AvgTargetPercent) as number[]}
-                                                            goals={Object.values(departmentSummaryFiltered).map((ele: any) => ele.AvgGoalEfficiency) as number[]}
-
-                                                        />
-                                                    </CardBody>
-                                                </Card>
-
-                                            </div>
-
-                                        )}
-
-                                        <EfficiencyTable data={departmentSummaryFiltered} type="department" />
-                                    </Tab>
-
-
-                                            </Tabs>
-                                        </CardBody>
-                                    </Card>
-                                </div>
-                            )} */}
-
-                            {/* ── Employee daily data table ──────────────────────────────────── */}
-                            {/* {isEmployee && (
-                                <div className="col-span-3 flex justify-center mt-4">
-                                    <Card className="w-full">
-                                        <CardBody>
-                                            <EfficiencyTable data={userSummaryData} type="user" />
-                                        </CardBody>
-                                    </Card>
-                                </div>
-                            )} */}
-                        </div>
-                    </Tab>
-                    <Tab key="Support" title="Support Functions" className="flex flex-col items-end">
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                            <Card className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10 rounded-xl shadow-sm col-span-3">
-                                <CardBody>
-
-                                    {/* Admin / Employee top section */}
-                                    {(isAdmin || isEmployee) && (
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-                                            {/* Col 1 – actions + chart */}
-                                            <div className="flex flex-col gap-3">
-                                                {/* Run Report & Missing Logs only for admin */}
-
-                                                {isAdmin && !hasDepartment && (
-                                                    <>
-                                                        <div className="flex gap-2">
-                                                            <Button
-                                                                variant="flat" size="sm" color="primary"
-                                                                className="px-4 h-8 w-fit"
-                                                                isDisabled={loading}
-                                                                onClick={handleRunReport}
-                                                            >
-                                                                {loading ? (
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                                                                        Processing...
-                                                                    </div>
-                                                                ) : (
-                                                                    "Run Report"
-                                                                )}
-                                                            </Button>
-
-                                                            {/* <Button
-                                                                variant="flat"
-                                                                size="sm"
-                                                                color="primary"
-                                                                className="px-4 h-8 w-fit"
-                                                                isDisabled={loading || hasDepartment}
-                                                                onClick={handleDownload}
-                                                            >
-                                                                Download
-                                                            </Button> */}
-                                                        </div>
-
-                                                        {/* <Switch isSelected={dateModification} size="sm" onValueChange={toggleDateModification}>
-                                                Toggle Date selection
-                                            </Switch> */}
-                                                        <Button
-                                                            variant="flat" size="sm" color="primary"
-                                                            className="px-4 h-8 w-fit"
-                                                            onClick={() => setIsLogDrawerOpen(true)}
-                                                        >
-                                                            View Missing Logs
-                                                        </Button>
-                                                    </>
-                                                )}
-
-                                                {/* Employee radial chart */}
-                                                {isEmployee && (
-                                                    <RadialSummaryCard
-                                                        title={currentUserSummary.title || "EMPLOYEE SUMMARY"}
-                                                        values={currentUserSummary.values}
-                                                        subtitle={currentUserSummary.subtitle}
-                                                        loading={loading}
-                                                    />
-                                                )}
-
-                                                {/* Company radial chart */}
-                                                {!hasDepartment && (
-                                                    <RadialSummaryCard
-                                                        title="GLOBAL SUMMARY"
-                                                        values={stats.map((s) => Number(s.value) || 0)}
-                                                        loading={loading}
-                                                    />
-                                                )}
-                                            </div>
-
-                                            {/* Col 2 – Stats panel (admin, no department) */}
-                                            {!hasDepartment && companySummary && (
-                                                <div className="flex p-1 text-[12px]">
-                                                    <div className="w-full">
-                                                        <div className="grid grid-cols-2 gap-3">
-                                                            {stats.map((item, i) => {
-                                                                const value = item.value;
-
-                                                                return (
-                                                                    <div
-                                                                        key={i}
-                                                                        className="flex min-h-[112px] flex-col justify-between border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/50"
-                                                                    >
-
-                                                                        {/* TOP ROW */}
-                                                                        <div className="flex items-center justify-between">
-                                                                            <span className="pr-2 font-secondary text-[10px] font-medium uppercase leading-snug tracking-wider text-ink-500 dark:text-ink-400">
-                                                                                {item.label}
-                                                                            </span>
-
-                                                                            <div className="opacity-60">
-                                                                                <IconSet type={item.icon} stroke="#6b7280" />
-                                                                            </div>
-                                                                        </div>
-
-                                                                        {/* VALUE */}
-                                                                        <div className="mt-2">
-                                                                            <h2 className="text-[26px] font-semibold leading-none text-ink-900 dark:text-white">
-                                                                                {typeof value === "number"
-                                                                                    ? item.label.includes("%")
-                                                                                        ? `${value}%`
-                                                                                        : value
-                                                                                    : value ?? "—"}
-                                                                            </h2>
-                                                                        </div>
-
-                                                                        {/* MINI BAR GRAPH */}
-                                                                        {typeof value === "number" && (
-                                                                            <div className="mt-3 flex items-end gap-1 h-8">
-                                                                                {[20, 40, 60, 80, 100].map((v, idx) => {
-                                                                                    const height = Math.max(10, (value / 100) * v);
-
-                                                                                    const color =
-                                                                                        item.color === "red"
-                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
-                                                                                            : item.color === "green"
-                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
-                                                                                                : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
-                                                                                                    : item.color === "purple"
-                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
-                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
-
-                                                                                    return (
-                                                                                        <div
-                                                                                            key={idx}
-                                                                                            className="flex-1 rounded-sm"
-                                                                                            style={{
-                                                                                                height: `${height}%`,
-                                                                                                background: color[idx],
-                                                                                            }}
-                                                                                        />
-                                                                                    );
-                                                                                })}
-                                                                            </div>
-                                                                        )}
-
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* Col 2 – Employee stat card (with department) */}
-                                            {hasDepartment && isEmployee && (
-                                                <div className="bg-white dark:bg-ink-900 rounded-xl p-4 text-[12px] flex w-full">
-
-                                                    <div className="w-full">
-
-                                                        <div className="grid grid-cols-2 gap-3">
-
-                                                            {[
-                                                                {
-                                                                    label: "Target %",
-                                                                    value: currentUserSummary.values[0],
-                                                                    color: "red",
-                                                                    icon: "target",
-                                                                },
-                                                                // {
-                                                                //     label: "Utilization %",
-                                                                //     value: currentUserSummary.values[1],
-                                                                //     color: "green",
-                                                                //     icon: "pulse",
-                                                                // },
-                                                                {
-                                                                    label: "Allocated Hrs",
-                                                                    value: currentUserSummary.values[2],
-                                                                    color: "yellow",
-                                                                    icon: "clock",
-                                                                },
-                                                                {
-                                                                    label: "Work Hrs",
-                                                                    value: currentUserSummary.values[3],
-                                                                    color: "purple",
-                                                                    icon: "briefcase",
-                                                                },
-                                                                {
-                                                                    label: "Efficiency",
-                                                                    value: currentUserSummary.subtitle,
-                                                                    color: "blue",
-                                                                    icon: "brain",
-                                                                },
-                                                            ].map((item, i) => {
-
-                                                                const value = item.value;
-
-                                                                return (
-                                                                    <div
-                                                                        key={i}
-                                                                        className="flex min-h-[112px] flex-col justify-between border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/50"
-                                                                    >
-
-                                                                        {/* TOP ROW */}
-                                                                        <div className="flex items-center justify-between">
-
-                                                                            <span className="pr-2 font-secondary text-[10px] font-medium uppercase leading-snug tracking-wider text-ink-500 dark:text-ink-400">
-                                                                                {item.label}
-                                                                            </span>
-
-                                                                            <div className="opacity-60">
-                                                                                <IconSet
-                                                                                    type={item.icon}
-                                                                                    stroke="#6b7280"
-                                                                                />
-                                                                            </div>
-
-                                                                        </div>
-
-                                                                        {/* VALUE */}
-                                                                        <div className="mt-2">
-
-                                                                            <h2 className="text-[26px] font-semibold leading-none text-ink-900 dark:text-white">
-
-                                                                                {typeof value === "number"
-                                                                                    ? item.label.includes("%")
-                                                                                        ? `${value}%`
-                                                                                        : value
-                                                                                    : value ?? "—"}
-
-                                                                            </h2>
-
-                                                                        </div>
-
-                                                                        {/* MINI BAR GRAPH */}
-                                                                        {typeof value === "number" && (
-
-                                                                            <div className="mt-3 flex items-end gap-1 h-8">
-
-                                                                                {[20, 40, 60, 80, 100].map((v, idx) => {
-
-                                                                                    const height = Math.max(
-                                                                                        10,
-                                                                                        (value / 100) * v
-                                                                                    );
-
-                                                                                    const color =
-                                                                                        item.color === "red"
-                                                                                            ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
-                                                                                            : item.color === "green"
-                                                                                                ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
-                                                                                                : item.color === "yellow"
-                                                                                                    ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
-                                                                                                    : item.color === "purple"
-                                                                                                        ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
-                                                                                                        : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
-
-                                                                                    return (
-                                                                                        <div
-                                                                                            key={idx}
-                                                                                            className="flex-1 rounded-sm"
-                                                                                            style={{
-                                                                                                height: `${height}%`,
-                                                                                                background: color[idx],
-                                                                                            }}
-                                                                                        />
-                                                                                    );
-                                                                                })}
-
-                                                                            </div>
-                                                                        )}
-
-                                                                    </div>
-                                                                );
-                                                            })}
-
-                                                        </div>
-
-                                                    </div>
-
-                                                </div>
-                                            )}
-
-                                            {/* Col 3 – Rules (always visible in admin/employee view) */}
-                                            <EfficiencyRules />
-                                        </div>
-                                    )}
-
-                                    {/* EL Summary Grid */}
-                                    {isEL && ELUserSummaryGraph && (
-                                        <LeaderSummaryGrid data={ELUserSummaryGraph} loading={loading} />
-                                    )}
-
-                                    {/* FL Summary Grid */}
-                                    {isFL && FLUserSummaryGraph && (
-                                        <LeaderSummaryGrid data={FLUserSummaryGraph} loading={loading} />
-                                    )}
-                                </CardBody>
-                            </Card>
-
-                            {/* ── EL Department Tabs ─────────────────────────────────────────── */}
-                            {/* {isEL && (
-                    <div className="col-span-3 flex justify-center mt-4">
-                        <Card className="w-full">
-                            <CardBody>
-                                <Tabs aria-label="EL departments" variant="full">
-                                    {ELUserSummary?.[0]?.departments?.map((ele: any) => (
-                                        <Tab key={ele.DepartmentName} title={ele.DepartmentName} className="flex flex-col items-start">
-                                            <EfficiencyTable data={ele.users} type="ELU" />
-                                        </Tab>
-                                    ))}
-                                    <Tab key="ALL_DEPARTMENTS" title="All Departments" className="flex flex-col items-start">
-                                        <EfficiencyTable data={allUser} type="ELU" />
-                                    </Tab>
-                                </Tabs>
-                            </CardBody>
-                        </Card>
-                    </div>
-                )} */}
-
-                            {/* {isEL && (
-                                <div className="col-span-3 flex justify-center mt-4">
-                                    <Card className="w-full">
-                                        <CardBody>
-
-                                            <div className="flex flex-col w-full justify-between gap-4">
-
-                                                <Card>
-                                                    <CardBody>
-                                                        <ColumnChart
-                                                            dept={false}
-                                                            labels={
-                                                                ELUserSummary?.[0]?.departments?.map(
-                                                                    (ele: any) => ele.DepartmentName
-                                                                ) || []
-                                                            }
-                                                            values={
-                                                                ELUserSummary?.[0]?.departments?.map(
-                                                                    (ele: any) => Number(ele.AvgTargetPercent || 0)
-                                                                ) || []
-                                                            }
-                                                            goals={
-                                                                ELUserSummary?.[0]?.departments?.map(
-                                                                    (ele: any) => Number(ele.AvgGoalEfficiency || 0)
-                                                                ) || []
-                                                            }
-                                                        />
-                                                    </CardBody>
-                                                </Card>
-
-                                                <ELDashboard data={ELUserSummary || []} />
-
-                                            </div>
-
-                                        </CardBody>
-                                    </Card>
-                                </div>
-                            )} */}
-
-                            {/* ── FL Department Tabs ─────────────────────────────────────────── */}
-                            {/* {isFL && (
-                                <div className="col-span-3 flex justify-center mt-4">
-                                    <Card className="w-full">
-                                        <CardBody>
-                                            <Tabs aria-label="FL departments" variant="full">
-                                                {FLUserSummary?.[0]?.departments?.map((ele: any) => (
-                                                    <Tab key={ele.DepartmentName} title={ele.DepartmentName} className="flex flex-col items-start">
-                                                        <EfficiencyTable data={ele.users} type="ELU" />
-                                                    </Tab>
-                                                ))}
-                                                <Tab key="ALL_DEPARTMENTS" title="All Departments" className="flex flex-col items-start">
-                                                    <EfficiencyTable data={allUser} type="ELU" />
-                                                </Tab>
-                                            </Tabs>
-                                        </CardBody>
-                                    </Card>
-                                </div>
-                            )} */}
-
-                            {/* ── Admin Tabs (Department / EL) ───────────────────────────────── */}
-                            {/* {isAdmin && (
-
-                                <div className="col-span-3 flex justify-center mt-4">
-                                    <Card className="w-full">
-                                        <CardBody>
-                                            <Tabs aria-label="Admin tabs" variant="full">
-                                                <Tab key="EXECUTIVE LEADER" title="EXECUTIVE LEADER" className="flex flex-col items-end">
-                                                    <div className="flex flex-col w-full justify-between gap-4">
-                                                        
-                                                        
-                                                        {
-                                                            isAdmin && (
-                                                                <ELDashboard data={elData} />
-
-                                                            )
-                                                        }
-                                                    </div>
-
-                                                </Tab>
-                                                <Tab key="DEPARTMENT" title="DEPARTMENT" className="flex flex-col items-end">
-                                        {!hasDepartment && (
-                                            <div className="flex flex-col w-full justify-between gap-4">
-                                                <Autocomplete
-                                                    aria-label="Filter by Department"
-                                                    placeholder="Filter by Department"
-                                                    className="max-w-xs mr-4"
-                                                    selectedKey={selectedDepartment}
-                                                    onSelectionChange={(key) => setSelectedDepartment(key as string)}
-                                                >
-                                                    {departmentList
-                                                        .filter((d) => d.status === "Active")
-                                                        .map((d) => (
-                                                            <AutocompleteItem key={d.key} value={d.name}>
-                                                                {d.name.replace(/([A-Z])/g, " $1").trim()}
-                                                            </AutocompleteItem>
-                                                        ))}
-                                                </Autocomplete>
-                                                <Card>
-                                                    <CardBody>
-                                                        <ColumnChart
-                                                            dept={true}
-
-                                                            labels={Object.values(departmentSummaryFiltered).map((ele: any) => ele.DepartmentName)}
-                                                            values={Object.values(departmentSummaryFiltered).map((ele: any) => ele.AvgTargetPercent) as number[]}
-                                                            goals={Object.values(departmentSummaryFiltered).map((ele: any) => ele.AvgGoalEfficiency) as number[]}
-
-                                                        />
-                                                    </CardBody>
-                                                </Card>
-
-                                            </div>
-
-                                        )}
-
-                                        <EfficiencyTable data={departmentSummaryFiltered} type="department" />
-                                    </Tab>
-
-
-                                            </Tabs>
-                                        </CardBody>
-                                    </Card>
-                                </div>
-                            )} */}
-
-                            {/* ── Employee daily data table ──────────────────────────────────── */}
-                            {/* {isEmployee && (
-                                <div className="col-span-3 flex justify-center mt-4">
-                                    <Card className="w-full">
-                                        <CardBody>
-                                            <EfficiencyTable data={userSummaryData} type="user" />
-                                        </CardBody>
-                                    </Card>
-                                </div>
-                            )} */}
-                        </div>
-                    </Tab>
-                </Tabs>
-
+                <AdminOverview
+                    company={companySummary ? {
+                        target: Number(companySummary.values?.[0]) || 0,
+                        utilization: Number(companySummary.values?.[1]) || 0,
+                        allocated: Number(companySummary.values?.[2]) || 0,
+                        worked: Number(companySummary.values?.[3]) || 0,
+                        goal: Number(companySummary.values?.[4]) || null,
+                        people: Number((companySummary as any).totalUsers) || 0,
+                        departments: Number((companySummary as any).totalDepartments) || 0,
+                    } : null}
+                    departments={departmentSummary}
+                    executiveLeaders={ELSummary}
+                    functionalLeaders={FLSummary}
+                    scope={departmentType}
+                    onScope={setDepartmentType}
+                    loading={loading}
+                    onWiden={() => setDateRange(getTodayRange(90))}
+                />
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <Card className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10 rounded-xl shadow-sm col-span-3">
-                        <CardBody>
+                    <Card className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10 rounded-xl shadow-sm col-span-3 border-0 bg-transparent shadow-none dark:bg-transparent">
+                                <CardBody className="p-0">
 
                             {/* Admin / Employee top section */}
                             {(isAdmin || isEmployee) && (
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)] lg:grid-rows-[auto_auto_1fr]">
 
                                     {/* Col 1 – actions + chart */}
-                                    <div className="flex flex-col gap-3">
+                                    <div className="flex flex-col gap-3 lg:row-span-3">
                                         {/* Run Report & Missing Logs only for admin */}
 
-                                        {isAdmin && !hasDepartment && (
-                                            <>
-                                                <div className="flex gap-2">
-                                                    <Button
-                                                        variant="flat" size="sm" color="primary"
-                                                        className="px-4 h-8 w-fit"
-                                                        isDisabled={loading}
-                                                        onClick={handleRunReport}
-                                                    >
-                                                        {loading ? (
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                                                                Processing...
-                                                            </div>
-                                                        ) : (
-                                                            "Run Report"
-                                                        )}
-                                                    </Button>
-
-                                                    <Button
-                                                        variant="flat"
-                                                        size="sm"
-                                                        color="primary"
-                                                        className="px-4 h-8 w-fit"
-                                                        isDisabled={loading || hasDepartment}
-                                                        onClick={handleDownload}
-                                                    >
-                                                        Download
-                                                    </Button>
-                                                </div>
-
-                                                {/* <Switch isSelected={dateModification} size="sm" onValueChange={toggleDateModification}>
-                                                Toggle Date selection
-                                            </Switch> */}
-                                                <Button
-                                                    variant="flat" size="sm" color="primary"
-                                                    className="px-4 h-8 w-fit"
-                                                    onClick={() => setIsLogDrawerOpen(true)}
-                                                >
-                                                    View Missing Logs
-                                                </Button>
-                                            </>
-                                        )}
+                                        
                                         {/* Employee radial chart */}
                                         {isEmployee && (
-                                            <RadialSummaryCard
-                                                title={currentUserSummary.title || "EMPLOYEE SUMMARY"}
+                                            <RadialSummaryCard kind="employee" title={currentUserSummary.title || "EMPLOYEE SUMMARY"}
                                                 values={currentUserSummary.values}
                                                 subtitle={currentUserSummary.subtitle}
                                                 loading={loading}
@@ -2964,9 +1589,9 @@ export default function DashboardPage() {
 
                                     {/* Col 2 – Stats panel (admin, no department) */}
                                     {!hasDepartment && companySummary && (
-                                        <div className="flex p-1 text-[12px]">
+                                        <div className="flex w-full p-0 text-[12px]">
                                             <div className="w-full">
-                                                <div className="grid grid-cols-2 gap-3">
+                                                <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
                                                     {stats.map((item, i) => {
                                                         const value = item.value;
 
@@ -2998,36 +1623,14 @@ export default function DashboardPage() {
                                                                     </h2>
                                                                 </div>
 
-                                                                {/* MINI BAR GRAPH */}
                                                                 {typeof value === "number" && (
-                                                                    <div className="mt-3 flex items-end gap-1 h-8">
-                                                                        {[20, 40, 60, 80, 100].map((v, idx) => {
-                                                                            const height = Math.max(10, (value / 100) * v);
-
-                                                                            const color =
-                                                                                item.color === "red"
-                                                                                    ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
-                                                                                    : item.color === "green"
-                                                                                        ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
-                                                                                        : item.color === "yellow"
-                                                                                            ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
-                                                                                            : item.color === "purple"
-                                                                                                ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
-                                                                                                : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
-
-                                                                            return (
+                                                                            <div className="mt-3 h-1.5 w-full bg-ink-100 dark:bg-white/10" aria-hidden>
                                                                                 <div
-                                                                                    key={idx}
-                                                                                    className="flex-1 rounded-sm"
-                                                                                    style={{
-                                                                                        height: `${height}%`,
-                                                                                        background: color[idx],
-                                                                                    }}
+                                                                                    className="h-full bg-brand-600"
+                                                                                    style={{ width: `${Math.max(0, Math.min(100, /hour|hrs|allocated|working/i.test(String(item.label)) ? (value / 8) * 100 : value))}%` }}
                                                                                 />
-                                                                            );
-                                                                        })}
-                                                                    </div>
-                                                                )}
+                                                                            </div>
+                                                                        )}
 
                                                             </div>
                                                         );
@@ -3043,7 +1646,7 @@ export default function DashboardPage() {
 
                                             <div className="w-full">
 
-                                                <div className="grid grid-cols-2 gap-3">
+                                                <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
 
                                                     {[
                                                         {
@@ -3117,43 +1720,14 @@ export default function DashboardPage() {
 
                                                                 </div>
 
-                                                                {/* MINI BAR GRAPH */}
                                                                 {typeof value === "number" && (
-
-                                                                    <div className="mt-3 flex items-end gap-1 h-8">
-
-                                                                        {[20, 40, 60, 80, 100].map((v, idx) => {
-
-                                                                            const height = Math.max(
-                                                                                10,
-                                                                                (value / 100) * v
-                                                                            );
-
-                                                                            const color =
-                                                                                item.color === "red"
-                                                                                    ? ["#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ff4b2b"]
-                                                                                    : item.color === "green"
-                                                                                        ? ["#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#059669"]
-                                                                                        : item.color === "yellow"
-                                                                                            ? ["#fef9c3", "#fef08a", "#fde047", "#facc15", "#d97706"]
-                                                                                            : item.color === "purple"
-                                                                                                ? ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"]
-                                                                                                : ["#ffe3cf", "#ffc59c", "#ffa06b", "#ff8442", "#ff6a1f"];
-
-                                                                            return (
+                                                                            <div className="mt-3 h-1.5 w-full bg-ink-100 dark:bg-white/10" aria-hidden>
                                                                                 <div
-                                                                                    key={idx}
-                                                                                    className="flex-1 rounded-sm"
-                                                                                    style={{
-                                                                                        height: `${height}%`,
-                                                                                        background: color[idx],
-                                                                                    }}
+                                                                                    className="h-full bg-brand-600"
+                                                                                    style={{ width: `${Math.max(0, Math.min(100, /hour|hrs|allocated|working/i.test(String(item.label)) ? (value / 8) * 100 : value))}%` }}
                                                                                 />
-                                                                            );
-                                                                        })}
-
-                                                                    </div>
-                                                                )}
+                                                                            </div>
+                                                                        )}
 
                                                             </div>
                                                         );
@@ -3166,8 +1740,34 @@ export default function DashboardPage() {
                                         </div>
                                     )}
 
+                                    {/* Col 2 – the person's own days */}
+                                    {isEmployee && (
+                                        <section className="border border-ink-200 bg-white p-5 dark:border-white/10 dark:bg-ink-900">
+                                            <h2 className="text-sm font-bold uppercase tracking-wide text-ink-900 dark:text-white">Your days</h2>
+                                            <p className="mt-1 text-xs text-ink-500 dark:text-ink-400">Target achieved and hours worked for each working day in this range.</p>
+                                            {userSummaryData.length === 0 ? (
+                                                <p className="py-10 text-center text-sm text-ink-500 dark:text-ink-400">No logged days in this range. Pick a wider range above.</p>
+                                            ) : (
+                                                <div className="mt-5 grid grid-cols-1 gap-8 2xl:grid-cols-2">
+                                                    <div>
+                                                        <p className="eyebrow mb-3">Target achieved %</p>
+                                                        <DailyBars unit="%" goal={100}
+                                                            labels={userSummaryData.map((d: any) => new Date(d.WorkDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }))}
+                                                            values={userSummaryData.map((d: any) => Math.round(Number(d.TargetAchievedPercent) || 0))} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="eyebrow mb-3">Hours worked</p>
+                                                        <DailyBars unit="h" goal={8}
+                                                            labels={userSummaryData.map((d: any) => new Date(d.WorkDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }))}
+                                                            values={userSummaryData.map((d: any) => Math.round((Number(d.TotalTimeOfWork) || 0) * 10) / 10)} />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </section>
+                                    )}
+
                                     {/* Col 3 – Rules (always visible in admin/employee view) */}
-                                    <EfficiencyRules />
+                                    <div className="lg:col-start-2"><EfficiencyRules /></div>
                                 </div>
                             )}
 

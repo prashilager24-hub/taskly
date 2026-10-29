@@ -1,589 +1,171 @@
 "use client";
-import React from "react";
-import {
-    Card,
-    CardBody,
-    Button,
-    Chip,
-    Avatar,
-    Modal,
-    ModalContent,
-    ModalHeader,
-    ModalBody,
-    ModalFooter,
-    Input,
-    Textarea,
-    Select,
-    SelectItem,
-    useDisclosure,
-    addToast,
-    Accordion, AccordionItem
-} from "@/components/ui";
+import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { useState, useEffect, useMemo } from "react";
-import { set } from "date-fns";
-import { de } from "date-fns/locale";
-import { Archive } from "lucide-react";
+import { Check, Search } from "lucide-react";
+import { cn } from "@heroui/theme";
 
+import { Button, addToast } from "@/components/ui";
+
+interface Goal {
+    goalID: number; departmentID: number; departmentName: string; goalName: string; goalMetric?: string; metricValue?: number | string;
+    unit?: string; frequency?: string; isDynamic?: boolean; isActive?: boolean; approvedByEL?: boolean; archived?: boolean;
+}
+interface DeptGroup { departmentID: number; departmentName: string; goals: Goal[] }
+
+const API = "/t2.0/authentificationUtilization";
+/** "15" or "15 hrs"; the unit is dropped when it only repeats the number */
+const target = (g: Goal) => {
+    const v = g.metricValue === null || g.metricValue === undefined ? "" : String(g.metricValue).trim();
+    const u = (g.unit ?? "").toString().trim();
+    if (!v) return u || "—";
+    return !u || u === v ? v : `${v} ${u}`;
+};
+const readUser = () => { try { return JSON.parse(localStorage.getItem("authUserLD") || "null"); } catch { return null; } };
+
+// Goals per department. People see the departments they work in or lead; Super Admin sees all.
+// Executive Leaders (role 3) acknowledge goals, one at a time or all pending in a department.
 export default function GoalSetting() {
-    const authUserLD = localStorage.getItem("authUserLD");
-    const authUser = authUserLD ? JSON.parse(authUserLD) : null;
-    const [users, setUsers] = useState([
-        {
-            userID: "1",
-            name: "Ravi Kumar",
-            team: "TM-001 · Engineering · Q1 (Apr–Jun)",
-            goals: [
-                {
-                    title: "Goal 1",
-                    weight: 40,
-                    desc: "",
-                    category: "dev",
-                    status: "Pending",
-                }
-            ]
-        }
-    ]); const { isOpen, onOpen, onOpenChange } = useDisclosure();
-    const [selectedEmployee, setSelectedEmployee] = useState("1");
-    const [selectedQuarter, setSelectedQuarter] = useState("Q1");
-    const [goals, setGoals] = useState([]);
+    const authUser = useMemo(readUser, []);
+    const headers = useMemo(() => ({ "Content-Type": "application/json", Accept: "application/json", Authorization: `Bearer ${authUser?.token ?? ""}` }), [authUser]);
+    const [goals, setGoals] = useState<Goal[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [active, setActive] = useState<number | null>(null);
+    const [query, setQuery] = useState("");
+    const [saving, setSaving] = useState(false);
 
-    useEffect(() => {
-        const fetchGoals = async () => {
-            const body = {
-                departmentId: 0,
-                searchText: "",
-                filter: "",
-                startDate: "",
-                endDate: "",
-            };
-
-            const headers = {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-                Authorization: `Bearer ${authUserLD ? JSON.parse(authUserLD).token : ""}`,
-            };
-            const { data } = await axios.post(
-                `/t2.0/authentificationUtilization/departmentGoals/list?page=${0}&size=${0}`,
-                body,
-                { headers }
-            )
-            console.log("Fetched Goals:", data);
-            const mapped: Goal[] = data.response.goals.map((g: any) => ({
-                goalID: g.goalID,
-                departmentID: g.departmentID,
-                departmentName: g.departmentName,
-                goalName: g.goalName,
-                goalMetric: g.goalMetric,
-                metricValue: g.metricValue,
-                unit: g.unit,
-                frequency: g.frequency,
-                // timingType: g.timingType,
-                isDynamic: g.isDynamic,
-                // description: g.description,
-                isActive: g.isActive,
-                liveAccounts: g.liveAccounts,
-                approvedByEL: g.approvedByEL,
-                Archive: g.isDepartmentArchived
-
-            }));
-            const result = mapped.filter((ele) => {
-                if (!ele.isActive) {
-                    return false;
-                } else if (ele.Archive) {
-                    return false;
-                } else {
-                    return true;
-                }
-            });
-
-            setGoals(result);
-
-        };
-
-        fetchGoals();
-    }, []);
-
-    const departmentList = useMemo(() => {
-        if (!Array.isArray(goals)) return [];
-
-        const Result = new Map();
-
-        goals.forEach((g: any) => {
-            if (!g?.departmentID) return;
-
-            const key = g.departmentID;
-
-            if (!Result.has(key)) {
-                Result.set(key, {
-                    departmentID: g.departmentID,
-                    departmentName: g.departmentName,
-                    goals: [g],
-                });
-            } else {
-                Result.get(key).goals.push(g);
-            }
-        });
-        console.log("Department Map:", Result);
-        return Array.from(Result.values());
-    }, [goals]);
-
-    const colors = ['#378ADD', '#1D9E75', '#D85A30', '#D4537E', '#639922', '#BA7517'];
-    const [activeDept, setActiveDept] = useState<number | null>(null);
-    const dept = departmentList.find(d => d.departmentID === activeDept);
-    const employeeOptions = users.map((u, i) => ({
-        key: String(i + 1),
-        label: `${u.name} (${u.team.split("·")[0].trim()})`,
-    }));
-
-    const totalWeight = users.reduce(
-        (sum, u) => sum + u.goals.reduce((goalSum, g) => goalSum + Number(g.weight || 0), 0),
-        0
-    );
-
-    const addGoal = () => {
-        setUsers((prev) => {
-            const updated = [...prev];
-            const userIndex = updated.findIndex(
-                (u) => u.userID === selectedEmployee
-            );
-            if (userIndex !== -1) {
-                const user = updated[userIndex];
-                user.goals.push({
-                    title: "",
-                    weight: 0,
-                    desc: "",
-                    category: "none",
-                    status: "Pending",
-                });
-            }
-            return updated;
-        });
-    };
-
-    const removeGoal = (index) => {
-        setUsers((prev) =>
-            prev.map((u) => {
-                if (u.userID === selectedEmployee) {
-                    return {
-                        ...u,
-                        goals: u.goals.filter((_, i) => i !== index),
-                    };
-                }
-                return u;
-            })
-        );
-    };
-
-    const updateGoal = (index, field, value) => {
-        setUsers((prev) =>
-            prev.map((u) => {
-                if (u.userID === selectedEmployee) {
-                    const updatedGoals = [...u.goals];
-                    updatedGoals[index][field] = value;
-
-                    return { ...u, goals: updatedGoals };
-                }
-                return u;
-            })
-        );
-    };
-
-    const currentUser = users.find(
-        (u) => u.userID === selectedEmployee
-    );
-
-    const handleApprove = async (ids) => {
+    const load = async () => {
         try {
-            await axios.put(`/t2.0/authentificationUtilization/departmentGoals/approve`, { goalIds: ids, userId: authUser.userID }, {
-                headers: {
-                    "Content-Type": "application/json",
-                    Accept: "application/json",
-                    Authorization: `Bearer ${authUserLD ? JSON.parse(authUserLD).token : ""}`,
-                }
-            })
-            addToast({
-                title: "Success",
-                description: "Goals acknowledged successfully.",
-                color: "success",
-            });
+            const { data } = await axios.post(`${API}/departmentGoals/list?page=0&size=0`, { departmentId: 0, searchText: "", filter: "", startDate: "", endDate: "" }, { headers });
+            const mapped: Goal[] = (data?.response?.goals ?? []).map((g: any) => ({
+                goalID: g.goalID, departmentID: g.departmentID, departmentName: g.departmentName, goalName: g.goalName, goalMetric: g.goalMetric,
+                metricValue: g.metricValue, unit: g.unit, frequency: g.frequency, isDynamic: g.isDynamic, isActive: g.isActive,
+                approvedByEL: g.approvedByEL, archived: g.isDepartmentArchived,
+            }));
+            setGoals(mapped.filter((g) => g.isActive && !g.archived));
+        } catch (e) {
+            addToast({ title: "Could not load goals", color: "danger" });
         }
-        catch (err) {
-            addToast({
-                title: "Error",
-                description: "Failed to acknowledge goals.",
-                color: "danger",
-            });
-            console.log("Error approving goals:", err);
+        setLoading(false);
+    };
+    useEffect(() => { load(); }, []);
+
+    const visible = (d: DeptGroup) => {
+        const mine = (authUser?.departments ?? []).some((x: any) => x.departmentID === d.departmentID);
+        if (authUser?.userRole === 3 || authUser?.userRole === 4) return mine;
+        if (authUser?.userRole === 2) return authUser?.departmentID === d.departmentID;
+        return true;
+    };
+
+    const departments = useMemo<DeptGroup[]>(() => {
+        const map = new Map<number, DeptGroup>();
+        goals.forEach((g) => {
+            if (!g.departmentID) return;
+            const d = map.get(g.departmentID) ?? { departmentID: g.departmentID, departmentName: g.departmentName, goals: [] };
+            d.goals.push(g);
+            map.set(g.departmentID, d);
+        });
+        return [...map.values()].filter(visible).sort((a, b) => a.departmentName.localeCompare(b.departmentName));
+    }, [goals, authUser]);
+
+    const shown = departments.filter((d) => !query.trim() || d.departmentName.toLowerCase().includes(query.trim().toLowerCase()));
+    const dept = departments.find((d) => d.departmentID === active) ?? departments[0] ?? null;
+    const pending = dept?.goals.filter((g) => !g.approvedByEL) ?? [];
+    const canAcknowledge = authUser?.userRole === 3;
+
+    const acknowledge = async (ids: number[]) => {
+        setSaving(true);
+        try {
+            await axios.put(`${API}/departmentGoals/approve`, { goalIds: ids, userId: authUser.userID }, { headers });
+            addToast({ title: "Goals acknowledged", color: "success" });
+            await load();
+        } catch {
+            addToast({ title: "Could not acknowledge goals", color: "danger" });
         }
-    }
+        setSaving(false);
+    };
+
+    if (loading) return <p className="py-16 text-center text-sm text-ink-500">Loading goals…</p>;
+    if (!departments.length) return <p className="border border-dashed border-ink-300 py-16 text-center text-sm text-ink-500 dark:border-white/20">No goals are set for your departments yet.</p>;
 
     return (
-        <div className="p-6">
-
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h1 className="text-xl font-semibold">Goal Setting</h1>
-                    <p className="text-sm text-default-500">
-                        Set quarterly goals for employees (3–5 goals, total weight must equal 100%)
-                    </p>
+        <div className="grid min-h-[480px] grid-cols-1 border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 lg:grid-cols-[270px_minmax(0,1fr)]">
+            {/* Departments */}
+            <aside className="flex min-h-0 flex-col border-b border-ink-200 dark:border-white/10 lg:border-b-0 lg:border-r">
+                <div className="border-b border-ink-100 p-3 dark:border-white/5">
+                    <label className="relative block">
+                        <span className="sr-only">Find a department</span>
+                        <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
+                        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find a department"
+                            className="h-8 w-full border border-ink-200 bg-transparent pl-9 pr-3 text-[13px] text-ink-900 outline-none placeholder:text-ink-400 focus:border-brand-500 dark:border-white/10 dark:text-white" />
+                    </label>
                 </div>
-
-                {/* <Button color="warning" variant="solid" onPress={onOpen}>
-                    + Set Goals
-                </Button> */}
-            </div>
-
-            {/* <div className="flex flex-col gap-6">
-                {users.map((user, idx) => (
-                    <Card key={idx} shadow="sm" radius="lg">
-                        <CardBody>
-
-                           
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="flex items-center gap-3">
-                                    <Avatar name={user.initials} color="primary" />
-                                    <div>
-                                        <h2 className="font-medium">{user.name}</h2>
-                                        <p className="text-sm text-default-500">{user.team}</p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-3">
-                                    <span className="text-sm text-default-500">
-                                        {user.acknowledged}
-                                    </span>
-
-                                    <Button size="sm" variant="bordered">
-                                        Toggle Ack
-                                    </Button>
-
-                                    <Button size="sm" color="danger" variant="bordered">
-                                        Delete
-                                    </Button>
-                                </div>
-                            </div>
-
-                            <div className="grid md:grid-cols-3 gap-4">
-                                {user.goals.map((goal, i) => (
-                                    <Card key={i} className="bg-default-100" radius="md">
-                                        <CardBody className="p-4">
-
-                                            <div className="flex justify-between items-center mb-2">
-                                                <span className="font-medium">{goal.title}</span>
-                                                <span className="text-warning font-semibold">
-                                                    {goal.percent}%
-                                                </span>
-                                            </div>
-
-                                            {goal.tag && (
-                                                <Chip size="sm" color="warning" variant="flat">
-                                                    {goal.tag}
-                                                </Chip>
-                                            )}
-
-                                            <p className="mt-2 font-medium">{goal.desc}</p>
-                                            <p className="text-sm text-default-500">{goal.sub}</p>
-
-                                            <Chip
-                                                size="sm"
-                                                color={
-                                                    goal.status === "Acknowledged"
-                                                        ? "success"
-                                                        : "warning"
-                                                }
-                                                variant="flat"
-                                                className="mt-2"
-                                            >
-                                                {goal.status === "Acknowledged"
-                                                    ? "Acknowledged"
-                                                    : "Pending"}
-                                            </Chip>
-                                        </CardBody>
-                                    </Card>
-                                ))}
-                            </div>
-
-                        </CardBody>
-                    </Card>
-                ))}
-            </div> */}
-            <div className="flex flex-col gap-6">
-                <div className="flex min-h-[480px] border border-divider rounded-xl overflow-hidden">
-                    {/* Sidebar */}
-                    <div className="w-104 shrink-0 border-r border-divider bg-default-50 p-2 flex flex-col gap-1">
-                        <p className="text-[11px] text-default-400 uppercase tracking-widest px-3 py-2">
-                            Departments
-                        </p>
-                        {departmentList
-                            .filter((dept) => {
-                                // EL (role 3) → multiple departments
-                                if (authUser.userRole == 3) {
-                                    return authUser.departments?.some(
-                                        (ele) => ele.departmentID === dept.departmentID
-                                    );
-                                }
-
-                                // Manager (role 2) → single department
-                                if (authUser.userRole == 2) {
-                                    return authUser.departmentID === dept.departmentID;
-                                }
-                                if (authUser.userRole == 4) {
-                                    return authUser.departments?.some(
-                                        (ele) => ele.departmentID === dept.departmentID
-                                    );
-                                }
-
-                                // Admin or others → all
-                                return true;
-                            })
-                            .map((dept, i) => (
-                                <button
-                                    key={dept.departmentID}
-                                    onClick={() => setActiveDept(dept.departmentID)}
-                                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm w-full text-left transition-colors
-        ${activeDept === dept.departmentID
-                                            ? 'bg-default-100 text-foreground font-medium'
-                                            : 'text-default-500 hover:bg-default-100 hover:text-foreground'
-                                        }`}
-                                >
-                                    <span
-                                        className="w-2 h-2 rounded-full shrink-0"
-                                        style={{ background: colors[i % colors.length] }}
-                                    />
-                                    <span className="flex-1">{dept.departmentName}</span>
-                                    <span className="text-[11px] bg-background border border-divider text-default-400 px-1.5 py-0.5 rounded-full">
-                                        {dept.goals?.length ?? 0}
-                                    </span>
+                <ul className="max-h-[560px] flex-1 overflow-y-auto py-1">
+                    {shown.map((d) => {
+                        const on = d.departmentID === dept?.departmentID;
+                        const waiting = d.goals.filter((g) => !g.approvedByEL).length;
+                        return (
+                            <li key={d.departmentID}>
+                                <button type="button" onClick={() => setActive(d.departmentID)}
+                                    className={cn("relative flex w-full items-center gap-2 px-4 py-2 text-left text-[13px] transition-colors focus-ring", on ? "bg-ink-50 font-semibold text-ink-900 dark:bg-white/5 dark:text-white" : "text-ink-600 hover:bg-ink-50 dark:text-ink-300 dark:hover:bg-white/[0.03]")}>
+                                    <span className={cn("absolute inset-y-1.5 left-0 w-[3px]", on ? "bg-brand-600" : "bg-transparent")} aria-hidden />
+                                    <span className="min-w-0 flex-1 truncate" title={d.departmentName}>{d.departmentName}</span>
+                                    {waiting > 0 && <span className="h-1.5 w-1.5 shrink-0 bg-amber-500" title={`${waiting} not acknowledged`} aria-label={`${waiting} not acknowledged`} />}
+                                    <span className="shrink-0 text-[11px] text-ink-400">{d.goals.length}</span>
                                 </button>
-                            ))}
-                    </div>
+                            </li>
+                        );
+                    })}
+                    {!shown.length && <li className="px-4 py-6 text-center text-xs text-ink-500">No department matches.</li>}
+                </ul>
+            </aside>
 
-                    {/* Content */}
-                    <div className="flex-1 p-5 overflow-y-auto">
-                        <div className="flex justify-between items-baseline mb-4">
-                            <h3 className="text-base font-medium">{dept?.departmentName}</h3>
-                            {dept?.goals?.length > 0 && (
-                                <>
-
-                                    <span className="text-sm text-default-400">{dept.goals.length} goals</span>
-                                    {
-                                        authUser.userRole === 3 && (
-                                            <span>
-                                                <Button onClick={() => handleApprove(dept.goals.map((g) => g.goalID))} color="success" variant="solid" size="sm">
-                                                    Acknowledge All
-                                                </Button>
-                                            </span>
-                                        )
-                                    }
-
-                                </>
-
+            {/* Goals */}
+            <section className="min-w-0">
+                {dept && (
+                    <>
+                        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-200 px-5 py-3.5 dark:border-white/10">
+                            <div className="min-w-0">
+                                <h2 className="truncate text-sm font-bold uppercase tracking-wide text-ink-900 dark:text-white">{dept.departmentName}</h2>
+                                <p className="mt-0.5 text-xs text-ink-500 dark:text-ink-400">
+                                    {dept.goals.length} {dept.goals.length === 1 ? "goal" : "goals"} · {dept.goals.length - pending.length} acknowledged · {pending.length} waiting
+                                </p>
+                            </div>
+                            {canAcknowledge && pending.length > 0 && (
+                                <Button size="sm" color="primary" isLoading={saving} startContent={<Check size={14} />} onPress={() => acknowledge(pending.map((g) => g.goalID))}>
+                                    Acknowledge {pending.length} pending
+                                </Button>
                             )}
+                        </header>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b border-ink-200 bg-ink-50 dark:border-white/10 dark:bg-white/5">
+                                        {["Goal", "Measured by", "Target", "How often", "Type", "Status"].map((h) => <th key={h} className="px-4 py-2.5 text-left">{h}</th>)}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {dept.goals.map((g) => (
+                                        <tr key={g.goalID} className="border-b border-ink-100 last:border-0 hover:bg-ink-50/60 dark:border-white/5 dark:hover:bg-white/[0.03]">
+                                            <td className="min-w-[220px] max-w-[360px] whitespace-normal break-words px-4 py-3 font-semibold text-ink-900 dark:text-white">{g.goalName || "Untitled"}</td>
+                                            <td className="px-4 py-3 text-ink-600 dark:text-ink-300">{g.goalMetric || "—"}</td>
+                                            <td className="whitespace-nowrap px-4 py-3 text-ink-900 dark:text-white">{target(g)}</td>
+                                            <td className="px-4 py-3 text-ink-600 dark:text-ink-300">{g.frequency || "—"}</td>
+                                            <td className="px-4 py-3">{g.isDynamic ? <span className="bg-amber-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">Dynamic</span> : <span className="text-xs text-ink-500">Fixed</span>}</td>
+                                            <td className="px-4 py-3">
+                                                {g.approvedByEL
+                                                    ? <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400"><Check size={13} /> Acknowledged</span>
+                                                    : canAcknowledge
+                                                        ? <button type="button" onClick={() => acknowledge([g.goalID])} className="text-xs font-bold uppercase tracking-wide text-brand-600 hover:underline focus-ring">Acknowledge</button>
+                                                        : <span className="text-xs font-semibold text-amber-600">Waiting</span>}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
-
-                        {Array.isArray(dept?.goals) && dept.goals.length > 0 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {dept.goals.map((goal, j) => (
-                                    <div
-                                        key={j}
-                                        className="bg-background border border-divider rounded-xl p-4 flex flex-col gap-3"
-                                    >
-                                        <p className="text-sm font-medium leading-snug">
-                                            {goal.goalName || 'Untitled'}
-                                        </p>
-
-                                        <div className="flex gap-1.5 flex-wrap">
-                                            {goal.isDynamic && (
-                                                <Chip size="sm" color="warning" variant="flat">Dynamic</Chip>
-                                            )}
-                                            <Chip size="sm" color={goal.isActive ? 'success' : 'danger'} variant="flat">
-                                                {goal.isActive ? 'Active' : 'Inactive'}
-                                            </Chip>
-                                        </div>
-
-                                        <div className="flex flex-col divide-y divide-divider text-sm mt-auto">
-                                            <div className="flex justify-between py-1.5">
-                                                <span className="text-default-400">approvedByEL</span>
-                                                <Chip
-                                                    size="sm"
-                                                    color={goal.approvedByEL ? 'success' : 'danger'}
-                                                    variant="flat"
-                                                >
-                                                    <span className="font-medium">
-                                                        {goal.approvedByEL ? 'Yes' : 'No'}
-                                                    </span>
-                                                </Chip>
-                                            </div>
-                                            <div className="flex justify-between py-1.5">
-                                                <span className="text-default-400">Unit</span>
-                                                <span className="font-medium">{goal.unit}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="flex items-center justify-center h-48 text-default-400 text-sm">
-                                No goals configured for this department
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-            <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="3xl" scrollBehavior="inside">
-                <ModalContent>
-                    {(onClose) => (
-                        <>
-                            <ModalHeader className="flex flex-col justify-between w-full gap-3">
-                                <div className="flex justify-between w-full">
-                                    <span>Goals</span>
-                                    <span className="text-danger text-sm">
-                                        Total weight: {totalWeight}%
-                                    </span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4 mb-4">
-                                    {/* EMPLOYEE */}
-                                    <Select
-                                        label="Employee *"
-                                        selectedKeys={[selectedEmployee]}
-                                        onSelectionChange={(keys) =>
-                                            setSelectedEmployee(String(Array.from(keys)[0]))
-                                        }
-                                        variant="bordered"
-                                    >
-                                        {allUser.map((emp) => (
-                                            <SelectItem key={emp.userID}>{emp.userName}</SelectItem>
-                                        ))}
-                                    </Select>
-
-                                    {/* QUARTER */}
-                                    <Select
-                                        label="Quarter *"
-                                        selectedKeys={[selectedQuarter]}
-                                        onSelectionChange={(keys) =>
-                                            setSelectedQuarter(String(Array.from(keys)[0]))
-                                        }
-                                        variant="bordered"
-                                    >
-                                        <SelectItem key="Q1">Q1 (Apr–Jun)</SelectItem>
-                                        <SelectItem key="Q2">Q2 (Jul–Sep)</SelectItem>
-                                        <SelectItem key="Q3">Q3 (Oct–Dec)</SelectItem>
-                                        <SelectItem key="Q4">Q4 (Jan–Mar)</SelectItem>
-                                    </Select>
-                                </div>
-                            </ModalHeader>
-
-                            <ModalBody>
-                                {currentUser?.goals.map((goal, index) => (
-                                    <div
-                                        key={index}
-                                        className="border rounded-xl p-4 mb-4 bg-default-100"
-                                    >
-                                        {/* HEADER */}
-                                        <div className="flex justify-between mb-2">
-                                            <span className="text-sm font-medium">
-                                                Goal {index + 1}
-                                            </span>
-
-                                            {currentUser.goals.length > 1 && (
-                                                <Button
-                                                    size="sm"
-                                                    color="danger"
-                                                    variant="bordered"
-                                                    onPress={() => removeGoal(index)}
-                                                >
-                                                    Remove
-                                                </Button>
-                                            )}
-                                        </div>
-
-                                        {/* ROW 1 */}
-                                        <div className="grid grid-cols-2 gap-4 mb-3">
-                                            <Input
-                                                label="Goal Title"
-                                                value={goal.title}
-                                                onChange={(e) =>
-                                                    updateGoal(index, "title", e.target.value)
-                                                }
-                                            />
-
-                                            <Input
-                                                label="Weight %"
-                                                type="number"
-                                                value={goal.weight}
-                                                onChange={(e) =>
-                                                    updateGoal(index, "weight", e.target.value)
-                                                }
-                                            />
-                                        </div>
-
-                                        {/* ROW 2 */}
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <Textarea
-                                                label="Description"
-                                                value={goal.desc}
-                                                onChange={(e) =>
-                                                    updateGoal(index, "desc", e.target.value)
-                                                }
-                                            />
-
-                                            <Select
-                                                selectedKeys={[goal.category]}
-                                                onSelectionChange={(keys) =>
-                                                    updateGoal(index, "category", Array.from(keys)[0])
-                                                }
-                                            >
-                                                <SelectItem key="none">None</SelectItem>
-                                                <SelectItem key="dev">Development</SelectItem>
-                                                <SelectItem key="qa">QA</SelectItem>
-                                            </Select>
-                                        </div>
-                                    </div>
-                                ))}
-
-                                {/* ADD BUTTON */}
-                                <Button
-                                    variant="bordered"
-                                    onPress={addGoal}
-                                    className="w-fit"
-                                >
-                                    + Add Goal
-                                </Button>
-                            </ModalBody>
-
-                            <ModalFooter>
-                                <Button variant="bordered" onPress={onClose}>
-                                    Cancel
-                                </Button>
-                                <Button
-                                    color="warning"
-                                    onPress={() => {
-                                        if (users[selectedEmployee]?.goals.length < 3) {
-                                            addToast({
-                                                title: "Error",
-                                                description: "You have to set 3 goals atleast.",
-                                                color: "danger",
-                                            });
-                                            return;
-                                        }
-                                        if (totalWeight !== 100) {
-                                            addToast({
-                                                title: "Error",
-                                                description: "Total weight must be 100%.",
-                                                color: "danger",
-                                            }); return;
-                                        }
-                                        onClose();
-                                    }}
-                                >
-                                    Save Goals
-                                </Button>
-                            </ModalFooter>
-                        </>
-                    )}
-                </ModalContent>
-            </Modal>
+                    </>
+                )}
+            </section>
         </div>
     );
 }

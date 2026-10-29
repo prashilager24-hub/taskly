@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { showOnboarding } from "@/lib/onboarding";
 import {
   BarChart3,
+  Bell,
   Briefcase,
   Building2,
   CheckCircle2,
+  ClipboardCheck,
   ChevronDown,
   ClipboardList,
   FileText,
@@ -18,6 +21,7 @@ import {
   Smile,
   Sparkles,
   Target,
+  TrendingUp,
   Users,
   X,
 } from "lucide-react";
@@ -39,10 +43,33 @@ interface MenuItem {
   adminOnly?: boolean;
   departments?: number[];
   children?: MenuItem[];
+  onlyNewJoiners?: boolean;
 }
 
 export const MENU: MenuItem[] = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "dashboard", module: "dashboard" },
+  {
+    icon: LayoutDashboard,
+    label: "Dashboard",
+    href: "dashboard-group",
+    module: "dashboard",
+    children: [
+      { icon: LayoutDashboard, label: "Taskly", href: "dashboard", module: "dashboard" },
+      { icon: TrendingUp, label: "PMS", href: "pms/dashboard", module: "pms_dashboard" },
+    ],
+  },
+  {
+    icon: ClipboardCheck,
+    label: "PMS",
+    href: "pms",
+    module: "pms",
+    children: [
+      { icon: LayoutDashboard, label: "Dashboard", href: "pms/dashboard", module: "pms_dashboard" },
+      { icon: Goal, label: "Goal Setting", href: "pms/goal-setting", module: "pms_goals" },
+      { icon: MessageSquareText, label: "Manager Feedback", href: "pms/manager-feedback", module: "pms_feedback" },
+      { icon: ClipboardList, label: "Quarterly Review", href: "pms/quarterly-review", module: "pms_quarterly" },
+      { icon: FileText, label: "Report", href: "pms/report", module: "pms_report" },
+    ],
+  },
   { icon: ClipboardList, label: "Daily Activity", href: "daily-activity", module: "dataentry" },
   {
     icon: BarChart3,
@@ -58,7 +85,7 @@ export const MENU: MenuItem[] = [
       { icon: MessageSquareText, label: "Query Report", href: "query-report", module: "queryReport" },
     ],
   },
-  { icon: Briefcase, label: "Sales Forward", href: "sales-forward", module: "salesfwd", departments: [21] },
+  { icon: Briefcase, label: "Sales Forward", href: "sales-forward", module: "salesfwd" },
   {
     icon: Settings,
     label: "Admin",
@@ -70,6 +97,7 @@ export const MENU: MenuItem[] = [
       { icon: ClipboardList, label: "Task Management", href: "tasks", module: "taskmgmt" },
       { icon: Target, label: "Target Management", href: "target", module: "targetmgmt" },
       { icon: Goal, label: "Goal Management", href: "Goal-management", module: "goalmgmt" },
+      { icon: Bell, label: "Notifications", href: "notifications", module: "notifications" },
     ],
   },
   // Support (formerly HR Feedback); PMS lives on the Dashboard as a tab
@@ -79,7 +107,7 @@ export const MENU: MenuItem[] = [
     href: "support",
     module: "hrfeedback",
     children: [
-      { icon: Sparkles, label: "Onboarding Experience", href: "support/onboarding", module: "hrfeedback" },
+      { icon: Sparkles, label: "Onboarding Experience", href: "support/onboarding", module: "hrfeedback", onlyNewJoiners: true },
       { icon: MessageSquareText, label: "Query & HR", href: "support/query", module: "hrfeedback" },
       { icon: Smile, label: "Employee Engagement", href: "support/engagement", module: "hrfeedback" },
     ],
@@ -91,7 +119,6 @@ const norm = (path: string) => path.replace(/^\/+|\/+$/g, "").toLowerCase();
 // Pages reached from inside other pages, not from the menu
 const EXTRA_PAGES: Record<string, { section: string; label: string }> = {
   "activity-log": { section: "Workspace", label: "Activity Log" },
-  pms: { section: "Workspace", label: "Performance Reviews" },
   "hr-feedback": { section: "Support", label: "HR Feedback" },
   support: { section: "Support", label: "Support" },
 };
@@ -106,17 +133,6 @@ export function pageMeta(pathname: string): { section: string; label: string } {
   }
   return EXTRA_PAGES[path] ?? { section: "Taskly", label: "" };
 }
-
-const ANNOUNCEMENT = { title: "Q3 reviews close on 8 October — finish yours from Dashboard → PMS.", time: "2026-10-06T12:25:00" };
-
-const relativeTime = (timestamp: string) => {
-  const minutes = Math.floor((Date.now() - new Date(timestamp).getTime()) / 60000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-};
 
 const readJson = (key: string) => {
   try {
@@ -147,25 +163,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, current
 
   const hasAccess = (module: string, permission = "read") => rolePermissions?.[module]?.includes(permission);
 
-  // Filter based on user role
+  // The menu shows only what this person's access allows (role + department + their own access)
   const menu = useMemo(() => MENU
     .map((item) => item.children
-      ? {
-        ...item,
-        children: item.children.filter((child) => {
-          if (child.adminOnly) return authUserLD?.userRole === 1;
-          if (child.module === "hrfeedback") return true; // Support is open to every user
-          return hasAccess(child.module);
-        }),
-      }
+      ? { ...item, children: item.children.filter((child) => hasAccess(child.module) && (!child.onlyNewJoiners || showOnboarding(authUserLD))) }
       : item)
-    .filter((item) => {
-      if (item.adminOnly) return authUserLD?.userRole === 1;
-      if (item.module === "hrfeedback") return true;
-      if (item.departments?.length && !item.departments.includes(Number(authUserLD?.departmentID))) return false;
-      if (item.children) return item.children.length > 0;
-      return hasAccess(item.module);
-    }), [authUserLD, rolePermissions]);
+    .filter((item) => (item.children ? item.children.length > 0 : hasAccess(item.module))), [rolePermissions, authUserLD]);
 
   const active = norm(currentPage);
   const isActive = (href: string) => active === norm(href);
@@ -173,7 +176,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, current
   // The group holding the current page starts open
   const [expanded, setExpanded] = useState<string | null>(null);
   useEffect(() => {
-    const group = MENU.find((item) => item.children?.some((c) => isActive(c.href)));
+    // A page can be listed in two groups (PMS dashboard): keep the group the person opened it from
+    const owner = MENU.find((item) => item.label === expanded && item.children?.some((c) => isActive(c.href)));
+    const group = owner ?? MENU.find((item) => item.children?.some((c) => isActive(c.href)));
     if (group) setExpanded(group.label);
   }, [currentPage]);
 
@@ -217,7 +222,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, current
           <p className="mb-2 px-3 font-secondary text-[10px] font-medium uppercase tracking-eyebrow text-ink-500">Menu</p>
           <ul className="space-y-0.5">
             {menu.map((item) => {
-              const groupActive = item.children?.some((c) => isActive(c.href)) ?? false;
+              const groupActive = (item.children?.some((c) => isActive(c.href)) ?? false) && (expanded === null || expanded === item.label || !menu.some((m) => m.label === expanded && m.children?.some((c) => isActive(c.href))));
               const open = expanded === item.label;
 
               if (!item.children) {
@@ -248,10 +253,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, current
                       <li className="ml-[22px] mt-0.5 border-l border-white/10 pb-1">
                         <ul>
                           {item.children.map((child) => {
-                            const on = isActive(child.href);
+                            const on = isActive(child.href) && open;
                             return (
                               <li key={child.label}>
-                                <Link to={`/${child.href}`} onClick={() => { if (isOpen) toggleSidebar(); }} tabIndex={open ? 0 : -1}
+                                <Link to={`/${child.href}`} onClick={() => { setExpanded(item.label); if (isOpen) toggleSidebar(); }} tabIndex={open ? 0 : -1}
                                   aria-current={on ? "page" : undefined}
                                   className={`relative -ml-px flex items-center border-l py-2 pl-4 pr-2 text-[12.5px] transition-colors focus-ring ${
                                     on ? "border-brand-600 font-medium text-white" : "border-transparent text-ink-400 hover:border-white/30 hover:text-white"
@@ -270,16 +275,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, current
             })}
           </ul>
         </nav>
-
-        {/* Announcement */}
-        <div className="mx-3 mb-3 border border-white/10 bg-white/[0.03] p-3.5">
-          <div className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand-500" />
-            <span className="font-secondary text-[10px] font-medium uppercase tracking-eyebrow text-brand-500">Announcement</span>
-            <span className="ml-auto text-[10px] text-ink-500">{relativeTime(ANNOUNCEMENT.time)}</span>
-          </div>
-          <p className="mt-2 text-xs leading-relaxed text-ink-300">{ANNOUNCEMENT.title}</p>
-        </div>
 
         {/* Signed-in user */}
         {authUserLD && (

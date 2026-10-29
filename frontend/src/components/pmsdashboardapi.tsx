@@ -14,8 +14,8 @@ import {
 
 import axios from "axios";
 import { format } from "date-fns";
-import { useEffect, useState, useMemo, useCallback } from "react";
-import CustomDateRangePicker from "../components/CustomDateRangePicker";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import CustomDateRangePicker from "../components/customDateRangePicker";
 
 
 const QUARTERS = [
@@ -377,10 +377,8 @@ export default function DashboardFilters({
 
         if (selectedUser) {
             fetchQuarterlyReviews();
-        } else {
-            if (authUser.userID === 1 || authUser.userRole == 1 || authUser.departmentID === 16) {
-                fetchAllQuarterlyReviews();
-            }
+        } else if (!isReport) {
+            setReviews([]);
         }
     }, [
         monthly,
@@ -420,6 +418,23 @@ export default function DashboardFilters({
             selectedDepartment,
         ]);
 
+
+    // Start on one department and one person so the page opens on a single, readable review
+    const defaulted = useRef(false);
+    useEffect(() => {
+        if (isReport || shouldHideDropdown || selectedDepartment || defaulted.current) return;
+        const first = [...departmentList].filter((d: any) => d.status === "Active").sort((a: any, b: any) => String(a.name).localeCompare(String(b.name)))[0] as any;
+        if (first) setSelectedDepartment(String(first.key));
+    }, [departmentList, shouldHideDropdown, selectedDepartment]);
+    useEffect(() => {
+        if (isReport || defaulted.current || selectedUser || !filteredUsers.length) return;
+        const first = [...filteredUsers].sort((a: any, b: any) => String(a.userName).localeCompare(String(b.userName)))[0] as any;
+        if (first) {
+            defaulted.current = true;
+            setSelectedUser(String(first.userID));
+            setUserSearch(first.userName);
+        }
+    }, [filteredUsers, selectedUser]);
 
     const fetchMonthlyReviews = async () => {
 
@@ -506,20 +521,7 @@ export default function DashboardFilters({
 
     const DateRangeDropdown = useCallback(
         ({ value, onChange }: { value: DateRange; onChange: (r: DateRange) => void }) => (
-            <Dropdown placement="bottom-start">
-                <DropdownTrigger>
-                    <Button variant="flat" size="sm" className="w-[100%] justify-between bg-ink-200 dark:bg-ink-700 h-[57px]">
-                        {value.startDate && value.endDate
-                            ? `${format(new Date(value.startDate), "dd MMM yyyy")} → ${format(new Date(value.endDate), "dd MMM yyyy")}`
-                            : "Select Date Range"}
-                    </Button>
-                </DropdownTrigger>
-                <DropdownMenu aria-label="Date range" closeOnSelect={false} className="p-0">
-                    <DropdownItem key="calendar" className="p-0">
-                        <CustomDateRangePicker value={value} onChange={onChange} />
-                    </DropdownItem>
-                </DropdownMenu>
-            </Dropdown>
+            <CustomDateRangePicker value={value} onChange={onChange} />
         ),
         []
     );

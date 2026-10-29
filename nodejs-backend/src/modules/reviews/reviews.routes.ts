@@ -8,91 +8,72 @@
  */
 import { Router } from 'express';
 import { authenticate } from '../../middlewares/auth';
-import { validate } from '../../middlewares/validate';
-import { z } from 'zod';
 import { sendSuccess } from '../../utils/response';
 import * as svc from './reviews.service';
+import * as pms from './pmsReviews.service';
 
-// ── Monthly Reviews ──────────────────────────────────────────────────────────
+// ── Monthly Reviews (Java contract: camelCase DTOs, plain arrays) ────────────
 const monthlyRouter = Router();
 monthlyRouter.use(authenticate);
 
-const MonthlyReviewSchema = z.object({
-  emp_id: z.number().int().positive(),
-  month: z.number().int().min(1).max(12),
-  year: z.number().int().min(2020),
-  target: z.number().optional(),
-  goal: z.number().optional(),
-  utilization: z.number().optional(),
-  efficiency: z.number().optional(),
-  feedback: z.record(z.unknown()).optional(),
-  accessor: z.record(z.unknown()).optional(),
+// POST  /monthly-reviews
+monthlyRouter.post('/', async (req, res, next) => {
+  try { res.status(201).json(await pms.createMonthly(req.body)); } catch (e) { next(e); }
 });
 
-// POST  /monthly-reviews          → upsert
-monthlyRouter.post('/', validate(MonthlyReviewSchema), async (req, res, next) => {
-  try { sendSuccess(res, await svc.upsertMonthlyReview(req.body)); } catch (e) { next(e); }
-});
-
-// GET   /monthly-reviews/:empId/:year
+// GET   /monthly-reviews/:empId/:year   (year may be ALL)
 monthlyRouter.get('/:empId/:year', async (req, res, next) => {
-  try {
-    sendSuccess(res, await svc.getMonthlyReviews({
-      emp_id: Number(req.params['empId']),
-      year: Number(req.params['year']),
-    }));
-  } catch (e) { next(e); }
+  try { res.json(await pms.listMonthly(Number(req.params['empId']), String(req.params['year']))); } catch (e) { next(e); }
 });
 
 // DELETE /monthly-reviews/:id
 monthlyRouter.delete('/:id', async (req, res, next) => {
-  try { sendSuccess(res, await svc.deleteMonthlyReview(Number(req.params['id']))); } catch (e) { next(e); }
+  try {
+    await pms.deleteMonthly(Number(req.params['id']));
+    res.type('text/plain').send('Monthly review deleted successfully');
+  } catch (e) { next(e); }
 });
 
 // ── Quarterly Reviews ────────────────────────────────────────────────────────
 const quarterlyRouter = Router();
 quarterlyRouter.use(authenticate);
 
-const QuarterlyReviewSchema = z.object({
-  emp_id: z.number().int().positive(),
-  quarter: z.enum(['Q1', 'Q2', 'Q3', 'Q4']),
-  quarter_year: z.number().int().min(2020),
-  target_percent: z.number().optional(),
-  goal_achievement: z.number().optional(),
-  system_grade: z.string().optional(),
-  manager_avg_rating: z.number().optional(),
-  final_rating: z.number().optional(),
-  manager_ratings: z.record(z.unknown()).optional(),
-  feedback: z.record(z.unknown()).optional(),
-  grade: z.record(z.unknown()).optional(),
-});
-
-const QuarterlyUpdateSchema = QuarterlyReviewSchema.partial().extend({
-  id: z.number().int().positive(),
-});
-
 // POST  /quarterly-review/create
-quarterlyRouter.post('/create', validate(QuarterlyReviewSchema), async (req, res, next) => {
-  try { sendSuccess(res, await svc.upsertQuarterlyReview(req.body), 201); } catch (e) { next(e); }
+quarterlyRouter.post('/create', async (req, res, next) => {
+  try {
+    const id = await pms.createQuarterly(req.body);
+    res.json({ success: true, message: 'Quarterly review saved successfully', id });
+  } catch (e) { next(e); }
 });
 
 // GET   /quarterly-review/all
 quarterlyRouter.get('/all', async (_req, res, next) => {
-  try { sendSuccess(res, await svc.getQuarterlyReviews({})); } catch (e) { next(e); }
+  try { res.json(await pms.listQuarterly()); } catch (e) { next(e); }
 });
 
-// GET   /quarterly-review/employee/:empId
+// GET   /quarterly-review/employee/:empId?quarter=&year=
 quarterlyRouter.get('/employee/:empId', async (req, res, next) => {
   try {
-    sendSuccess(res, await svc.getQuarterlyReviews({ emp_id: Number(req.params['empId']) }));
+    res.json(await pms.listQuarterly(Number(req.params['empId']), req.query['quarter'] as string | undefined, req.query['year'] as string | undefined));
   } catch (e) { next(e); }
 });
 
 // PUT   /quarterly-review/update/:id
-quarterlyRouter.put('/update/:id', validate(QuarterlyUpdateSchema), async (req, res, next) => {
+quarterlyRouter.put('/update/:id', async (req, res, next) => {
   try {
-    sendSuccess(res, await svc.upsertQuarterlyReview({ ...req.body, id: Number(req.params['id']) }));
+    const id = await pms.updateQuarterly(Number(req.params['id']), req.body);
+    res.json({ success: true, message: 'Quarterly review updated successfully', id });
   } catch (e) { next(e); }
+});
+
+// The Quarterly Review screen also reads / deletes through the plural path
+const quarterlyAliasRouter = Router();
+quarterlyAliasRouter.use(authenticate);
+quarterlyAliasRouter.get('/:empId', async (req, res, next) => {
+  try { res.json(await pms.listQuarterly(Number(req.params['empId']))); } catch (e) { next(e); }
+});
+quarterlyAliasRouter.delete('/:id', async (req, res, next) => {
+  try { await pms.deleteQuarterly(Number(req.params['id'])); res.json({ success: true, message: 'Quarterly review deleted' }); } catch (e) { next(e); }
 });
 
 // ── Goal Efficiency ──────────────────────────────────────────────────────────
@@ -109,7 +90,7 @@ goalEfficiencyRouter.post('/list', async (req, res, next) => {
   try { sendSuccess(res, await svc.getGoalEfficiency(req.body)); } catch (e) { next(e); }
 });
 
-export { monthlyRouter, quarterlyRouter, goalEfficiencyRouter };
+export { monthlyRouter, quarterlyRouter, quarterlyAliasRouter, goalEfficiencyRouter };
 
 // Default export for backward-compat (not used when app.ts imports named)
 export default monthlyRouter;

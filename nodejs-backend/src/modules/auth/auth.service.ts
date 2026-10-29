@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { pool } from '../../config/db';
+import { effectivePrivileges, twoFactorRequired } from '../access/access.service';
 import { env } from '../../config/env';
 import { AppError } from '../../utils/AppError';
 import {
@@ -40,7 +41,7 @@ interface UserRow {
   ReportingManagerID: number | null;
   ELManagerID: number | null;
   AppraisalCycle: string | null;
-  UserCreateTime?: string;
+  UserCreateTime?: Date | string | null;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -70,7 +71,7 @@ function signToken(user: UserRow, sessionId: string, expiresInSeconds: number): 
 const USER_SELECT = `
   SELECT UserID, UserEmail, UserName, UserPassword, RoleID, SecondaryRoleID,
          UserStatus, IsUserArchived, EmployeeID, ReportingManagerID,
-         ELManagerID, AppraisalCycle, FeedbackResolverTeam, ThemePreference
+         ELManagerID, AppraisalCycle, FeedbackResolverTeam, ThemePreference, TwoFactor, UserCreateTime
   FROM Users`;
 
 interface SessionDepartment {
@@ -106,7 +107,7 @@ async function departmentsOfMember(userId: number) {
   return rows.map((r) => ({ departmentID: r['DepartmentID'] as number, departmentName: r['DepartmentName'] as string }));
 }
 
-type SessionUser = UserRow & { FeedbackResolverTeam?: string | null; ThemePreference?: string | null };
+type SessionUser = UserRow & { FeedbackResolverTeam?: string | null; ThemePreference?: string | null; TwoFactor?: number | null };
 
 async function buildSessionPayload(user: SessionUser, token: string) {
   const session: Record<string, unknown> = {
@@ -125,12 +126,20 @@ async function buildSessionPayload(user: SessionUser, token: string) {
     userName: user.UserName,
     userEmail: user.UserEmail,
     employeeID: user.EmployeeID,
+    // Joining date: Onboarding Experience is shown to new joiners for their first 45 days
+    joinedAt: user.UserCreateTime ?? null,
     // Saved Dark / Light choice; null until the user picks one at first sign-in (AUTH-11)
     themePreference: user.ThemePreference ?? null,
   };
 
   if (user.RoleID === 3) {
-    session['departments'] = await departmentsWhereLeader('ExecutiveLeaderID', user.UserID);
+    const departments = await departmentsWhereLeader('ExecutiveLeaderID', user.UserID);
+    const seen = new Set(departments.map((d) => d.departmentID));
+    // An EL who also works in a department (demo data) keeps that department, as Functional Leaders do
+    for (const d of await departmentsOfMember(user.UserID)) {
+      if (!seen.has(d.departmentID)) departments.push({ ...d, executiveLeaderID: null, functionalLeaderID: null });
+    }
+    session['departments'] = departments;
     session['isHeExecutiveLeader'] = true;
   } else if (user.RoleID === 4) {
     const departments = await departmentsWhereLeader('FunctionalLeaderID', user.UserID);
@@ -149,6 +158,9 @@ async function buildSessionPayload(user: SessionUser, token: string) {
       session['departmentName'] = first.departmentName;
     }
   }
+
+  // What this person can open: role + department + own access (the menu and route guards use it)
+  session['permissions'] = await effectivePrivileges(user.UserID);
 
   return session;
 }
@@ -184,6 +196,15 @@ export async function login(input: LoginInput, client: ClientInfo) {
   if (user.UserStatus !== 1) return failed('Account is inactive');
 
   await logAuthEvent('PASSWORD_OK', { userId: user.UserID, email: user.UserEmail }, client);
+
+  // Two-factor can be off for everyone or for this person (Access Management → Security)
+  if (!(await twoFactorRequired(user))) {
+    const keepSignedIn = input.keepSignedIn === true;
+    const { sessionId, expiresInSeconds } = await startSession(user.UserID, keepSignedIn, client);
+    const session = await buildSessionPayload(user, signToken(user, sessionId, expiresInSeconds));
+    return { ...session, keepSignedIn, otpRequired: false, status: true, statusCode: 200 };
+  }
+
   const challenge = await createChallenge(user, input.keepSignedIn === true);
   await logAuthEvent('OTP_SENT', { userId: user.UserID, email: user.UserEmail }, client);
   return { status: true, statusCode: 200, otpRequired: true, ...challenge };
@@ -595,16 +616,18 @@ export async function archiveAMRole(input: { id: number }) {
   return { message: 'AMRole archived' };
 }
 
-// GET /MissingData — users lacking required fields
-export async function getMissingData() {
+// GET /MissingData?startDate&endDate — active users with a department who logged no work in the range
+export async function getMissingData(startDate?: string, endDate?: string) {
+  const today = new Date().toISOString().slice(0, 10);
+  const from = startDate || today;
+  const to = endDate || today;
   const [rows] = await pool.query<mysql.RowDataPacket[]>(
-    `SELECT UserID, UserName, EmployeeID, Email,
-            CASE WHEN DepartmentID IS NULL THEN 1 ELSE 0 END AS missingDepartment,
-            CASE WHEN AMRoleID IS NULL THEN 1 ELSE 0 END AS missingRole,
-            CASE WHEN ProfileImage IS NULL OR ProfileImage = '' THEN 1 ELSE 0 END AS missingProfileImage
-     FROM Users
-     WHERE DepartmentID IS NULL OR AMRoleID IS NULL
-     ORDER BY UserName`,
+    `SELECT u.UserID AS userID, u.UserName AS userName, u.UserEmail AS userEmail
+     FROM Users u
+     WHERE u.UserStatus = 1 AND u.IsUserArchived = 0 AND u.RoleID <> 1 AND EXISTS (SELECT 1 FROM DepartmentUser du WHERE du.UserID = u.UserID)
+       AND NOT EXISTS (SELECT 1 FROM UserWorkData w WHERE w.UserID = u.UserID AND w.WorkDate BETWEEN ? AND ?)
+     ORDER BY u.UserName`,
+    [from, to],
   );
   return rows;
 }

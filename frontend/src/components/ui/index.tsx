@@ -42,7 +42,7 @@ export * from "@heroui/react";
 
 // ── Button ───────────────────────────────────────────────────────────────────
 
-const BUTTON_BASE = "font-bold uppercase tracking-wide transition-colors whitespace-nowrap focus-ring data-[disabled=true]:opacity-50 data-[disabled=true]:cursor-not-allowed";
+const BUTTON_BASE = "font-bold uppercase tracking-wide whitespace-nowrap transition-colors duration-150 focus-ring data-[pressed=true]:scale-100 data-[hover=true]:opacity-100 data-[pressed=true]:opacity-100 data-[disabled=true]:opacity-50 data-[disabled=true]:cursor-not-allowed";
 
 // Fixed heights so a button sits flush next to a field of the same size
 const BUTTON_SIZES = {
@@ -52,12 +52,12 @@ const BUTTON_SIZES = {
 } as const;
 
 const BUTTON_VARIANTS = {
-  primary: "bg-brand-600 text-white border border-brand-600 data-[hover=true]:bg-transparent data-[hover=true]:text-brand-600 data-[hover=true]:opacity-100 dark:data-[hover=true]:text-brand-400",
+  primary: "bg-brand-600 text-white border border-brand-600 data-[hover=true]:bg-brand-700 data-[hover=true]:border-brand-700",
   secondary: "bg-transparent text-ink-700 dark:text-ink-200 border border-ink-300 dark:border-white/10 data-[hover=true]:border-brand-500 data-[hover=true]:text-brand-600 data-[hover=true]:bg-transparent data-[hover=true]:opacity-100 dark:data-[hover=true]:text-brand-400",
   ghost: "bg-transparent text-ink-600 dark:text-ink-300 border border-transparent data-[hover=true]:bg-ink-100 data-[hover=true]:opacity-100 dark:data-[hover=true]:bg-ink-800",
-  danger: "bg-rose-600 text-white border border-rose-600 data-[hover=true]:bg-transparent data-[hover=true]:text-rose-500 data-[hover=true]:opacity-100",
+  danger: "bg-rose-600 text-white border border-rose-600 data-[hover=true]:bg-rose-700 data-[hover=true]:border-rose-700",
   dangerGhost: "bg-transparent text-rose-600 dark:text-rose-400 border border-transparent data-[hover=true]:bg-rose-50 data-[hover=true]:opacity-100 dark:data-[hover=true]:bg-rose-500/15",
-  success: "bg-emerald-600 text-white border border-emerald-600 data-[hover=true]:bg-transparent data-[hover=true]:text-emerald-600 data-[hover=true]:opacity-100",
+  success: "bg-emerald-600 text-white border border-emerald-600 data-[hover=true]:bg-emerald-700 data-[hover=true]:border-emerald-700",
 } as const;
 
 /** Maps HeroUI's color × variant onto the five TapMind button variants */

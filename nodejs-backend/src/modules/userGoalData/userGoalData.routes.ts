@@ -7,6 +7,7 @@ import { authenticate } from '../../middlewares/auth';
 import { validate } from '../../middlewares/validate';
 import { z } from 'zod';
 import { sendSuccess } from '../../utils/response';
+import { reviewStatusSummary } from '../reviews/pmsReviews.service';
 import * as svc from './userGoalData.service';
 
 const router = Router();
@@ -31,10 +32,11 @@ const RevisedGoalSchema = z.object({
 });
 
 const ReviewStatusFilterSchema = z.object({
-  UserID: z.number().int().positive().optional(),
-  DepartmentID: z.number().int().positive().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
+  departmentID: z.number().int().positive().nullish(),
+  filterType: z.string(),
+  quarter: z.string().optional(),
+  month: z.number().int().optional(),
+  year: z.union([z.string(), z.number()]).transform(String).optional(),
 });
 
 // POST /userGoalData/list
@@ -56,7 +58,7 @@ router.put('/revised-goal', validate(RevisedGoalSchema), async (req, res, next) 
 
 // POST /userGoalData/review-status
 router.post('/review-status', validate(ReviewStatusFilterSchema), async (req, res, next) => {
-  try { sendSuccess(res, await svc.getReviewStatus(req.body)); } catch (e) { next(e); }
+  try { res.json(await reviewStatusSummary({ ...req.body, departmentID: req.body.departmentID ?? undefined })); } catch (e) { next(e); }
 });
 
 // GET /userGoalData/revised-goal/:userGoalDataID

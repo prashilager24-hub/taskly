@@ -5,6 +5,7 @@ import { parseZonedDateTime } from "@internationalized/date";
 import { Input } from "@/components/ui";
 import WeeklyPulse from "./WeeklyPulse";
 import { useLocation } from "react-router-dom";
+import { createPortal } from "react-dom";
 import { Select, SelectItem, addToast, DatePicker, Autocomplete, Chip, CheckboxGroup, Modal, ModalHeader, ModalContent, ModalBody, ModalFooter, AutocompleteItem, Checkbox, RadioGroup, Radio, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@/components/ui";
 import { CalendarDate } from "@internationalized/date";
 import CustomDatePicker from "../components/customDatePicker"
@@ -261,6 +262,11 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
     const [showMessage, setShowMessage] = useState(false);
     const [entryStep, setEntryStep] = useState<EntryStep>("TASK");
     const [activities, setActivities] = useState<ActivityEntry[]>([]);
+    // The last stepper step: every entry added so far, grouped, with totals and the Submit button
+    const [reviewMode, setReviewMode] = useState(false);
+    // Import / Export template live in the page toolbar (forms.tsx), shared by every step
+    const [toolbarSlot, setToolbarSlot] = useState<HTMLElement | null>(null);
+    useEffect(() => { setToolbarSlot(document.getElementById("da-toolbar-slot")); });
 
     useEffect(() => {
         const authUserLD = localStorage.getItem("authUserLD");
@@ -889,7 +895,16 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
     // ── Fill → Preview → Save (DA-05 – DA-07) ──────────────────────────────────
     // Preview shows what will be added; "Yes" runs the existing add, "No" keeps the form as filled.
-    const { openPreview, previewOpen, previewModal } = useEntryPreview();
+    const summaryOf = () => {
+        const kind = (a: ActivityEntry) => (a.isGoal ? "Goal" : a.targetName ? "Target" : "Task");
+        const mins = (a: ActivityEntry) => (a.isDynamic ? Number(a.timeTaken || 0) : Number(a.customTime || 0) * Number(a.setup || 1));
+        return activities.map((a) => ({
+            kind: kind(a),
+            name: a.goalName || a.targetName || a.taskName || "—",
+            detail: a.targetName || a.goalID ? `${a.achievedUnit || 0}${a.unit ? ` of ${a.unit}` : ""}` : `${mins(a).toFixed(0)} mins`,
+        }));
+    };
+    const { openPreview, previewOpen, previewModal } = useEntryPreview(summaryOf);
     const entryDateLabel = (() => {
         try { return toYYYYMMDD(workDate); } catch { return String(workDate); }
     })();
@@ -1966,7 +1981,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
     };
 
     return (
-        <div className={`${DeptId == 24 ? "" : "grid grid-cols-1 xl:grid-cols-3 lg:grid-cols-1 md:grid-cols-1 gap-6"}`}>
+        <div className={`${DeptId == 24 ? "" : "flex flex-col gap-6"}`}>
             {previewModal}
             <Modal
                 isOpen={showDateConfirm}
@@ -2012,18 +2027,97 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                 </ModalContent>
             </Modal>
 
+
+
+            {toolbarSlot && DeptId != 24 && createPortal(
+                <>
+                    <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleUploadExcel} />
+                    <Button variant="bordered" size="sm" isLoading={isUploading} onPress={() => fileInputRef.current?.click()}>
+                        {isUploading ? "Uploading..." : "Import"}
+                    </Button>
+                    <Button variant="bordered" size="sm" onPress={handleDownloadTemplate}>
+                        Export template
+                    </Button>
+                </>,
+                toolbarSlot,
+            )}
+            {DeptId != 24 && (() => {
+                const kindOf = (a: ActivityEntry): EntryStep => (a.isGoal ? "GOAL" : a.targetID || a.targetName ? "TARGET" : "TASK");
+                const count = (k: EntryStep) => activities.filter((a) => kindOf(a) === k).length;
+                const steps: { key: EntryStep; label: string; hint: string }[] = [
+                    { key: "TASK", label: "Task entry", hint: "What you worked on" },
+                    ...(isSkipTargetStep ? [] : [{ key: "TARGET" as EntryStep, label: "Target entry", hint: "Units against targets" }]),
+                    ...(isSkipGoalStep && authUser.userRole !== 1 ? [] : [{ key: "GOAL" as EntryStep, label: "Goal entry", hint: "Progress on goals" }]),
+                ];
+                const here = steps.findIndex((st) => st.key === entryStep);
+                return (
+                    <nav aria-label="Entry steps" className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900">
+                        <ol className="grid" style={{ gridTemplateColumns: `repeat(${steps.length + 1}, minmax(0, 1fr))` }}>
+                            {steps.map((st, i) => {
+                                const on = !reviewMode && st.key === entryStep;
+                                const n = count(st.key);
+                                return (
+                                    <li key={st.key} className={i > 0 ? "border-l border-ink-200 dark:border-white/10" : ""}>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setReviewMode(false); setEntryStep(st.key); }}
+                                            aria-current={on ? "step" : undefined}
+                                            className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors focus-ring ${on ? "bg-brand-50 dark:bg-brand-500/10" : "hover:bg-ink-50 dark:hover:bg-white/5"}`}
+                                        >
+                                            <span className={`flex h-7 w-7 shrink-0 items-center justify-center text-xs font-bold ${on ? "bg-brand-600 text-white" : n > 0 ? "bg-emerald-600 text-white" : i < here ? "bg-ink-300 text-white" : "border border-ink-300 text-ink-500 dark:border-white/20"}`}>
+                                                {n > 0 && !on ? "✓" : i + 1}
+                                            </span>
+                                            <span className="min-w-0">
+                                                <span className={`block truncate text-sm font-semibold ${on ? "text-brand-700 dark:text-brand-300" : "text-ink-900 dark:text-white"}`}>{st.label}</span>
+                                                <span className="block truncate text-xs text-ink-500 dark:text-ink-400">{n ? `${n} added` : st.hint}</span>
+                                            </span>
+                                        </button>
+                                    </li>
+                                );
+                            })}
+                            <li className="border-l border-ink-200 dark:border-white/10">
+                                <button
+                                    type="button"
+                                    onClick={() => setReviewMode(true)}
+                                    aria-current={reviewMode ? "step" : undefined}
+                                    className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors focus-ring ${reviewMode ? "bg-brand-50 dark:bg-brand-500/10" : "hover:bg-ink-50 dark:hover:bg-white/5"}`}
+                                >
+                                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center text-xs font-bold ${reviewMode ? "bg-brand-600 text-white" : activities.length ? "bg-emerald-600 text-white" : "border border-ink-300 text-ink-500 dark:border-white/20"}`}>{steps.length + 1}</span>
+                                    <span className="min-w-0">
+                                        <span className={`block truncate text-sm font-semibold ${reviewMode ? "text-brand-700 dark:text-brand-300" : "text-ink-900 dark:text-white"}`}>Review & submit</span>
+                                        <span className="block truncate text-xs text-ink-500 dark:text-ink-400">{activities.length ? `${activities.length} ${activities.length === 1 ? "entry" : "entries"} ready` : "See everything, then submit"}</span>
+                                    </span>
+                                </button>
+                            </li>
+                        </ol>
+                    </nav>
+                );
+            })()}
+
             {DeptId == 24 ? (<><WeeklyPulse /></>) : (<>
-                <Card className="w-full" style={{ minHeight: "40pc" }}>
+                {!reviewMode && (<Card className="w-full">
                     <CardHeader className="pb-4">
                         <div className="flex flex-col space-y-2">
 
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
 
                                 {/* Title */}
-                                <p className="text-ink-900 dark:text-white text-sm font-medium">
-                                    Daily Activity {getPrimaryDepartmentId(authUser) ? "" : "Log"}
-                                </p>
-                                <div className="w-full"><EntrySteps step={entryStepNumber} /></div>
+                                <div className="mr-auto">
+                                    <p className="text-base font-bold text-ink-900 dark:text-white">{entryStep === "TASK" ? "Task entry" : entryStep === "TARGET" ? "Target entry" : "Goal entry"}</p>
+                                    <p className="mt-0.5 text-xs text-ink-500 dark:text-ink-400">Fill the form and press Preview. Save the entry to add it to your day, or keep editing.</p>
+                                </div>
+                                {(() => {
+                                    const order: EntryStep[] = ["TASK", ...(isSkipTargetStep ? [] : ["TARGET" as EntryStep]), ...(isSkipGoalStep && authUser.userRole !== 1 ? [] : ["GOAL" as EntryStep])];
+                                    const i = order.indexOf(entryStep);
+                                    const names: Record<string, string> = { TASK: "Task entry", TARGET: "Target entry", GOAL: "Goal entry" };
+                                    const next = order[i + 1];
+                                    return (
+                                        <Button color="primary" size="sm" onPress={() => (next ? setEntryStep(next) : setReviewMode(true))}>
+                                            {next ? `Next: ${names[next]} →` : "Next: Review & submit →"}
+                                        </Button>
+                                    );
+                                })()}
+                                
 
                                 {/* Half-Day Switch */}
 
@@ -2061,32 +2155,6 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                         {isTAMModalOpen ? "close" : " Switch to TAM Target"}
                                     </Button>
                                 )}
-
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept=".xlsx,.xls"
-                                    className="hidden"
-                                    onChange={handleUploadExcel}
-                                />
-                                <Button
-                                    color="success"
-                                    variant="flat"
-                                    size="sm"
-                                    isLoading={isUploading}
-                                    onPress={() => fileInputRef.current?.click()}
-                                >
-                                    {isUploading ? "Uploading..." : "import"}
-                                </Button>
-                                <Button
-                                    color="secondary"
-                                    variant="flat"
-                                    size="sm"
-                                    onPress={handleDownloadTemplate}
-                                >
-                                    export template
-                                </Button>
-
 
                             </div>
 
@@ -2280,9 +2348,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                 maxValue={Maxtoday}
 
                             /> */}
-                                        <h3 className=" text-ink-900 dark:text-white" style={{ size: "12px" }}>
-                                            Date
-                                        </h3>
+                                        <h3 className="eyebrow">Date</h3>
                                         <Dropdown
                                             isOpen={open}
                                             onOpenChange={setOpen}
@@ -2316,9 +2382,6 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                                 </DropdownItem>
                                             </DropdownMenu>
                                         </Dropdown>
-                                        <h3 className=" text-ink-900 dark:text-white" style={{ size: "12px" }}>
-                                            Add Task Entry
-                                        </h3>
                                         <div className="">
                                             {/* Task Dropdown or Custom Input */}
                                             {currentActivity.task === "custom" ? (
@@ -3033,9 +3096,6 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
 
                                     <div className="flex flex-col gap-4">
-                                        <h3 className="text-ink-900 dark:text-white text-sm">
-                                            Add Goal Entry
-                                        </h3>
 
 
                                         <Autocomplete
@@ -3090,7 +3150,8 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                             ))}
                                         </Autocomplete>
 
-                                        {DeptId == 43 || DeptId == 44 || DeptId == 49 || DeptId == 25 || DeptId == 26 ? (<Input
+                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+{DeptId == 43 || DeptId == 44 || DeptId == 49 || DeptId == 25 || DeptId == 26 ? (<Input
                                             label="revenue generated previous week"
                                             value={goalEntry.unit}
                                             onChange={(e) => {
@@ -3137,6 +3198,7 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
                                             isDisabled
                                             variant="bordered"
                                         />
+</div>
 
                                         {/* {DeptId == 59 || DeptId == 60  && (
                                                 <Autocomplete
@@ -3397,108 +3459,23 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
 
 
-                                <Divider />
-
-                                {/* Footer */}
-                                <div className="flex justify-between items-center">
-                                    <div className="text-lg font-semibold space-y-1">
-
-                                        <div>
-                                            <span className="text-ink-600 dark:text-ink-400">
-                                                Total Logged
-                                            </span>
-                                            <span className="text-brand-600 dark:text-brand-400 mx-2">
-                                                {(() => {
-                                                    const totalHours = activities.reduce((sum, a) => {
-                                                        // Skip target-based tasks
-                                                        if (a.targetValue || a.percentage) return sum;
-
-                                                        // For Unscheduled Tasks → add only customTime
-                                                        if (a.isDynamic) {
-                                                            return sum + Number(a.timeTaken || 0);
-                                                        }
-
-                                                        // For all other tasks → customTime * setup
-                                                        return sum + (Number(a.customTime || 0) * Number(a.setup || 1));
-                                                    }, 0);
-
-                                                    return `${totalHours.toFixed(2)} mins`;
-                                                })()}
-                                            </span>
-
-                                        </div>
-
-                                        <div>
-                                            <span className="text-ink-600 dark:text-ink-400">
-                                                Total Time Taken
-                                            </span>
-                                            <span className="text-emerald-600 dark:text-emerald-400 mx-2">
-                                                {(() => {
-                                                    const totalTimeTaken = activities.reduce((sum, a) => {
-                                                        return sum + Number(a.timeTaken || 0);
-                                                    }, 0);
-                                                    return `${totalTimeTaken.toFixed(2)} mins`;
-                                                })()}
-                                            </span>
-                                        </div>
-                                    </div>
-
-
-                                    <div className="flex gap-2">
-
-                                        {entryStep !== "TASK" && (
-                                            <Button
-                                                color="default"
-                                                size="sm"
-                                                onClick={() => {
-
-                                                    if (entryStep === "TARGET") {
-                                                        setEntryStep("TASK");
-                                                    } else if (entryStep === "GOAL") {
-                                                        setEntryStep(isSkipTargetStep ? "TASK" : "TARGET");
-                                                    }
-
-                                                }}
-                                            >
-                                                Back
-                                            </Button>
-                                        )}
-
-                                        {entryStep !== "GOAL" &&
-                                            !(entryStep === "TARGET" && isSkipGoalStep) && (
-                                                <Button
-                                                    color="primary"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        if (entryStep === "TASK") {
-                                                            setEntryStep(isSkipTargetStep ? "GOAL" : "TARGET");
-                                                        } else if (entryStep === "TARGET") {
-                                                            setEntryStep("GOAL");
-                                                        }
-                                                    }}
-                                                >
-                                                    Next
-                                                </Button>
-                                            )}
-
-                                    </div>
-
-
-                                </div>
                             </>
                         }
 
                     </CardBody>
-                </Card >
+                </Card >)}
                 {/* Activities/PR List */}
 
-                <Card className="lg:col-span-2 w-full shadow-md border border-ink-200 dark:border-ink-700 rounded-2xl overflow-x/y-auto;">
-                    <CardBody className="px-6 pb-6" style={{ minHeight: "40pc", maxHeight: "40pc" }}>
+                {reviewMode && (<Card id="entries-review" className="w-full shadow-none">
+                    <CardBody className="px-6 py-5">
                         <>
                             <div className="flex items-center justify-between">
-                                <h3 className="  text-ink-900 dark:text-white" style={{ size: "12px" }}>
-                                    Today's Activities
-                                </h3>
+                                <div>
+                                    <h3 className="text-base font-bold text-ink-900 dark:text-white">Review & submit</h3>
+                                    <p className="mt-0.5 text-xs text-ink-500 dark:text-ink-400">
+                                        Nothing is saved to Taskly until you press Submit Log.
+                                    </p>
+                                </div>
                                 <Button
                                     color="secondary"
                                     size="sm"
@@ -3563,201 +3540,64 @@ export default function DailyActivityLog({ task, DeptId, selectedUserId, selecte
 
                             </div>
 
-                            {/* Modern Table */}
-                            <div className="overflow-x-auto overflow-y-auto max-h-[34rem] rounded-xl border border-ink-100 dark:border-ink-800 shadow-sm">
-                                <table className="min-w-full text-sm text-ink-800 dark:text-ink-200">
-                                    <thead className="bg-gradient-to-r from-ink-100 to-ink-50 dark:from-ink-800 dark:to-ink-900" style={{ position: "sticky", top: 0, }}>
-                                        <tr className="text-left">
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
-                                                No
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
-                                                Date
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
-                                                Name
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
-                                                Type
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
-                                                Frequency / Count
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
-                                                Unit / Time
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
-                                                Achieved / Time Taken
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
-                                                Percentage / TAT
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-center text-ink-600 dark:text-ink-300">
-                                                Action
-                                            </th>
-                                        </tr>
-                                    </thead>
-
-                                    <tbody>
-                                        {activities.length > 0 ? (<>{activities.map((activity, index) => (
-                                            <tr
-                                                key={activity.id}
-                                                className={`transition-all duration-150 ${activity.targetName
-                                                    ? "bg-brand-50/60 dark:bg-brand-900/30"
-                                                    : "bg-white dark:bg-ink-950"
-                                                    } `}
-                                            >
-                                                <td className="px-4 py-3 font-semibold text-ink-700 dark:text-ink-100">
-                                                    {index + 1}.
-                                                </td>
-
-                                                <td className="px-4 py-3 whitespace-nowrap text-xs text-ink-500 dark:text-ink-400">
-                                                    {activity.workDate ? formatDate(activity.workDate) : "—"}
-                                                </td>
-
-                                                <td className="px-4 py-3 font-medium">
-                                                    {activity.goalName ||
-                                                        activity.targetName ||
-                                                        activity.taskName || "—"}
-                                                </td>
-
-
-                                                <td className="px-4 py-3">
-                                                    <span className={`inline-flex px-2 py-1 text-xs rounded-md ${activity.isGoal
-                                                        ? "bg-brand-100 text-brand-700"
-                                                        : activity.targetName
-                                                            ? "bg-brand-100 text-brand-700"
-                                                            : "bg-ink-100 dark:bg-ink-800 text-ink-700 dark:text-ink-200"
-                                                        }`}>
-                                                        {activity.isGoal ? "Goal" : activity.targetName ? "Target" : "Task"}
-                                                    </span>
-
-                                                </td>
-
-                                                <td className="px-4 py-3">
-                                                    {activity.targetName
-                                                        ? activity.frequency || "-"
-                                                        : activity.setup || 1}
-                                                </td>
-
-                                                <td className="px-4 py-3">
-
-                                                    {(activity.targetName
-                                                        ? activity.unit || "-"
-                                                        : activity.goalID
-                                                            ? activity.unit || activity.expectedUnit || 0   // ✅ show unit first
-                                                            : (() => {
-                                                                const base = activity.isDynamic
-                                                                    ? Number(activity.timeTaken || 0)
-                                                                    : Number(activity.customTime || 0);
-                                                                const setup = Number(activity.setup || 1);
-                                                                return (base * setup).toFixed(2) + " mins";
-                                                            })()
-                                                    )}
-                                                </td>
-
-
-
-                                                <td className="px-4 py-3">
-                                                    {activity.targetName
-                                                        ? activity.achievedUnit || 0
-                                                        : activity.goalID ? activity.achievedUnit || 0 : `${Number(activity.timeTaken || 0).toFixed(2)} mins`}
-                                                </td>
-                                                <td className="px-4 py-3 text-center">
-                                                    {activity.targetName ? (() => {
-                                                        const achieved = Number(activity.achievedUnit || 0);
-                                                        const unit = Number(activity.unit || 0);
-
-                                                        // Target 92: accuracy-based → penalize if below 90%
-                                                        if (String(activity.targetID) === "92") {
-                                                            if (unit <= 0) return "N/A";
-                                                            const rawPct = Math.round((achieved / unit) * 100);
-                                                            const score = rawPct >= 90 ? 100 : 100 - (90 - rawPct);
-                                                            return `${Math.max(score, 0)} %`;
-                                                        }
-
-                                                        // Target 93: error-based → inverted (fewer errors = better)
-                                                        if (String(activity.targetID) === "93") {
-                                                            if (unit <= 0) return "N/A";
-                                                            const rawPct = Math.round((achieved / unit) * 100);
-                                                            const score = 100 - rawPct;
-                                                            return `${Math.max(score, 0)} %`;
-                                                        }
-
-                                                        // All other targets: standard percentage
-                                                        if (unit <= 0) return "N/A";
-                                                        return `${((achieved / unit) * 100).toFixed(2)} %`;
-                                                    })() : "N/A"}
-                                                </td>
-
-
-                                                <td className="px-4 py-3 text-center">
-                                                    <Button
-                                                        color="danger"
-                                                        variant="light"
-                                                        size="sm"
-                                                        className="!p-0 w-7 h-7 rounded-full flex items-center justify-center font-bold "
-                                                        onClick={() => handleRemoveActivity(activity.id)}
-                                                    >
-                                                        <svg fill="#ff0000" height="20px" width="20px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 457.503 457.503" xml:space="preserve" stroke="#ff0000"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g> <g> <path d="M381.575,57.067h-90.231C288.404,25.111,261.461,0,228.752,0C196.043,0,169.1,25.111,166.16,57.067H75.929 c-26.667,0-48.362,21.695-48.362,48.362c0,26.018,20.655,47.292,46.427,48.313v246.694c0,31.467,25.6,57.067,57.067,57.067 h195.381c31.467,0,57.067-25.6,57.067-57.067V153.741c25.772-1.02,46.427-22.294,46.427-48.313 C429.936,78.761,408.242,57.067,381.575,57.067z M165.841,376.817c0,8.013-6.496,14.509-14.508,14.509 c-8.013,0-14.508-6.496-14.508-14.509V186.113c0-8.013,6.496-14.508,14.508-14.508c8.013,0,14.508,6.496,14.508,14.508V376.817z M243.26,376.817c0,8.013-6.496,14.509-14.508,14.509c-8.013,0-14.508-6.496-14.508-14.509V186.113 c0-8.013,6.496-14.508,14.508-14.508c8.013,0,14.508,6.496,14.508,14.508V376.817z M320.679,376.817 c0,8.013-6.496,14.509-14.508,14.509c-8.013,0-14.509-6.496-14.509-14.509V186.113c0-8.013,6.496-14.508,14.509-14.508 s14.508,6.496,14.508,14.508V376.817z"></path> </g> </g> </g></svg>
-                                                    </Button>
-                                                </td>
-                                            </tr>
-                                        ))}</>) : (<tr>
-                                            <td colSpan={9} className="py-10">
-                                                <div className="flex justify-center items-center">
-                                                    <EmptyContainer
-                                                        title="No Activities"
-                                                        description="Select the filters to see the results"
-                                                    />
+                            {/* Everything added so far, grouped, with totals. Edit by removing an entry and adding it again from its step. */}
+                            {(() => {
+                                const kindOf = (a: ActivityEntry) => (a.isGoal ? "Goal" : a.targetName ? "Target" : "Task");
+                                const minsOf = (a: ActivityEntry) => (a.isDynamic ? Number(a.timeTaken || 0) : Number(a.customTime || 0) * Number(a.setup || 1));
+                                const logged = activities.filter((a) => !(a.targetValue || a.percentage)).reduce((sum, a) => sum + minsOf(a), 0);
+                                const taken = activities.reduce((sum, a) => sum + Number(a.timeTaken || 0), 0);
+                                const groups = [["Task", "Task entries", "TASK"], ["Target", "Target entries", "TARGET"], ["Goal", "Goal entries", "GOAL"]] as const;
+                                return (
+                                    <div className="mt-5 flex flex-col gap-5">
+                                        <dl className="grid grid-cols-2 border border-ink-200 dark:border-white/10 sm:grid-cols-4">
+                                            {[["Entries", String(activities.length)], ["Total logged", `${logged.toFixed(0)} mins`], ["Total time taken", `${taken.toFixed(0)} mins`], ["Date", entryDateLabel]].map(([k, v], i) => (
+                                                <div key={k} className={`px-4 py-3 ${i > 0 ? "border-l border-ink-200 dark:border-white/10" : ""}`}>
+                                                    <dt className="eyebrow">{k}</dt>
+                                                    <dd className="mt-1 text-lg font-bold text-ink-900 dark:text-white">{v}</dd>
                                                 </div>
-                                            </td>
-                                        </tr>)}
-
-                                    </tbody>
-                                    <tfoot className="sticky bottom-0 bg-ink-50 dark:bg-ink-900  font-semibold">
-                                        {/* <tr>
-                                        <td colSpan="6" className="px-4 py-3 text-right">
-                                            Average Percentage:
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            {averagePercentage} %
-                                        </td>
-                                        <td></td>
-                                    </tr> */}
-                                        <tr className="text-left">
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-white-600 opcaity-0">
-
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-white-600 ">
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-white-600 ">
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-white-600 ">
-
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-white-600 ">
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-white-600 ">
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300">
-
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-ink-600 dark:text-ink-300 flex justify-center ">
-                                                Average Percentage: {averagePercentage} %
-                                            </th>
-                                            <th className="px-4 py-3 font-semibold tracking-wide text-center text-white-600 ">
-                                            </th>
-                                        </tr>
-                                    </tfoot>
-
-                                </table>
-                            </div>
+                                            ))}
+                                        </dl>
+                                        {activities.length === 0 && (
+                                            <p className="border border-dashed border-ink-300 px-4 py-8 text-center text-sm text-ink-500 dark:border-white/15 dark:text-ink-400">
+                                                Nothing added yet. Go back to a step above, fill the form and press Preview.
+                                            </p>
+                                        )}
+                                        {groups.map(([kind, title, step]) => {
+                                            const rows = activities.filter((a) => kindOf(a) === kind);
+                                            if (!rows.length) return null;
+                                            return (
+                                                <section key={kind}>
+                                                    <div className="mb-2 flex items-center justify-between">
+                                                        <h4 className="eyebrow">{title} · {rows.length}</h4>
+                                                        <button type="button" className="text-[11px] font-bold uppercase tracking-wide text-brand-600 hover:underline focus-ring" onClick={() => { setReviewMode(false); setEntryStep(step as EntryStep); }}>Add another</button>
+                                                    </div>
+                                                    <ul className="divide-y divide-ink-200 border border-ink-200 dark:divide-white/10 dark:border-white/10">
+                                                        {rows.map((activity) => {
+                                                            const name = activity.goalName || activity.targetName || activity.taskName || "—";
+                                                            const detail = activity.targetName || activity.goalID
+                                                                ? `${activity.achievedUnit || 0}${activity.unit ? ` of ${activity.unit}` : ""} ${activity.frequency || ""}`.trim()
+                                                                : `${Number(activity.timeTaken || 0).toFixed(0)} mins${Number(activity.setup || 1) > 1 ? ` · ${activity.setup} setups` : ""}`;
+                                                            return (
+                                                                <li key={activity.id} className="flex items-center gap-3 px-4 py-3">
+                                                                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink-900 dark:text-white">{name}</span>
+                                                                    <span className="hidden shrink-0 text-xs text-ink-500 dark:text-ink-400 sm:block">{activity.workDate ? formatDate(activity.workDate) : ""}</span>
+                                                                    <span className="shrink-0 text-sm text-ink-700 dark:text-ink-200">{detail}</span>
+                                                                    <Button isIconOnly size="sm" variant="light" color="danger" aria-label={`Remove ${name}`} onClick={() => handleRemoveActivity(activity.id)}>✕</Button>
+                                                                </li>
+                                                            );
+                                                        })}
+                                                    </ul>
+                                                </section>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            })()}
                         </>
 
 
                     </CardBody>
-                </Card>
+                </Card>)}
             </>)
             }
 

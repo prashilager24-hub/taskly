@@ -6,7 +6,7 @@ import {
 } from "../lib/pmsGrade";
 
 const API_BASE =
-    "https://taskly.tapmind.io/t2.0/authentificationUtilization";
+    "/t2.0/authentificationUtilization";
 
 export default function ReviewStatus({
     token,
@@ -267,14 +267,14 @@ export default function ReviewStatus({
 
 
     return (
-        <Card className="mb-6 border border-default-200 shadow-sm">
+        <Card className="mb-6 border border-ink-200 shadow-none dark:border-white/10">
             <CardBody className="p-5">
 
                 {/* Header */}
                 <div className="flex items-center justify-between mb-5">
                     <div>
-                        <h2 className="text-lg font-semibold">
-                            User Review Status
+                        <h2 className="text-lg font-bold uppercase tracking-wide">
+                            User review status
                         </h2>
 
                         {data?.periodLabel && (
@@ -378,7 +378,7 @@ function StatusCard({
 }) {
     return (
         <Card
-            className={`border border-${color}-200 bg-${color}-50`}
+            className={`border border-l-4 border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 ${color === "success" ? "border-l-emerald-600" : color === "danger" ? "border-l-rose-600" : "border-l-brand-600"}`}
             shadow="none"
         >
             <CardBody className="p-4">
@@ -389,7 +389,7 @@ function StatusCard({
 
                 <div className="flex items-center justify-between mt-1">
                     <p
-                        className={`text-3xl font-bold text-${color}`}
+                        className="text-3xl font-bold text-ink-900 dark:text-white"
                     >
                         {value}
                     </p>
@@ -419,10 +419,10 @@ function UserTable({
     color,
 }) {
     return (
-        <div className="border border-default-200 rounded-xl overflow-hidden">
+        <div className="overflow-hidden border border-ink-200 dark:border-white/10">
 
             <div
-                className={`px-4 py-3 bg-${color}-50 border-b border-${color}-200`}
+                className="border-b border-ink-200 bg-ink-50 px-4 py-3 dark:border-white/10 dark:bg-white/5"
             >
                 <div className="flex items-center justify-between">
 

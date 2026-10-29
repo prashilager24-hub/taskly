@@ -294,7 +294,7 @@ const SalesForward: React.FC = () => {
                     { headers: { "Content-Type": "application/json" } }
                 );
 
-                const formattedData = result.data.calls.map((item) => ({
+                const formattedData = (result.data?.calls ?? []).map((item) => ({
                     ...item,
                     _rawDate: item.ScheduledDatetime,   // keep raw untouched
                     ScheduledDatetime: formatDateTime(item.ScheduledDatetime) // for UI table only

@@ -16,6 +16,7 @@ export interface EfficiencySummaryRequest {
   eLID?: number | null;
   groupBy?: string | null;
   efficiencyLevel?: string | null;
+  isQuarterly?: boolean | null;
   isHeExecutiveLeader?: boolean | null;
   filters?: { field: string; operator: string; value: string }[] | null;
 }
@@ -126,12 +127,29 @@ function summarize(list: Record<string, unknown>[]) {
   };
 }
 
+/** Quarterly reviews show the quarter month by month: the same averages, grouped by calendar month */
+function monthlyBreakdown(list: Record<string, unknown>[]) {
+  const byMonth = new Map<string, Record<string, unknown>[]>();
+  for (const r of list) {
+    const d = String(r['WorkDate'] ?? '');
+    if (d.length < 7) continue;
+    const key = d.slice(0, 7);
+    byMonth.set(key, [...(byMonth.get(key) ?? []), r]);
+  }
+  return [...byMonth.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([key, days]) => ({
+    Year: Number(key.slice(0, 4)),
+    MonthNumber: Number(key.slice(5, 7)),
+    ...summarize(days),
+  }));
+}
+
 export async function listEfficiencySummary(f: EfficiencySummaryRequest) {
   const elWithoutDept = f.isHeExecutiveLeader === true && !f.departmentID;
 
   if (!elWithoutDept) {
     const data = await rows(f, f.eLID ?? null);
-    return { data, summary: summarize(data) };
+    const summary = summarize(data);
+    return { data, summary: f.isQuarterly ? { ...summary, monthlyBreakdown: monthlyBreakdown(data) } : summary };
   }
 
   // Executive Leader with no department picked: every department they lead, with its users' averages

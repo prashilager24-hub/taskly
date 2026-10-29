@@ -140,6 +140,10 @@ export default function LoginPage() {
     setError("");
     try {
       const { data } = await axios.post(`${API}/authenticate`, { username: email, password, keepSignedIn });
+      if (data.token && data.otpRequired === false) {
+        await completeSignIn(data);
+        return;
+      }
       if (!data.otpRequired) {
         setError(data.authorization === "Account is inactive"
           ? "This account is inactive. Contact your administrator."
@@ -158,6 +162,25 @@ export default function LoginPage() {
     }
   };
 
+  // Stores the session and what this person may open, then continues (shared by the code step and by
+  // sign-in without a code, when two-factor is off for the account)
+  const completeSignIn = async (data: any) => {
+    saveSession(data, keepSignedIn);
+    try {
+      const access = await axios.get(`${API}/access/me`, { headers: { Authorization: `Bearer ${data.token}` } });
+      if (access.data?.status) localStorage.setItem("roles", JSON.stringify(access.data.response || {}));
+    } catch {
+      /* without access info the menu stays empty; signing in still succeeds */
+    }
+    if (data.themePreference === "dark" || data.themePreference === "light") {
+      setTheme(data.themePreference, { save: false });
+      finish(data);
+    } else {
+      setPendingUser(data);
+      go("theme");
+    }
+  };
+
   // ── Step 2: emailed code ──────────────────────────────────────────────────
   const verify = async (value = code) => {
     if (!challenge || value.length !== 6 || isLoading) return;
@@ -165,20 +188,7 @@ export default function LoginPage() {
     setError("");
     try {
       const { data } = await axios.post(`${API}/authenticate/verify-otp`, { challengeId: challenge.challengeId, code: value });
-      saveSession(data, keepSignedIn);
-      try {
-        const roleRes = await axios.get(`${API}/AMRole/${data.userRole}`, { headers: { Authorization: `Bearer ${data.token}` } });
-        if (roleRes.data?.status) localStorage.setItem("roles", JSON.stringify(roleRes.data.response || {}));
-      } catch {
-        /* without role privileges the sidebar shows fewer items; signing in still succeeds */
-      }
-      if (data.themePreference === "dark" || data.themePreference === "light") {
-        setTheme(data.themePreference, { save: false });
-        finish(data);
-      } else {
-        setPendingUser(data);
-        go("theme");
-      }
+      await completeSignIn(data);
     } catch (err: any) {
       setCode("");
       setError(errorMessage(err, "That code could not be verified."));

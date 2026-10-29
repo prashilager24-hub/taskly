@@ -611,7 +611,9 @@ import {
 } from "@/components/ui";
 
 import { TrendingUp, Gauge, Target, Users } from "lucide-react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
+import axios from "axios";
+import { Segmented } from "@/components/page";
 import DashboardFilters from "./pmsdashboardapi";
 import AdminAnalytics from "./AdminAnalytics";
 import {
@@ -652,6 +654,11 @@ const getBandChip = (score) => {
     return { label: "PIP", color: "danger" };
 };
 
+const fmtDay = (d: string) => {
+    const t = new Date(d);
+    return Number.isNaN(t.getTime()) ? String(d) : t.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+};
+
 const ratingAvg = (obj) => {
     const a2 = Number(obj?.assessor2 || 0);
     const a1 = Number(obj?.assessor1 || 0);
@@ -675,6 +682,17 @@ const GRADE_GUIDE = [
 ];
 
 const bandForGrade = (grade) => finalGradeBand(grade);
+
+const QUARTER_ORDER: Record<string, number> = { Q1: 1, Q2: 2, Q3: 3, Q4: 4 };
+const MONTH_ORDER = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+/** Latest first: by year, then by quarter (Q4, Q3, Q2, Q1) or month */
+const newestFirst = (a: any, b: any) => {
+    const ya = Number(a.quarterYear) || 0, yb = Number(b.quarterYear) || 0;
+    if (ya !== yb) return yb - ya;
+    const qa = QUARTER_ORDER[a.quarter] ?? MONTH_ORDER.indexOf(a.quarter), qb = QUARTER_ORDER[b.quarter] ?? MONTH_ORDER.indexOf(b.quarter);
+    if (qa !== qb) return qb - qa;
+    return String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? ""));
+};
 
 function LivePreviewSummary({ reviews }) {
     const parsedGrades = reviews.map((r) => {
@@ -874,8 +892,7 @@ function LivePreviewSummary({ reviews }) {
 
 // ─── ReviewCard ───────────────────────────────────────────────────────────────
 
-function ReviewCard({ review }) {
-    console.log("ReviewCard render", review);
+function ReviewCard({ review, wide = false }: { review: any; wide?: boolean }) {
     const ratings =
         typeof review.managerRatings === "string"
             ? JSON.parse(review.managerRatings || "{}")
@@ -928,7 +945,7 @@ function ReviewCard({ review }) {
     ];
 
     return (
-        <Card className="border border-default-200 shadow-sm hover:border-default-400 transition-colors">
+        <Card className="border border-default-200 shadow-sm">
             <CardBody className="p-0">
 
                 {/* ── Top: Avatar + Info + Score ── */}
@@ -961,16 +978,13 @@ function ReviewCard({ review }) {
                             </Chip>
 
                         </div>
-                        <div>
-                            <Chip size="sm" variant="flat" color="primary"
-                                classNames={{ content: "text-[10px] font-medium" }}>
-                                range: {review.startDate} - {review.endDate}
-                            </Chip>
-                            <Chip size="sm" variant="flat" color="primary"
-                                classNames={{ content: "text-[10px] font-medium" }}>
-                                reviewed at: {review.createdAt}
-                            </Chip>
-                        </div>
+                        {(review.startDate || review.createdAt) && (
+                            <p className="mt-2 text-[11px] text-default-400">
+                                {review.startDate && review.endDate ? `Period ${fmtDay(review.startDate)} – ${fmtDay(review.endDate)}` : ""}
+                                {review.startDate && review.endDate && review.createdAt ? " · " : ""}
+                                {review.createdAt ? `Reviewed ${fmtDay(review.createdAt)}` : ""}
+                            </p>
+                        )}
                     </div>
                     <div className="text-right shrink-0">
                         <p className="text-[10px] text-default-400 uppercase tracking-wide">
@@ -1007,6 +1021,8 @@ function ReviewCard({ review }) {
                     </div>
                 </div>
 
+                <div className={wide ? "grid lg:grid-cols-2 lg:divide-x lg:divide-default-100" : ""}>
+                <div>
                 {/* ── Metric Strip ── */}
                 <div className="grid grid-cols-4 border-y border-default-100">
                     {metrics.map((m, i) => (
@@ -1046,6 +1062,8 @@ function ReviewCard({ review }) {
                     ))}
                 </div>
 
+                </div>
+                <div>
                 {/* ── Behavioral Ratings ── */}
                 {Object.keys(ratings).length > 0 && (
                     <>
@@ -1130,6 +1148,8 @@ function ReviewCard({ review }) {
                     </>
                 )}
 
+                </div>
+                </div>
                 {/* ── Footer: System Grade + Final Rating ── */}
                 {/* <div className="flex items-center justify-between px-4 py-2.5 bg-default-50 border-t border-default-100 rounded-b-xl">
                     <span className="text-[11px] text-default-400">
@@ -1231,8 +1251,11 @@ function SummaryCard({
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 export default function QuarterlyReviewDashboard() {
-    const [reviews, setReviews] = useState([]);
+    const [reviews, setReviews] = useState<any[]>([]);
     const [monthly, setMonthly] = useState(false);
+    const [view, setView] = useState<"person" | "analytics">("person");
+    const [pickedId, setPickedId] = useState<any>(null);
+    const [allReviews, setAllReviews] = useState<any[]>([]);
 
     const authUserLD = localStorage.getItem("authUserLD");
     const authUser = authUserLD ? JSON.parse(authUserLD) : null;
@@ -1251,115 +1274,84 @@ export default function QuarterlyReviewDashboard() {
     const hasDeptId16 = Array.isArray(rawDeptID)
         ? rawDeptID.some((d) => Number(d) === 16)
         : Number(rawDeptID) === 16;
-    const isPrivileged = Number(authUser?.userID) === 1 || hasDeptId16;
+    const isPrivileged = authUser?.userRole === 1 || hasDeptId16;
 
-    const isDepartmentSelected = Array.isArray(filters.departmentID)
-        ? filters.departmentID.length > 0
-        : !!String(filters.departmentID ?? "").length;
-    const isUserSelected = !!String(filters.userID ?? "").length;
+    // The company-wide EL charts need everyone's reviews, which the person view no longer loads
+    useEffect(() => {
+        if (view !== "analytics" || !isPrivileged) return;
+        axios.get("/t2.0/authentificationUtilization/quarterly-review/all", {
+            params: { quarter: "ALL", year: "ALL" },
+            headers: { Authorization: `Bearer ${authUser?.token}` },
+        }).then((r) => setAllReviews(r.data || [])).catch(() => setAllReviews([]));
+    }, [view, isPrivileged]);
 
-    const showLivePreview =
-        reviews.length > 0 &&
-        (!isPrivileged || (isDepartmentSelected && isUserSelected));
+    const sorted = useMemo(() => [...reviews].sort(newestFirst), [reviews]);
+    const current = sorted.find((r) => r.id === pickedId) ?? sorted[0] ?? null;
+    useEffect(() => { setPickedId(null); }, [filters.userID, monthly]);
 
-    const totalEmployees = reviews.length;
-
-    const avgEfficiency =
-        reviews.length > 0
-            ? (reviews.reduce((a, b) => a + Number(b.efficiencyPercent || 0), 0) / reviews.length).toFixed(1)
-            : 0;
-
-    const avgUtilization =
-        reviews.length > 0
-            ? (reviews.reduce((a, b) => a + Number(b.utilizationPercent || 0), 0) / reviews.length).toFixed(1)
-            : 0;
-
-    const avgTarget =
-        reviews.length > 0
-            ? (reviews.reduce((a, b) => a + Number(b.targetPercent || 0), 0) / reviews.length).toFixed(1)
-            : 0;
-    const avgGoal =
-        reviews.length > 0
-            ? (reviews.reduce((a, b) => a + Number(b.goalAchievement || 0), 0) / reviews.length).toFixed(1)
-            : 0;
+    const hasPerson = !!String(filters.userID ?? "").length;
 
     return (
-        <div className="p-6 bg-default-50 min-h-screen">
-
-            {/* Header */}
-            <div className="mb-8">
-                <div className="flex items-center gap-4 mb-4">
-                    <h1 className="text-xl font-semibold ">Review Dashboard</h1>
-                    <Switch
+        <div className="flex flex-col gap-4">
+            {/* What is being looked at */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <Segmented
+                    size="sm"
+                    label="Review type"
+                    value={monthly ? "manager" : "employee"}
+                    onChange={(v) => setMonthly(v === "manager")}
+                    options={[{ key: "employee", label: "Quarterly reviews" }, { key: "manager", label: "Manager feedback" }]}
+                />
+                {isPrivileged && (
+                    <Segmented
                         size="sm"
-                        value={monthly}
-                        onChange={(e) => setMonthly(e.target.checked)}
-                        color="success"
-                    >
-                        Manager's Review
-                    </Switch>
-                </div>
-
-                <DashboardFilters reviews={reviews} setReviews={setReviews} monthly={monthly} onFiltersChange={handleFiltersChange} />
+                        label="Dashboard view"
+                        value={view}
+                        onChange={setView}
+                        options={[{ key: "person", label: "One person" }, { key: "analytics", label: "Company analytics" }]}
+                    />
+                )}
             </div>
 
+            {view === "analytics" && isPrivileged ? (
+                allReviews.length > 0 ? <AdminAnalytics reviews={allReviews} /> : <p className="border border-dashed border-ink-300 py-16 text-center text-sm text-ink-500 dark:border-white/15">Loading analytics…</p>
+            ) : (
+                <>
+                    <DashboardFilters reviews={reviews} setReviews={setReviews} monthly={monthly} onFiltersChange={handleFiltersChange} />
 
-            {/* Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-                <SummaryCard title="No of Reviews" value={totalEmployees} icon={<Users size={18} />} />
-                <SummaryCard title="Efficiency" value={`${avgEfficiency}%`} icon={<TrendingUp size={18} />} />
-                <SummaryCard title="Utilization" value={`${avgUtilization}%`} icon={<Gauge size={18} />} />
-                <SummaryCard title="Target" value={`${avgTarget}%`} icon={<Target size={18} />} />
-                <SummaryCard title="Goal" value={`${avgGoal}%`} icon={<Target size={18} />} />
-            </div>
+                    {sorted.length > 0 && current ? (
+                        <>
+                            {/* Quarters, newest first */}
+                            <div role="tablist" aria-label="Review period" className="flex flex-wrap items-center gap-2">
+                                <span className="eyebrow mr-1">{monthly ? "Month" : "Quarter"}</span>
+                                {sorted.map((r) => {
+                                    const on = r.id === current.id;
+                                    return (
+                                        <button key={r.id} type="button" role="tab" aria-selected={on} onClick={() => setPickedId(r.id)}
+                                            className={`h-8 border px-3 text-xs font-bold uppercase tracking-wide transition-colors focus-ring ${on ? "border-brand-600 bg-brand-600 text-white" : "border-ink-200 bg-white text-ink-700 hover:border-brand-500 dark:border-white/10 dark:bg-ink-900 dark:text-ink-200"}`}>
+                                            {r.quarter} {r.quarterYear}
+                                        </button>
+                                    );
+                                })}
+                            </div>
 
-            {/* Empty */}
-            {reviews.length === 0 && (
-                <Card className="border border-default-200">
-                    <CardBody className="py-20 flex items-center justify-center">
-                        <div className="text-center">
-                            <h2 className="text-xl font-semibold">No Reviews</h2>
-                            <p className="text-default-500 mt-2">
-                                Select department, user, quarter and year
+                            <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+                                <ReviewCard key={current.id} review={current} wide />
+                                <div className="xl:sticky xl:top-4"><LivePreviewSummary reviews={sorted} /></div>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="border border-dashed border-ink-300 px-6 py-14 text-center dark:border-white/15">
+                            <h3 className="text-base font-bold text-ink-900 dark:text-white">
+                                {hasPerson ? "No reviews for this person yet" : "Pick a department and a person"}
+                            </h3>
+                            <p className="mt-2 text-sm text-ink-500 dark:text-ink-400">
+                                {hasPerson ? "Try another person, quarter or year above." : "Their reviews, grades and metrics will show here."}
                             </p>
                         </div>
-                    </CardBody>
-                </Card>
+                    )}
+                </>
             )}
-
-            {/* ── Card Grid ── */}
-            {isDepartmentSelected && isUserSelected ? (
-                <div className="grid grid-cols-1 xl:grid-cols-[1fr_288px] gap-5 items-start">
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {reviews.map((review) => (
-                            <ReviewCard key={review.id} review={review} />
-                        ))}
-                    </div>
-                    {showLivePreview && <LivePreviewSummary reviews={reviews} />}
-
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 xl:grid-cols-[1fr_288px] gap-5 items-start m-2">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Card className="border border-default-200">
-                            <CardBody className="py-20 flex items-center justify-center">
-                                <div className="text-center">
-                                    <h2 className="text-xl font-semibold">No Reviews</h2>
-                                    <p className="text-default-500 mt-2">
-                                        Select department and user to view reviews
-                                    </p>
-                                </div>
-                            </CardBody>
-                        </Card>
-                    </div>
-                </div>
-            )}
-
-            {isPrivileged && reviews.length > 0 && <AdminAnalytics reviews={reviews} />}
-
-
         </div>
-
     );
 }

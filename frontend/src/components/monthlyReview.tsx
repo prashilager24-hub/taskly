@@ -20,7 +20,7 @@ import {
   addToast
 } from "@/components/ui";
 import { format } from "date-fns";
-import CustomDateRangePicker from "../components/CustomDateRangePicker";
+import CustomDateRangePicker from "../components/customDateRangePicker";
 
 
 const EMP_MAP = {
@@ -1296,43 +1296,14 @@ export default function MonthlyReview() {
   };
 
   const DateRangeDropdown = useCallback(
-    ({ value, onChange }: { value: DateRange; onChange: (r: DateRange) => void }) => (
-      <Dropdown placement="bottom-start" >
-        <DropdownTrigger>
-          <Button variant="flat" size="sm" className="w-[260px] justify-between border border-ink-300 bg-white dark:border-white/15 dark:bg-ink-900">
-            {value.startDate && value.endDate
-              ? `${format(new Date(value.startDate), "dd MMM yyyy")}-${format(new Date(value.endDate), "dd MMM yyyy")}`
-
-              : "Select Date Range"}
-          </Button>
-        </DropdownTrigger>
-        <DropdownMenu aria-label="Date range" closeOnSelect={false} className="p-0">
-          <DropdownItem key="calendar" className="p-0" >
-            <CustomDateRangePicker value={value} onChange={onChange} />
-          </DropdownItem>
-        </DropdownMenu>
-      </Dropdown>
+    ({ value, onChange, compact }: { value: DateRange; onChange: (r: DateRange) => void; compact?: boolean }) => (
+      <CustomDateRangePicker value={value} onChange={onChange} compact={compact} />
     ),
     []
   );
 
   return (
-    <div className="min-h-screen bg-default-50 p-6 font-sans">
-
-      {/* ── Header ── */}
-      <div className=" mx-auto mb-7 flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-
-          <div>
-            <h1 className="text-xl font-semibold ">Manager's Feedback</h1>
-            {/* <p className="text-[11px]   mt-0.5">Manager · Qualitative Feedback &amp; Taskly Metrics</p> */}
-          </div>
-        </div>
-        {/* <div className="flex gap-2">
-          <Chip color="primary" variant="flat" size="sm" className="font-semibold">April Cycle 2025–26</Chip>
-          <Chip color="success" variant="dot" size="sm" className="font-semibold">Active</Chip>
-        </div> */}
-      </div>
+    <div className="font-sans">
 
       {/* ── Layout ── */}
       <div className=" mx-auto  gap-5 items-start">
@@ -1340,52 +1311,26 @@ export default function MonthlyReview() {
         {/* ── LEFT ── */}
         <div className="flex flex-col gap-5">
 
-          {/* Form Card */}
-          <Card shadow="sm" radius="lg" className="border border-divider">
-            <CardHeader className="px-6 pt-5 pb-0">
-              <div className="flex items-center gap-2.5">
-                <span className="w-[3px] h-4 bg-primary rounded-full block" />
-                <p className="text-[11px] font-bold uppercase tracking-[.18em] text-default-500">New Feedback</p>
-              </div>
-            </CardHeader>
+          {/* Form */}
+          <section className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900">
+            <header className="border-b border-ink-200 px-5 py-3 dark:border-white/10">
+              <h2 className="text-sm font-bold uppercase tracking-wide text-ink-900 dark:text-white">New feedback</h2>
+            </header>
 
-            <CardBody className="px-6 pt-5 pb-6 flex flex-col gap-4">
-
-              {/* Row 1 — Employee + Month */}
-              <div className="grid grid-cols-3 gap-4">
-                {/* <Autocomplete
-                  label="Employee"
-                  placeholder="Search employee..."
-                  selectedKey={form.empId}
-                  onSelectionChange={(key) =>
-                    set("empId")(key ? String(key) : "")
-                  }
-                  isInvalid={!!errors.empId}
-                  errorMessage={errors.empId ? "Required" : ""}
-                  size="sm"
-                  radius="lg"
-                  classNames={{ trigger: "bg-default-100 border-default-200" }}
-                >
-                  {usersAll.map((user) => (
-                    <AutocompleteItem
-                      key={String(user.userID)}
-                      value={user.userName}
-                    >
-                      {user.userName}
-                    </AutocompleteItem>
-                  ))}
-                </Autocomplete> */}
+            <div className="flex flex-col gap-5 p-5">
+              {/* Who and when: one compact row */}
+              <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_minmax(0,1.1fr)_90px]">
                 <Autocomplete
-                  aria-label="filter by Reviewee Department"
-                  placeholder="Filter by Reviewee Department"
-                  className="max-w-xs"
+                  label="Department"
+                  labelPlacement="outside"
+                  placeholder="Select department"
+                  size="sm"
+                  className="w-full"
                   selectedKey={filterStatus}
                   onSelectionChange={(key) => {
-                    const dep = key as string;
-                    setFilterStatus(dep);
+                    setFilterStatus(key as string);
                     setSelectedFilterUser("");
                     setUserSearch("");
-                    // reset user dropdown when department changes
                   }}
                 >
                   {departmentList
@@ -1397,25 +1342,23 @@ export default function MonthlyReview() {
                     ))}
                 </Autocomplete>
                 <Autocomplete
-                  aria-label="filter by Reviewee"
-                  placeholder="Filter by Reviewee"
-                  className="max-w-xs"
+                  label="Reviewee"
+                  labelPlacement="outside"
+                  placeholder="Select reviewee"
+                  size="sm"
+                  className="w-full"
                   selectedKey={selectedFilterUser}
                   inputValue={userSearch}
                   onInputChange={(value) => {
-                    const dep = value as string;
-                    setUserSearch(dep);
-                    if (!dep) setSelectedFilterUser("");
+                    setUserSearch(value as string);
+                    if (!value) setSelectedFilterUser("");
                   }}
                   onSelectionChange={(key) => {
                     if (key) {
                       const found = usersAll.find((u) => String(u.userID) === String(key));
-
                       if (found) {
                         setSelectedFilterUser(String(key));
                         setUserSearch(found.userName);
-
-                        // 🔥 THIS IS THE MISSING LINE
                         set("empId")(String(key));
                       }
                     }
@@ -1427,340 +1370,84 @@ export default function MonthlyReview() {
                     </AutocompleteItem>
                   ))}
                 </Autocomplete>
-
-
-                {/* <Select
-                  label="Month"
-                  isRequired
-                  selectedKeys={new Set([form.month])}
-                  onSelectionChange={(keys) => set("month")(Array.from(keys)[0] ?? "April")}
-                  size="sm"
-                  radius="lg"
-                  classNames={{ trigger: "bg-default-100 border-default-200" }}
-                >
-                  {MONTHS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                </Select> */}
-                <DateRangeDropdown value={dateRange} onChange={setDateRange} />
-                <Select
-                  label="Year"
-                  selectedKeys={
-                    new Set([String(form.year)])
-                  }
-                  onSelectionChange={(keys) =>
-                    set("year")(
-                      Array.from(keys)[0] ?? String(new Date().getFullYear())
-                    )
-                  }
-                  size="sm"
-                  radius="lg"
-                  isDisabled={true}
-
-                  classNames={{
-                    trigger:
-                      "bg-default-100 border-default-200"
-                  }}
-                >
-                  {Array.from(
-                    { length: 5 },
-                    (_, i) =>
-                      String(new Date().getFullYear() - 2 + i)
-                  ).map((year) => (
-                    <SelectItem
-                      key={year}
-                      value={year}
-                    >
-                      {year}
-                    </SelectItem>
-                  ))}
-                </Select>
-
-
+                <div className="flex flex-col gap-1.5">
+                  <span className="font-secondary text-[10.5px] font-medium uppercase tracking-label text-ink-500 dark:text-ink-400">Review period</span>
+                  <DateRangeDropdown value={dateRange} onChange={setDateRange} compact />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <span className="font-secondary text-[10.5px] font-medium uppercase tracking-label text-ink-500 dark:text-ink-400">Year</span>
+                  <span className="flex h-8 items-center border border-ink-200 bg-ink-50 px-3 text-sm text-ink-600 dark:border-white/10 dark:bg-white/5 dark:text-ink-300">{form.year}</span>
+                </div>
               </div>
 
-              {/* Info callout */}
-              {/* <div className="flex items-center gap-2.5 bg-primary-50 border border-primary-200 rounded-xl px-3.5 py-2.5 my-4">
-                <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
-                <p className="text-xs text-primary-700">
-                  Metrics below are <strong>auto-generated by Taskly</strong> from task entries — read-only in production.
-                </p>
-              </div> */}
-
-              {/* Row 2 — Auto metrics */}
-              {/* Row 2 — Auto metrics */}
-              {/* <div className="grid grid-cols-2 gap-8 p-3">
-                {[
-                  ["target", "Target %"],
-                  ["goal", "Goal Achievement"],
-                  ["util", "Utilization %"],
-                  ["eff", "Efficiency %"],
-                ].map(([field, lbl]) => (
-
-                  <Input
-                    key={field}
-                    type="text"
-
-                    label={
-                      <span className="flex items-center gap-1.5 py-2">
-                        {lbl} <AutoTag />
-                      </span>
-                    }
-
-                    value={
-
-                      // GOAL %
-                      field === "goal"
-                        ? form.goal
-                          ? `${form.goal}%`
-                          : ""
-
-                        // EFFICIENCY LEVEL
-                        : field === "eff"
-                          ? form.effLabel || ""
-
-                          // OTHER %
-                          : form[field]
-                            ? `${form[field]}%`
-                            : ""
-                    }
-
-                    isDisabled
-                    size="sm"
-                    radius="lg"
-
-                    classNames={{
-
-                      input:
-
-                        // COLOR FOR EFFICIENCY LEVEL
-                        field === "eff"
-                          ? `
-                font-semibold
-                ${form.effLabel === "High" ? "text-success" : ""}
-                ${form.effLabel === "At Par" ? "text-warning" : ""}
-                ${form.effLabel === "Low" ? "text-danger" : ""}
-              `
-                          : "text-default-600",
-
-                      inputWrapper:
-                        "bg-default-100 border-default-200",
-                    }}
-                  />
-
-                ))}
-              </div> */}
-
-              {/* Row 3 — Tasks + Status */}
-              {/* <div className="grid grid-cols-2 gap-4">
-                <Input
-                  type="number" min={0}
-                  label={<span className="flex items-center gap-1.5">Tasks Completed <AutoTag /></span>}
-                  placeholder="e.g. 24"
-                  value={form.tasks}
-                  onChange={setE("tasks")}
-                  size="sm"
-                  radius="lg"
-                  classNames={{
-                    input: " text-default-600",
-                    inputWrapper: "bg-default-100 border-default-200",
-                  }}
-                />
-                <Select
-                  label={<span className="flex items-center gap-1.5">Status <AutoTag /></span>}
-                  selectedKeys={new Set([form.status])}
-                  onSelectionChange={(keys) => set("status")(Array.from(keys)[0] ?? "On Track")}
-                  size="sm"
-                  radius="lg"
-                  classNames={{ trigger: "bg-default-100 border-default-200" }}
-                >
-                  {STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </Select>
-              </div> */}
-
-              <Divider />
-              <p className="text-[10px]  uppercase tracking-[.15em] text-default-400 -mt-1">
-                Manager Qualitative Assessment
-              </p>
-
-              {/* Row 4 — Feedback Cat + Type */}
-              <div className="flex flex-col gap-4">
-
-                {form.feedbacks.map((item, index) => (
-
-                  <Card
-                    key={index}
-                    radius="lg"
-                    shadow="none"
-                    className="border border-divider"
-                  >
-                    <CardBody className="p-4 flex flex-col gap-4">
-
-                      <div className="grid grid-cols-2 gap-4">
-
-                        <Select
-                          label="Feedback Category"
-                          selectedKeys={
-                            item.feedbackCat
-                              ? new Set([item.feedbackCat])
-                              : new Set()
-                          }
-                          onSelectionChange={(keys) => {
-
-                            const updated =
-                              [...form.feedbacks];
-
-                            updated[index].feedbackCat =
-                              Array.from(keys)[0] ?? "";
-
-                            setForm((prev) => ({
-                              ...prev,
-                              feedbacks: updated,
-                            }));
-                          }}
-                          size="sm"
-                          radius="lg"
-                        >
-                          {FEEDBACK_CATS.map((c) => (
-                            <SelectItem
-                              key={c}
-                              value={c}
-                            >
-                              {c}
-                            </SelectItem>
-                          ))}
-                        </Select>
-
-                        <Select
-                          label="Feedback Type"
-                          selectedKeys={
-                            item.feedbackType
-                              ? new Set([item.feedbackType])
-                              : new Set()
-                          }
-                          onSelectionChange={(keys) => {
-
-                            const updated =
-                              [...form.feedbacks];
-
-                            updated[index].feedbackType =
-                              Array.from(keys)[0] ?? "";
-
-                            setForm((prev) => ({
-                              ...prev,
-                              feedbacks: updated,
-                            }));
-                          }}
-                          size="sm"
-                          radius="lg"
-                        >
-                          {FEEDBACK_TYPES.map((t) => (
-                            <SelectItem
-                              key={t}
-                              value={t}
-                            >
-                              {t}
-                            </SelectItem>
-                          ))}
-                        </Select>
-
-                      </div>
-
+              {/* Feedback entries: one dense row each */}
+              <div>
+                <p className="eyebrow mb-2">Manager assessment</p>
+                <div className="flex flex-col divide-y divide-ink-100 border border-ink-200 dark:divide-white/5 dark:border-white/10">
+                  {form.feedbacks.map((item, index) => (
+                    <div key={index} className="grid grid-cols-1 items-start gap-3 p-3 md:grid-cols-[190px_190px_minmax(0,1fr)_auto]">
+                      <Select
+                        aria-label="Feedback category"
+                        placeholder="Category"
+                        size="sm"
+                        selectedKeys={item.feedbackCat ? new Set([item.feedbackCat]) : new Set()}
+                        onSelectionChange={(keys) => {
+                          const updated = [...form.feedbacks];
+                          updated[index].feedbackCat = Array.from(keys)[0] ?? "";
+                          setForm((prev) => ({ ...prev, feedbacks: updated }));
+                        }}
+                      >
+                        {FEEDBACK_CATS.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
+                      </Select>
+                      <Select
+                        aria-label="Feedback type"
+                        placeholder="Type"
+                        size="sm"
+                        selectedKeys={item.feedbackType ? new Set([item.feedbackType]) : new Set()}
+                        onSelectionChange={(keys) => {
+                          const updated = [...form.feedbacks];
+                          updated[index].feedbackType = Array.from(keys)[0] ?? "";
+                          setForm((prev) => ({ ...prev, feedbacks: updated }));
+                        }}
+                      >
+                        {FEEDBACK_TYPES.map((t) => (<SelectItem key={t} value={t}>{t}</SelectItem>))}
+                      </Select>
                       <Textarea
-                        label="Detailed Feedback"
+                        aria-label="Detailed feedback"
+                        placeholder="What did they do well, and what should change?"
+                        size="sm"
+                        minRows={1}
+                        maxRows={5}
                         value={item.feedback}
                         onChange={(e) => {
-
-                          const updated =
-                            [...form.feedbacks];
-
-                          updated[index].feedback =
-                            e.target.value;
-
-                          setForm((prev) => ({
-                            ...prev,
-                            feedbacks: updated,
-                          }));
+                          const updated = [...form.feedbacks];
+                          updated[index].feedback = e.target.value;
+                          setForm((prev) => ({ ...prev, feedbacks: updated }));
                         }}
-                        minRows={3}
-                        size="sm"
-                        radius="lg"
                       />
-
-                      <div className="flex justify-end">
-
-                        {form.feedbacks.length > 1 && (
-
-                          <Button
-                            size="sm"
-                            color="danger"
-                            variant="flat"
-                            onPress={() => {
-
-                              const updated =
-                                form.feedbacks.filter(
-                                  (_, i) =>
-                                    i !== index
-                                );
-
-                              setForm((prev) => ({
-                                ...prev,
-                                feedbacks: updated,
-                              }));
-                            }}
-                          >
+                      <div className="flex h-8 items-center">
+                        {form.feedbacks.length > 1 ? (
+                          <button type="button" aria-label="Remove this feedback" className="px-2 text-xs font-bold uppercase tracking-wide text-ink-500 hover:text-rose-600 focus-ring"
+                            onClick={() => setForm((prev) => ({ ...prev, feedbacks: prev.feedbacks.filter((_, i) => i !== index) }))}>
                             Remove
-                          </Button>
-                        )}
-
+                          </button>
+                        ) : <span className="w-14" aria-hidden />}
                       </div>
-
-                    </CardBody>
-                  </Card>
-                ))}
-
-                <Button
-                  variant="flat"
-                  color="primary"
-                  onPress={() => {
-
-                    setForm((prev) => ({
-                      ...prev,
-                      feedbacks: [
-                        ...prev.feedbacks,
-                        {
-                          feedbackCat: "",
-                          feedbackType: "",
-                          feedback: "",
-                        },
-                      ],
-                    }));
-                  }}
-                >
-                  + Add Feedback
-                </Button>
-
+                    </div>
+                  ))}
+                </div>
+                <button type="button" className="mt-2 text-xs font-bold uppercase tracking-wide text-brand-600 hover:underline focus-ring"
+                  onClick={() => setForm((prev) => ({ ...prev, feedbacks: [...prev.feedbacks, { feedbackCat: "", feedbackType: "", feedback: "" }] }))}>
+                  + Add another
+                </button>
               </div>
 
-
-
-              {/* Save */}
-              <Button
-                color="primary"
-                radius="lg"
-                size="md"
-                className="w-full font-bold tracking-wide shadow-sm"
-                onPress={handleSave}
-              >
-                Save Review
-              </Button>
-
-              {/* Saved toast inline */}
-              {saved && (
-                <div className="flex items-center justify-center gap-2 text-success-600 text-sm font-semibold animate-pulse">
-                  <span>✓</span> Review saved successfully
-                </div>
-              )}
-            </CardBody>
-          </Card>
+              <div className="flex items-center justify-end gap-3 border-t border-ink-100 pt-4 dark:border-white/5">
+                {saved && <span className="text-sm font-semibold text-success-600">✓ Review saved</span>}
+                <Button color="primary" size="sm" onPress={handleSave}>Save review</Button>
+              </div>
+            </div>
+          </section>
 
           {/* ── Reviews list ── */}
           <div>

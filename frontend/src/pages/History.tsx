@@ -18,7 +18,7 @@ import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import axios from "axios";
 import EfficiencyTable from "@/components/table2";
-import CustomDateRangePicker from "../components/CustomDateRangePicker"
+import CustomDateRangePicker from "../components/customDateRangePicker"
 import { format } from "date-fns";
 
 interface DailyTaskLog {
@@ -428,10 +428,8 @@ const [goals, setGoals] = useState([]);
                 const data = await res.data;
 
                 // map data to {key,name} format
-                const summarydata = data.summary
-                const keys= Object.keys(summarydata)
-
-                const actualdata = data.data
+                const summarydata = data?.summary ?? {}
+                const actualdata = Array.isArray(data?.data) ? data.data : []
                 const departmentSummary = Object.values(
                     actualdata.reduce((acc: any, item: any) => {
                         const deptId = item.DepartmentID;
@@ -511,10 +509,11 @@ const [goals, setGoals] = useState([]);
                 setLoading(false);
                 if (user.userRole == 3) {
 
-                    setELUserSummary(data.departments)
+                    setELUserSummary(data?.departments ?? [])
                 }
             } catch (err) {
                 console.error("Error fetching department list:", err);
+                setLoading(false);
             }
         };
 
@@ -602,36 +601,7 @@ const [goals, setGoals] = useState([]);
                             Download
                         </Button> */}
 
-                        {/* <Dropdown placement="bottom-start">
-                            <DropdownTrigger>
-                                <Button
-                                    variant="flat"
-                                    size="sm"
-                                    className="w-[260px] justify-between border border-ink-300 bg-white dark:border-white/15 dark:bg-ink-900"
-                                >
-                                    {dateRange?.startDate && dateRange?.endDate
-                                        ? `${format(new Date(dateRange.startDate), "dd MMM yyyy")} → ${format(
-                                            new Date(dateRange.endDate),
-                                            "dd MMM yyyy"
-                                        )}`
-                                        : "Select Date Range"}
-
-                                </Button>
-                            </DropdownTrigger>
-
-                            <DropdownMenu
-                                aria-label="Date range picker"
-                                className="p-0"
-                                closeOnSelect={false}
-                            >
-                                <DropdownItem key="calendar" className="p-0">
-                                    <CustomDateRangePicker
-                                        value={dateRange}
-                                        onChange={(range) => setDateRange(range)}
-                                    />
-                                </DropdownItem>
-                            </DropdownMenu>
-                        </Dropdown> */}
+                        {/* <CustomDateRangePicker value={dateRange} onChange={(range) => setDateRange(range)} /> */}
                     </div>
                     {
                         user.userRole !== 2 ? (<Dropdown isOpen={isFilterOpen} onOpenChange={setIsFilterOpen} style={{ width: "400px" }}>
@@ -850,6 +820,9 @@ const [goals, setGoals] = useState([]);
                 <div className="col-span-3 flex justify-center mt-4">
                     <Card className="w-full">
                         <CardBody>
+                            {!loading && !ELUserSummary?.length && (
+                                <p className="py-10 text-center text-sm text-ink-500 dark:text-ink-400">No department reports to show yet. You are not leading a department with logged work.</p>
+                            )}
                             <Tabs key="bordered" aria-label="Tabs variants" variant="full">
                                 {ELUserSummary?.map((ele) => {
                                     return (

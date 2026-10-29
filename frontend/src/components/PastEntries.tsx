@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Plus } from "lucide-react";
 
+import DateRangeField from "@/components/DateRangeField";
 import {
     Button,
     Chip,
-    Input,
     Pagination,
     Spinner,
     Table,
@@ -99,13 +99,8 @@ export default function PastEntries({
 
     return (
         <div className="flex flex-col gap-4 border border-ink-200 bg-white p-5 dark:border-white/10 dark:bg-ink-900">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-                <div className="flex flex-wrap items-end gap-3">
-                    <Input type="date" label="From" labelPlacement="outside" size="sm" className="w-40"
-                        value={startDate} max={endDate} onValueChange={setStartDate} />
-                    <Input type="date" label="To" labelPlacement="outside" size="sm" className="w-40"
-                        value={endDate} min={startDate} max={isoDate(today)} onValueChange={setEndDate} />
-                </div>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+                <DateRangeField value={{ start: startDate, end: endDate }} onChange={(r) => { setStartDate(r.start); setEndDate(r.end); }} />
                 <Button color="primary" startContent={<Plus size={14} />} onPress={onLogActivity}>
                     Log activity
                 </Button>

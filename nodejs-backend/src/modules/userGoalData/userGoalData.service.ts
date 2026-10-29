@@ -46,6 +46,12 @@ export async function listUserGoalData(filter: GoalDataListFilter, page?: number
     params,
   );
   const totalRecords = Number(agg?.['n'] ?? 0);
+  const [monthly] = await pool.query<mysql.RowDataPacket[]>(
+    `SELECT YEAR(gd.WorkDate) AS Year, MONTH(gd.WorkDate) AS MonthNumber,
+            ROUND(AVG(CASE WHEN gd.FixedGoal > 0 THEN gd.AchievedGoal / gd.FixedGoal * 100 END), 2) AS AvgPercent
+     ${from} GROUP BY YEAR(gd.WorkDate), MONTH(gd.WorkDate) ORDER BY Year, MonthNumber`,
+    params,
+  );
 
   return {
     userGoalDataList: rows.map((r) => {
@@ -65,6 +71,7 @@ export async function listUserGoalData(filter: GoalDataListFilter, page?: number
         recalculatedTarget: null,
         comment: r['Comment'] ?? null,
         approvedByEL: toBool(r['ApprovedByEL']),
+        revisedGoal: parseJson(r['RevisedGoal']),
       };
     }),
     totalRecords,
@@ -72,7 +79,14 @@ export async function listUserGoalData(filter: GoalDataListFilter, page?: number
     currentPage: paged ? page : 1,
     pageSize: paged ? size : totalRecords,
     avgPercent: toNum(agg?.['avgPercent']) ?? 0,
+    monthlyAvgBreakdown: monthly.map((m) => ({ Year: Number(m['Year']), MonthNumber: Number(m['MonthNumber']), AvgPercent: toNum(m['AvgPercent']) ?? 0 })),
   };
+}
+
+/** RevisedGoal is stored as JSON text; older rows may hold a plain number */
+function parseJson(raw: unknown) {
+  if (raw === null || raw === undefined || raw === '') return null;
+  try { const v = JSON.parse(String(raw)); return v && typeof v === 'object' ? v : null; } catch { return null; }
 }
 
 export async function updateRevisedGoal(

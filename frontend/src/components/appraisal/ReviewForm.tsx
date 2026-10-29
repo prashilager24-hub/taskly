@@ -141,10 +141,10 @@ export default function ReviewForm() {
             )}
 
             {view.self !== undefined && (
-                <Panel title="Self review">
-                    {view.self?.submittedAt || Object.values(view.self?.answers ?? {}).some(Boolean)
+                <Panel title="Hike proposal · the employee's reasons">
+                    {ANSWER_QUESTIONS.some(([k]) => view.self?.answers?.[k])
                         ? <div className={COLS2}>{ANSWER_QUESTIONS.map(([key, label]) => <ReadText key={key} label={label} value={view.self?.answers?.[key]} />)}</div>
-                        : <p className="text-sm text-ink-500">The employee has not written a self review yet.</p>}
+                        : <p className="text-sm text-ink-500">The employee has not written their reasons yet.</p>}
                 </Panel>
             )}
 

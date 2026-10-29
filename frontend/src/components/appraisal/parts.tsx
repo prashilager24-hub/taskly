@@ -71,13 +71,8 @@ export const COLS2 = "grid grid-cols-1 gap-4 md:grid-cols-2";
 /** One quarter on one row, like the spreadsheet: goals, targets, achievements, failures */
 export const COLS4 = "grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4";
 
+/** The questions that go with the hike proposal. Older answers to other questions stay stored but are no longer asked or shown. */
 export const ANSWER_QUESTIONS: [string, string][] = [
-    ["goalsAchieved", "What goals and targets did you achieve?"],
-    ["goalsNotAchievedWhy", "Why were some goals or targets not achieved?"],
-    ["howRatingAchieved", "How did you achieve this rating?"],
-    ["difficultiesAndWhy", "What difficulties did you face, and why?"],
-    ["howUpdatingGoalsTargets", "How are you updating your goals and targets?"],
-    ["whoApprovesGoalsTargets", "Who approves your goals and targets?"],
     ["whyDeserveSalary", "Why do you think you deserve this salary?"],
     ["biggestMilestone", "Biggest milestone"],
     ["biggestAchievement", "Biggest achievement"],

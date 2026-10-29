@@ -11,7 +11,7 @@ import { ANSWER_QUESTIONS, Banner, COLS2, HikeField, MoneyCard, ReadText } from 
 import PmsTable from "./PmsTable";
 import QuarterGrid from "./QuarterGrid";
 
-type TabKey = "goals" | "self" | "hike" | "proposed";
+type TabKey = "goals" | "hike" | "proposed";
 
 /** A calm message for the Proposed Hike tab while there is nothing to decide yet */
 const Waiting = ({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) => (
@@ -93,7 +93,7 @@ export default function MyAppraisal() {
         finally { setSaving(null); }
     };
 
-    // Save draft / Submit for review: in the Self review and the Hike proposal tabs, saving both
+    // Save draft / Submit for review, at the end of the Hike proposal tab
     const saveBar = (
         <div className="flex flex-wrap items-center justify-end gap-3 border-t border-ink-200 pt-4 dark:border-white/10">
             <p className="mr-auto text-xs text-ink-500">{submitted ? `Submitted ${day(view.self?.submittedAt)}. You can change it until ${day(c.employeeWindowEnd)}.` : `Not submitted yet. Open until ${day(c.employeeWindowEnd)}.`}</p>
@@ -105,7 +105,7 @@ export default function MyAppraisal() {
     // The top card: one line on where the person is, and one button
     let icon = <Award size={26} />;
     let title = "Your appraisal is open";
-    let text = `Look at your four quarters, answer the self review and enter the hike you are asking for. This closes on ${day(c.employeeWindowEnd)}.`;
+    let text = `Look at your four quarters and enter the hike you are asking for, with your reasons. This closes on ${day(c.employeeWindowEnd)}.`;
     let action = <Button size="lg" color="primary" onPress={() => open("goals")}>Appeal for Appraisal</Button>;
     if (!editable && c.status === "EMPLOYEE_OPEN") {
         icon = <Clock size={26} />; title = "Your appraisal window has closed";
@@ -219,17 +219,6 @@ export default function MyAppraisal() {
                                         <QuarterGrid slots={view.slots ?? []} pms={view.pms ?? []} />
                                     </div>
                                 </Tab>
-                                <Tab key="self" title="Self review">
-                                    <div className="flex flex-col gap-5 pb-5 pt-3">
-                                        <p className="max-w-[72ch] text-sm text-ink-500 dark:text-ink-400">Look back at the whole year and all four quarters, and justify your rating and the salary you expect.</p>
-                                        {editable ? (
-                                            <div className={COLS2}>{ANSWER_QUESTIONS.map(([key, label]) => <Textarea key={key} label={label} minRows={3} value={answers[key] ?? ""} onValueChange={(v) => setAnswers((a) => ({ ...a, [key]: v }))} />)}</div>
-                                        ) : (
-                                            <div className={COLS2}>{ANSWER_QUESTIONS.map(([key, label]) => <ReadText key={key} label={label} value={answers[key]} />)}</div>
-                                        )}
-                                        {editable && saveBar}
-                                    </div>
-                                </Tab>
                                 <Tab key="hike" title="Hike proposal">
                                     <div className="flex flex-col gap-5 pb-5 pt-3">
                                         <p className="max-w-[72ch] text-sm text-ink-500 dark:text-ink-400">Enter each amount as an <b>annual</b> figure. It is split into fixed and variable pay for your level, so you never type the split.</p>
@@ -241,6 +230,14 @@ export default function MyAppraisal() {
                                         ) : (
                                             <div className={COLS2}><MoneyCard title="Expected hike" money={view.expected} /><MoneyCard title="Target hike" money={view.target} /></div>
                                         )}
+                                        <div className="flex flex-col gap-4 border-t border-ink-200 pt-5 dark:border-white/10">
+                                            <p className="eyebrow">Why this hike</p>
+                                            {editable ? (
+                                                <div className={COLS2}>{ANSWER_QUESTIONS.map(([key, label]) => <Textarea key={key} label={label} minRows={3} value={answers[key] ?? ""} onValueChange={(v) => setAnswers((a) => ({ ...a, [key]: v }))} />)}</div>
+                                            ) : (
+                                                <div className={COLS2}>{ANSWER_QUESTIONS.map(([key, label]) => <ReadText key={key} label={label} value={answers[key]} />)}</div>
+                                            )}
+                                        </div>
                                         {editable && saveBar}
                                     </div>
                                 </Tab>

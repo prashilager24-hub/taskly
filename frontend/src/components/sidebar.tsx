@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { showOnboarding } from "@/lib/onboarding";
+import { appraisalApi, type Availability } from "@/components/appraisal/api";
 import {
+  Award,
   BarChart3,
   Bell,
   Building2,
@@ -21,7 +23,10 @@ import {
   Sparkles,
   Target,
   TrendingUp,
+  UserCheck,
+  UserCog,
   Users,
+  Wallet,
   X,
 } from "lucide-react";
 
@@ -43,6 +48,10 @@ interface MenuItem {
   departments?: number[];
   children?: MenuItem[];
   onlyNewJoiners?: boolean;
+  /** Appraisal pages appear only while there is something for this person (from /appraisal/availability) */
+  avail?: keyof Omit<Availability, "any">;
+  /** Stays highlighted on its sub-pages, e.g. appraisal/team/12 */
+  prefix?: boolean;
 }
 
 export const MENU: MenuItem[] = [
@@ -66,6 +75,19 @@ export const MENU: MenuItem[] = [
       { icon: MessageSquareText, label: "Manager Feedback", href: "pms/manager-feedback", module: "pms_feedback" },
       { icon: ClipboardList, label: "Quarterly Review", href: "pms/quarterly-review", module: "pms_quarterly" },
       { icon: FileText, label: "Report", href: "pms/report", module: "pms_report" },
+    ],
+  },
+  {
+    icon: Award,
+    label: "Appraisal",
+    href: "appraisal-group",
+    module: "appraisal",
+    children: [
+      { icon: Award, label: "My Appraisal", href: "appraisal", module: "appraisal", avail: "my" },
+      { icon: UserCheck, label: "Team Appraisals", href: "appraisal/team", module: "appraisal", avail: "team", prefix: true },
+      { icon: Wallet, label: "Budget Approval", href: "appraisal/budget", module: "appraisal", avail: "budget" },
+      { icon: ShieldCheck, label: "HR Postponements", href: "appraisal/hr", module: "appraisal", avail: "hr" },
+      { icon: UserCog, label: "Appraisal Setup", href: "appraisal/setup", module: "appraisal", avail: "setup" },
     ],
   },
   { icon: ClipboardList, label: "Daily Activity", href: "daily-activity", module: "dataentry" },
@@ -125,7 +147,7 @@ export function pageMeta(pathname: string): { section: string; label: string } {
   const path = norm(pathname);
   for (const item of MENU) {
     if (norm(item.href) === path) return { section: "Workspace", label: item.label };
-    const child = item.children?.find((c) => norm(c.href) === path);
+    const child = item.children?.find((c) => norm(c.href) === path || (c.prefix && path.startsWith(`${norm(c.href)}/`)));
     if (child) return { section: item.label, label: child.label };
   }
   return EXTRA_PAGES[path] ?? { section: "Taskly", label: "" };
@@ -160,15 +182,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, current
 
   const hasAccess = (module: string, permission = "read") => rolePermissions?.[module]?.includes(permission);
 
+  // Appraisal follows each person's cycle: ask the server what is open for them whenever they move to another page
+  const [avail, setAvail] = useState<Availability | null>(null);
+  const canAppraisal = !!rolePermissions?.["appraisal"]?.includes("read");
+  useEffect(() => {
+    if (!canAppraisal) { setAvail(null); return; }
+    let live = true;
+    appraisalApi.availability().then((a) => { if (live) setAvail(a); }).catch(() => { if (live) setAvail(null); });
+    return () => { live = false; };
+  }, [currentPage, canAppraisal]);
+
   // The menu shows only what this person's access allows (role + department + their own access)
   const menu = useMemo(() => MENU
     .map((item) => item.children
-      ? { ...item, children: item.children.filter((child) => hasAccess(child.module) && (!child.onlyNewJoiners || showOnboarding(authUserLD))) }
+      ? { ...item, children: item.children.filter((child) => hasAccess(child.module) && (!child.onlyNewJoiners || showOnboarding(authUserLD)) && (!child.avail || !!avail?.[child.avail]?.show)) }
       : item)
-    .filter((item) => (item.children ? item.children.length > 0 : hasAccess(item.module))), [rolePermissions, authUserLD]);
+    .filter((item) => (item.children ? item.children.length > 0 : hasAccess(item.module))), [rolePermissions, authUserLD, avail]);
 
   const active = norm(currentPage);
-  const isActive = (href: string) => active === norm(href);
+  const isActive = (href: string) => active === norm(href) || (MENU.some((g) => g.children?.some((c) => c.prefix && c.href === href)) && active.startsWith(`${norm(href)}/`));
 
   // The group holding the current page starts open
   const [expanded, setExpanded] = useState<string | null>(null);

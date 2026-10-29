@@ -1,0 +1,420 @@
+import type mysql from 'mysql2/promise';
+import { pool } from '../../config/db';
+import { env } from '../../config/env';
+import { AppError } from '../../utils/AppError';
+import { assessorsOf } from '../access/hierarchy';
+import { addDays, addMonths, cycleWindows, splitHike, todayIST, VARIABLE_PCT, type EmployeeLevel } from './appraisal.calc';
+import { maskCycle, maskTeamRow, type FullCycle, type Money, type Status, type TeamRow, type ViewRole } from './appraisal.mask';
+
+type Row = mysql.RowDataPacket;
+type Conn = mysql.PoolConnection;
+type Db = mysql.Pool | Conn;
+
+const csv = (v: string) => new Set(v.split(',').map((s) => Number(s.trim())).filter(Boolean));
+const FINANCE_ROLES = csv(env.APPRAISAL_FINANCE_ROLE_IDS);
+const HR_ROLES = csv(env.APPRAISAL_HR_ROLE_IDS);
+/** Admins can always act as Finance and HR, so the module works before those roles are named in the env */
+export const isFinance = (role: number) => role === 1 || FINANCE_ROLES.has(role);
+export const isHr = (role: number) => role === 1 || HR_ROLES.has(role);
+
+const CLOSED = 'Appraisal window is closed';
+const iso = (v: unknown): string | null => (v instanceof Date ? v.toISOString() : v ? String(v) : null);
+const D = (col: string, alias: string) => `DATE_FORMAT(${col}, '%Y-%m-%d') AS ${alias}`;
+
+async function tx<T>(fn: (c: Conn) => Promise<T>): Promise<T> {
+  const c = await pool.getConnection();
+  try {
+    await c.beginTransaction();
+    const out = await fn(c);
+    await c.commit();
+    return out;
+  } catch (e) {
+    await c.rollback();
+    throw e;
+  } finally {
+    c.release();
+  }
+}
+
+export async function audit(db: Db, cycleId: number, actorId: number | null, action: string, detail?: unknown) {
+  await db.execute('INSERT INTO AppraisalAudit (CycleID, ActorID, Action, Detail) VALUES (?, ?, ?, ?)', [cycleId, actorId, action, detail === undefined ? null : JSON.stringify(detail)]);
+}
+
+// ── Loading a cycle ───────────────────────────────────────────────────────────────────────────────
+
+const moneyOf = (r: Row): Money => ({ annual: Number(r['AnnualAmount']), fixed: Number(r['FixedAmount']), variable: Number(r['VariableAmount']), variablePct: Number(r['VariablePct']), variablePerHalfYear: Number(r['VariableAmount']) / 2 });
+
+export async function loadFull(cycleId: number, db: Db = pool): Promise<FullCycle | null> {
+  const [cs] = await db.execute<Row[]>(
+    `SELECT c.*, ${D('c.CycleStartDate', 'Start')}, ${D('c.EmployeeWindowEnd', 'EmpEnd')}, ${D('c.AssessorWindowEnd', 'AssEnd')}, ${D('c.PostponedUntil', 'PostUntil')},
+            u.UserName, a1.UserName AS A1Name, a2.UserName AS A2Name
+       FROM AppraisalCycle c
+       JOIN Users u ON u.UserID = c.UserID
+       LEFT JOIN Users a1 ON a1.UserID = c.Assessor1UserID
+       LEFT JOIN Users a2 ON a2.UserID = c.Assessor2UserID
+      WHERE c.CycleID = ?`, [cycleId]);
+  const c = cs[0];
+  if (!c) return null;
+  const [qs] = await db.execute<Row[]>('SELECT * FROM AppraisalQuarter WHERE CycleID = ? ORDER BY Quarter', [cycleId]);
+  const [qr] = await db.execute<Row[]>('SELECT * FROM AppraisalQuarterReview WHERE CycleID = ?', [cycleId]);
+  const [rv] = await db.execute<Row[]>('SELECT * FROM AppraisalReview WHERE CycleID = ?', [cycleId]);
+  const [hk] = await db.execute<Row[]>('SELECT * FROM AppraisalHike WHERE CycleID = ?', [cycleId]);
+  const [rq] = await db.execute<Row[]>('SELECT * FROM AppraisalRequest WHERE CycleID = ?', [cycleId]);
+  const [rs] = await db.execute<Row[]>('SELECT * FROM AppraisalResponse WHERE CycleID = ?', [cycleId]);
+
+  const status = c['Status'] as Status;
+  const review = (role: string) => rv.find((r) => r['ReviewerRole'] === role);
+  const hike = (kind: string, by: string) => { const h = hk.find((x) => x['Kind'] === kind && x['ByRole'] === by); return h ? moneyOf(h) : null; };
+  const rating = (q: number, role: 'A1' | 'A2') => { const r = qr.find((x) => x['Quarter'] === q && x['ReviewerRole'] === role); return r ? { finalRating: r['FinalRating'] == null ? null : Number(r['FinalRating']), comments: (r['Comments'] as string) ?? '' } : null; };
+  const assessor = (role: 'A1' | 'A2') => { const r = review(role); return r ? { overallRating: r['OverallRating'] == null ? null : Number(r['OverallRating']), comment: (r['Comment'] as string) ?? '', managerFeedback: (r['ManagerFeedback'] as string) ?? '', submittedAt: iso(r['SubmittedAt']) } : null; };
+  const self = review('SELF');
+  const resp = rs[0];
+  const req = rq[0];
+
+  return {
+    cycle: {
+      id: c['CycleID'], userId: c['UserID'], employeeName: c['UserName'], year: c['CycleYear'], start: c['Start'], employeeWindowEnd: c['EmpEnd'], assessorWindowEnd: c['AssEnd'],
+      status, level: c['EmployeeLevel'], variablePct: c['VariablePct'], postponedUntil: c['PostUntil'] ?? null, currentAnnualCtc: c['CurrentAnnualCtc'] == null ? null : Number(c['CurrentAnnualCtc']),
+      assessor1: c['Assessor1UserID'] ? { userId: c['Assessor1UserID'], name: c['A1Name'] } : null,
+      assessor2: c['Assessor2UserID'] ? { userId: c['Assessor2UserID'], name: c['A2Name'] } : null,
+      late: status !== 'EMPLOYEE_OPEN' && !self?.['SubmittedAt'],
+    },
+    self: self ? { answers: self['AnswersJson'] ? (typeof self['AnswersJson'] === 'string' ? JSON.parse(self['AnswersJson']) : self['AnswersJson']) : {}, submittedAt: iso(self['SubmittedAt']) } : null,
+    quarters: [1, 2, 3, 4].map((n) => {
+      const q = qs.find((x) => x['Quarter'] === n);
+      return { quarter: n, goals: q?.['Goals'] ?? '', targets: q?.['Targets'] ?? '', biggestAchievements: q?.['BiggestAchievements'] ?? '', biggestFailures: q?.['BiggestFailures'] ?? '', ratings: { A1: rating(n, 'A1'), A2: rating(n, 'A2') } };
+    }),
+    request: req ? { newDesignation: req['NewDesignation'] ?? '', designationComment: req['DesignationComment'] ?? '', newTeam: req['NewTeam'] ?? '', teamComment: req['TeamComment'] ?? '' } : null,
+    expected: hike('EXPECTED', 'EMPLOYEE'),
+    target: hike('TARGET', 'EMPLOYEE'),
+    minimal: { A1: hike('MINIMAL', 'A1'), A2: hike('MINIMAL', 'A2') },
+    approved: hike('APPROVED', 'FINANCE'),
+    assessors: { A1: assessor('A1'), A2: assessor('A2') },
+    financeComment: (review('FINANCE')?.['Comment'] as string) ?? null,
+    // an old decision stays in the audit trail; the cycle shows only the decision that stands
+    response: resp && (status === 'ACCEPTED' || status === 'POSTPONED')
+      ? { decision: resp['Decision'], postponeMonths: resp['PostponeMonths'] ?? null, reason: resp['Reason'] ?? '', expectations: resp['Expectations'] ?? '', comment: resp['Comment'] ?? '', hrStatus: resp['HrStatus'] ?? null, hrComment: resp['HrComment'] ?? '', decidedAt: iso(resp['DecidedAt']) ?? '' }
+      : null,
+  };
+}
+
+// ── Who the caller is in a cycle, and what they can do now ────────────────────────────────────────
+
+export function roleIn(full: FullCycle, userId: number, appRole: number): ViewRole | null {
+  const c = full.cycle;
+  if (c.userId === userId) return 'EMPLOYEE'; // your own cycle is always viewed as the employee, whatever else you are
+  if (c.assessor1?.userId === userId) return 'A1';
+  if (c.assessor2?.userId === userId) return 'A2';
+  if (isFinance(appRole)) return 'FINANCE';
+  if (isHr(appRole)) return 'HR';
+  return null;
+}
+
+const windowState = (c: FullCycle['cycle'], today: string) => ({
+  employeeOpen: c.status === 'EMPLOYEE_OPEN' && today <= c.employeeWindowEnd,
+  assessorOpen: c.status === 'ASSESSOR_OPEN' && today >= addDays(c.start, 15) && today <= c.assessorWindowEnd,
+});
+
+function abilities(full: FullCycle, role: ViewRole, appRole: number, today: string) {
+  const w = windowState(full.cycle, today);
+  return {
+    selfReview: role === 'EMPLOYEE' && w.employeeOpen,
+    assessorReview: (role === 'A1' || role === 'A2') && w.assessorOpen,
+    budgetApproval: role !== 'EMPLOYEE' && isFinance(appRole) && full.cycle.status === 'FINANCE_REVIEW',
+    respond: role === 'EMPLOYEE' && full.cycle.status === 'OFFERED',
+    hrDecision: isHr(appRole) && role !== 'EMPLOYEE' && full.cycle.status === 'POSTPONED' && full.response?.decision === 'REJECT',
+  };
+}
+
+function shaped(full: FullCycle, role: ViewRole, appRole: number) {
+  const today = todayIST();
+  return { ...maskCycle(full, role), can: abilities(full, role, appRole, today), today };
+}
+
+export async function myCycle(userId: number, appRole: number) {
+  const [rows] = await pool.execute<Row[]>('SELECT CycleID FROM AppraisalCycle WHERE UserID = ? ORDER BY CycleStartDate DESC, CycleID DESC', [userId]);
+  const id = rows[0]?.['CycleID'] as number | undefined;
+  if (!id) return null;
+  const full = await loadFull(id);
+  return full ? shaped(full, 'EMPLOYEE', appRole) : null;
+}
+
+export async function cycleFor(cycleId: number, userId: number, appRole: number) {
+  const full = await loadFull(cycleId);
+  if (!full) throw AppError.notFound('Appraisal not found');
+  const role = roleIn(full, userId, appRole);
+  if (!role) throw AppError.forbidden('You have no part in this appraisal');
+  return shaped(full, role, appRole);
+}
+
+// ── Team, budget and HR lists ─────────────────────────────────────────────────────────────────────
+
+const sumOf = (list: (Money | null | undefined)[]) => list.reduce((s, m) => (m ? { annual: s.annual + m.annual, fixed: s.fixed + m.fixed, variable: s.variable + m.variable, count: s.count + 1 } : s), { annual: 0, fixed: 0, variable: 0, count: 0 });
+
+export async function team(userId: number, appRole: number, status?: string) {
+  const fin = isFinance(appRole);
+  const [cs] = await pool.query<Row[]>(
+    `SELECT c.CycleID FROM AppraisalCycle c
+      WHERE (${fin ? '1 = 1' : '(c.Assessor1UserID = ? OR c.Assessor2UserID = ?)'}) ${status ? 'AND c.Status = ?' : ''} AND c.UserID <> ?
+      ORDER BY c.CycleStartDate DESC, c.CycleID DESC LIMIT 300`,
+    [...(fin ? [] : [userId, userId]), ...(status ? [status] : []), userId]);
+  const rows: TeamRow[] = [];
+  for (const r of cs) {
+    const f = await loadFull(r['CycleID'] as number);
+    if (!f) continue;
+    const myRole: TeamRow['myRole'] = f.cycle.assessor1?.userId === userId ? 'A1' : f.cycle.assessor2?.userId === userId ? 'A2' : 'FINANCE';
+    rows.push({
+      cycleId: f.cycle.id, userId: f.cycle.userId, employeeName: f.cycle.employeeName, level: f.cycle.level, status: f.cycle.status, start: f.cycle.start,
+      employeeWindowEnd: f.cycle.employeeWindowEnd, assessorWindowEnd: f.cycle.assessorWindowEnd, late: f.cycle.late,
+      selfSubmitted: !!f.self?.submittedAt, a1Submitted: !!f.assessors.A1?.submittedAt, a2Submitted: !!f.assessors.A2?.submittedAt, myRole,
+      expected: f.expected, minimal: f.minimal, approved: f.approved,
+    });
+  }
+  const sumRows = fin ? rows : rows.filter((r) => r.myRole === 'A2');
+  const showSum = fin || rows.some((r) => r.myRole === 'A2');
+  return {
+    items: rows.map(maskTeamRow),
+    // Finance sums everyone; an EL sums their own team's approved hikes; a first assessor sees no totals
+    sumTotal: showSum ? sumOf(sumRows.map((r) => r.approved)) : null,
+  };
+}
+
+/** Rejected offers waiting for (or past) HR */
+export async function hrList() {
+  const [rs] = await pool.execute<Row[]>(
+    `SELECT c.CycleID FROM AppraisalCycle c JOIN AppraisalResponse r ON r.CycleID = c.CycleID
+      WHERE c.Status = 'POSTPONED' AND r.Decision = 'REJECT' ORDER BY FIELD(r.HrStatus, 'PENDING') DESC, r.DecidedAt DESC LIMIT 300`);
+  const out: Record<string, unknown>[] = [];
+  for (const r of rs) {
+    const f = await loadFull(r['CycleID'] as number);
+    if (f) out.push({ ...(maskCycle(f, 'HR') as Record<string, unknown>), can: { hrDecision: true } });
+  }
+  return out;
+}
+
+// ── Writing: self review ──────────────────────────────────────────────────────────────────────────
+
+export interface SelfReviewInput {
+  answers: Record<string, string>;
+  quarters: { quarter: number; goals?: string; targets?: string; biggestAchievements?: string; biggestFailures?: string }[];
+  expectedHike?: number | null; targetHike?: number | null;
+  request?: { newDesignation?: string; designationComment?: string; newTeam?: string; teamComment?: string };
+  submit: boolean;
+}
+
+async function lock(c: Conn, cycleId: number) {
+  const [rows] = await c.execute<Row[]>(
+    `SELECT CycleID, UserID, Status, EmployeeLevel, Assessor1UserID, Assessor2UserID, ${D('CycleStartDate', 'Start')}, ${D('EmployeeWindowEnd', 'EmpEnd')}, ${D('AssessorWindowEnd', 'AssEnd')}
+       FROM AppraisalCycle WHERE CycleID = ? FOR UPDATE`, [cycleId]);
+  const r = rows[0];
+  if (!r) throw AppError.notFound('Appraisal not found');
+  return { id: r['CycleID'] as number, userId: r['UserID'] as number, status: r['Status'] as Status, level: r['EmployeeLevel'] as EmployeeLevel, a1: r['Assessor1UserID'] as number | null, a2: r['Assessor2UserID'] as number | null, start: r['Start'] as string, empEnd: r['EmpEnd'] as string, assEnd: r['AssEnd'] as string };
+}
+
+async function putHike(c: Conn, cycleId: number, kind: 'EXPECTED' | 'TARGET' | 'MINIMAL' | 'APPROVED', by: 'EMPLOYEE' | 'A1' | 'A2' | 'FINANCE', amount: number | null | undefined, level: EmployeeLevel, actor: number) {
+  if (amount == null) {
+    await c.execute('DELETE FROM AppraisalHike WHERE CycleID = ? AND Kind = ? AND ByRole = ?', [cycleId, kind, by]);
+    return;
+  }
+  // the split is always worked out here; the client never sends it
+  const s = splitHike(amount, level);
+  await c.execute(
+    `INSERT INTO AppraisalHike (CycleID, Kind, ByRole, AnnualAmount, FixedAmount, VariableAmount, VariablePct, EnteredBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE AnnualAmount = VALUES(AnnualAmount), FixedAmount = VALUES(FixedAmount), VariableAmount = VALUES(VariableAmount), VariablePct = VALUES(VariablePct), EnteredBy = VALUES(EnteredBy)`,
+    [cycleId, kind, by, s.annualAmount, s.fixed, s.variable, s.variablePct, actor]);
+}
+
+export async function saveSelfReview(cycleId: number, userId: number, input: SelfReviewInput) {
+  await tx(async (c) => {
+    const cy = await lock(c, cycleId);
+    if (cy.userId !== userId) throw AppError.forbidden('Only the employee can fill the self review');
+    const today = todayIST();
+    // status and date must both say open
+    if (cy.status !== 'EMPLOYEE_OPEN' || today > cy.empEnd) throw AppError.conflict(CLOSED);
+    if (input.submit && (input.expectedHike == null || input.targetHike == null)) throw new AppError('Enter your expected and target hike before you submit', 422);
+
+    const [old] = await c.execute<Row[]>("SELECT SubmittedAt FROM AppraisalReview WHERE CycleID = ? AND ReviewerRole = 'SELF'", [cycleId]);
+    const submittedAt = input.submit ? new Date() : (old[0]?.['SubmittedAt'] as Date | null) ?? null; // saving a draft later never un-submits
+    await c.execute(
+      `INSERT INTO AppraisalReview (CycleID, ReviewerRole, AnswersJson, SubmittedAt) VALUES (?, 'SELF', ?, ?)
+       ON DUPLICATE KEY UPDATE AnswersJson = VALUES(AnswersJson), SubmittedAt = VALUES(SubmittedAt)`, [cycleId, JSON.stringify(input.answers), submittedAt]);
+
+    for (const q of input.quarters) {
+      await c.execute(
+        `INSERT INTO AppraisalQuarter (CycleID, Quarter, Goals, Targets, BiggestAchievements, BiggestFailures) VALUES (?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE Goals = VALUES(Goals), Targets = VALUES(Targets), BiggestAchievements = VALUES(BiggestAchievements), BiggestFailures = VALUES(BiggestFailures)`,
+        [cycleId, q.quarter, q.goals ?? null, q.targets ?? null, q.biggestAchievements ?? null, q.biggestFailures ?? null]);
+    }
+    await putHike(c, cycleId, 'EXPECTED', 'EMPLOYEE', input.expectedHike, cy.level, userId);
+    await putHike(c, cycleId, 'TARGET', 'EMPLOYEE', input.targetHike, cy.level, userId);
+    if (input.request) {
+      const r = input.request;
+      await c.execute(
+        `INSERT INTO AppraisalRequest (CycleID, NewDesignation, DesignationComment, NewTeam, TeamComment) VALUES (?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE NewDesignation = VALUES(NewDesignation), DesignationComment = VALUES(DesignationComment), NewTeam = VALUES(NewTeam), TeamComment = VALUES(TeamComment)`,
+        [cycleId, r.newDesignation || null, r.designationComment || null, r.newTeam || null, r.teamComment || null]);
+    }
+    await audit(c, cycleId, userId, input.submit ? 'SELF_SUBMIT' : 'SELF_DRAFT');
+  });
+}
+
+// ── Writing: assessors ────────────────────────────────────────────────────────────────────────────
+
+export interface AssessorInput {
+  quarters: { quarter: number; finalRating?: number | null; comments?: string }[];
+  overallRating?: number | null; comment?: string; managerFeedback?: string; minimalHike?: number | null; submit: boolean;
+}
+
+export async function saveAssessorReview(cycleId: number, userId: number, input: AssessorInput) {
+  await tx(async (c) => {
+    const cy = await lock(c, cycleId);
+    const role: 'A1' | 'A2' | null = cy.a1 === userId ? 'A1' : cy.a2 === userId ? 'A2' : null;
+    if (!role) throw AppError.forbidden('You are not an assessor of this appraisal');
+    const today = todayIST();
+    if (cy.status !== 'ASSESSOR_OPEN' || today < addDays(cy.start, 15) || today > cy.assEnd) throw AppError.conflict(CLOSED);
+    if (input.submit && (input.overallRating == null || input.minimalHike == null)) throw new AppError('Give an overall rating and a minimal hike before you submit', 422);
+
+    for (const q of input.quarters) {
+      await c.execute(
+        `INSERT INTO AppraisalQuarterReview (CycleID, Quarter, ReviewerRole, FinalRating, Comments) VALUES (?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE FinalRating = VALUES(FinalRating), Comments = VALUES(Comments)`, [cycleId, q.quarter, role, q.finalRating ?? null, q.comments ?? null]);
+    }
+    const [old] = await c.execute<Row[]>('SELECT SubmittedAt FROM AppraisalReview WHERE CycleID = ? AND ReviewerRole = ?', [cycleId, role]);
+    const submittedAt = input.submit ? new Date() : (old[0]?.['SubmittedAt'] as Date | null) ?? null;
+    await c.execute(
+      `INSERT INTO AppraisalReview (CycleID, ReviewerRole, OverallRating, Comment, ManagerFeedback, SubmittedAt) VALUES (?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE OverallRating = VALUES(OverallRating), Comment = VALUES(Comment), ManagerFeedback = VALUES(ManagerFeedback), SubmittedAt = VALUES(SubmittedAt)`,
+      // manager feedback belongs to the first assessor; the second assessor's is ignored
+      [cycleId, role, input.overallRating ?? null, input.comment ?? null, role === 'A1' ? input.managerFeedback ?? null : null, submittedAt]);
+    await putHike(c, cycleId, 'MINIMAL', role, input.minimalHike, cy.level, userId);
+    await audit(c, cycleId, userId, input.submit ? `${role}_SUBMIT` : `${role}_DRAFT`);
+  });
+}
+
+// ── Writing: Finance, the employee's answer, HR ───────────────────────────────────────────────────
+
+export async function approveBudget(cycleId: number, userId: number, appRole: number, input: { approvedHike: number; comment?: string }) {
+  if (!isFinance(appRole)) throw AppError.forbidden('Only Finance approves the budget');
+  await tx(async (c) => {
+    const cy = await lock(c, cycleId);
+    if (cy.userId === userId) throw AppError.forbidden('You cannot approve your own appraisal');
+    if (cy.status !== 'FINANCE_REVIEW') throw AppError.conflict(CLOSED);
+    await putHike(c, cycleId, 'APPROVED', 'FINANCE', input.approvedHike, cy.level, userId);
+    await c.execute(
+      `INSERT INTO AppraisalReview (CycleID, ReviewerRole, Comment, SubmittedAt) VALUES (?, 'FINANCE', ?, ?)
+       ON DUPLICATE KEY UPDATE Comment = VALUES(Comment), SubmittedAt = VALUES(SubmittedAt)`, [cycleId, input.comment ?? null, new Date()]);
+    await c.execute("UPDATE AppraisalCycle SET Status = 'OFFERED' WHERE CycleID = ?", [cycleId]);
+    await audit(c, cycleId, userId, 'STATUS_CHANGE', { from: 'FINANCE_REVIEW', to: 'OFFERED' });
+    await audit(c, cycleId, userId, 'HIKE_SET', { kind: 'APPROVED', annual: input.approvedHike });
+  });
+}
+
+export type RespondInput = { decision: 'ACCEPT'; comment?: string } | { decision: 'REJECT'; postponeMonths: 3 | 6; reason: string; expectations: string; comment?: string };
+
+export async function respond(cycleId: number, userId: number, input: RespondInput) {
+  return tx(async (c) => {
+    const cy = await lock(c, cycleId);
+    if (cy.userId !== userId) throw AppError.forbidden('Only the employee can answer the offer');
+    if (cy.status !== 'OFFERED') throw AppError.conflict('There is no offer to answer');
+    const now = new Date();
+    if (input.decision === 'ACCEPT') {
+      await c.execute(
+        `INSERT INTO AppraisalResponse (CycleID, Decision, PostponeMonths, Reason, Expectations, Comment, HrApproverUserID, HrStatus, HrComment, DecidedAt) VALUES (?, 'ACCEPT', NULL, NULL, NULL, ?, NULL, NULL, NULL, ?)
+         ON DUPLICATE KEY UPDATE Decision = 'ACCEPT', PostponeMonths = NULL, Reason = NULL, Expectations = NULL, Comment = VALUES(Comment), HrApproverUserID = NULL, HrStatus = NULL, HrComment = NULL, DecidedAt = VALUES(DecidedAt)`,
+        [cycleId, input.comment ?? null, now]);
+      await c.execute("UPDATE AppraisalCycle SET Status = 'ACCEPTED', PostponedUntil = NULL WHERE CycleID = ?", [cycleId]);
+      await audit(c, cycleId, userId, 'STATUS_CHANGE', { from: 'OFFERED', to: 'ACCEPTED' });
+      return { status: 'ACCEPTED' as const, postponedUntil: null };
+    }
+    const until = addMonths(todayIST(), input.postponeMonths);
+    await c.execute(
+      `INSERT INTO AppraisalResponse (CycleID, Decision, PostponeMonths, Reason, Expectations, Comment, HrApproverUserID, HrStatus, HrComment, DecidedAt) VALUES (?, 'REJECT', ?, ?, ?, ?, NULL, 'PENDING', NULL, ?)
+       ON DUPLICATE KEY UPDATE Decision = 'REJECT', PostponeMonths = VALUES(PostponeMonths), Reason = VALUES(Reason), Expectations = VALUES(Expectations), Comment = VALUES(Comment), HrApproverUserID = NULL, HrStatus = 'PENDING', HrComment = NULL, DecidedAt = VALUES(DecidedAt)`,
+      [cycleId, input.postponeMonths, input.reason, input.expectations, input.comment ?? null, now]);
+    await c.execute("UPDATE AppraisalCycle SET Status = 'POSTPONED', PostponedUntil = ? WHERE CycleID = ?", [until, cycleId]);
+    await audit(c, cycleId, userId, 'STATUS_CHANGE', { from: 'OFFERED', to: 'POSTPONED', months: input.postponeMonths, until });
+    return { status: 'POSTPONED' as const, postponedUntil: until };
+  });
+}
+
+export async function hrDecision(cycleId: number, userId: number, appRole: number, input: { status: 'APPROVED' | 'RETURNED'; comment?: string }) {
+  if (!isHr(appRole)) throw AppError.forbidden('Only HR decides on a postponement');
+  await tx(async (c) => {
+    const cy = await lock(c, cycleId);
+    if (cy.userId === userId) throw AppError.forbidden('You cannot decide on your own appraisal');
+    const [rs] = await c.execute<Row[]>('SELECT Decision FROM AppraisalResponse WHERE CycleID = ?', [cycleId]);
+    if (cy.status !== 'POSTPONED' || rs[0]?.['Decision'] !== 'REJECT') throw AppError.conflict('There is no postponement to decide on');
+    await c.execute('UPDATE AppraisalResponse SET HrStatus = ?, HrComment = ?, HrApproverUserID = ? WHERE CycleID = ?', [input.status, input.comment ?? null, userId, cycleId]);
+    await audit(c, cycleId, userId, 'HR_DECISION', { status: input.status });
+  });
+}
+
+// ── Creating cycles (manual, and from the daily job) ──────────────────────────────────────────────
+
+export interface Appraisee { UserID: number; EmployeeLevel: EmployeeLevel; CurrentAnnualCtc: string | number | null }
+
+/** Inserts one cycle with the snapshot of level, assessors and CTC. Returns null when the person already has a cycle for that year. */
+export async function insertCycle(db: Db, u: Appraisee, start: string, actor: number | null): Promise<number | null> {
+  const a = await assessorsOf(u.UserID);
+  const w = cycleWindows(start);
+  const year = Number(start.slice(0, 4));
+  const [res] = await db.execute<mysql.ResultSetHeader>(
+    `INSERT IGNORE INTO AppraisalCycle (UserID, CycleYear, CycleStartDate, EmployeeWindowEnd, AssessorWindowEnd, Status, EmployeeLevel, VariablePct, Assessor1UserID, Assessor2UserID, CurrentAnnualCtc)
+     VALUES (?, ?, ?, ?, ?, 'EMPLOYEE_OPEN', ?, ?, ?, ?, ?)`,
+    [u.UserID, year, start, w.employeeWindowEnd, w.assessorWindowEnd, u.EmployeeLevel, VARIABLE_PCT[u.EmployeeLevel], a.accessor1?.userId ?? null, a.accessor2?.userId ?? null, u.CurrentAnnualCtc ?? null]);
+  if (!res.affectedRows) return null;
+  await audit(db, res.insertId, actor, 'CYCLE_CREATED', { start });
+  return res.insertId;
+}
+
+export async function createCycle(actor: number, appRole: number, input: { userId: number; cycleStartDate: string }) {
+  if (!isFinance(appRole) && !isHr(appRole)) throw AppError.forbidden('Only Finance or HR can create a cycle');
+  const [rows] = await pool.execute<Row[]>('SELECT UserID, EmployeeLevel, CurrentAnnualCtc FROM Users WHERE UserID = ? AND IsUserArchived = 0', [input.userId]);
+  const u = rows[0];
+  if (!u) throw AppError.notFound('User not found');
+  if (!u['EmployeeLevel']) throw new AppError('Set this person\'s level first', 422);
+  const id = await insertCycle(pool, u as unknown as Appraisee, input.cycleStartDate, actor);
+  if (!id) throw AppError.conflict('This person already has an appraisal for that year');
+  return { cycleId: id };
+}
+
+// ── People setup (joining date, level, CTC) ───────────────────────────────────────────────────────
+
+export async function people(appRole: number) {
+  if (!isFinance(appRole) && !isHr(appRole)) throw AppError.forbidden('Only Finance or HR can see this');
+  const [rows] = await pool.execute<Row[]>(
+    `SELECT u.UserID, u.UserName, u.UserEmail, r.RoleName, ${D('u.DateOfJoining', 'Joined')}, u.EmployeeLevel, u.CurrentAnnualCtc,
+            (SELECT COUNT(*) FROM AppraisalCycle c WHERE c.UserID = u.UserID) AS Cycles
+       FROM Users u LEFT JOIN AMRole r ON r.RoleID = u.RoleID
+      WHERE u.IsUserArchived = 0 AND u.UserStatus = 1 AND u.RoleID <> 1 ORDER BY u.UserName`);
+  return rows.map((r) => ({ userId: r['UserID'], name: r['UserName'], email: r['UserEmail'], roleName: r['RoleName'] ?? '', dateOfJoining: r['Joined'] ?? null, level: r['EmployeeLevel'] ?? null, currentAnnualCtc: r['CurrentAnnualCtc'] == null ? null : Number(r['CurrentAnnualCtc']), cycles: Number(r['Cycles']) }));
+}
+
+export async function updatePerson(appRole: number, userId: number, input: { dateOfJoining: string | null; level: EmployeeLevel | null; currentAnnualCtc: number | null }) {
+  if (!isFinance(appRole) && !isHr(appRole)) throw AppError.forbidden('Only Finance or HR can change this');
+  const [res] = await pool.execute<mysql.ResultSetHeader>('UPDATE Users SET DateOfJoining = ?, EmployeeLevel = ?, CurrentAnnualCtc = ? WHERE UserID = ? AND IsUserArchived = 0', [input.dateOfJoining, input.level, input.currentAnnualCtc, userId]);
+  if (!res.affectedRows) throw AppError.notFound('User not found');
+}
+
+// ── What the sidebar should show right now ────────────────────────────────────────────────────────
+
+const ACTIVE = "(c.Status <> 'ACCEPTED' OR c.UpdatedAt >= DATE_SUB(NOW(), INTERVAL 30 DAY))";
+
+/** The Appraisal menu appears only while there is something for this person in a cycle that is running (or just finished) */
+export async function availability(userId: number, appRole: number) {
+  const [mine] = await pool.execute<Row[]>(`SELECT c.CycleID, c.Status FROM AppraisalCycle c WHERE c.UserID = ? AND ${ACTIVE} ORDER BY c.CycleStartDate DESC LIMIT 1`, [userId]);
+  const [asr] = await pool.execute<Row[]>(
+    `SELECT COUNT(*) AS n, SUM(c.Status = 'ASSESSOR_OPEN') AS open FROM AppraisalCycle c WHERE (c.Assessor1UserID = ? OR c.Assessor2UserID = ?) AND c.UserID <> ? AND ${ACTIVE}`, [userId, userId, userId]);
+  const fin = isFinance(appRole);
+  const hr = isHr(appRole);
+  const [bud] = fin ? await pool.execute<Row[]>(`SELECT COUNT(*) AS n, SUM(c.Status = 'FINANCE_REVIEW') AS pending FROM AppraisalCycle c WHERE c.UserID <> ? AND ${ACTIVE}`, [userId]) : [[]];
+  const [hrr] = hr ? await pool.execute<Row[]>("SELECT COUNT(*) AS n, SUM(r.HrStatus = 'PENDING') AS pending FROM AppraisalCycle c JOIN AppraisalResponse r ON r.CycleID = c.CycleID WHERE c.Status = 'POSTPONED' AND r.Decision = 'REJECT' AND c.UserID <> ?", [userId]) : [[]];
+  const num = (r: Row | undefined, k: string) => Number(r?.[k] ?? 0);
+  const my = { show: mine.length > 0, status: (mine[0]?.['Status'] as Status | undefined) ?? null, cycleId: (mine[0]?.['CycleID'] as number | undefined) ?? null };
+  const teamN = { show: num(asr[0], 'n') > 0, open: num(asr[0], 'open') };
+  const budget = { show: fin && num(bud[0], 'n') > 0, pending: num(bud[0], 'pending') };
+  const hrN = { show: hr && num(hrr[0], 'n') > 0, pending: num(hrr[0], 'pending') };
+  // Finance and HR also need the setup list to name joining dates before any cycle exists
+  const setup = { show: fin || hr };
+  return { my, team: teamN, budget, hr: hrN, setup, any: my.show || teamN.show || budget.show || hrN.show || setup.show };
+}

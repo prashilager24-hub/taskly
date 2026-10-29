@@ -3,6 +3,7 @@ import { logger } from './config/logger';
 import { testConnection } from './config/db';
 import app from './app';
 import { scheduleDailyAudit } from './jobs/dailyTaskAudit';
+import { scheduleAppraisalJob } from './jobs/appraisalCycle';
 
 const server = app.listen(env.PORT, async () => {
   try {
@@ -12,6 +13,7 @@ const server = app.listen(env.PORT, async () => {
 
     // ── Scheduled jobs ───────────────────────────────────────────────────────
     scheduleDailyAudit();   // Daily task entry audit at 10:00 AM IST
+    scheduleAppraisalJob(); // Appraisal cycles at 00:30 AM IST (APPRAISAL_JOB_ENABLED=false switches it off)
   } catch (err) {
     logger.fatal({ err }, '❌  Database connection failed — shutting down');
     process.exit(1);

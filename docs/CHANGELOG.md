@@ -17,6 +17,41 @@ Summary: one or two lines on what and why.
 
 ---
 
+## 2026-10-29 — Appraisal module (branch appraisal-module)  (commits: see branch)
+
+Summary: yearly appraisal flow from the Appraisal Module spec. Each person's cycle starts on their joining anniversary: days 1 to 15 the employee fills the form, days 16 to 30 the two assessors, then Finance approves the budget, then the employee can only Accept or Reject the offer (reject postpones the hike by 3 or 6 months, HR decides on it). Every hike amount is annual and split into fixed + variable by level on the server. The **Appraisal** menu sits after PMS and appears only while there is something open for the person.
+
+### Frontend
+- Sidebar ([components/sidebar.tsx](../frontend/src/components/sidebar.tsx)): new **Appraisal** group after PMS with My Appraisal, Team Appraisals, Budget Approval, HR Postponements, Appraisal Setup. Each item shows only when `GET /appraisal/availability` says it has something for the person now, and the whole group is hidden when nothing is (so an employee sees it from their cycle start until 30 days after they accept; an assessor while a team cycle is running; Finance and HR also always see Setup). Availability is re-asked on every page change.
+- Routes in [App.tsx](../frontend/src/App.tsx): `/appraisal`, `/appraisal/team`, `/appraisal/team/:cycleId`, `/appraisal/budget`, `/appraisal/hr`, `/appraisal/setup`; pages in [pages/appraisalPages.tsx](../frontend/src/pages/appraisalPages.tsx), screens in [components/appraisal/](../frontend/src/components/appraisal).
+- My Appraisal: status stepper, Q1 to Q4 grid (one row per quarter), ten self-review questions, expected and target hike with a live `₹1,00,000 → ₹90,000 fixed + ₹10,000 variable` preview, optional designation / team change request, Save draft and Submit; read-only with a closed banner once the window ends. The Offer panel (ratings, approved hike as annual / fixed / variable / per half-year, Accept with confirm, Reject form with 3 or 6 months, reason and expectations) appears when the offer is out.
+- Team Appraisals (A1, A2): list with progress ticks and a review form (self review read-only, rating and comment per quarter, overall rating, minimal hike, manager feedback for A1 only). Budget Approval (Finance): approve each hike with the live split, Sum Total. HR Postponements: approve or return with a comment. Appraisal Setup (Finance / HR): joining date, level and current CTC per person, and "Start cycle" for exceptions.
+- The screens draw only the keys the API sent, so a field hidden for a role leaves no empty box.
+
+### Backend
+- New module [modules/appraisal/](../nodejs-backend/src/modules/appraisal): `appraisal.calc.ts` (split rule, IST date helpers), `appraisal.mask.ts` (`maskCycle`: hidden keys are removed, not null), `appraisal.service.ts` (transactions, status + date guards, audit rows), `appraisal.routes.ts` (zod). Mounted at `/t2.0/authentificationUtilization/appraisal` in [app.ts](../nodejs-backend/src/app.ts).
+- Routes: `GET /availability`, `/my`, `/team?status=`, `/hr`, `/people`, `/cycles/:id`; `PUT /cycles/:id/self-review`, `/assessor-review`, `/budget-approval`, `/hr-decision`, `/people/:userId`; `POST /cycles/:id/respond`, `/cycles`. 403 wrong role, 409 closed window or wrong status ("Appraisal window is closed"), 422 validation.
+- Daily job [jobs/appraisalCycle.ts](../nodejs-backend/src/jobs/appraisalCycle.ts) at 00:30 IST, registered in [server.ts](../nodejs-backend/src/server.ts): creates cycles on joining anniversaries, moves EMPLOYEE_OPEN to ASSESSOR_OPEN (day 16) to FINANCE_REVIEW (day 31), returns postponed offers to the assessors with a new 15-day window, sends reminders (employee day 10 and 14, assessors day 25, Finance on arrival; each sent once). Safe to run twice. `APPRAISAL_JOB_ENABLED=false` switches it off.
+- Access: new `appraisal` module in [access/catalog.ts](../nodejs-backend/src/modules/access/catalog.ts); the router needs `appraisal` read.
+
+### Database
+- New migration [006_appraisal.sql](../nodejs-backend/src/config/migrations/006_appraisal.sql): adds `Users.DateOfJoining`, `Users.EmployeeLevel`, `Users.CurrentAnnualCtc`; creates `AppraisalCycle`, `AppraisalQuarter`, `AppraisalQuarterReview`, `AppraisalReview`, `AppraisalHike`, `AppraisalRequest`, `AppraisalResponse`, `AppraisalAudit`; gives every role except Admin `appraisal` read.
+- Backfills `EmployeeLevel` from the role (Executive Leader = HEAD_EL, Functional Leader / Manager / Lead = MANAGER, everyone else = ASSOCIATE; Admins are left empty). **`DateOfJoining` is empty for everyone**: set it in Appraisal Setup, or no cycle starts.
+- **After pulling, run `npm run db:migrate` in `nodejs-backend`.**
+
+### Env / config
+- `APPRAISAL_FINANCE_ROLE_IDS`, `APPRAISAL_HR_ROLE_IDS` (comma separated RoleIDs, default empty) and `APPRAISAL_JOB_ENABLED` (default true), in [config/env.ts](../nodejs-backend/src/config/env.ts) and `.env.local.example`. Admins (role 1) always act as Finance and HR. There is no Finance or HR role in `AMRole` yet: create them in Access Management, then put their RoleIDs here.
+
+### Notes
+- Deviations from the spec: (1) the migration is in `src/config/migrations` (the repo's runner) instead of `sql/appraisal_001.sql`; (2) Assessor 1 and 2 are taken from the hierarchy resolver (`assessorsOf`, same rules as Quarterly Review) at creation instead of reading `ReportingManagerID` / `ElManagerID` directly, because those columns are empty for many people; (3) responses use the repo's `{ success, response }` shape.
+- Existing data: `Users.AppraisalCycle` already holds APRIL / OCTOBER for 84 people. The spec's joining-anniversary rule does not use it. Confirm with the product owner which one is meant.
+- Assumptions from the spec are built as written and kept in one place each: the split percentages in `VARIABLE_PCT` (`appraisal.calc.ts`), the visibility table in `maskCycle`, ratings 1.0 to 5.0. Choices the spec left open: a user's own cycle is always viewed as the employee, even for an Admin; on Submit the employee must enter expected and target hike, assessors an overall rating and a minimal hike; assessors can edit until the window closes even after submitting; a rejection is hidden again once the offer returns to the assessors (it stays in the audit trail).
+- Checked: 18 unit tests (split, dates, masking per role); an HTTP walk with five real logins covering draft, closed windows, role limits, the 3-month rejection, HR, the return to assessors and Accept (86 checks, all passing); the job run twice on one day; the screens in a browser (light and dark, phone width). Throwaway test users and data were removed afterwards.
+- Not tested: reminder emails (SMTP is not configured locally), saving a row on the Appraisal Setup screen in a browser (it renders; the API behind it was tested), a Finance or HR role other than Admin.
+- Source files use CRLF line endings.
+
+---
+
 ## 2026-10-29 — PMS section, Notifications, Hierarchy and assessors, Daily Activity by level  (commits: 658905c, 40e7a81, a9b0e72, c09d2d0, e70016d, ef2fb89, 2bbdaab)
 
 Summary: a batch of earlier work that was pushed without a changelog entry, written up now so it is not lost. PMS becomes its own sidebar section, admins can send Notifications, the reporting ladder decides who reviews whom, and team members get a reduced Daily Activity form. Merged with the dashboard work above; the Taskly dashboard still shows the production numbers after the merge.

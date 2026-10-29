@@ -54,6 +54,17 @@ mysql -u taskly -ptaskly_local utilization < utilization_dump.sql
 
 > **Tip:** If you don't have prod access yet, ask your team for a sanitised dump (personal data removed). The schema alone is enough to start.
 
+### 2c. Apply the migrations
+
+The production dump is only the base schema. The changes made since (access management, notifications, the Appraisal module and so on) are in `nodejs-backend/src/config/migrations/*.sql`. Apply them once after importing the dump, and again after pulling new ones:
+
+```bash
+cd nodejs-backend
+npm run db:migrate
+```
+
+Appraisal (`006_appraisal.sql`) adds `DateOfJoining`, `EmployeeLevel` and `CurrentAnnualCtc` to `Users` and creates the `Appraisal*` tables. Set each person's joining date in **Appraisal > Appraisal Setup**; a cycle starts on the anniversary.
+
 ---
 
 ## Step 3 — Configure the backend `.env`
@@ -72,6 +83,8 @@ JWT_SECRET=             # paste output of: node -e "console.log(require('crypto'
 ```
 
 Everything else can stay at defaults for local dev.
+
+Appraisal settings (all optional): `APPRAISAL_FINANCE_ROLE_IDS` and `APPRAISAL_HR_ROLE_IDS` are comma separated RoleIDs of the people who act as Finance and HR (Admins always can). `APPRAISAL_JOB_ENABLED=false` switches the daily appraisal job off while developing.
 
 ---
 

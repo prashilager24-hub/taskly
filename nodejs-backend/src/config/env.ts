@@ -40,6 +40,11 @@ const EnvSchema = z.object({
   VAPID_PUBLIC_KEY: z.string().default('BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjZEZqn7mknfnmSEyZdLANP_ipmWU'),
   VAPID_PRIVATE_KEY: z.string().default('UUxI4O8-FbRouAevSmBQ6o18hgE4nSG3qwvJTfKc-ls'),
   VAPID_EMAIL: z.string().email().default('admin@taskly.com'),
+
+  // Appraisal: RoleIDs (comma separated) who act as Finance (Assessor 3) and HR. Admins always can.
+  APPRAISAL_FINANCE_ROLE_IDS: z.string().default(''),
+  APPRAISAL_HR_ROLE_IDS: z.string().default(''),
+  APPRAISAL_JOB_ENABLED: z.string().default('true').transform((v) => v !== 'false' && v !== '0'),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

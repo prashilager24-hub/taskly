@@ -37,6 +37,7 @@ export const CATALOG: ModuleDef[] = [
       { id: 'pms_report', label: 'PMS Report', description: 'The review report tab' },
     ],
   },
+  { id: 'appraisal', label: 'Appraisal', description: 'Yearly appraisal; opens in each person\'s cycle window' },
   { id: 'hrfeedback', label: 'Support', description: 'Queries, onboarding experience and engagement' },
 ];
 

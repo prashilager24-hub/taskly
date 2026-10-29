@@ -17,7 +17,7 @@ export function Stepper({ cycle }: { cycle: CycleInfo }) {
     const steps = [
         { title: "Employee window", sub: `${day(cycle.start)} → ${day(cycle.employeeWindowEnd)}` },
         { title: "Assessor window", sub: `${day(addDaysIso(cycle.start, 15))} → ${day(cycle.assessorWindowEnd)}` },
-        { title: "Finance", sub: "Budget approval" },
+        { title: "Final approval", sub: cycle.level === "HEAD_EL" ? "By Finance" : "By the EL" },
         { title: "Offer", sub: "Sent to the employee" },
         { title: "Decision", sub: cycle.status === "POSTPONED" ? `Postponed to ${day(cycle.postponedUntil)}` : cycle.status === "ACCEPTED" ? "Accepted" : "Accept or reject" },
     ];

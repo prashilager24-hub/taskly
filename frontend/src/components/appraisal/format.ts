@@ -26,7 +26,7 @@ export const addDaysIso = (iso: string, n: number) => {
 };
 
 export const STATUS_LABEL: Record<Status, string> = {
-    EMPLOYEE_OPEN: "Employee window", ASSESSOR_OPEN: "With assessors", FINANCE_REVIEW: "With Finance", OFFERED: "Offer sent", ACCEPTED: "Accepted", POSTPONED: "Postponed",
+    EMPLOYEE_OPEN: "Employee window", ASSESSOR_OPEN: "With assessors", FINANCE_REVIEW: "Final approval", OFFERED: "Offer sent", ACCEPTED: "Accepted", POSTPONED: "Postponed",
 };
 export const STATUS_COLOR: Record<Status, "default" | "primary" | "secondary" | "success" | "warning" | "danger"> = {
     EMPLOYEE_OPEN: "primary", ASSESSOR_OPEN: "secondary", FINANCE_REVIEW: "warning", OFFERED: "warning", ACCEPTED: "success", POSTPONED: "danger",

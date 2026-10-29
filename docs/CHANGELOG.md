@@ -31,6 +31,7 @@ Summary: yearly appraisal flow from the Appraisal Module spec, reworked after th
 - **Review form (FL / EL)**: the FL comments on each requested change and proposes a hike, with the team budget left shown while they type; the EL also approves or rejects each request, then gives the final approval of the hike. Finance gets the same approval for an EL's own hike, or writes a note to that EL.
 - **Budget page** ([Budget.tsx](../frontend/src/components/appraisal/Budget.tsx)), a different view per role: Finance gives each department a yearly budget (search, departments with a budget first) and sees EL hikes waiting; an EL splits their department budget between the FLs; an FL sees only their own share. An Associate sees nothing. The old Budget Approval page is gone.
 - The Associate sees the EL's decision and comment on each request once the offer is out (never the FL's comment).
+- The approval stage is labelled **Final approval** ("By the EL", or "By Finance" for an EL's own cycle) instead of "Finance / Budget approval".
 - The screens draw only the keys the API sent, so a field hidden for a role leaves no empty box.
 
 ### Backend

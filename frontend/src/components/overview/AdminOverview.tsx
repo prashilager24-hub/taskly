@@ -1,204 +1,243 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Building2, Clock, Gauge as GaugeIcon, Search, Users } from "lucide-react";
 import { cn } from "@heroui/theme";
 
 import { Segmented } from "@/components/page";
-import { CountUp, DualGauge, Kpi, LEVEL_STYLE, LevelDonut, Meter, Reveal, levelOf, num, type Level } from "./parts";
+import { CountUp, LEVEL_STYLE, Meter, Reveal, levelOf, num, type Level } from "./parts";
 
 export interface CompanyRaw { target: number; utilization: number; allocated: number; worked: number; goal: number | null; people: number; departments: number }
 
-interface Dept { DepartmentID: number; DepartmentName: string; AvgTargetPercent: string | number; AvgUtilizationPercent: string | number; AvgTotalWork: string | number; TotalUsers: string | number; AvgGoalEfficiency?: string | number }
-interface Leader { ELID?: number; ELName?: string; FLID?: number; FLName?: string; AvgTargetPercent: string | number; AvgUtilizationPercent: string | number; TotalDepts: string | number; AvgGoalEfficiency?: string | number }
-
-type Sort = "target" | "utilization" | "hours";
+interface Dept { DepartmentID: number; DepartmentName: string; AvgTargetPercent: string | number; AvgUtilizationPercent: string | number; AvgTotalWork: string | number; TotalUsers: string | number }
+interface Leader { ELID?: number; ELName?: string; FLID?: number; FLName?: string; AvgTargetPercent: string | number; AvgUtilizationPercent: string | number; TotalDepts: string | number }
 type Scope = "all" | "business" | "support";
 
 const spaced = (name: string) => name.replace(/([a-z])([A-Z])/g, "$1 $2");
 
-/** One department: rank, name, an animated bar for the chosen measure, and the other two numbers */
-function DeptRow({ d, rank, sort, index }: { d: { name: string; users: number; target: number; util: number; hours: number; level: Level }; rank: number; sort: Sort; index: number }) {
+// ── Speedometer: target achieved on a 0–120% dial, red / amber / green zones, animated needle ─────
+const CX = 130, CY = 128, R = 104;
+const polar = (deg: number, r = R) => [CX + r * Math.cos((deg * Math.PI) / 180), CY - r * Math.sin((deg * Math.PI) / 180)] as const;
+const arc = (from: number, to: number, r = R) => {
+    const [x1, y1] = polar(from, r), [x2, y2] = polar(to, r);
+    return `M ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2}`;
+};
+const DIAL_MAX = 120;
+const angleOf = (v: number) => 180 - (Math.min(Math.max(v, 0), DIAL_MAX) / DIAL_MAX) * 180;
+
+function Speedometer({ value }: { value: number }) {
     const reduce = useReducedMotion();
-    const value = sort === "target" ? d.target : sort === "utilization" ? d.util : d.hours;
-    const max = sort === "hours" ? 10 : 120;
-    const pct = Math.max(2, Math.min(100, (value / max) * 100));
+    const rot = 90 - angleOf(value); // needle drawn pointing up, rotated from there
+    const zones: [number, number, string][] = [[0, 80, "#f43f5e"], [80, 100, "#f59e0b"], [100, 120, "#10b981"]];
     return (
-        <li className="group grid grid-cols-[28px_minmax(0,1fr)] items-center gap-x-3 gap-y-1 px-1 py-2.5 transition-colors hover:bg-ink-50 dark:hover:bg-white/[0.03] sm:grid-cols-[28px_minmax(0,220px)_minmax(0,1fr)_auto]">
-            <span className="text-xs font-bold text-ink-400">{rank}</span>
-            <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-ink-900 dark:text-white" title={d.name}>{d.name}</p>
-                <p className="text-[11px] text-ink-500 dark:text-ink-400">{d.users} {d.users === 1 ? "person" : "people"}</p>
+        <div className="relative mx-auto w-full max-w-[280px]">
+            <svg viewBox="0 0 260 150" className="w-full" role="img" aria-label={`Target achieved ${value.toFixed(1)} percent`}>
+                {zones.map(([a, b, c]) => <path key={c} d={arc(angleOf(a), angleOf(b))} fill="none" stroke={c} strokeWidth="14" opacity="0.22" />)}
+                {zones.map(([a, b, c], i) => (
+                    <motion.path key={c + "v"} d={arc(angleOf(a), angleOf(b))} fill="none" stroke={c} strokeWidth="14"
+                        initial={reduce ? false : { pathLength: 0 }}
+                        animate={{ pathLength: value >= b ? 1 : value <= a ? 0 : (value - a) / (b - a) }}
+                        transition={{ duration: 0.9, delay: 0.15 + i * 0.25, ease: "easeOut" }} />
+                ))}
+                {[0, 40, 80, 100, 120].map((t) => {
+                    const [x, y] = polar(angleOf(t), R + 15);
+                    return <text key={t} x={x} y={y} textAnchor="middle" dominantBaseline="middle" className="fill-ink-400 text-[9px] font-semibold">{t}</text>;
+                })}
+                <motion.g initial={reduce ? false : { rotate: -90 }} animate={{ rotate: rot }} transition={{ type: "spring", stiffness: 60, damping: 14, delay: 0.3 }} style={{ transformOrigin: `${CX}px ${CY}px` }}>
+                    <polygon points={`${CX - 4},${CY} ${CX + 4},${CY} ${CX},${CY - 84}`} className="fill-ink-900 dark:fill-white" />
+                </motion.g>
+                <circle cx={CX} cy={CY} r="9" className="fill-ink-900 dark:fill-white" />
+                <circle cx={CX} cy={CY} r="3.5" className="fill-white dark:fill-ink-900" />
+            </svg>
+            <div className="-mt-1 text-center">
+                <CountUp value={value} decimals={1} suffix="%" className="text-[34px] font-bold leading-none tracking-tight text-ink-900 dark:text-white" />
+                <p className="eyebrow mt-1.5">Target achieved</p>
             </div>
-            <div className="col-start-2 sm:col-start-auto">
-                <div className="relative h-3 bg-ink-100 dark:bg-white/10">
-                    <motion.div
-                        className={cn("h-full", LEVEL_STYLE[d.level].bar)}
-                        initial={reduce ? false : { width: 0 }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{ duration: 0.8, delay: Math.min(index, 12) * 0.04, ease: [0.16, 1, 0.3, 1] }}
-                    />
-                    {sort !== "hours" && <span className="absolute inset-y-[-3px] w-px bg-ink-900/40 dark:bg-white/50" style={{ left: `${(100 / max) * 100}%` }} aria-hidden title="100% line" />}
+        </div>
+    );
+}
+
+/** A bar with a marker for where it should be, e.g. utilization against 100% */
+function Bullet({ label, value, max, marker, display, tone = "bg-brand-600", delay = 0 }: { label: string; value: number; max: number; marker?: number; display: string; tone?: string; delay?: number }) {
+    return (
+        <div>
+            <div className="mb-1 flex items-baseline justify-between text-xs">
+                <span className="text-ink-500 dark:text-ink-400">{label}</span>
+                <span className="font-bold text-ink-900 dark:text-white">{display}</span>
+            </div>
+            <div className="relative">
+                <Meter value={value} max={max} barClassName={tone} delay={delay} className="h-2" />
+                {marker !== undefined && <span className="absolute -top-0.5 h-3 w-0.5 bg-ink-900 dark:bg-white" style={{ left: `${Math.min(100, (marker / max) * 100)}%` }} aria-hidden />}
+            </div>
+        </div>
+    );
+}
+
+// ── Department map: every department as a bubble, utilization across, target up, size = people ────
+interface Bubble { id: number; name: string; users: number; target: number; util: number; hours: number; level: Level }
+
+function DeptMap({ items, hover, onHover }: { items: Bubble[]; hover: number | null; onHover: (id: number | null) => void }) {
+    const reduce = useReducedMotion();
+    const box = useRef<HTMLDivElement>(null);
+    const [size, setSize] = useState({ w: 640, h: 400 });
+    useEffect(() => {
+        const el = box.current;
+        if (!el) return;
+        const ro = new ResizeObserver(([e]) => { const r = e!.contentRect; if (r.width > 50 && r.height > 50) setSize({ w: Math.round(r.width), h: Math.round(r.height) }); });
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
+    const W = size.w, H = size.h, L = 46, B = 38, T = 12, Rr = 16;
+    const yMax = Math.max(120, Math.ceil((Math.max(...items.map((i) => i.target), 0) + 10) / 20) * 20);
+    const xMax = 110;
+    const x = (v: number) => L + (Math.min(v, xMax) / xMax) * (W - L - Rr);
+    const y = (v: number) => H - B - (Math.min(v, yMax) / yMax) * (H - B - T);
+    const active = items.find((i) => i.id === hover) ?? null;
+    return (
+        <div ref={box} className="relative h-full min-h-0 w-full">
+            <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="absolute inset-0" role="img" aria-label="Departments by utilization and target achieved" onMouseLeave={() => onHover(null)}>
+                {/* zones */}
+                <rect x={x(80)} y={y(yMax)} width={x(xMax) - x(80)} height={y(100) - y(yMax)} className="fill-emerald-500/[0.07]" />
+                <rect x={L} y={y(80)} width={x(xMax) - L} height={y(0) - y(80)} className="fill-rose-500/[0.05]" />
+                {Array.from({ length: Math.floor(yMax / 20) + 1 }, (_, i) => i * 20).map((t) => (
+                    <g key={t}>
+                        <line x1={L} x2={W - Rr} y1={y(t)} y2={y(t)} className={t === 100 || t === 80 ? "stroke-ink-300 dark:stroke-white/25" : "stroke-ink-100 dark:stroke-white/10"} strokeDasharray={t === 100 || t === 80 ? "4 4" : undefined} />
+                        <text x={L - 8} y={y(t)} textAnchor="end" dominantBaseline="middle" className="fill-ink-500 text-[11px] dark:fill-ink-400">{t}%</text>
+                    </g>
+                ))}
+                {[0, 20, 40, 60, 80, 100].map((t) => <text key={t} x={x(t)} y={H - B + 16} textAnchor="middle" className="fill-ink-500 text-[11px] dark:fill-ink-400">{t}%</text>)}
+                <text x={(L + W) / 2} y={H - 3} textAnchor="middle" className="fill-ink-500 text-[10px] font-bold uppercase tracking-widest">Utilization</text>
+                <text transform={`translate(11 ${(T + H - B) / 2}) rotate(-90)`} textAnchor="middle" className="fill-ink-500 text-[10px] font-semibold uppercase tracking-widest">Target achieved</text>
+                {items.map((d, i) => {
+                    const r = Math.min(8 + Math.sqrt(d.users) * 3.2, 24);
+                    const on = hover === d.id;
+                    return (
+                        <motion.circle key={d.id} cx={x(d.util)} cy={y(d.target)} fill={LEVEL_STYLE[d.level].hex}
+                            fillOpacity={hover === null || on ? 0.78 : 0.22} stroke={LEVEL_STYLE[d.level].hex} strokeWidth={on ? 3 : 1.5}
+                            initial={reduce ? false : { r: 0 }} animate={{ r: on ? r + 3 : r }}
+                            transition={{ type: "spring", stiffness: 180, damping: 16, delay: on ? 0 : Math.min(i, 30) * 0.025 }}
+                            onMouseEnter={() => onHover(d.id)} onFocus={() => onHover(d.id)} tabIndex={0} aria-label={`${d.name}: target ${d.target.toFixed(0)}%, utilization ${d.util.toFixed(0)}%`}
+                            style={{ cursor: "pointer", outline: "none" }} />
+                    );
+                })}
+            </svg>
+            {active && (
+                <div className="pointer-events-none absolute z-10 min-w-[170px] border border-ink-200 bg-white px-3 py-2 shadow-pop dark:border-white/15 dark:bg-ink-900"
+                    style={{ left: Math.min(Math.max(x(active.util) - 85, 4), W - 180), top: Math.max(y(active.target) - 86, 4) }}>
+                    <p className="text-xs font-bold text-ink-900 dark:text-white">{active.name}</p>
+                    <p className="mt-0.5 text-[11px] text-ink-500 dark:text-ink-400">{active.users} {active.users === 1 ? "person" : "people"} · {active.hours.toFixed(1)}h / day</p>
+                    <p className="mt-1 text-[11px]"><span className={cn("font-bold", LEVEL_STYLE[active.level].text)}>{active.level}</span> · Target {active.target.toFixed(1)}% · Util {active.util.toFixed(1)}%</p>
                 </div>
+            )}
+        </div>
+    );
+}
+
+type Side = "top" | "attention" | "leaders";
+
+/** One compact ranked row: name, a small bar, the number */
+function RankRow({ name, sub, value, level, active, onEnter, index }: { name: string; sub: string; value: number; level: Level; active?: boolean; onEnter?: () => void; index: number }) {
+    return (
+        <li onMouseEnter={onEnter} className={cn("grid grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-x-2.5 px-3 py-2 transition-colors", active ? "bg-ink-50 dark:bg-white/5" : "hover:bg-ink-50/70 dark:hover:bg-white/[0.03]")}>
+            <span className="text-[11px] font-bold text-ink-400">{index + 1}</span>
+            <div className="min-w-0">
+                <p className="truncate text-[13px] font-semibold text-ink-900 dark:text-white" title={name}>{name}</p>
+                <div className="mt-1 flex items-center gap-2">
+                    <Meter value={value} max={120} barClassName={LEVEL_STYLE[level].bar} className="h-1" delay={0.1 + index * 0.04} />
+                </div>
+                <p className="mt-0.5 truncate text-[10.5px] text-ink-500 dark:text-ink-400">{sub}</p>
             </div>
-            <div className="col-start-2 flex items-baseline gap-4 text-right sm:col-start-auto sm:min-w-[210px] sm:justify-end">
-                <span className="w-16 text-sm font-bold text-ink-900 dark:text-white">{sort === "hours" ? `${value.toFixed(1)}h` : `${value.toFixed(1)}%`}</span>
-                <span className="hidden text-[11px] text-ink-500 dark:text-ink-400 sm:inline">{sort === "target" ? `Util ${d.util.toFixed(0)}%` : `Target ${d.target.toFixed(0)}%`} · {d.hours.toFixed(1)}h</span>
-                <span className={cn("hidden w-14 text-[10px] font-bold uppercase tracking-wide sm:inline", LEVEL_STYLE[d.level].text)}>{d.level}</span>
-            </div>
+            <span className={cn("text-sm font-bold", LEVEL_STYLE[level].text)}>{value.toFixed(0)}%</span>
         </li>
     );
 }
 
-function LeaderCard({ name, depts, target, util, goal, index }: { name: string; depts: number; target: number; util: number; goal: number | null; index: number }) {
-    const level = levelOf(target);
-    return (
-        <Reveal index={index} className="border border-ink-200 bg-white p-4 transition-colors hover:border-brand-500 dark:border-white/10 dark:bg-ink-900 dark:hover:border-brand-500/60">
-            <div className="flex items-start justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center bg-ink-900 text-[11px] font-bold text-white dark:bg-white/10">{name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}</span>
-                    <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-ink-900 dark:text-white" title={name}>{name}</p>
-                        <p className="text-[11px] text-ink-500 dark:text-ink-400">{depts} {depts === 1 ? "department" : "departments"}</p>
-                    </div>
-                </div>
-                <span className={cn("shrink-0 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide", LEVEL_STYLE[level].soft, LEVEL_STYLE[level].text)}>{level}</span>
-            </div>
-            <dl className="mt-4 space-y-2.5">
-                {([["Target", target, LEVEL_STYLE[level].bar], ["Utilization", util, "bg-ink-900 dark:bg-white"]] as [string, number, string][]).map(([k, v, c], i) => (
-                    <div key={k}>
-                        <div className="flex justify-between text-xs"><dt className="text-ink-500 dark:text-ink-400">{k}</dt><dd className="font-bold text-ink-900 dark:text-white"><CountUp value={v} decimals={1} suffix="%" /></dd></div>
-                        <Meter value={v} max={120} barClassName={c} delay={0.15 + index * 0.05 + i * 0.1} className="mt-1" />
-                    </div>
-                ))}
-                {goal !== null && <div className="flex justify-between border-t border-ink-100 pt-2 text-xs dark:border-white/10"><dt className="text-ink-500 dark:text-ink-400">Goal efficiency</dt><dd className="font-bold text-ink-900 dark:text-white">{goal.toFixed(1)}%</dd></div>}
-            </dl>
-        </Reveal>
-    );
-}
+const RULE = "border-l-4 border-amber-400 bg-amber-50 px-2.5 py-1.5 text-[11px] leading-snug text-ink-800 dark:border-amber-500 dark:bg-amber-500/10 dark:text-ink-100";
 
-// The company view for Super Admin: how the company is doing, which departments carry it, who leads them.
-export default function AdminOverview({ company, departments, executiveLeaders, functionalLeaders, scope, onScope, loading, rules, onWiden }: {
+// The company view for Super Admin, built to fit one screen: pulse (left), department map (middle), ranked lists and the rules (right).
+export default function AdminOverview({ company, departments, executiveLeaders, functionalLeaders, scope, onScope, loading, onWiden }: {
     company: CompanyRaw | null; departments: Dept[]; executiveLeaders: Leader[]; functionalLeaders: Leader[];
-    scope: Scope; onScope: (s: Scope) => void; loading: boolean; rules: ReactNode; onWiden: () => void;
+    scope: Scope; onScope: (s: Scope) => void; loading: boolean; rules?: ReactNode; onWiden: () => void;
 }) {
-    const [sort, setSort] = useState<Sort>("target");
-    const [level, setLevel] = useState<Level | "All">("All");
-    const [query, setQuery] = useState("");
-    const [all, setAll] = useState(false);
-    const [leaders, setLeaders] = useState<"el" | "fl">("el");
+    const [hover, setHover] = useState<number | null>(null);
+    const [side, setSide] = useState<Side>("top");
 
-    const rows = useMemo(() => departments.map((d) => {
+    const items: Bubble[] = useMemo(() => departments.map((d) => {
         const target = num(d.AvgTargetPercent);
         return { id: d.DepartmentID, name: spaced(d.DepartmentName), users: num(d.TotalUsers), target, util: num(d.AvgUtilizationPercent), hours: num(d.AvgTotalWork), level: levelOf(target) };
     }), [departments]);
 
-    const counts = useMemo(() => rows.reduce((c, r) => ({ ...c, [r.level]: c[r.level] + 1 }), { High: 0, "At Par": 0, Low: 0 } as Record<Level, number>), [rows]);
-
-    const sorted = useMemo(() => {
-        const q = query.trim().toLowerCase();
-        const key = sort === "target" ? "target" : sort === "utilization" ? "util" : "hours";
-        return rows.filter((r) => (level === "All" || r.level === level) && (!q || r.name.toLowerCase().includes(q))).sort((a, b) => b[key] - a[key]);
-    }, [rows, sort, level, query]);
-    const visible = all || query || level !== "All" ? sorted : sorted.slice(0, 10);
-
-    const list = leaders === "el" ? executiveLeaders : functionalLeaders;
-    const leaderRows = list.map((l) => ({
-        key: String(leaders === "el" ? l.ELID : l.FLID), name: (leaders === "el" ? l.ELName : l.FLName) ?? "Unknown",
-        depts: num(l.TotalDepts), target: num(l.AvgTargetPercent), util: num(l.AvgUtilizationPercent),
-        goal: l.AvgGoalEfficiency !== undefined && num(l.AvgGoalEfficiency) > 0 ? num(l.AvgGoalEfficiency) : null,
-    })).sort((a, b) => b.target - a.target);
+    const counts = useMemo(() => items.reduce((c, r) => ({ ...c, [r.level]: c[r.level] + 1 }), { High: 0, "At Par": 0, Low: 0 } as Record<Level, number>), [items]);
+    const top = useMemo(() => [...items].sort((a, b) => b.target - a.target).slice(0, 12), [items]);
+    const attention = useMemo(() => [...items].sort((a, b) => a.target - b.target).slice(0, 12), [items]);
+    const leaders = useMemo(() => [...executiveLeaders].map((l) => ({ id: num(l.ELID), name: l.ELName ?? "Unknown", target: num(l.AvgTargetPercent), util: num(l.AvgUtilizationPercent), depts: num(l.TotalDepts) })).sort((a, b) => b.target - a.target), [executiveLeaders]);
+    void functionalLeaders;
 
     const c = company;
-    const companyLevel = c ? levelOf(c.target) : "Low";
+    const empty = !loading && c && c.people === 0;
 
     return (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-3 lg:h-[calc(100vh-300px)] lg:min-h-[520px]">
             <div className="flex flex-wrap items-center justify-between gap-3">
-                <Segmented label="Departments shown" value={scope} onChange={onScope}
+                <Segmented size="sm" label="Departments shown" value={scope} onChange={onScope}
                     options={[{ key: "all", label: "Whole company" }, { key: "business", label: "Business" }, { key: "support", label: "Support functions" }]} />
-                {loading && <span className="eyebrow animate-pulse">Updating…</span>}
+                <div className="flex items-center gap-4 text-[11px] text-ink-500 dark:text-ink-400">
+                    {loading && <span className="eyebrow animate-pulse">Updating…</span>}
+                    {(["High", "At Par", "Low"] as Level[]).map((l) => <span key={l} className="flex items-center gap-1.5"><span className={cn("h-2 w-2", LEVEL_STYLE[l].bar)} aria-hidden />{l} <b className="text-ink-900 dark:text-white">{counts[l]}</b></span>)}
+                </div>
             </div>
 
-            {!loading && c && c.people === 0 && (
-                <Reveal className="flex flex-wrap items-center justify-between gap-4 border border-dashed border-ink-300 bg-white p-6 dark:border-white/20 dark:bg-ink-900">
+            {empty ? (
+                <Reveal className="flex flex-1 flex-wrap items-center justify-between gap-4 border border-dashed border-ink-300 bg-white p-8 dark:border-white/20 dark:bg-ink-900">
                     <div>
                         <p className="text-sm font-bold text-ink-900 dark:text-white">No logged work in this date range</p>
                         <p className="mt-1 text-xs text-ink-500 dark:text-ink-400">Nobody has submitted entries between these dates. Pick another range above, or look at the last 90 days.</p>
                     </div>
                     <button type="button" onClick={onWiden} className="h-9 bg-brand-600 px-4 text-xs font-bold uppercase tracking-wide text-white transition-colors hover:bg-brand-700 focus-ring">Show last 90 days</button>
                 </Reveal>
-            )}
-
-            {/* Company pulse */}
-            <div className="grid grid-cols-1 items-stretch gap-6 xl:grid-cols-[minmax(320px,400px)_minmax(0,1fr)]">
-                <Reveal className="border border-ink-200 bg-white p-6 dark:border-white/10 dark:bg-ink-900">
-                    <div className="mb-4 flex items-center justify-between">
-                        <h2 className="text-sm font-bold uppercase tracking-wide text-ink-900 dark:text-white">Company pulse</h2>
-                        {c && <span className={cn("px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide", LEVEL_STYLE[companyLevel].soft, LEVEL_STYLE[companyLevel].text)}>{companyLevel}</span>}
-                    </div>
-                    <DualGauge outer={c?.target ?? 0} inner={c?.utilization ?? 0} outerLabel="Target achieved" innerLabel="Utilization" />
-                </Reveal>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <Kpi index={1} label="Utilization" value={c ? c.utilization : null} decimals={1} suffix="%" hint="Time worked against standard time" meter={c ? { value: c.utilization, max: 100 } : undefined} icon={<GaugeIcon size={16} />} />
-                    <Kpi index={2} label="Allocated hours / day" value={c ? c.allocated : null} decimals={2} suffix="h" hint="Average per person, per working day" meter={c ? { value: c.allocated, max: 8 } : undefined} icon={<Clock size={16} />} />
-                    <Kpi index={3} label="Worked hours / day" value={c ? c.worked : null} decimals={2} suffix="h" hint={c ? (c.worked <= c.allocated ? "Within allocated time" : "Above allocated time") : undefined} meter={c ? { value: c.worked, max: Math.max(c.allocated, c.worked, 1) } : undefined} icon={<Clock size={16} />} />
-                    <Kpi index={4} label="People reporting" value={c ? c.people : null} hint={c ? <><CountUp value={c.departments} /> departments with logged work</> : undefined} icon={<Users size={16} />} />
-                </div>
-            </div>
-
-            {/* Departments */}
-            <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
-                <Reveal index={3} className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900">
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-200 px-5 py-4 dark:border-white/10">
-                        <div>
-                            <h2 className="text-sm font-bold uppercase tracking-wide text-ink-900 dark:text-white">Departments</h2>
-                            <p className="mt-0.5 text-xs text-ink-500 dark:text-ink-400">{sorted.length} of {rows.length} shown, ranked by {sort === "target" ? "target achieved" : sort === "utilization" ? "utilization" : "hours worked"}</p>
+            ) : (
+                <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[290px_minmax(0,1fr)_330px]">
+                    {/* Pulse */}
+                    <Reveal className="flex min-h-0 flex-col justify-between gap-4 border border-ink-200 bg-white p-5 dark:border-white/10 dark:bg-ink-900">
+                        <h2 className="text-xs font-bold uppercase tracking-wide text-ink-900 dark:text-white">Company pulse</h2>
+                        <Speedometer value={c?.target ?? 0} />
+                        <div className="space-y-3">
+                            <Bullet label="Utilization" value={c?.utilization ?? 0} max={120} marker={100} display={`${(c?.utilization ?? 0).toFixed(1)}%`} tone="bg-ink-900 dark:bg-white" delay={0.3} />
+                            <Bullet label="Allocated hours / day" value={c?.allocated ?? 0} max={10} marker={8} display={`${(c?.allocated ?? 0).toFixed(2)}h`} delay={0.4} />
+                            <Bullet label="Worked hours / day" value={c?.worked ?? 0} max={10} marker={c?.allocated ?? 8} display={`${(c?.worked ?? 0).toFixed(2)}h`} tone={c && c.worked > c.allocated ? "bg-rose-500" : "bg-emerald-500"} delay={0.5} />
                         </div>
-                        <Segmented size="sm" label="Rank by" value={sort} onChange={setSort} options={[{ key: "target", label: "Target" }, { key: "utilization", label: "Utilization" }, { key: "hours", label: "Hours" }]} />
-                    </div>
-                    <div className="border-b border-ink-100 px-5 py-3 dark:border-white/5">
-                        <label className="relative block">
-                            <span className="sr-only">Find a department</span>
-                            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
-                            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find a department"
-                                className="h-9 w-full border border-ink-200 bg-transparent pl-9 pr-3 text-sm text-ink-900 outline-none transition-colors placeholder:text-ink-400 focus:border-brand-500 dark:border-white/10 dark:text-white" />
-                        </label>
-                    </div>
-                    <ul className="divide-y divide-ink-100 px-4 dark:divide-white/5">
-                        {visible.map((r, i) => <DeptRow key={`${sort}-${r.id}`} d={r} rank={sorted.indexOf(r) + 1} sort={sort} index={i} />)}
-                        {!visible.length && <li className="py-12 text-center text-sm text-ink-500">{loading ? "Loading…" : "No departments match."}</li>}
-                    </ul>
-                    {sorted.length > 10 && !query && level === "All" && (
-                        <button type="button" onClick={() => setAll((v) => !v)} className="w-full border-t border-ink-100 py-3 text-xs font-bold uppercase tracking-wide text-brand-600 transition-colors hover:bg-ink-50 focus-ring dark:border-white/5 dark:hover:bg-white/5">
-                            {all ? "Show top 10" : `Show all ${sorted.length}`}
-                        </button>
-                    )}
-                </Reveal>
+                        <dl className="grid grid-cols-2 gap-px border border-ink-200 bg-ink-200 dark:border-white/10 dark:bg-white/10">
+                            <div className="bg-white px-3 py-2 dark:bg-ink-900"><dt className="eyebrow">People</dt><dd className="text-lg font-bold text-ink-900 dark:text-white"><CountUp value={c?.people ?? 0} /></dd></div>
+                            <div className="bg-white px-3 py-2 dark:bg-ink-900"><dt className="eyebrow">Departments</dt><dd className="text-lg font-bold text-ink-900 dark:text-white"><CountUp value={c?.departments ?? 0} /></dd></div>
+                        </dl>
+                    </Reveal>
 
-                <Reveal index={4} className="border border-ink-200 bg-white p-5 dark:border-white/10 dark:bg-ink-900">
-                    <h2 className="mb-1 text-sm font-bold uppercase tracking-wide text-ink-900 dark:text-white">Efficiency mix</h2>
-                    <p className="mb-5 text-xs text-ink-500 dark:text-ink-400">Pick a level to filter the list.</p>
-                    <LevelDonut counts={counts} active={level} onPick={setLevel} />
-                    <p className="mt-4 flex items-center gap-2 text-[11px] text-ink-500 dark:text-ink-400"><Building2 size={12} /> High 100%+, At Par 80%+ of target</p>
-                </Reveal>
-            </div>
+                    {/* Map */}
+                    <Reveal index={1} className="flex min-h-[360px] min-w-0 flex-col border border-ink-200 bg-white p-5 dark:border-white/10 dark:bg-ink-900">
+                        <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+                            <h2 className="text-xs font-bold uppercase tracking-wide text-ink-900 dark:text-white">Department map</h2>
+                            <p className="text-[11px] text-ink-500 dark:text-ink-400">Each bubble is a department. Bigger means more people. Top-right is best.</p>
+                        </div>
+                        <div className="relative min-h-[300px] flex-1"><DeptMap items={items} hover={hover} onHover={setHover} /></div>
+                    </Reveal>
 
-            {/* Leaders */}
-            {(executiveLeaders.length > 0 || functionalLeaders.length > 0) && (
-                <section>
-                    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                        <h2 className="text-sm font-bold uppercase tracking-wide text-ink-900 dark:text-white">Leaders</h2>
-                        <Segmented size="sm" label="Leader type" value={leaders} onChange={setLeaders} options={[{ key: "el", label: `Executive (${executiveLeaders.length})` }, { key: "fl", label: `Functional (${functionalLeaders.length})` }]} />
-                    </div>
-                    <div key={leaders} className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                        {leaderRows.map((l, i) => <LeaderCard key={l.key} index={Math.min(i, 8)} name={l.name} depts={l.depts} target={l.target} util={l.util} goal={l.goal} />)}
-                        {!leaderRows.length && <p className="col-span-full border border-dashed border-ink-200 py-10 text-center text-sm text-ink-500 dark:border-white/10">No leaders to show for this selection.</p>}
-                    </div>
-                </section>
+                    {/* Ranked lists + rules */}
+                    <Reveal index={2} className="flex min-h-0 flex-col border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900">
+                        <div className="border-b border-ink-200 p-3 dark:border-white/10">
+                            <Segmented size="sm" label="Ranking" value={side} onChange={setSide} options={[{ key: "top", label: "Top" }, { key: "attention", label: "Needs help" }, { key: "leaders", label: "Leaders" }]} />
+                        </div>
+                        <ul key={side} className="min-h-[170px] flex-1 divide-y divide-ink-100 overflow-y-auto dark:divide-white/5">
+                            {side === "leaders"
+                                ? leaders.map((l, i) => <RankRow key={l.id} index={i} name={l.name} sub={`${l.depts} ${l.depts === 1 ? "department" : "departments"} · util ${l.util.toFixed(0)}%`} value={l.target} level={levelOf(l.target)} />)
+                                : (side === "top" ? top : attention).map((d, i) => <RankRow key={d.id} index={i} name={d.name} sub={`${d.users} ${d.users === 1 ? "person" : "people"} · util ${d.util.toFixed(0)}% · ${d.hours.toFixed(1)}h`} value={d.target} level={d.level} active={hover === d.id} onEnter={() => setHover(d.id)} />)}
+                        </ul>
+                        <section className="space-y-1 border-t border-ink-200 p-2.5 dark:border-white/10">
+                            <h2 className="text-[11px] font-bold uppercase tracking-wide text-ink-900 dark:text-white">Efficiency &amp; Utilization Rules</h2>
+                            <div className={RULE}><b>Note:</b> Regular workday = 8 hours. Half day leave = 4 hours.</div>
+                            <div className={RULE}><b>Efficiency:</b> <span className="font-semibold text-emerald-600">High</span> target ≥ 100%, goal ≥ 80%, time ≤ allocated · <span className="font-semibold text-amber-600">At Par</span> target ≥ 80%, goal ≥ 50%, time ≤ allocated · <span className="font-semibold text-rose-600">Low</span> otherwise</div>
+                            <div className={RULE}><b>Utilization:</b> Time taken / standard time × 100 (capped at 100% when efficiency is Low)</div>
+                        </section>
+                    </Reveal>
+                </div>
             )}
-
-            {rules}
         </div>
     );
 }

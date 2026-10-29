@@ -7,6 +7,7 @@ import {
   Briefcase,
   Building2,
   CheckCircle2,
+  ClipboardCheck,
   ChevronDown,
   ClipboardList,
   FileText,
@@ -46,8 +47,29 @@ interface MenuItem {
 }
 
 export const MENU: MenuItem[] = [
-  { icon: LayoutDashboard, label: "Taskly", href: "dashboard", module: "dashboard" },
-  { icon: TrendingUp, label: "PMS", href: "pms", module: "pms" },
+  {
+    icon: LayoutDashboard,
+    label: "Dashboard",
+    href: "dashboard-group",
+    module: "dashboard",
+    children: [
+      { icon: LayoutDashboard, label: "Taskly", href: "dashboard", module: "dashboard" },
+      { icon: TrendingUp, label: "PMS", href: "pms/dashboard", module: "pms_dashboard" },
+    ],
+  },
+  {
+    icon: ClipboardCheck,
+    label: "PMS",
+    href: "pms",
+    module: "pms",
+    children: [
+      { icon: LayoutDashboard, label: "Dashboard", href: "pms/dashboard", module: "pms_dashboard" },
+      { icon: Goal, label: "Goal Setting", href: "pms/goal-setting", module: "pms_goals" },
+      { icon: MessageSquareText, label: "Manager Feedback", href: "pms/manager-feedback", module: "pms_feedback" },
+      { icon: ClipboardList, label: "Quarterly Review", href: "pms/quarterly-review", module: "pms_quarterly" },
+      { icon: FileText, label: "Report", href: "pms/report", module: "pms_report" },
+    ],
+  },
   { icon: ClipboardList, label: "Daily Activity", href: "daily-activity", module: "dataentry" },
   {
     icon: BarChart3,
@@ -154,7 +176,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, current
   // The group holding the current page starts open
   const [expanded, setExpanded] = useState<string | null>(null);
   useEffect(() => {
-    const group = MENU.find((item) => item.children?.some((c) => isActive(c.href)));
+    // A page can be listed in two groups (PMS dashboard): keep the group the person opened it from
+    const owner = MENU.find((item) => item.label === expanded && item.children?.some((c) => isActive(c.href)));
+    const group = owner ?? MENU.find((item) => item.children?.some((c) => isActive(c.href)));
     if (group) setExpanded(group.label);
   }, [currentPage]);
 
@@ -198,7 +222,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, current
           <p className="mb-2 px-3 font-secondary text-[10px] font-medium uppercase tracking-eyebrow text-ink-500">Menu</p>
           <ul className="space-y-0.5">
             {menu.map((item) => {
-              const groupActive = item.children?.some((c) => isActive(c.href)) ?? false;
+              const groupActive = (item.children?.some((c) => isActive(c.href)) ?? false) && (expanded === null || expanded === item.label || !menu.some((m) => m.label === expanded && m.children?.some((c) => isActive(c.href))));
               const open = expanded === item.label;
 
               if (!item.children) {
@@ -229,10 +253,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, current
                       <li className="ml-[22px] mt-0.5 border-l border-white/10 pb-1">
                         <ul>
                           {item.children.map((child) => {
-                            const on = isActive(child.href);
+                            const on = isActive(child.href) && open;
                             return (
                               <li key={child.label}>
-                                <Link to={`/${child.href}`} onClick={() => { if (isOpen) toggleSidebar(); }} tabIndex={open ? 0 : -1}
+                                <Link to={`/${child.href}`} onClick={() => { setExpanded(item.label); if (isOpen) toggleSidebar(); }} tabIndex={open ? 0 : -1}
                                   aria-current={on ? "page" : undefined}
                                   className={`relative -ml-px flex items-center border-l py-2 pl-4 pr-2 text-[12.5px] transition-colors focus-ring ${
                                     on ? "border-brand-600 font-medium text-white" : "border-transparent text-ink-400 hover:border-white/30 hover:text-white"

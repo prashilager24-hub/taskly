@@ -628,11 +628,11 @@ function SummaryCard({
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
+// The report is only the review status: who has been reviewed and who is still waiting, with export.
+// Review details live on the PMS dashboard, so they are not repeated here.
 export default function PmsReport({ isReport = false }) {
     const [reviews, setReviews] = useState([]);
     const [monthly, setMonthly] = useState(false);
-
-    // Existing DashboardFilters values
     const [reportFilters, setReportFilters] = useState({
         departmentID: "",
         userID: "",
@@ -640,99 +640,37 @@ export default function PmsReport({ isReport = false }) {
         year: "ALL",
         month: "",
     });
+    const user = JSON.parse(localStorage.getItem("authUserLD") || "null");
 
-    const totalEmployees = reviews.length;
-
-    const avgEfficiency =
-        reviews.length > 0
-            ? (reviews.reduce((a, b) => a + Number(b.efficiencyPercent || 0), 0) / reviews.length).toFixed(1)
-            : 0;
-
-    const avgUtilization =
-        reviews.length > 0
-            ? (reviews.reduce((a, b) => a + Number(b.utilizationPercent || 0), 0) / reviews.length).toFixed(1)
-            : 0;
-
-    const avgTarget =
-        reviews.length > 0
-            ? (reviews.reduce((a, b) => a + Number(b.targetPercent || 0), 0) / reviews.length).toFixed(1)
-            : 0;
-    const avgGoal =
-        reviews.length > 0
-            ? (reviews.reduce((a, b) => a + Number(b.goalAchievement || 0), 0) / reviews.length).toFixed(1)
-            : 0;
-    const user = JSON.parse(localStorage.getItem("authUserLD"));
     return (
-        <div className="pt-6">
-            {/* Header */}
-            <div className="mb-8">
-                <ReviewStatus
-                    token={user?.token}
-                    filterType={monthly ? "monthly" : "quarterly"}
-                    departmentID={reportFilters.departmentID}
-                    userID={reportFilters.userID}
-                    year={reportFilters.year}
-                    month={reportFilters.month}
-                    quarter={reportFilters.quarter}
-                />
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
-                    <h2 className="text-lg font-bold uppercase tracking-wide text-ink-900 dark:text-white">Review reports</h2>
-                    <Segmented
-                        label="Review type"
-                        value={monthly ? "manager" : "employee"}
-                        onChange={(v) => setMonthly(v === "manager")}
-                        options={[{ key: "employee", label: "Quarterly reviews" }, { key: "manager", label: "Manager feedback" }]}
-                    />
-                </div>
-
-                <DashboardFilters
-                    reviews={reviews}
-                    setReviews={setReviews}
-                    monthly={monthly}
-                    isReport={isReport}
-                    onFiltersChange={setReportFilters}
+        <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <Segmented
+                    size="sm"
+                    label="Review type"
+                    value={monthly ? "manager" : "employee"}
+                    onChange={(v) => setMonthly(v === "manager")}
+                    options={[{ key: "employee", label: "Quarterly reviews" }, { key: "manager", label: "Manager feedback" }]}
                 />
             </div>
 
+            <DashboardFilters
+                reviews={reviews}
+                setReviews={setReviews}
+                monthly={monthly}
+                isReport={isReport}
+                onFiltersChange={setReportFilters}
+            />
 
-            {/* Summary */}
-            {/* <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-                <SummaryCard title="No of Reviews" value={totalEmployees} icon={<Users size={18} />} />
-                <SummaryCard title="Efficiency" value={`${avgEfficiency}%`} icon={<TrendingUp size={18} />} />
-                <SummaryCard title="Utilization" value={`${avgUtilization}%`} icon={<Gauge size={18} />} />
-                <SummaryCard title="Target" value={`${avgTarget}%`} icon={<Target size={18} />} />
-                <SummaryCard title="Goal" value={`${avgGoal}%`} icon={<Target size={18} />} />
-            </div> */}
-
-            {/* Empty */}
-            {reviews.length === 0 && (
-                <Card className="border border-default-200">
-                    <CardBody className="py-20 flex items-center justify-center">
-                        <div className="text-center">
-                            <h2 className="text-xl font-semibold">No Reviews</h2>
-                            <p className="text-default-500 mt-2">
-                                Select department, user, quarter and year
-                            </p>
-                        </div>
-                    </CardBody>
-                </Card>
-            )}
-
-            {/* ── Card Grid ── */}
-            <div className="grid grid-cols-1 xl:grid-cols-[1fr_288px] gap-5 items-start">
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {reviews.map((review) => (
-                        <ReviewCard key={review.id} review={review} />
-                    ))}
-                </div>
-                {reviews.length > 0 && <div className="xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto"><LivePreviewSummary reviews={reviews} /></div>}
-
-            </div>
-
-
-
+            <ReviewStatus
+                token={user?.token}
+                filterType={monthly ? "monthly" : "quarterly"}
+                departmentID={reportFilters.departmentID}
+                userID={reportFilters.userID}
+                year={reportFilters.year}
+                month={reportFilters.month}
+                quarter={reportFilters.quarter}
+            />
         </div>
-
     );
 }

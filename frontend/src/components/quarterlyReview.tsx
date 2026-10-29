@@ -1977,7 +1977,7 @@ export default function QuarterlyReview() {
     //     Number(form.target || 0)
     // );
     return (
-        <div className="pt-6 font-sans">
+        <div className="font-sans">
             <Modal
                 isOpen={isWeightOpen}
                 onOpenChange={onWeightOpenChange}
@@ -2257,20 +2257,6 @@ export default function QuarterlyReview() {
                     )}
                 </ModalContent>
             </Modal>
-            {/* ── Header ── */}
-            <div className="mx-auto mb-7 flex items-center justify-between flex-wrap gap-3">
-                <div className="flex items-center gap-3">
-                    <div>
-                        <h2 className="text-lg font-bold uppercase tracking-wide text-ink-900 dark:text-white">Quarterly Review</h2>
-                        <p className="text-[11px] mt-0.5">Manager · Consolidated Quarterly Assessment &amp; Performance Metrics</p>
-                    </div>
-                </div>
-                <div className="flex gap-2">
-                    <Chip color="primary" variant="flat" size="sm" className="font-semibold">2025–26 Cycle</Chip>
-                    <Chip color="success" variant="dot" size="sm" className="font-semibold">Active</Chip>
-                </div>
-            </div>
-
             {/* ── Layout ── */}
             <div className="mx-auto grid grid-cols-[1fr_288px] gap-5 items-start">
 
@@ -2449,9 +2435,6 @@ export default function QuarterlyReview() {
 
                                 {/* Quarterly Breakdown */}
                                 <div className="border border-ink-200 bg-white p-4 dark:border-white/10 dark:bg-ink-900">
-                                    <p className="text-[10px] uppercase tracking-[.15em] text-default-700 -mt-1">
-                                        Monthly Breakdown</p>
-
                                     <Tabs
                                         aria-label="Quarterly Breakdown"
                                         color="primary"

@@ -11,7 +11,7 @@ import ReportsPage from "@/pages/reports";
 import History from "@/pages/History";
 import AccessManagementPage from "@/pages/access-management";
 import NotificationsPage from "@/pages/notifications";
-import PmsHome from "@/pages/pmsHome";
+import { PmsIndex, PmsDashboardPage, PmsGoalPage, PmsFeedbackPage, PmsQuarterlyPage, PmsReportPage } from "@/pages/pmsPages";
 import Efficiency from "./pages/efficiency";
 import ResetPasswordPage from "./pages/forgotPassword";
 import TargetManagement from "./pages/targetManagement";
@@ -63,7 +63,12 @@ function App() {
         <Route path="/efficiency-report" element={<ProtectedRoute module="perf"><Efficiency /></ProtectedRoute>} />
         <Route path="/sales-forward" element={<ProtectedRoute module="salesfwd"><SalesForward /></ProtectedRoute>} />
         <Route path="/Goal-management" element={<ProtectedRoute module="goalmgmt"><GoalManagement /></ProtectedRoute>} />
-        <Route path="/pms" element={<ProtectedRoute module="pms"><PmsHome /></ProtectedRoute>} />
+        <Route path="/pms" element={<ProtectedRoute module="pms"><PmsIndex /></ProtectedRoute>} />
+        <Route path="/pms/dashboard" element={<ProtectedRoute module="pms_dashboard"><PmsDashboardPage /></ProtectedRoute>} />
+        <Route path="/pms/goal-setting" element={<ProtectedRoute module="pms_goals"><PmsGoalPage /></ProtectedRoute>} />
+        <Route path="/pms/manager-feedback" element={<ProtectedRoute module="pms_feedback"><PmsFeedbackPage /></ProtectedRoute>} />
+        <Route path="/pms/quarterly-review" element={<ProtectedRoute module="pms_quarterly"><PmsQuarterlyPage /></ProtectedRoute>} />
+        <Route path="/pms/report" element={<ProtectedRoute module="pms_report"><PmsReportPage /></ProtectedRoute>} />
         <Route path="/Entry-Approval" element={<ProtectedRoute module="entryApproval"><EntryApproval /></ProtectedRoute>} />
         <Route path="/User-History" element={<ProtectedRoute module="userHistory"><History /></ProtectedRoute>} />
         <Route path="/Query-Report" element={<ProtectedRoute module="queryReport"><QueryReport /></ProtectedRoute>} />

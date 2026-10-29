@@ -14,7 +14,7 @@ import {
 
 import axios from "axios";
 import { format } from "date-fns";
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import CustomDateRangePicker from "../components/customDateRangePicker";
 
 
@@ -377,10 +377,8 @@ export default function DashboardFilters({
 
         if (selectedUser) {
             fetchQuarterlyReviews();
-        } else {
-            if (authUser.userID === 1 || authUser.userRole == 1 || authUser.departmentID === 16) {
-                fetchAllQuarterlyReviews();
-            }
+        } else if (!isReport) {
+            setReviews([]);
         }
     }, [
         monthly,
@@ -420,6 +418,23 @@ export default function DashboardFilters({
             selectedDepartment,
         ]);
 
+
+    // Start on one department and one person so the page opens on a single, readable review
+    const defaulted = useRef(false);
+    useEffect(() => {
+        if (isReport || shouldHideDropdown || selectedDepartment || defaulted.current) return;
+        const first = [...departmentList].filter((d: any) => d.status === "Active").sort((a: any, b: any) => String(a.name).localeCompare(String(b.name)))[0] as any;
+        if (first) setSelectedDepartment(String(first.key));
+    }, [departmentList, shouldHideDropdown, selectedDepartment]);
+    useEffect(() => {
+        if (isReport || defaulted.current || selectedUser || !filteredUsers.length) return;
+        const first = [...filteredUsers].sort((a: any, b: any) => String(a.userName).localeCompare(String(b.userName)))[0] as any;
+        if (first) {
+            defaulted.current = true;
+            setSelectedUser(String(first.userID));
+            setUserSearch(first.userName);
+        }
+    }, [filteredUsers, selectedUser]);
 
     const fetchMonthlyReviews = async () => {
 

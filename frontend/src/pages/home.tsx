@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
-import { ArrowRight, ClipboardCheck, ClipboardList, LineChart, Target, UserX } from "lucide-react";
+import { ClipboardCheck, ClipboardList, LineChart, Target, UserX } from "lucide-react";
 
 import { hasModuleAccess } from "@/lib/permissions";
 import DashboardPage from "@/pages/dashboard";
@@ -59,36 +59,25 @@ export default function DashboardHome() {
     if (params.get("view") === "pms") return <Navigate to="/pms" replace />;
 
     return (
-        <div className="flex w-full flex-col gap-6">
-            <section aria-label="Needs your attention">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                    <h2 className="eyebrow">Needs your attention</h2>
-                </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                    {actions.map((a) => (
-                        <Link
-                            key={a.to}
-                            to={a.to}
-                            className="group flex flex-col justify-between gap-4 border border-ink-200 bg-white p-4 transition-colors hover:border-brand-500 focus-ring dark:border-white/10 dark:bg-ink-900"
-                        >
-                            <div className="flex min-h-[24px] items-start justify-between">
-                                <a.icon size={18} className="text-brand-600" aria-hidden />
-                                {typeof a.count === "number" && (
-                                    <span className={`min-w-[28px] px-2 py-0.5 text-center text-xs font-bold ${a.count > 0 && a.tone === "warn" ? "bg-brand-600 text-white" : "bg-ink-100 text-ink-600 dark:bg-white/10 dark:text-ink-300"}`}>
-                                        {a.count}
-                                    </span>
-                                )}
-                            </div>
-                            <div>
-                                <p className="text-sm font-semibold text-ink-900 dark:text-white">{a.label}</p>
-                                <p className="mt-1 text-xs leading-snug text-ink-500 dark:text-ink-400">{a.hint}</p>
-                            </div>
-                            <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-ink-400 transition-colors group-hover:text-brand-600">
-                                Open <ArrowRight size={12} aria-hidden />
+        <div className="flex w-full flex-col gap-4">
+            <section aria-label="Needs your attention" className="flex flex-wrap items-center gap-2">
+                <h2 className="eyebrow mr-1">Needs attention</h2>
+                {actions.map((a) => (
+                    <Link
+                        key={a.to}
+                        to={a.to}
+                        title={a.hint}
+                        className="group flex h-8 items-center gap-1.5 border border-ink-200 bg-white px-2.5 text-xs font-semibold text-ink-900 transition-colors hover:border-brand-500 focus-ring dark:border-white/10 dark:bg-ink-900 dark:text-white"
+                    >
+                        <a.icon size={15} className="text-brand-600" aria-hidden />
+                        {a.label}
+                        {typeof a.count === "number" && (
+                            <span className={`min-w-[24px] px-1.5 py-0.5 text-center text-[11px] font-bold ${a.count > 0 && a.tone === "warn" ? "bg-brand-600 text-white" : "bg-ink-100 text-ink-600 dark:bg-white/10 dark:text-ink-300"}`}>
+                                {a.count}
                             </span>
-                        </Link>
-                    ))}
-                </div>
+                        )}
+                                    </Link>
+                ))}
             </section>
 
             <DashboardPage />

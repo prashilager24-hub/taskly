@@ -1506,8 +1506,8 @@ export default function DashboardPage() {
             </Drawer>
 
             {/* ── Page Header ─────────────────────────────────────────────────── */}
-            <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-                <PageTitle title="Dashboard" subtitle="View detailed insights into your department's daily work" />
+            <div className="mb-3 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                <PageTitle title="Taskly overview" subtitle="View detailed insights into your department's daily work" />
 
                 <div className="flex items-center gap-2 whitespace-nowrap">
                     <Button
@@ -1553,7 +1553,6 @@ export default function DashboardPage() {
                     onScope={setDepartmentType}
                     loading={loading}
                     onWiden={() => setDateRange(getTodayRange(90))}
-                    rules={<EfficiencyRules />}
                 />
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

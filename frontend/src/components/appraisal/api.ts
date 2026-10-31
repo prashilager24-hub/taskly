@@ -57,7 +57,7 @@ export interface CycleView {
 export interface TeamItem {
     cycleId: number; userId: number; employeeName: string; level: Level; status: Status; start: string; employeeWindowEnd: string; assessorWindowEnd: string; late: boolean;
     selfSubmitted: boolean; a1Submitted: boolean; a2Submitted: boolean; myRole: "A1" | "A2" | "FINANCE";
-    assessor1Name: string | null; pmsFinalAvg: number | null; pmsQuarters: number; asksDesignation: boolean; asksTeam: boolean; canApprove: boolean;
+    assessor1Name: string | null; assessor2Name: string | null; pmsFinalAvg: number | null; pmsQuarters: number; asksDesignation: boolean; asksTeam: boolean; canApprove: boolean;
     requestsPending: boolean; canDecideRequests: boolean;
     expected?: Money | null; minimal?: { A1: Money | null; A2: Money | null }; approved?: Money | null;
 }
@@ -65,7 +65,13 @@ export interface Availability {
     my: { show: boolean; status: Status | null; cycleId: number | null };
     team: { show: boolean; open: number }; budget: { show: boolean; pending: number }; hr: { show: boolean; pending: number }; setup: { show: boolean }; any: boolean;
 }
-export interface PersonSetup { userId: number; name: string; email: string; roleName: string; dateOfJoining: string | null; level: Level | null; currentAnnualCtc: number | null; cycles: number }
+export type CycleMonth = "APRIL" | "OCTOBER";
+export interface PersonSetup {
+    userId: number; name: string; email: string; employeeId: string | null; roleName: string;
+    dateOfJoining: string | null; level: Level | null; currentAnnualCtc: number | null;
+    cycleMonth: CycleMonth | null; cycles: number; latestCycle: { start: string; status: Status } | null;
+}
+export interface PersonBody { dateOfJoining: string | null; level: Level | null; currentAnnualCtc: number | null }
 
 export interface FlLine { userId: number; name: string; allocation: number; used: number; remaining: number; associates: number }
 export interface DeptBudget { departmentId: number; name: string; el: { userId: number; name: string } | null; budget: number | null; comment: string; allocated: number; used: number; fls: FlLine[] }
@@ -104,8 +110,8 @@ export const appraisalApi = {
     team: (status?: Status) => unwrap<{ items: TeamItem[] }>(axios.get(`${BASE}/team`, { params: status ? { status } : {} })),
     hr: () => unwrap<CycleView[]>(axios.get(`${BASE}/hr`)),
     people: () => unwrap<PersonSetup[]>(axios.get(`${BASE}/people`)),
-    savePerson: (userId: number, body: { dateOfJoining: string | null; level: Level | null; currentAnnualCtc: number | null }) => axios.put(`${BASE}/people/${userId}`, body),
-    createCycle: (userId: number, cycleStartDate: string) => axios.post(`${BASE}/cycles`, { userId, cycleStartDate }),
+    savePerson: (userId: number, body: PersonBody) => unwrap<{ cycleStarted: number | null }>(axios.put(`${BASE}/people/${userId}`, body)),
+    savePeople: (rows: ({ userId: number } & PersonBody)[]) => unwrap<{ saved: number; started: number; failed: { userId: number; message: string }[] }>(axios.post(`${BASE}/people/bulk`, { rows })),
     selfReview: (id: number, body: SelfReviewBody) => axios.put(`${BASE}/cycles/${id}/self-review`, body),
     assessorReview: (id: number, body: AssessorBody) => axios.put(`${BASE}/cycles/${id}/assessor-review`, body),
     /** The EL approves an Associate / FL hike; Finance approves an EL's */

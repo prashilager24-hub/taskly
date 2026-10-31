@@ -1,5 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, addMonths, cycleWindows, isAnniversary, quarterSlots, splitHike, todayIST } from './appraisal.calc';
+import { addDays, addMonths, currentCycleStart, cycleMonthOf, cycleWindows, isAnniversary, quarterSlots, splitHike, todayIST } from './appraisal.calc';
+
+describe('April / October cycle', () => {
+  it('December to May joiners are in April, June to November in October', () => {
+    expect(['2023-12-15', '2024-01-02', '2024-05-31'].map(cycleMonthOf)).toEqual(['APRIL', 'APRIL', 'APRIL']);
+    expect(['2024-06-01', '2024-08-20', '2024-11-30'].map(cycleMonthOf)).toEqual(['OCTOBER', 'OCTOBER', 'OCTOBER']);
+  });
+  it('the current start is the latest 1 April / 1 October on or before today', () => {
+    expect(currentCycleStart('OCTOBER', '2026-10-30')).toBe('2026-10-01');
+    expect(currentCycleStart('OCTOBER', '2026-09-30')).toBe('2025-10-01');
+    expect(currentCycleStart('APRIL', '2026-10-30')).toBe('2026-04-01');
+    expect(currentCycleStart('APRIL', '2026-04-01')).toBe('2026-04-01');
+    expect(currentCycleStart('APRIL', '2026-03-31')).toBe('2025-04-01');
+  });
+});
 
 describe('splitHike', () => {
   it('ASSOCIATE 100000 -> 90000 fixed + 10000 variable', () => {

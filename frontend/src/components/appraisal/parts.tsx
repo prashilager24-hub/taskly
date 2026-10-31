@@ -21,7 +21,7 @@ export const Banner = ({ tone = "info", children }: { tone?: "info" | "warn"; ch
 export function HikeField({ label, value, onChange, level, disabled, hint }: { label: string; value: number | null; onChange: (v: number | null) => void; level: Level; disabled?: boolean; hint?: string }) {
     const s = value != null ? splitPreview(value, level) : null;
     return (
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
             <Input
                 label={label}
                 inputMode="numeric"
@@ -32,9 +32,18 @@ export function HikeField({ label, value, onChange, level, disabled, hint }: { l
                 isDisabled={disabled}
                 labelPlacement="inside"
             />
-            <p className="min-h-5 text-xs text-ink-500 dark:text-ink-400" aria-live="polite">
-                {s ? <>{inr(s.annual)} → <b className="font-semibold text-ink-800 dark:text-ink-100">{inr(s.fixed)}</b> fixed + <b className="font-semibold text-ink-800 dark:text-ink-100">{inr(s.variable)}</b> variable <span className="text-ink-400">({VARIABLE_PCT[level]}%)</span></> : hint ?? "Annual amount"}
-            </p>
+            {/* the split is always on screen, so the layout does not jump while typing */}
+            <div className="grid grid-cols-2 gap-2" aria-live="polite">
+                <div className="flex items-center justify-between gap-2 border-l-2 border-brand-500 bg-brand-50 px-3 py-2 dark:bg-brand-600/10">
+                    <span className="eyebrow">Fixed</span>
+                    <span className="text-sm font-bold tabular-nums text-ink-900 dark:text-white">{s ? inr(s.fixed) : "—"}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2 border-l-2 border-emerald-500 bg-emerald-50 px-3 py-2 dark:bg-emerald-500/10">
+                    <span className="eyebrow flex items-center gap-1.5">Variable<span className="bg-emerald-600 px-1 text-[10px] font-semibold tracking-normal text-white">{VARIABLE_PCT[level]}%</span></span>
+                    <span className="text-sm font-bold tabular-nums text-ink-900 dark:text-white">{s ? inr(s.variable) : "—"}</span>
+                </div>
+            </div>
+            {hint && <p className="-mt-0.5 text-xs text-ink-500 dark:text-ink-400">{hint}</p>}
         </div>
     );
 }

@@ -5,7 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { cn } from "@heroui/theme";
 
 import { Panel, Segmented } from "@/components/page";
-import { Button, Chip, Input, Textarea, addToast } from "@/components/ui";
+import { Button, Chip, Textarea, addToast } from "@/components/ui";
 import { appraisalApi, errorText, type BudgetOverview, type CycleView, type Decision, type RequestField } from "./api";
 import { LEVEL_LABEL, addDaysIso, day, inr } from "./format";
 import { ANSWER_QUESTIONS, Banner, COLS2, HikeField, MoneyCard, ReadText } from "./parts";
@@ -13,7 +13,6 @@ import PmsTable from "./PmsTable";
 import QuarterGrid from "./QuarterGrid";
 
 type Ask = { comment: string; decision: Decision | "" };
-const rate = (s: string): number | null => { const n = parseFloat(s); return Number.isFinite(n) ? n : null; };
 
 // The review of one appraisal. Only fields the server sent are drawn, so a hidden field leaves no empty box.
 // FL: comment on the requested changes, propose a hike inside the team budget. EL: the same, decide each request, then approve the final hike.
@@ -27,7 +26,6 @@ export default function ReviewForm() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState<"draft" | "submit" | "approve" | "note" | null>(null);
 
-    const [overall, setOverall] = useState("");
     const [comment, setComment] = useState("");
     const [feedback, setFeedback] = useState("");
     const [proposed, setProposed] = useState<number | null>(null);
@@ -42,7 +40,6 @@ export default function ReviewForm() {
             setView(v);
             const me = v.role === "A1" || v.role === "A2" ? v.role : null;
             const mine = me ? v.assessors?.[me] : null;
-            setOverall(mine?.overallRating != null ? String(mine.overallRating) : "");
             setComment(mine?.comment ?? "");
             setFeedback(mine?.managerFeedback ?? "");
             setProposed(me ? v.minimal?.[me]?.annual ?? null : null);
@@ -62,8 +59,9 @@ export default function ReviewForm() {
     const c = view.cycle;
     const me = view.role === "A1" || view.role === "A2" ? view.role : null;
     const editable = !!view.can.assessorReview;
-    // the EL decides: the amount they give is the final hike (an EL's own hike is decided by Finance instead)
-    const decides = c.level !== "HEAD_EL" && me === (c.level === "ASSOCIATE" ? "A2" : "A1");
+    // the last assessor decides: Assessor 2 when one is set, else Assessor 1. The amount they give is the final hike.
+    const decides = me === (c.assessor2 ? "A2" : "A1");
+    const byFinance = !c.assessor1 && !c.assessor2;
     const other = me === "A1" ? "A2" : "A1";
     const asked: { field: RequestField; label: string; value: string; why: string }[] = [
         ...(view.request?.newDesignation ? [{ field: "DESIGNATION" as const, label: "designation", value: view.request.newDesignation, why: view.request.designationComment }] : []),
@@ -79,7 +77,7 @@ export default function ReviewForm() {
         setSaving(submit ? "submit" : "draft");
         try {
             await appraisalApi.assessorReview(c.id, {
-                overallRating: rate(overall), comment, ...(me === "A1" ? { managerFeedback: feedback } : {}), minimalHike: proposed,
+                overallRating: null, comment, ...(me === "A1" ? { managerFeedback: feedback } : {}), minimalHike: proposed,
                 submit,
             });
             addToast({ title: submit ? "Review submitted" : "Draft saved", color: "success" });
@@ -117,10 +115,6 @@ export default function ReviewForm() {
         finally { setSaving(null); }
     };
 
-    const ratingBox = (label: string, v: string, set: (s: string) => void) => (
-        <Input label={label} type="number" min={1} max={5} step={0.1} value={v} onValueChange={set} placeholder="1 to 5" />
-    );
-
     return (
         <div className="flex flex-col gap-6">
             <div><Button size="sm" variant="light" startContent={<ArrowLeft size={14} />} onPress={() => nav(view.role === "FINANCE" ? "/appraisal/budget" : "/appraisal/team")}>Back</Button></div>
@@ -129,7 +123,7 @@ export default function ReviewForm() {
                 <p className="text-sm text-ink-500 dark:text-ink-400">{LEVEL_LABEL[c.level]}{c.assessor1 ? ` · reports to ${c.assessor1.name}` : ""}</p>
             </div>
 
-            {editable ? <Banner>{view.timed ? <>Your review is open until <b>{day(c.assessorWindowEnd)}</b>. You can change it until the window closes.</> : decides ? "You decide this hike. When you submit (and the FL has submitted), your amount goes to the employee as the final hike." : "Your review is open. You can change it until the final hike is approved."}</Banner>
+            {editable ? <Banner>{view.timed ? <>Your review is open until <b>{day(c.assessorWindowEnd)}</b>. You can change it until the window closes.</> : decides ? `You decide this hike. When you submit${c.assessor2 ? ` (and ${c.assessor1?.name ?? "Assessor 1"} has submitted)` : ""}, your amount goes to the employee as the final hike.` : "Your review is open. You can change it until the final hike is approved."}</Banner>
                 : c.status === "EMPLOYEE_OPEN" ? <Banner tone="warn">{view.timed ? <>This opens for you on {day(addDaysIso(c.start, 15))}, after the employee's window closes. Appraisal window is closed for you until then.</> : "Waiting for the employee to submit. It comes to you as soon as they do."}</Banner>
                 : me && c.status === "ASSESSOR_OPEN" ? <Banner tone="warn">Appraisal window is closed. Your review is shown below as it was saved.</Banner> : null}
 
@@ -174,9 +168,8 @@ export default function ReviewForm() {
                         )}
 
                         <div className={COLS2}>
-                            {editable ? ratingBox("Overall rating", overall, setOverall) : <ReadText label="Overall rating" value={overall} />}
                             <div>{editable ? <HikeField label={decides ? "Final hike (per year)" : "Proposed hike (per year)"} value={proposed} onChange={setProposed} level={c.level} hint={decides ? "The amount you give is the final hike" : undefined} /> : <MoneyCard title="Proposed hike" money={view.minimal?.[me]} />}</div>
-                            <div className="md:col-span-2">{editable ? <Textarea label="Comment" minRows={3} value={comment} onValueChange={setComment} /> : <ReadText label="Comment" value={comment} />}</div>
+                            <div>{editable ? <Textarea label="Comment" minRows={4} value={comment} onValueChange={setComment} /> : <ReadText label="Comment" value={comment} />}</div>
                             {me === "A1" && <div className="md:col-span-2">{editable ? <Textarea label="Manager feedback (the employee never sees this)" minRows={3} value={feedback} onValueChange={setFeedback} /> : <ReadText label="Manager feedback" value={feedback} />}</div>}
                         </div>
 
@@ -184,7 +177,6 @@ export default function ReviewForm() {
                             <div className="flex flex-col gap-3 border-t border-ink-200 pt-5 dark:border-white/10">
                                 <p className="eyebrow">{other === "A1" ? "Assessor 1" : "Assessor 2"} · {view.assessors[other]!.submittedAt ? "submitted" : "draft"}</p>
                                 <div className={COLS2}>
-                                    <ReadText label="Overall rating" value={view.assessors[other]!.overallRating?.toString()} />
                                     <ReadText label="Comment" value={view.assessors[other]!.comment} />
                                     {view.assessors[other]!.managerFeedback !== undefined && <div className="md:col-span-2"><ReadText label="Manager feedback" value={view.assessors[other]!.managerFeedback} /></div>}
                                     {view.minimal?.[other] && <MoneyCard title="Proposed hike" money={view.minimal[other]} />}
@@ -198,13 +190,15 @@ export default function ReviewForm() {
             {!me && view.assessors && (
                 <Panel title="Everything on this appraisal">
                     <div className="flex flex-col gap-6">
-                        {(["A1", "A2"] as const).map((k) => {
+                        {byFinance && <p className="text-sm text-ink-500">Nobody is set to assess this person.</p>}
+                        {(["A1", "A2"] as const).filter((k) => (k === "A1" ? c.assessor1 : c.assessor2)).map((k) => {
                             const a = view.assessors![k];
                             const who = k === "A1" ? c.assessor1?.name : c.assessor2?.name;
+                            const last = k === (c.assessor2 ? "A2" : "A1");
                             return (
                                 <div key={k} className="flex flex-col gap-3 border-t border-ink-200 pt-5 dark:border-white/10">
-                                    <p className="eyebrow">{k === "A1" ? "FL / Manager" : "EL"}{who ? ` · ${who}` : ""} · {a?.submittedAt ? "submitted" : "not submitted"}</p>
-                                    <div className={COLS2}><ReadText label="Overall rating" value={a?.overallRating?.toString()} /><ReadText label="Comment" value={a?.comment} /></div>
+                                    <p className="eyebrow">{k === "A1" ? "Assessor 1" : "Assessor 2"}{who ? ` · ${who}` : ""}{last ? " · final say" : ""} · {a?.submittedAt ? "submitted" : "not submitted"}</p>
+                                    <ReadText label="Comment" value={a?.comment} />
                                     {a?.managerFeedback !== undefined && a.managerFeedback && <ReadText label="Manager feedback" value={a.managerFeedback} />}
                                     {view.minimal?.[k] && <MoneyCard title="Proposed hike" money={view.minimal[k]} />}
                                 </div>
@@ -215,11 +209,11 @@ export default function ReviewForm() {
             )}
 
             {(view.can.approve || view.approved) && (
-                <Panel title={c.level === "HEAD_EL" ? "Finance approval" : "Final approval"}>
+                <Panel title={byFinance ? "Finance approval" : "Final approval"}>
                     <div className="flex flex-col gap-5">
                         {view.can.approve ? (
                             <>
-                                <p className="max-w-[72ch] text-sm text-ink-500 dark:text-ink-400">{c.level === "HEAD_EL" ? "Check the EL's hike against the budget. Approve it to send the offer, or write to the EL about the budget; the note goes to the EL only." : "Set the hike that goes to the employee as an offer. It starts from what you and the first assessor proposed."}</p>
+                                <p className="max-w-[72ch] text-sm text-ink-500 dark:text-ink-400">{byFinance ? "Nobody is set to assess this person, so Finance approves the hike. Check it against the budget, approve it to send the offer, or write to them about the budget; the note goes to them only." : "Set the hike that goes to the employee as an offer. It starts from what you and the first assessor proposed."}</p>
                                 <div className={COLS2}>
                                     <HikeField label="Approved hike (per year)" value={approved} onChange={setApproved} level={c.level} />
                                     <Textarea label="Comment (optional)" minRows={2} value={approveNote} onValueChange={setApproveNote} />

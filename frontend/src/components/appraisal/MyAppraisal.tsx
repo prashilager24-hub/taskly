@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Spinner } from "@heroui/react";
-import { Award, CheckCircle2, Clock, Gift, Hourglass } from "lucide-react";
+import { Award, BadgeCheck, CheckCircle2, Clock, Gift, Hourglass, PartyPopper, Sparkles, Users } from "lucide-react";
 
 import { Panel } from "@/components/page";
 import { Button, Chip, Tab, Tabs, Textarea, addToast } from "@/components/ui";
@@ -22,17 +22,51 @@ const Waiting = ({ icon, title, children }: { icon: ReactNode; title: string; ch
     </div>
 );
 
-/** One requested change and where it stands with the EL */
-function ChangeRow({ view, field, label, value, why }: { view: CycleView; field: RequestField; label: string; value: string; why: string }) {
-    const d = view.requestReviews?.[field]?.A2?.decision ?? null;
+type Asked = { field: RequestField; label: string; value: string; why: string };
+const decisionOf = (view: CycleView, field: RequestField) => view.requestReviews?.[field]?.A2?.decision ?? null;
+
+/** A requested change that was not approved (or not decided yet): said quietly and kindly, never in red */
+function ChangeRow({ view, field, label, value, why }: { view: CycleView } & Asked) {
+    const d = decisionOf(view, field);
     return (
         <li className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
             <div className="min-w-0">
                 <p className="text-sm text-ink-900 dark:text-white"><span className="text-ink-500">{label}:</span> <b>{value}</b></p>
-                {why && <p className="text-xs text-ink-500">{why}</p>}
+                <p className="mt-0.5 text-xs text-ink-500">{d === "REJECTED" ? "Not this time. Keep building on this year's work; you can ask again at your next appraisal." : why}</p>
             </div>
-            <Chip size="sm" variant="flat" color={d === "APPROVED" ? "success" : d === "REJECTED" ? "danger" : "warning"}>{d === "APPROVED" ? "Approved" : d === "REJECTED" ? "Not approved" : "Waiting for EL decision"}</Chip>
+            <Chip size="sm" variant="flat" color={d === "REJECTED" ? "default" : "warning"}>{d === "REJECTED" ? "Not this cycle" : "Waiting for a decision"}</Chip>
         </li>
+    );
+}
+
+/** An approved designation or team change: the moment to celebrate */
+function Celebration({ name, won }: { name: string; won: Asked[] }) {
+    const designation = won.find((w) => w.field === "DESIGNATION");
+    const team = won.find((w) => w.field === "TEAM");
+    return (
+        <div className="relative overflow-hidden border border-emerald-500/50 bg-gradient-to-br from-emerald-50 via-white to-brand-50 p-6 dark:from-emerald-500/15 dark:via-ink-900 dark:to-brand-600/15 sm:p-8">
+            <Sparkles aria-hidden size={140} strokeWidth={1} className="pointer-events-none absolute -right-6 -top-6 text-emerald-500/15" />
+            <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start">
+                <span className="flex h-16 w-16 shrink-0 items-center justify-center bg-emerald-600 text-white shadow-lg shadow-emerald-600/30"><PartyPopper size={32} /></span>
+                <div className="flex min-w-0 flex-col gap-2">
+                    <p className="eyebrow !text-emerald-700 dark:!text-emerald-400">{designation ? "Promotion approved" : "Team change approved"}</p>
+                    <p className="text-3xl font-bold leading-tight tracking-tight text-ink-900 dark:text-white">Congratulations, {name}!</p>
+                    <p className="max-w-[60ch] text-[15px] text-ink-700 dark:text-ink-200">
+                        {designation && <>You are now <b className="text-emerald-700 dark:text-emerald-400">{designation.value}</b>. </>}
+                        {team && <>{designation ? "And you" : "You"} are moving to <b className="text-emerald-700 dark:text-emerald-400">{team.value}</b>. </>}
+                        Your work this year has been recognised. Well deserved.
+                    </p>
+                </div>
+            </div>
+            <div className="relative mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {won.map((w) => (
+                    <div key={w.field} className="flex items-center gap-3 border border-emerald-500/30 bg-white/70 px-4 py-3 dark:bg-ink-900/60">
+                        {w.field === "DESIGNATION" ? <BadgeCheck size={22} className="shrink-0 text-emerald-600" /> : <Users size={22} className="shrink-0 text-emerald-600" />}
+                        <div className="min-w-0"><p className="eyebrow">{w.field === "DESIGNATION" ? "New designation" : "New team"}</p><p className="truncate text-base font-bold text-ink-900 dark:text-white">{w.value}</p></div>
+                    </div>
+                ))}
+            </div>
+        </div>
     );
 }
 
@@ -71,7 +105,7 @@ export default function MyAppraisal() {
 
     if (loading) return <div className="flex justify-center py-20"><Spinner /></div>;
     if (!view) return (
-        <Panel><p className="py-10 text-center text-sm text-ink-500">No appraisal is open for you right now. It opens on the anniversary of your joining date.</p></Panel>
+        <Panel><p className="py-10 text-center text-sm text-ink-500">No appraisal is open for you right now. It opens with your appraisal cycle: April if you joined between December and May, October if you joined between June and November.</p></Panel>
     );
 
     const c = view.cycle;
@@ -102,6 +136,15 @@ export default function MyAppraisal() {
         </div>
     );
 
+    // The designation / team changes asked for when accepting, and the ones that were approved
+    const asked: Asked[] = [
+        ...(view.request?.newDesignation ? [{ field: "DESIGNATION" as const, label: "Designation", value: view.request.newDesignation, why: view.request.designationComment }] : []),
+        ...(view.request?.newTeam ? [{ field: "TEAM" as const, label: "Team", value: view.request.newTeam, why: view.request.teamComment }] : []),
+    ];
+    const won = c.status === "ACCEPTED" ? asked.filter((x) => decisionOf(view, x.field) === "APPROVED") : [];
+    const notWon = asked.filter((x) => !won.includes(x));
+    const firstName = c.employeeName.split(" ")[0];
+
     // The top card: one line on where the person is, and one button
     let icon = <Award size={26} />;
     let title = "Your appraisal is open";
@@ -123,15 +166,18 @@ export default function MyAppraisal() {
         icon = <CheckCircle2 size={26} />; title = c.status === "ACCEPTED" ? `You accepted ${inr(approved?.annual)} a year` : "Your hike is postponed";
         text = c.status === "ACCEPTED" ? "See the final decision in the Proposed hike tab." : `It is postponed to ${day(c.postponedUntil)}.`;
         action = <Button size="lg" variant="bordered" onPress={() => open("proposed")}>View final decision</Button>;
+        const promoted = won.find((w) => w.field === "DESIGNATION");
+        if (won.length) {
+            icon = <PartyPopper size={26} />;
+            title = promoted ? `Congratulations, you are now ${promoted.value}!` : `Congratulations, you are moving to ${won[0].value}!`;
+            text = `Your ${promoted ? "promotion" : "team change"} is approved, and you accepted ${inr(approved?.annual)} a year.`;
+            action = <Button size="lg" color="success" startContent={<Sparkles size={16} />} onPress={() => open("proposed")}>See your {promoted ? "promotion" : "new team"}</Button>;
+        }
     }
 
-    // What the Proposed hike tab shows
-    const asked = [
-        ...(view.request?.newDesignation ? [{ field: "DESIGNATION" as const, label: "Designation", value: view.request.newDesignation, why: view.request.designationComment }] : []),
-        ...(view.request?.newTeam ? [{ field: "TEAM" as const, label: "Team", value: view.request.newTeam, why: view.request.teamComment }] : []),
-    ];
-    // What the FL and the EL proposed for this person, and what they wrote, once each has submitted
-    const byAssessor = (["A1", "A2"] as const).map((k) => ({ k, who: (k === "A1" ? c.assessor1?.name : c.assessor2?.name) ?? (k === "A1" ? "FL / Manager" : "EL"), role: k === "A1" ? "FL / Manager" : "EL", money: view.minimal?.[k] ?? null, comment: view.assessors?.[k]?.comment ?? "" })).filter((x) => x.money || x.comment);
+    // What each assessor proposed for this person, and what they wrote, once each has submitted. The last one had the final say.
+    const finalSlot = c.assessor2 ? "A2" : "A1";
+    const byAssessor = (["A1", "A2"] as const).map((k) => ({ k, who: (k === "A1" ? c.assessor1?.name : c.assessor2?.name) ?? (k === "A1" ? "Assessor 1" : "Assessor 2"), role: k === finalSlot ? "Final decision" : "First review", money: view.minimal?.[k] ?? null, comment: view.assessors?.[k]?.comment ?? "" })).filter((x) => x.money || x.comment);
     const assessorsBlock = byAssessor.length > 0 && (
         <div className="flex flex-col gap-3">
             <p className="eyebrow">What your assessors proposed</p>
@@ -169,16 +215,18 @@ export default function MyAppraisal() {
     } else if (c.status === "ACCEPTED") {
         proposed = (
             <div className="flex flex-col gap-5">
+                {won.length > 0 && <Celebration name={firstName} won={won} />}
                 <p className="eyebrow">Final decision</p>
                 <MoneyCard title="Hike accepted" money={approved} accent />
-                <div className="flex flex-col gap-2">
-                    <p className="eyebrow">Requested changes</p>
-                    {asked.length ? (
+                {notWon.length > 0 && (
+                    <div className="flex flex-col gap-2">
+                        <p className="eyebrow">{won.length ? "Your other request" : "Requested changes"}</p>
                         <ul className="divide-y divide-ink-100 border border-ink-200 dark:divide-white/5 dark:border-white/10">
-                            {asked.map((x) => <ChangeRow key={x.field} view={view} {...x} />)}
+                            {notWon.map((x) => <ChangeRow key={x.field} view={view} {...x} />)}
                         </ul>
-                    ) : <p className="text-sm text-ink-500">You did not ask for a change in designation or team.</p>}
-                </div>
+                    </div>
+                )}
+                {!asked.length && <p className="text-sm text-ink-500">You did not ask for a change in designation or team.</p>}
             </div>
         );
     } else if (c.status === "POSTPONED") {

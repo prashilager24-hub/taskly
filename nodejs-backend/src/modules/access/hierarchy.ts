@@ -9,17 +9,19 @@ type Row = mysql.RowDataPacket;
  * The reporting ladder, top to bottom:
  *   Admin (CEO / CBO)  ->  Executive Leader (EL)  ->  Functional Leader / Manager / Lead  ->  Employee  ->  Intern
  *
- * Each person is reviewed by up to two assessors:
+ * Each person is reviewed by up to two assessors, taken from the people named on their user record
+ * (Reporting manager and Executive Leader), the junior one first. The last of them gives the final word.
  *   Employee / Intern  : accessor 1 = their Functional Leader / Manager, accessor 2 = their EL
- *   FL / Manager / Lead: accessor 1 = the EL of their department(s),      accessor 2 = CEO / CBO (optional)
- *   EL                 : accessor 1 = CEO / CBO,                           no accessor 2
+ *   FL / Manager / Lead: accessor 1 = their EL (or whoever is named),    accessor 2 = only when a second person is named
+ *   EL                 : accessor 1 = whoever is named (else the CEO / CBO), normally no accessor 2
+ * When nobody is named, the department's FL / EL stand in (and the CEO / CBO for an EL).
  */
 export type Level = 'admin' | 'el' | 'fl' | 'employee' | 'intern';
 
 export const LEVELS: { key: Level; label: string; description: string }[] = [
   { key: 'admin', label: 'Admin (CEO / CBO)', description: 'Runs the company. Full access. Not reviewed.' },
-  { key: 'el', label: 'Executive Leader', description: 'Leads departments. Reviewed by the CEO / CBO only.' },
-  { key: 'fl', label: 'Functional Leader / Manager / Lead', description: 'Reviewed by their EL, and by the CEO / CBO if set.' },
+  { key: 'el', label: 'Executive Leader', description: 'Leads departments. Reviewed by the person named on their record, else the CEO / CBO.' },
+  { key: 'fl', label: 'Functional Leader / Manager / Lead', description: 'Reviewed by their EL, and by a second person if one is named.' },
   { key: 'employee', label: 'Employee', description: 'Reviewed by their manager, then their EL.' },
   { key: 'intern', label: 'Intern', description: 'Reviewed by their manager, then their EL.' },
 ];
@@ -70,24 +72,21 @@ function assessorsFor(c: Ctx, p: Person): Assessors {
   const myDepts = (c.deptsOf.get(p.userId) ?? []).map((id) => c.departments.get(id)).filter((d): d is Dept => !!d);
   const firstEl = myDepts.map((d) => d.el).find((id) => id && id !== p.userId) ?? null;
   const firstFl = myDepts.map((d) => d.fl).find((id) => id && id !== p.userId) ?? null;
-  const above = (id: number | null, ...levels: Level[]) => { const r = ref(c, id); return r && levels.includes(r.level) ? r : null; };
+  if (p.level === 'admin') return { accessor1: null, accessor2: null, accessor1Optional: true, accessor2Allowed: false };
 
-  switch (p.level) {
-    case 'admin':
-      return { accessor1: null, accessor2: null, accessor1Optional: true, accessor2Allowed: false };
-    case 'el':
-      // only the CEO / CBO reviews an EL
-      return { accessor1: above(p.reportingManagerId, 'admin') ?? ref(c, c.ceoId), accessor2: null, accessor1Optional: false, accessor2Allowed: false };
-    case 'fl':
-      return { accessor1: above(p.elManagerId, 'el') ?? ref(c, firstEl), accessor2: above(p.reportingManagerId, 'admin'), accessor1Optional: false, accessor2Allowed: true };
-    default:
-      return {
-        accessor1: above(p.reportingManagerId, 'fl', 'el') ?? ref(c, firstFl),
-        accessor2: above(p.elManagerId, 'el') ?? ref(c, firstEl),
-        accessor1Optional: false, accessor2Allowed: true,
-      };
-  }
+  // the people named on the record; the department's leaders stand in for a missing one
+  const named = p.level === 'el' ? [p.reportingManagerId, p.elManagerId]
+    : p.level === 'fl' ? [p.reportingManagerId, p.elManagerId ?? firstEl]
+    : [p.reportingManagerId ?? firstFl, p.elManagerId ?? firstEl];
+  const chain: Ref[] = [];
+  for (const id of named) { const r = ref(c, id); if (r && r.userId !== p.userId && !chain.some((x) => x.userId === r.userId)) chain.push(r); }
+  if (!chain.length && p.level === 'el') { const ceo = ref(c, c.ceoId); if (ceo && ceo.userId !== p.userId) chain.push(ceo); }
+  // the junior one reviews first, the senior one has the last word
+  chain.sort((a, b) => RANK[a.level] - RANK[b.level]);
+  return { accessor1: chain[0] ?? null, accessor2: chain[1] ?? null, accessor1Optional: false, accessor2Allowed: true };
 }
+
+const RANK: Record<Level, number> = { intern: 0, employee: 1, fl: 2, el: 3, admin: 4 };
 
 export async function assessorsOf(userId: number) {
   const c = await load();

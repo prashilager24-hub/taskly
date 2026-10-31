@@ -4,6 +4,8 @@ import type { Level, Status } from "./api";
 // this only drives the live preview under each input.
 export const VARIABLE_PCT: Record<Level, number> = { ASSOCIATE: 10, MANAGER: 20, HEAD_EL: 30 };
 export const LEVEL_LABEL: Record<Level, string> = { ASSOCIATE: "Associate", MANAGER: "Manager / FL", HEAD_EL: "Head / EL" };
+/** The largest amount the server accepts (₹10 crore) */
+export const MAX_AMOUNT = 100_000_000;
 
 const money = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
 export const inr = (n: number | null | undefined) => (n == null || Number.isNaN(n) ? "—" : `₹${money.format(Math.round(n))}`);

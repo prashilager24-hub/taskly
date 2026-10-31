@@ -82,9 +82,11 @@ describe('maskCycle: comments travel upwards only', () => {
     expect(Object.keys(m).sort()).toEqual(['cycle', 'response', 'role']);
     expect(has(m['cycle'], 'currentAnnualCtc')).toBe(false);
   });
-  it('Finance note about the budget reaches the EL only when it is the EL appraisal', () => {
+  it('Finance note about the budget reaches the employee only when Finance approves their hike (no assessor)', () => {
     const el = full('FINANCE_REVIEW');
     el.cycle.level = 'HEAD_EL';
+    el.cycle.assessor1 = null;
+    el.cycle.assessor2 = null;
     expect(has(maskCycle(el, 'EMPLOYEE'), 'financeComment')).toBe(true);
     expect(has(maskCycle(full('FINANCE_REVIEW'), 'EMPLOYEE'), 'financeComment')).toBe(false);
     for (const r of ['A1', 'A2', 'HR'] as const) expect(has(maskCycle(el, r), 'financeComment'), r).toBe(false);
@@ -92,7 +94,7 @@ describe('maskCycle: comments travel upwards only', () => {
 });
 
 describe('maskTeamRow', () => {
-  const row = (myRole: TeamRow['myRole']): TeamRow => ({ cycleId: 1, userId: 10, employeeName: 'Asha', level: 'ASSOCIATE', status: 'FINANCE_REVIEW', start: '2026-11-02', employeeWindowEnd: 'a', assessorWindowEnd: 'b', late: false, selfSubmitted: true, a1Submitted: true, a2Submitted: false, myRole, assessor1Name: 'Ben', pmsFinalAvg: 8, pmsQuarters: 1, asksDesignation: true, asksTeam: false, canApprove: false, requestsPending: false, canDecideRequests: false, expected: money(1), minimal: { A1: money(2), A2: null }, approved: money(3) });
+  const row = (myRole: TeamRow['myRole']): TeamRow => ({ cycleId: 1, userId: 10, employeeName: 'Asha', level: 'ASSOCIATE', status: 'FINANCE_REVIEW', start: '2026-11-02', employeeWindowEnd: 'a', assessorWindowEnd: 'b', late: false, selfSubmitted: true, a1Submitted: true, a2Submitted: false, myRole, assessor1Name: 'Ben', assessor2Name: 'Cara', pmsFinalAvg: 8, pmsQuarters: 1, asksDesignation: true, asksTeam: false, canApprove: false, requestsPending: false, canDecideRequests: false, expected: money(1), minimal: { A1: money(2), A2: null }, approved: money(3) });
   it('A1 sees the expected hike but not the approved one', () => { const m = maskTeamRow(row('A1')); expect(has(m, 'expected')).toBe(true); expect(has(m, 'approved')).toBe(false); });
   it('A2 sees expected and approved', () => { const m = maskTeamRow(row('A2')); expect(has(m, 'approved')).toBe(true); expect(has(m, 'expected')).toBe(true); });
   it('FINANCE sees all three', () => { const m = maskTeamRow(row('FINANCE')); for (const k of ['expected', 'minimal', 'approved']) expect(has(m, k)).toBe(true); });

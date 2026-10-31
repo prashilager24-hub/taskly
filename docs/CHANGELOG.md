@@ -17,6 +17,33 @@ Summary: one or two lines on what and why.
 
 ---
 
+## 2026-10-31 — Appraisal: assessor chain, HR setup, testing mode (branch appraisal-module, checkpoint before the v2 flow)
+
+Summary: the last assessor set on an appraisal decides the hike; HR keeps joining date, level and CTC and the April / October cycle follows; while date windows are off everyone can open and appeal. Checkpoint commit before the v2 flow (branch appraisal-flow-v2).
+
+### Frontend
+- Hike boxes show Fixed and Variable as two compact tiles; the employee-facing "Overall rating" box is gone.
+- Team Appraisals progress shows Self and the real assessors (A1, A2), the one with the last word marked Final.
+- My Appraisal celebrates an approved designation / team change; a declined one is shown gently ("Not this cycle").
+- Appraisal Setup (HR only): joining date, level, CTC, automatic April / October cycle, Save starts the appraisal when due; template download and bulk upload with a checked preview. No "Start cycle" button.
+- EL budget split lists FLs / Managers only (not the EL or Admins).
+
+### Backend
+- `hierarchy.ts`: assessors come from Reporting manager and Executive Leader on the user record, junior first; the senior one decides.
+- `appraisal.service.ts`: decider = Assessor 2 if set, else Assessor 1; Finance approves only when nobody is set. `ensureCycle`, `people`, `POST /people/bulk`; HR = HR roles + the HR Operations department. Testing mode (`APPRAISAL_TIME_WINDOWS=false`): My Appraisal starts a cycle on first open; the menu shows for everyone.
+- Daily job starts April / October cycles instead of anniversaries.
+
+### Database
+none (no schema change)
+
+### Env / config
+none
+
+### Notes
+- No minimum tenure before the first appraisal yet.
+
+---
+
 ## 2026-10-29 — Appraisal module (branch appraisal-module)  (commits: see branch)
 
 Summary: yearly appraisal flow from the Appraisal Module spec, reworked after the product owner's walk-through (Part A from PMS, FL / EL review of requested changes, hike budget Finance -> EL -> FL, EL approves hikes). Each person's cycle starts on their joining anniversary: days 1 to 15 the employee fills the form, days 16 to 30 the two assessors, then Finance approves the budget, then the employee can only Accept or Reject the offer (reject postpones the hike by 3 or 6 months, HR decides on it). Every hike amount is annual and split into fixed + variable by level on the server. The **Appraisal** menu sits after PMS and appears only while there is something open for the person.

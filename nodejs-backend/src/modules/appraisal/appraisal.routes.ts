@@ -12,10 +12,16 @@ import { todayIST } from './appraisal.calc';
 
 const router = Router();
 router.use(authenticate, requireModule('appraisal', 'read'));
-// The Finance Head acts as Finance in this module, whatever their role is elsewhere (an Admin stays an Admin)
+// The Finance Head acts as Finance in this module, and anyone in the HR department acts as HR, whatever their role is
+// elsewhere (an Admin stays an Admin)
 router.use((req, _res, next) => {
   if (Number(req.user?.role) === 1) return next();
-  svc.isFinanceHead(Number(req.user?.sub)).then((yes) => { if (yes) (req as Request & { appraisalRole?: number }).appraisalRole = svc.FINANCE_HEAD_ROLE; next(); }).catch(next);
+  const uid = Number(req.user?.sub);
+  (async () => {
+    const r = req as Request & { appraisalRole?: number };
+    if (await svc.isFinanceHead(uid)) r.appraisalRole = svc.FINANCE_HEAD_ROLE;
+    else if (await svc.inHrDepartment(uid)) r.appraisalRole = svc.HR_MEMBER_ROLE;
+  })().then(() => next()).catch(next);
 });
 
 const me = (req: Request) => Number(req.user?.sub);
@@ -71,8 +77,8 @@ const Alloc = z.object({ year: z.number().int().min(2000).max(2100), departmentI
 const finalDecision = z.object({ decision: z.enum(['APPROVED', 'REJECTED']), comment: text.optional() });
 const RequestDecision = z.object({ designation: finalDecision.optional(), team: finalDecision.optional() });
 const HrDecision = z.object({ status: z.enum(['APPROVED', 'RETURNED']), comment: text.optional() });
-const NewCycle = z.object({ userId: z.number().int().positive(), cycleStartDate: date });
 const Person = z.object({ dateOfJoining: date.nullable(), level: z.enum(['ASSOCIATE', 'MANAGER', 'HEAD_EL']).nullable(), currentAnnualCtc: amount.nullable() });
+const People = z.object({ rows: z.array(Person.extend({ userId: z.number().int().positive() })).min(1).max(5000) });
 const TeamQuery = z.object({ status: z.enum(['EMPLOYEE_OPEN', 'ASSESSOR_OPEN', 'FINANCE_REVIEW', 'OFFERED', 'ACCEPTED', 'POSTPONED']).optional() });
 
 // ── Routes ────────────────────────────────────────────────────────────────────────────────────────
@@ -87,7 +93,9 @@ router.get('/hr', handler(async (req, res) => {
   sendSuccess(res, await svc.hrList());
 }));
 router.get('/people', handler(async (req, res) => { sendSuccess(res, await svc.people(roleOf(req))); }));
-router.put('/people/:userId', validate(Person), handler(async (req, res) => { await svc.updatePerson(roleOf(req), Number(req.params['userId']), req.body); sendSuccess(res, true); }));
+// HR: saving the details is all it takes; the appraisal starts on its own when the person's April / October cycle is due
+router.post('/people/bulk', validate(People), handler(async (req, res) => { sendSuccess(res, await svc.bulkUpdatePeople(me(req), roleOf(req), req.body.rows)); }));
+router.put('/people/:userId', validate(Person), handler(async (req, res) => { sendSuccess(res, await svc.updatePerson(me(req), roleOf(req), Number(req.params['userId']), req.body)); }));
 router.get('/cycles/:cycleId', handler(async (req, res) => { sendSuccess(res, await svc.cycleFor(cycleId(req), me(req), roleOf(req))); }));
 
 router.put('/cycles/:cycleId/self-review', validate(SelfReview), handler(async (req, res) => { await svc.saveSelfReview(cycleId(req), me(req), req.body); sendSuccess(res, true); }));
@@ -102,6 +110,5 @@ router.put('/budget/allocation', validate(Alloc), handler(async (req, res) => { 
 router.post('/cycles/:cycleId/respond', validate(Respond), handler(async (req, res) => { sendSuccess(res, await svc.respond(cycleId(req), me(req), req.body)); }));
 router.put('/cycles/:cycleId/request-decision', validate(RequestDecision), handler(async (req, res) => { await svc.decideRequests(cycleId(req), me(req), roleOf(req), req.body); sendSuccess(res, true); }));
 router.put('/cycles/:cycleId/hr-decision', validate(HrDecision), handler(async (req, res) => { await svc.hrDecision(cycleId(req), me(req), roleOf(req), req.body); sendSuccess(res, true); }));
-router.post('/cycles', validate(NewCycle), handler(async (req, res) => { sendSuccess(res, await svc.createCycle(me(req), roleOf(req), req.body), 201); }));
 
 export default router;

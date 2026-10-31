@@ -38,15 +38,16 @@ async function usedByFl(year: number) {
   return new Map(rows.map((r) => [`${r['dept']}:${r['fl']}`, { used: n(r['used']), associates: n(r['cnt']) }]));
 }
 
-/** Everyone who can be given a share of a department's budget: its FL, the managers its people report to, and the EL when people report to them directly */
+/** Everyone who can be given a share of a department's budget: its FL and the managers its people report to — never the department's EL or an Admin */
 async function candidates(departmentId: number): Promise<Map<number, string>> {
   const [rows] = await pool.execute<Row[]>(
-    `SELECT u.UserID, u.UserName FROM Users u WHERE u.IsUserArchived = 0 AND u.UserStatus = 1 AND (
+    `SELECT u.UserID, u.UserName FROM Users u WHERE u.IsUserArchived = 0 AND u.UserStatus = 1 AND u.RoleID <> 1
+        AND u.UserID NOT IN (SELECT ExecutiveLeaderID FROM Department WHERE DepartmentID = ? AND ExecutiveLeaderID IS NOT NULL) AND (
         u.UserID IN (SELECT FunctionalLeaderID FROM Department WHERE DepartmentID = ?)
         OR (u.RoleID IN (${FL_ROLES}) AND u.UserID IN (SELECT m.ReportingManagerID FROM Users m JOIN DepartmentUser du ON du.UserID = m.UserID WHERE du.DepartmentID = ? AND m.ReportingManagerID IS NOT NULL))
         OR u.UserID IN (SELECT DISTINCT c.Assessor1UserID FROM AppraisalCycle c JOIN DepartmentUser du ON du.UserID = c.UserID WHERE du.DepartmentID = ? AND c.Assessor1UserID IS NOT NULL)
         OR u.UserID IN (SELECT FlUserID FROM AppraisalBudgetAlloc WHERE DepartmentID = ?)
-     ) ORDER BY u.UserName`, [departmentId, departmentId, departmentId, departmentId]);
+     ) ORDER BY u.UserName`, [departmentId, departmentId, departmentId, departmentId, departmentId]);
   return new Map(rows.map((r) => [r['UserID'] as number, r['UserName'] as string]));
 }
 
@@ -68,10 +69,12 @@ async function build(year: number, where: string, params: number[]): Promise<Dep
       const u = used.get(`${id}:${userId}`);
       return { userId, name, allocation, used: u?.used ?? 0, remaining: allocation - (u?.used ?? 0), associates: u?.associates ?? 0 };
     });
+    // hikes proposed by the EL for people who report to them directly still use the department budget
+    const deptUsed = [...used].filter(([k]) => k.startsWith(`${id}:`)).reduce((t, [, v]) => t + v.used, 0);
     out.push({
       departmentId: id, name: d['DepartmentName'], el: d['ExecutiveLeaderID'] ? { userId: d['ExecutiveLeaderID'], name: d['ElName'] ?? '' } : null,
       budget: b ? n(b['Amount']) : null, comment: (b?.['Comment'] as string) ?? '',
-      allocated: fls.reduce((t, f) => t + f.allocation, 0), used: fls.reduce((t, f) => t + f.used, 0), fls,
+      allocated: fls.reduce((t, f) => t + f.allocation, 0), used: deptUsed, fls,
     });
   }
   return out;

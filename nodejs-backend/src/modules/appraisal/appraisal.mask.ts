@@ -69,8 +69,8 @@ export function maskCycle(full: FullCycle, role: ViewRole): Record<string, unkno
     // Comments travel upwards only: the employee sees none of them, the FL sees their own, the EL sees the FL's too, Finance sees everything.
     const upper = role === 'A2' || role === 'FINANCE';
     const all = role === 'FINANCE';
-    // Assessor 1 sees only their own part, unless they are the one who decides (the EL on an FL appraisal, the CEO on an EL's)
-    const decides = role === (c.level === 'ASSOCIATE' ? 'A2' : 'A1');
+    // Assessor 1 sees only their own part, unless they are the one who decides (the last assessor: Assessor 1 when there is no Assessor 2)
+    const decides = role === (c.assessor2 ? 'A2' : 'A1');
     const mineOnly = role === 'A1' && !decides;
 
     // What the employee wrote and the PMS quarters (Part A): the employee and everyone above
@@ -125,8 +125,8 @@ export function maskCycle(full: FullCycle, role: ViewRole): Record<string, unkno
 
     // Approved hike: the EL and Finance always, the employee once the offer is out, the FL never
     if (upper || decides || (role === 'EMPLOYEE' && offerShown(c.status))) out['approved'] = full.approved;
-    // Finance's note about the budget goes to the EL only: Finance itself, and the EL when it is the EL's own appraisal
-    if (all || (role === 'EMPLOYEE' && c.level === 'HEAD_EL')) out['financeComment'] = full.financeComment;
+    // Finance's note about the budget goes only to the person whose hike Finance approves (one with no assessor)
+    if (all || (role === 'EMPLOYEE' && !c.assessor1 && !c.assessor2)) out['financeComment'] = full.financeComment;
   }
 
   out['response'] = full.response;
@@ -139,7 +139,7 @@ export interface TeamRow {
   cycleId: number; userId: number; employeeName: string; level: EmployeeLevel; status: Status; start: string;
   employeeWindowEnd: string; assessorWindowEnd: string; late: boolean;
   selfSubmitted: boolean; a1Submitted: boolean; a2Submitted: boolean; myRole: 'A1' | 'A2' | 'FINANCE';
-  assessor1Name: string | null; pmsFinalAvg: number | null; pmsQuarters: number; asksDesignation: boolean; asksTeam: boolean; canApprove: boolean;
+  assessor1Name: string | null; assessor2Name: string | null; pmsFinalAvg: number | null; pmsQuarters: number; asksDesignation: boolean; asksTeam: boolean; canApprove: boolean;
   /** The employee accepted and asked for a designation / team change the EL has not decided yet */
   requestsPending: boolean; canDecideRequests: boolean;
   expected: Money | null; minimal: { A1: Money | null; A2: Money | null }; approved: Money | null;
@@ -151,7 +151,7 @@ export function maskTeamRow(row: TeamRow): Record<string, unknown> {
     cycleId: row.cycleId, userId: row.userId, employeeName: row.employeeName, level: row.level, status: row.status, start: row.start,
     employeeWindowEnd: row.employeeWindowEnd, assessorWindowEnd: row.assessorWindowEnd, late: row.late,
     selfSubmitted: row.selfSubmitted, a1Submitted: row.a1Submitted, a2Submitted: row.a2Submitted, myRole: row.myRole,
-    assessor1Name: row.assessor1Name, pmsFinalAvg: row.pmsFinalAvg, pmsQuarters: row.pmsQuarters, asksDesignation: row.asksDesignation, asksTeam: row.asksTeam, canApprove: row.canApprove,
+    assessor1Name: row.assessor1Name, assessor2Name: row.assessor2Name, pmsFinalAvg: row.pmsFinalAvg, pmsQuarters: row.pmsQuarters, asksDesignation: row.asksDesignation, asksTeam: row.asksTeam, canApprove: row.canApprove,
     requestsPending: row.requestsPending, canDecideRequests: row.canDecideRequests,
   };
   if (row.myRole === 'A1') return { ...base, expected: row.expected, minimal: row.minimal };

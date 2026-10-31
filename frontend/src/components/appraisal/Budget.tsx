@@ -6,7 +6,7 @@ import { cn } from "@heroui/theme";
 import { Panel, SummaryBar } from "@/components/page";
 import { Button, addToast } from "@/components/ui";
 import { appraisalApi, errorText, type BudgetOverview, type DeptBudget, type TeamItem } from "./api";
-import { day, inr, parseAmount, showAmount } from "./format";
+import { LEVEL_LABEL, inr, parseAmount, showAmount } from "./format";
 import { Banner, StatusChip } from "./parts";
 
 const inputCls = "h-9 w-36 border border-ink-200 bg-transparent px-2.5 text-right text-[13px] text-ink-900 outline-none focus:border-brand-500 dark:border-white/10 dark:bg-ink-900 dark:text-white";
@@ -33,7 +33,7 @@ const th = (h: string, right = false) => <th key={h} className={cn("px-4 py-2.5"
 function FinanceView({ year, departments, onChanged }: { year: number; departments: DeptBudget[]; onChanged: () => void }) {
     const nav = useNavigate();
     const [waiting, setWaiting] = useState<TeamItem[]>([]);
-    useEffect(() => { appraisalApi.team("FINANCE_REVIEW").then((t) => setWaiting(t.items.filter((i) => i.level === "HEAD_EL"))).catch(() => setWaiting([])); }, [departments]);
+    useEffect(() => { appraisalApi.team("FINANCE_REVIEW").then((t) => setWaiting(t.items.filter((i) => i.canApprove && !i.assessor1Name && !i.assessor2Name))).catch(() => setWaiting([])); }, [departments]);
     const total = departments.reduce((t, d) => t + (d.budget ?? 0), 0);
     const [query, setQuery] = useState("");
     // departments that already have a budget come first, so work in progress is not buried among 48 rows
@@ -48,7 +48,7 @@ function FinanceView({ year, departments, onChanged }: { year: number; departmen
                 { label: `Budget given for ${year}`, value: inr(total), hint: `${departments.filter((d) => d.budget != null).length} of ${departments.length} departments` },
                 { label: "Given out by the ELs", value: inr(departments.reduce((t, d) => t + d.allocated, 0)) },
                 { label: "Proposed or approved", value: inr(departments.reduce((t, d) => t + d.used, 0)) },
-                { label: "EL hikes waiting for you", value: waiting.length },
+                { label: "Hikes waiting for you", value: waiting.length, hint: "People with no assessor set" },
             ]} />
             <Panel flush title="Department budgets" actions={
                 <label className="relative block w-60">
@@ -79,13 +79,13 @@ function FinanceView({ year, departments, onChanged }: { year: number; departmen
                     </table>
                 </div>
             </Panel>
-            <Panel flush title="EL hikes waiting for your approval">
+            <Panel flush title="Hikes waiting for your approval">
                 {waiting.length ? waiting.map((w) => (
                     <div key={w.cycleId} className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-200 px-5 py-4 last:border-0 dark:border-white/10">
-                        <div><p className="font-semibold text-ink-900 dark:text-white">{w.employeeName}</p><p className="text-xs text-ink-500">Executive Leader · assessor window ended {day(w.assessorWindowEnd)}</p></div>
+                        <div><p className="font-semibold text-ink-900 dark:text-white">{w.employeeName}</p><p className="text-xs text-ink-500">{LEVEL_LABEL[w.level]} · no assessor set, so Finance approves</p></div>
                         <div className="flex items-center gap-4"><StatusChip status={w.status} /><Button size="sm" color="primary" onPress={() => nav(`/appraisal/team/${w.cycleId}`)}>Review and approve</Button></div>
                     </div>
-                )) : <p className="px-5 py-10 text-center text-sm text-ink-500">No EL hike is waiting.</p>}
+                )) : <p className="px-5 py-10 text-center text-sm text-ink-500">Nothing is waiting. Every hike is decided by the person's last assessor.</p>}
             </Panel>
         </div>
     );

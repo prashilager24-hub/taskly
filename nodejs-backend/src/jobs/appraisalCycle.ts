@@ -3,7 +3,7 @@
  * Each step is safe to run twice on the same day: cycles are created once per person and year,
  * a status only moves when its date condition holds, and each reminder is written to the audit trail and sent once.
  *
- *  1. create cycles on joining anniversaries   2. employee window closes (day 16)   3. assessor window closes (day 31)
+ *  1. start the April / October cycles  2. employee window closes (day 16)   3. assessor window closes (day 31)
  *  4. postponed offers return to the assessors   5. reminder emails
  */
 import cron from 'node-cron';
@@ -12,23 +12,19 @@ import { pool } from '../config/db';
 import { env } from '../config/env';
 import { logger } from '../config/logger';
 import { sendMail } from '../utils/mailer';
-import { addDays, isAnniversary, todayIST } from '../modules/appraisal/appraisal.calc';
-import { audit, insertCycle, isFinance, type Appraisee } from '../modules/appraisal/appraisal.service';
+import { addDays, todayIST } from '../modules/appraisal/appraisal.calc';
+import { audit, ensureCycle, isFinance } from '../modules/appraisal/appraisal.service';
 
 type Row = mysql.RowDataPacket;
-const D = (col: string, alias: string) => `DATE_FORMAT(${col}, '%Y-%m-%d') AS ${alias}`;
 
+/** Starts the April / October cycle for everyone it is due for (joined December to May: April; June to November: October) */
 async function createCycles(today: string) {
   const [users] = await pool.execute<Row[]>(
-    `SELECT UserID, UserName, EmployeeLevel, CurrentAnnualCtc, ${D('DateOfJoining', 'Joined')} FROM Users
-      WHERE UserStatus = 1 AND IsUserArchived = 0 AND RoleID <> 1 AND DateOfJoining IS NOT NULL`);
+    'SELECT UserID, EmployeeLevel FROM Users WHERE UserStatus = 1 AND IsUserArchived = 0 AND RoleID <> 1 AND DateOfJoining IS NOT NULL');
   let created = 0;
   for (const u of users) {
-    if (!isAnniversary(u['Joined'] as string, today)) continue;
-    // a joining date this very year is not an anniversary yet
-    if ((u['Joined'] as string).slice(0, 4) === today.slice(0, 4)) continue;
     if (!u['EmployeeLevel']) { logger.warn({ userId: u['UserID'] }, 'Appraisal: no level set, cycle skipped'); continue; }
-    if (await insertCycle(pool, u as unknown as Appraisee, today, null)) created++;
+    if (await ensureCycle(u['UserID'] as number, null, today)) created++;
   }
   return created;
 }

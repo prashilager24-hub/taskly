@@ -12,10 +12,23 @@ import { StatusChip } from "./parts";
 
 type Filter = "todo" | "all";
 
-const Tick = ({ on, label }: { on: boolean; label: string }) => (
-    <span className={cn("inline-flex items-center gap-1 text-xs", on ? "text-emerald-600 dark:text-emerald-400" : "text-ink-400")} title={`${label}: ${on ? "submitted" : "not yet"}`}>
-        {on ? <Check size={13} /> : <Minus size={13} />}{label}
+const Tick = ({ on, label, who, final }: { on: boolean; label: string; who?: string | null; final?: boolean }) => (
+    <span className={cn("inline-flex items-center gap-1 whitespace-nowrap text-xs", on ? "text-emerald-600 dark:text-emerald-400" : "text-ink-400")} title={`${who ? `${label} · ${who}` : label}${final ? " · final say" : ""}: ${on ? "submitted" : "not yet"}`}>
+        {on ? <Check size={13} /> : <Minus size={13} />}{label}{final && <span className="bg-brand-600 px-1 text-[9px] font-semibold uppercase tracking-wide text-white">Final</span>}
     </span>
+);
+
+/** Self, then each assessor actually set on this appraisal; the last one has the final say */
+const Progress = ({ r }: { r: TeamItem }) => (
+    <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-3">
+            <Tick on={r.selfSubmitted} label="Self" />
+            {r.assessor1Name && <Tick on={r.a1Submitted} label="A1" who={r.assessor1Name} final={!r.assessor2Name} />}
+            {r.assessor2Name && <Tick on={r.a2Submitted} label="A2" who={r.assessor2Name} final />}
+            {!r.assessor1Name && !r.assessor2Name && <Tick on={r.status !== "EMPLOYEE_OPEN" && r.status !== "ASSESSOR_OPEN" && r.status !== "FINANCE_REVIEW"} label="Finance" final />}
+        </div>
+        <p className="max-w-[260px] truncate text-[11px] text-ink-500" title={[r.assessor1Name, r.assessor2Name].filter(Boolean).join(" → ")}>{[r.assessor1Name, r.assessor2Name].filter(Boolean).join(" → ") || "No assessor set"}</p>
+    </div>
 );
 
 const needsMe = (r: TeamItem) => (r.status === "ASSESSOR_OPEN" && ((r.myRole === "A1" && !r.a1Submitted) || (r.myRole === "A2" && !r.a2Submitted))) || r.canApprove || r.canDecideRequests;
@@ -32,7 +45,7 @@ function Row({ r }: { r: TeamItem }) {
             <td className="px-4 py-3 text-right tabular-nums">{p ? <span className="font-semibold">{inr(p.annual)}</span> : <span className="text-xs text-ink-400">Not proposed</span>}</td>
             <td className="px-4 py-3"><div className="flex flex-wrap gap-1.5">{r.asksDesignation && <Chip size="sm" variant="flat">Designation</Chip>}{r.asksTeam && <Chip size="sm" variant="flat">Team</Chip>}{!r.asksDesignation && !r.asksTeam && <span className="text-xs text-ink-400">None</span>}</div></td>
             <td className="px-4 py-3"><StatusChip status={r.status} /></td>
-            <td className="px-4 py-3"><div className="flex items-center gap-3"><Tick on={r.selfSubmitted} label="Self" /><Tick on={r.a1Submitted} label="FL" /><Tick on={r.a2Submitted} label="EL" /></div></td>
+            <td className="px-4 py-3"><Progress r={r} /></td>
             <td className="px-4 py-3 text-right"><Button size="sm" color={needsMe(r) ? "primary" : "default"} variant={needsMe(r) ? "solid" : "bordered"} onPress={() => nav(`/appraisal/team/${r.cycleId}`)}>{r.canApprove ? "Approve" : r.canDecideRequests ? "Decide changes" : needsMe(r) ? "Review" : "Open"}</Button></td>
         </tr>
     );

@@ -74,6 +74,22 @@ export function quarterSlots(ref: string): { n: number; quarter: string; year: n
   return out.map((s, i) => ({ n: i + 1, ...s }));
 }
 
+// ── The April and October cycles ──────────────────────────────────────────────────────────────────
+export type CycleMonth = 'APRIL' | 'OCTOBER';
+
+/** Joined December to May: the April cycle. Joined June to November: the October cycle. */
+export const cycleMonthOf = (joined: string): CycleMonth => {
+  const m = Number(joined.slice(5, 7));
+  return m >= 6 && m <= 11 ? 'OCTOBER' : 'APRIL';
+};
+
+/** The latest start of that cycle on or before `today`: 1 April or 1 October */
+export function currentCycleStart(month: CycleMonth, today: string): string {
+  const y = Number(today.slice(0, 4));
+  const start = `${y}-${month === 'APRIL' ? '04' : '10'}-01`;
+  return start <= today ? start : `${y - 1}${start.slice(4)}`;
+}
+
 /** The two windows of a cycle: employee days 1 to 15, assessors days 16 to 30 */
 export function cycleWindows(start: string) {
   return { employeeWindowEnd: addDays(start, 14), assessorWindowEnd: addDays(start, 29) };

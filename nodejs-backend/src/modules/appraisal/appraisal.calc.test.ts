@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, addMonths, currentCycleStart, cycleMonthOf, cycleWindows, isAnniversary, quarterSlots, splitHike, todayIST } from './appraisal.calc';
+import { addDays, addMonths, currentCycleStart, cycleMonthOf, periodOf, cycleWindows, isAnniversary, quarterSlots, splitHike, todayIST } from './appraisal.calc';
 
 describe('April / October cycle', () => {
   it('December to May joiners are in April, June to November in October', () => {
@@ -12,6 +12,12 @@ describe('April / October cycle', () => {
     expect(currentCycleStart('APRIL', '2026-10-30')).toBe('2026-04-01');
     expect(currentCycleStart('APRIL', '2026-04-01')).toBe('2026-04-01');
     expect(currentCycleStart('APRIL', '2026-03-31')).toBe('2025-04-01');
+  });
+  it('a date belongs to the latest 1 April / 1 October period', () => {
+    expect(periodOf('2026-10-30')).toBe('2026-10-01');
+    expect(periodOf('2026-10-01')).toBe('2026-10-01');
+    expect(periodOf('2026-09-30')).toBe('2026-04-01');
+    expect(periodOf('2026-03-31')).toBe('2025-10-01');
   });
 });
 

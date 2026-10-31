@@ -41,3 +41,4 @@ coverage/
 *.tsbuildinfo
 # Schema migrations are code, unlike DB dumps
 !nodejs-backend/src/config/migrations/*.sql
+!nodejs-backend/src/config/migrations/down/*.sql

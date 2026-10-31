@@ -90,6 +90,13 @@ export function currentCycleStart(month: CycleMonth, today: string): string {
   return start <= today ? start : `${y - 1}${start.slice(4)}`;
 }
 
+/** The period a date belongs to: the latest 1 April / 1 October on or before it. A department's round is per period. */
+export function periodOf(date: string): string {
+  const y = Number(date.slice(0, 4));
+  const m = Number(date.slice(5, 7));
+  return m >= 10 ? `${y}-10-01` : m >= 4 ? `${y}-04-01` : `${y - 1}-10-01`;
+}
+
 /** The two windows of a cycle: employee days 1 to 15, assessors days 16 to 30 */
 export function cycleWindows(start: string) {
   return { employeeWindowEnd: addDays(start, 14), assessorWindowEnd: addDays(start, 29) };

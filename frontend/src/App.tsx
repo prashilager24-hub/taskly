@@ -12,7 +12,7 @@ import History from "@/pages/History";
 import AccessManagementPage from "@/pages/access-management";
 import NotificationsPage from "@/pages/notifications";
 import { PmsIndex, PmsDashboardPage, PmsGoalPage, PmsFeedbackPage, PmsQuarterlyPage, PmsReportPage } from "@/pages/pmsPages";
-import { MyAppraisalPage, TeamAppraisalsPage, ReviewFormPage, BudgetPage, HrPostponementsPage, AppraisalSetupPage } from "@/pages/appraisalPages";
+import { MyAppraisalPage, AppraisalDepartmentsPage, DepartmentDetailPage, SplitPage, AllocationPage, RequestsPage, PersonPage, HrPostponementsPage, AppraisalSetupPage } from "@/pages/appraisalPages";
 import Efficiency from "./pages/efficiency";
 import ResetPasswordPage from "./pages/forgotPassword";
 import TargetManagement from "./pages/targetManagement";
@@ -69,9 +69,12 @@ function App() {
         <Route path="/pms/quarterly-review" element={<ProtectedRoute module="pms_quarterly"><PmsQuarterlyPage /></ProtectedRoute>} />
         <Route path="/pms/report" element={<ProtectedRoute module="pms_report"><PmsReportPage /></ProtectedRoute>} />
         <Route path="/appraisal" element={<ProtectedRoute module="appraisal"><MyAppraisalPage /></ProtectedRoute>} />
-        <Route path="/appraisal/team" element={<ProtectedRoute module="appraisal"><TeamAppraisalsPage /></ProtectedRoute>} />
-        <Route path="/appraisal/team/:cycleId" element={<ProtectedRoute module="appraisal"><ReviewFormPage /></ProtectedRoute>} />
-        <Route path="/appraisal/budget" element={<ProtectedRoute module="appraisal"><BudgetPage /></ProtectedRoute>} />
+        <Route path="/appraisal/departments" element={<ProtectedRoute module="appraisal"><AppraisalDepartmentsPage /></ProtectedRoute>} />
+        <Route path="/appraisal/departments/:departmentId/:period" element={<ProtectedRoute module="appraisal"><DepartmentDetailPage /></ProtectedRoute>} />
+        <Route path="/appraisal/split" element={<ProtectedRoute module="appraisal"><SplitPage /></ProtectedRoute>} />
+        <Route path="/appraisal/allocation" element={<ProtectedRoute module="appraisal"><AllocationPage /></ProtectedRoute>} />
+        <Route path="/appraisal/requests" element={<ProtectedRoute module="appraisal"><RequestsPage /></ProtectedRoute>} />
+        <Route path="/appraisal/person/:cycleId" element={<ProtectedRoute module="appraisal"><PersonPage /></ProtectedRoute>} />
         <Route path="/appraisal/hr" element={<ProtectedRoute module="appraisal"><HrPostponementsPage /></ProtectedRoute>} />
         <Route path="/appraisal/setup" element={<ProtectedRoute module="appraisal"><AppraisalSetupPage /></ProtectedRoute>} />
         <Route path="/Entry-Approval" element={<ProtectedRoute module="entryApproval"><EntryApproval /></ProtectedRoute>} />

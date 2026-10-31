@@ -1,4 +1,4 @@
-import type { Level, Status } from "./api";
+import type { Level, RequestStage, RoundStatus, ShareStatus, Stage, Status } from "./api";
 
 // Variable share of every hike by level. Mirrors the server (appraisal.calc.ts), which stays the source of truth:
 // this only drives the live preview under each input.
@@ -28,11 +28,33 @@ export const addDaysIso = (iso: string, n: number) => {
 };
 
 export const STATUS_LABEL: Record<Status, string> = {
-    EMPLOYEE_OPEN: "Employee window", ASSESSOR_OPEN: "With assessors", FINANCE_REVIEW: "Final approval", OFFERED: "Offer sent", ACCEPTED: "Accepted", POSTPONED: "Postponed",
+    EMPLOYEE_OPEN: "Appeal open", SUBMITTED: "Submitted", OFFERED: "Hike ready", ACCEPTED: "Accepted", POSTPONED: "Postponed",
 };
 export const STATUS_COLOR: Record<Status, "default" | "primary" | "secondary" | "success" | "warning" | "danger"> = {
-    EMPLOYEE_OPEN: "primary", ASSESSOR_OPEN: "secondary", FINANCE_REVIEW: "warning", OFFERED: "warning", ACCEPTED: "success", POSTPONED: "danger",
+    EMPLOYEE_OPEN: "primary", SUBMITTED: "secondary", OFFERED: "warning", ACCEPTED: "success", POSTPONED: "danger",
 };
+/** One person's place in the flow, as the statuses list names it */
+export const STAGE_LABEL: Record<Stage, string> = {
+    APPEAL_OPEN: "Appeal open", SUBMITTED: "Submitted", BUDGET_REVIEW: "Budget being set", IN_ALLOCATION: "Hike being decided",
+    AWAITING_EL: "Waiting for EL approval", OFFERED: "Hike ready", ACCEPTED: "Accepted", POSTPONED: "Postponed",
+};
+export const STAGE_COLOR: Record<Stage, "default" | "primary" | "secondary" | "success" | "warning" | "danger"> = {
+    APPEAL_OPEN: "primary", SUBMITTED: "default", BUDGET_REVIEW: "secondary", IN_ALLOCATION: "secondary", AWAITING_EL: "warning", OFFERED: "warning", ACCEPTED: "success", POSTPONED: "danger",
+};
+export const ROUND_LABEL: Record<RoundStatus, string> = {
+    COLLECTING: "Collecting appeals", READY_FOR_FINANCE: "Ready for Finance", BUDGET_WITH_EL: "Budget with EL", SHARES_WITH_FLS: "Shares with FLs", FINALISED: "Finalised",
+};
+export const ROUND_COLOR: Record<RoundStatus, "default" | "primary" | "secondary" | "success" | "warning" | "danger"> = {
+    COLLECTING: "default", READY_FOR_FINANCE: "warning", BUDGET_WITH_EL: "secondary", SHARES_WITH_FLS: "primary", FINALISED: "success",
+};
+export const SHARE_LABEL: Record<ShareStatus, string> = { PLANNED: "Not sent", SHARE_RECEIVED: "Share received", DRAFT: "Draft", SUBMITTED: "Waiting for EL", APPROVED: "Approved" };
+export const SHARE_COLOR: Record<ShareStatus, "default" | "primary" | "secondary" | "success" | "warning" | "danger"> = { PLANNED: "default", SHARE_RECEIVED: "primary", DRAFT: "secondary", SUBMITTED: "warning", APPROVED: "success" };
+export const REQ_LABEL: Record<RequestStage, string> = { WITH_FL: "With FL", WITH_EL: "With EL", APPROVED: "Approved", NOT_APPROVED: "Not this cycle" };
+export const REQ_COLOR: Record<RequestStage, "default" | "primary" | "secondary" | "success" | "warning" | "danger"> = { WITH_FL: "secondary", WITH_EL: "warning", APPROVED: "success", NOT_APPROVED: "default" };
+/** "2026-10-01" → "October 2026 cycle" */
+/** The April / October period a date belongs to (the latest 1 April / 1 October on or before it) */
+export const periodOfDate = (d: string) => { const y = Number(d.slice(0, 4)); const m = Number(d.slice(5, 7)); return m >= 10 ? `${y}-10-01` : m >= 4 ? `${y}-04-01` : `${y - 1}-10-01`; };
+export const periodLabel = (p: string) => `${Number(p.slice(5, 7)) === 4 ? "April" : "October"} ${p.slice(0, 4)} cycle`;
 
 /** "1,00,000" typed into a box → 100000 (null when empty) */
 export const parseAmount = (s: string): number | null => {

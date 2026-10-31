@@ -1,46 +1,69 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Spinner } from "@heroui/react";
-import { Award, BadgeCheck, CheckCircle2, Clock, Gift, Hourglass, PartyPopper, Sparkles, Users } from "lucide-react";
+import { cn } from "@heroui/theme";
+import { Award, BadgeCheck, Check, CheckCircle2, Clock, Gift, Hourglass, PartyPopper, Sparkles, Users } from "lucide-react";
 
 import { Panel } from "@/components/page";
 import { Button, Chip, Tab, Tabs, Textarea, addToast } from "@/components/ui";
-import { appraisalApi, errorText, type CycleView, type RequestField } from "./api";
-import { day, inr } from "./format";
+import { appraisalApi, errorText, type ChangeRequest, type MyView, type Stage } from "./api";
+import { REQ_COLOR, REQ_LABEL, day, inr } from "./format";
 import { AcceptModal, RejectModal } from "./OfferModal";
-import { ANSWER_QUESTIONS, Banner, COLS2, HikeField, MoneyCard, ReadText } from "./parts";
+import { Banner, COLS2, HikeField, MoneyCard, ReadText, WHY_KEY, WHY_LABEL } from "./parts";
 import PmsTable from "./PmsTable";
 import QuarterGrid from "./QuarterGrid";
 
 type TabKey = "goals" | "hike" | "proposed";
 
-/** A calm message for the Proposed Hike tab while there is nothing to decide yet */
+/** A calm message for the Proposed hike tab while there is nothing to decide yet */
 const Waiting = ({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) => (
-    <div className="flex flex-col items-center gap-3 border border-dashed border-ink-300 px-6 py-12 text-center dark:border-white/20">
+    <div className="flex flex-col items-center gap-3 border border-dashed border-ink-300 px-6 py-10 text-center dark:border-white/20">
         <span className="flex h-12 w-12 items-center justify-center bg-ink-100 text-ink-600 dark:bg-white/5 dark:text-ink-300">{icon}</span>
         <p className="text-base font-bold text-ink-900 dark:text-white">{title}</p>
-        <p className="max-w-[52ch] text-sm text-ink-500 dark:text-ink-400">{children}</p>
+        <p className="max-w-[56ch] text-sm text-ink-500 dark:text-ink-400">{children}</p>
     </div>
 );
 
-type Asked = { field: RequestField; label: string; value: string; why: string };
-const decisionOf = (view: CycleView, field: RequestField) => view.requestReviews?.[field]?.A2?.decision ?? null;
+/** Where the hike is: the person sees the steps, never who wrote what */
+const STEPS: { stage: Stage[]; label: string }[] = [
+    { stage: ["APPEAL_OPEN"], label: "Your appeal" },
+    { stage: ["SUBMITTED", "BUDGET_REVIEW"], label: "Department budget" },
+    { stage: ["IN_ALLOCATION", "AWAITING_EL"], label: "Hike being decided" },
+    { stage: ["OFFERED"], label: "Hike ready" },
+    { stage: ["ACCEPTED", "POSTPONED"], label: "Your answer" },
+];
+function Tracker({ stage }: { stage: Stage }) {
+    const at = STEPS.findIndex((s) => s.stage.includes(stage));
+    return (
+        <ol className="grid grid-cols-1 gap-2 sm:grid-cols-5">
+            {STEPS.map((s, i) => (
+                <li key={s.label} className={cn("flex items-center gap-2 border px-3 py-2.5 text-sm", i < at ? "border-emerald-500/40 text-emerald-700 dark:text-emerald-400" : i === at ? "border-brand-600 bg-brand-50 font-semibold text-ink-900 dark:bg-brand-600/10 dark:text-white" : "border-ink-200 text-ink-400 dark:border-white/10")}>
+                    <span className={cn("flex h-5 w-5 shrink-0 items-center justify-center text-[11px] font-bold", i < at ? "bg-emerald-600 text-white" : i === at ? "bg-brand-600 text-white" : "bg-ink-100 dark:bg-white/10")}>{i < at ? <Check size={12} /> : i + 1}</span>
+                    {s.label}
+                </li>
+            ))}
+        </ol>
+    );
+}
 
-/** A requested change that was not approved (or not decided yet): said quietly and kindly, never in red */
-function ChangeRow({ view, field, label, value, why }: { view: CycleView } & Asked) {
-    const d = decisionOf(view, field);
+/** A requested change not approved (or not decided yet): said quietly and kindly, never in red */
+function ChangeRow({ r, route }: { r: ChangeRequest; route: MyView["route"] }) {
+    const label = r.field === "DESIGNATION" ? "Designation" : "Team";
+    const note = r.stage === "NOT_APPROVED" ? "Not this time. Keep building on this year's work; you can ask again at your next appraisal."
+        : r.stage === "WITH_FL" ? `With ${route.fl?.name ?? "your FL"}, who will pass it to ${route.el?.name ?? "your EL"} with a recommendation.`
+        : `With ${route.el?.name ?? "your EL"} for the decision.`;
     return (
         <li className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
             <div className="min-w-0">
-                <p className="text-sm text-ink-900 dark:text-white"><span className="text-ink-500">{label}:</span> <b>{value}</b></p>
-                <p className="mt-0.5 text-xs text-ink-500">{d === "REJECTED" ? "Not this time. Keep building on this year's work; you can ask again at your next appraisal." : why}</p>
+                <p className="text-sm text-ink-900 dark:text-white"><span className="text-ink-500">{label}:</span> <b>{r.value}</b></p>
+                <p className="mt-0.5 text-xs text-ink-500">{note}</p>
             </div>
-            <Chip size="sm" variant="flat" color={d === "REJECTED" ? "default" : "warning"}>{d === "REJECTED" ? "Not this cycle" : "Waiting for a decision"}</Chip>
+            <Chip size="sm" variant="flat" color={REQ_COLOR[r.stage]}>{REQ_LABEL[r.stage]}</Chip>
         </li>
     );
 }
 
 /** An approved designation or team change: the moment to celebrate */
-function Celebration({ name, won }: { name: string; won: Asked[] }) {
+function Celebration({ name, won }: { name: string; won: ChangeRequest[] }) {
     const designation = won.find((w) => w.field === "DESIGNATION");
     const team = won.find((w) => w.field === "TEAM");
     return (
@@ -70,10 +93,10 @@ function Celebration({ name, won }: { name: string; won: Asked[] }) {
     );
 }
 
-// My Appraisal. "Appeal for Appraisal" opens it on the page in three tabs:
-// Goals and targets by quarter (all from PMS), Hike proposal (what I ask for), Proposed hike (the EL's approved amount, Accept or Reject).
+// My Appraisal. "Appeal for Appraisal" opens three tabs: Goals and targets by quarter (from PMS), Hike proposal
+// (expected and target hike and why), Proposed hike (where it stands; the hike once it is decided, to accept or reject).
 export default function MyAppraisal() {
-    const [view, setView] = useState<CycleView | null>(null);
+    const [view, setView] = useState<MyView | null>(null);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [tab, setTab] = useState<TabKey>("goals");
@@ -83,7 +106,7 @@ export default function MyAppraisal() {
     const jumped = useRef(false);
     const formRef = useRef<HTMLDivElement>(null);
 
-    const [answers, setAnswers] = useState<Record<string, string>>({});
+    const [why, setWhy] = useState("");
     const [expected, setExpected] = useState<number | null>(null);
     const [target, setTarget] = useState<number | null>(null);
 
@@ -92,10 +115,10 @@ export default function MyAppraisal() {
             const v = await appraisalApi.my();
             setView(v);
             if (v) {
-                setAnswers(v.self?.answers ?? {});
+                setWhy(v.self?.answers?.[WHY_KEY] ?? "");
                 setExpected(v.expected?.annual ?? null);
                 setTarget(v.target?.annual ?? null);
-                // once the EL has approved the amount, the page opens straight on the Proposed hike tab
+                // once the hike is ready, the page opens straight on the Proposed hike tab
                 if (v.cycle.status === "OFFERED" && !jumped.current) { jumped.current = true; setShowForm(true); setTab("proposed"); }
             }
         } catch (e) { addToast({ title: "Could not load your appraisal", description: errorText(e), color: "danger" }); }
@@ -109,60 +132,45 @@ export default function MyAppraisal() {
     );
 
     const c = view.cycle;
-    const editable = !!view.can.selfReview;
+    const editable = view.can.appeal;
     const submitted = !!view.self?.submittedAt;
     const approved = view.approved;
-    const decided = c.status === "ACCEPTED" || c.status === "POSTPONED";
-
     const open = (t: TabKey) => { setTab(t); setShowForm(true); setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); };
 
     const save = async (submit: boolean) => {
+        if (submit && (expected == null || target == null || !why.trim())) { addToast({ title: "Fill in all three", description: "Expected hike, target hike, and why you expect it.", color: "warning" }); return; }
         setSaving(submit ? "submit" : "draft");
         try {
-            await appraisalApi.selfReview(c.id, { answers, quarters: [], expectedHike: expected, targetHike: target, submit });
-            addToast({ title: submit ? "Submitted for review" : "Draft saved", description: submit ? "You will see the approved amount in the Proposed hike tab." : undefined, color: "success" });
+            await appraisalApi.appeal(c.id, { answers: { [WHY_KEY]: why }, quarters: [], expectedHike: expected, targetHike: target, submit });
+            addToast({ title: submit ? "Appeal submitted" : "Draft saved", description: submit ? "Your hike will appear in the Proposed hike tab once it is decided." : undefined, color: "success" });
             await load();
             if (submit) setTab("proposed");
         } catch (e) { addToast({ title: submit ? "Could not submit" : "Could not save", description: errorText(e), color: "danger" }); }
         finally { setSaving(null); }
     };
 
-    // Save draft / Submit for review, at the end of the Hike proposal tab
-    const saveBar = (
-        <div className="flex flex-wrap items-center justify-end gap-3 border-t border-ink-200 pt-4 dark:border-white/10">
-            <p className="mr-auto text-xs text-ink-500">{submitted ? `Submitted ${day(view.self?.submittedAt)}.` : view.timed ? `Not submitted yet. Open until ${day(c.employeeWindowEnd)}.` : "Not submitted yet. Submitting sends it to your FL, your EL and Finance."}</p>
-            <Button variant="bordered" isLoading={saving === "draft"} isDisabled={saving !== null} onPress={() => save(false)}>Save draft</Button>
-            <Button color="primary" isLoading={saving === "submit"} isDisabled={saving !== null} onPress={() => save(true)}>Submit for review</Button>
-        </div>
-    );
-
-    // The designation / team changes asked for when accepting, and the ones that were approved
-    const asked: Asked[] = [
-        ...(view.request?.newDesignation ? [{ field: "DESIGNATION" as const, label: "Designation", value: view.request.newDesignation, why: view.request.designationComment }] : []),
-        ...(view.request?.newTeam ? [{ field: "TEAM" as const, label: "Team", value: view.request.newTeam, why: view.request.teamComment }] : []),
-    ];
-    const won = c.status === "ACCEPTED" ? asked.filter((x) => decisionOf(view, x.field) === "APPROVED") : [];
-    const notWon = asked.filter((x) => !won.includes(x));
+    const won = c.status === "ACCEPTED" ? view.requests.filter((r) => r.stage === "APPROVED") : [];
+    const notWon = view.requests.filter((r) => !won.includes(r));
     const firstName = c.employeeName.split(" ")[0];
 
     // The top card: one line on where the person is, and one button
     let icon = <Award size={26} />;
     let title = "Your appraisal is open";
-    let text = `Look at your four quarters and enter the hike you are asking for, with your reasons.${view.timed ? ` This closes on ${day(c.employeeWindowEnd)}.` : ""}`;
+    let text = `Look at your four quarters and tell us the hike you expect, the hike you target, and why.${view.timed ? ` This closes on ${day(c.employeeWindowEnd)}.` : ""}`;
     let action = <Button size="lg" color="primary" onPress={() => open("goals")}>Appeal for Appraisal</Button>;
-    if (!editable && c.status === "EMPLOYEE_OPEN") {
-        icon = <Clock size={26} />; title = "Your appraisal window has closed";
-        text = c.late ? `It closed on ${day(c.employeeWindowEnd)} and was not submitted.` : `It closed on ${day(c.employeeWindowEnd)}.`;
-        action = <Button size="lg" variant="bordered" onPress={() => open("goals")}>View my appraisal</Button>;
-    } else if (c.status === "ASSESSOR_OPEN" || c.status === "FINANCE_REVIEW") {
-        icon = <Hourglass size={26} />; title = "Submitted for review";
-        text = "Your appraisal is being reviewed. The approved amount will appear in the Proposed hike tab.";
+    if (c.status === "EMPLOYEE_OPEN" && !editable) {
+        icon = <Clock size={26} />; title = "Your appeal window has closed";
+        text = `It closed on ${day(c.employeeWindowEnd)}. Your hike is still decided with the rest of your department.`;
         action = <Button size="lg" variant="bordered" onPress={() => open("proposed")}>View my appraisal</Button>;
+    } else if (c.status === "SUBMITTED") {
+        icon = <Hourglass size={26} />; title = "Appeal submitted";
+        text = "Your department's budget is being set and your hike decided. It appears in the Proposed hike tab as soon as it is ready.";
+        action = <Button size="lg" variant="bordered" onPress={() => open("proposed")}>See where it is</Button>;
     } else if (c.status === "OFFERED") {
-        icon = <Gift size={26} />; title = "Your hike is approved";
-        text = "Open the Proposed hike tab to accept it or reject it.";
-        action = <Button size="lg" color="success" onPress={() => open("proposed")}>See proposed hike</Button>;
-    } else if (decided) {
+        icon = <Gift size={26} />; title = "Your hike is ready";
+        text = view.can.reject ? "Open the Proposed hike tab to accept it or reject it." : "Open the Proposed hike tab to accept it.";
+        action = <Button size="lg" color="success" onPress={() => open("proposed")}>See my hike</Button>;
+    } else if (c.status === "ACCEPTED" || c.status === "POSTPONED") {
         icon = <CheckCircle2 size={26} />; title = c.status === "ACCEPTED" ? `You accepted ${inr(approved?.annual)} a year` : "Your hike is postponed";
         text = c.status === "ACCEPTED" ? "See the final decision in the Proposed hike tab." : `It is postponed to ${day(c.postponedUntil)}.`;
         action = <Button size="lg" variant="bordered" onPress={() => open("proposed")}>View final decision</Button>;
@@ -175,39 +183,33 @@ export default function MyAppraisal() {
         }
     }
 
-    // What each assessor proposed for this person, and what they wrote, once each has submitted. The last one had the final say.
-    const finalSlot = c.assessor2 ? "A2" : "A1";
-    const byAssessor = (["A1", "A2"] as const).map((k) => ({ k, who: (k === "A1" ? c.assessor1?.name : c.assessor2?.name) ?? (k === "A1" ? "Assessor 1" : "Assessor 2"), role: k === finalSlot ? "Final decision" : "First review", money: view.minimal?.[k] ?? null, comment: view.assessors?.[k]?.comment ?? "" })).filter((x) => x.money || x.comment);
-    const assessorsBlock = byAssessor.length > 0 && (
-        <div className="flex flex-col gap-3">
-            <p className="eyebrow">What your assessors proposed</p>
-            <div className={COLS2}>
-                {byAssessor.map((x) => (
-                    <div key={x.k} className="flex flex-col gap-3 border border-ink-200 p-4 dark:border-white/10">
-                        <p className="text-sm font-semibold text-ink-900 dark:text-white">{x.who} <span className="font-normal text-ink-500">· {x.role}</span></p>
-                        {x.money && <p className="text-2xl font-bold leading-none text-ink-900 dark:text-white">{inr(x.money.annual)}<span className="ml-1.5 text-xs font-normal text-ink-500">per year · {inr(x.money.fixed)} fixed + {inr(x.money.variable)} variable</span></p>}
-                        <ReadText label="Comment" value={x.comment} />
-                    </div>
-                ))}
-            </div>
+    const requestsBlock = notWon.length > 0 && (
+        <div className="flex flex-col gap-2">
+            <p className="eyebrow">{won.length ? "Your other request" : "Requested changes"}</p>
+            <ul className="divide-y divide-ink-100 border border-ink-200 dark:divide-white/5 dark:border-white/10">{notWon.map((r) => <ChangeRow key={r.field} r={r} route={view.route} />)}</ul>
         </div>
     );
+
     let proposed: ReactNode;
     if (c.status === "OFFERED") {
         proposed = (
             <div className="flex flex-col gap-5">
                 <div className="border border-brand-600 bg-brand-50 p-5 dark:bg-brand-600/10">
-                    <p className="eyebrow">Approved hike per year</p>
+                    <p className="eyebrow">Your hike per year</p>
                     <p className="mt-2 text-4xl font-bold leading-none tracking-tight text-ink-900 dark:text-white">{inr(approved?.annual)}</p>
                     <dl className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                        {[["Fixed pay", approved?.fixed], ["Variable pay", approved?.variable], ["Half-yearly", approved?.variablePerHalfYear]].map(([k, v]) => (
+                        {[["Fixed pay", approved?.fixed], ["Variable pay", approved?.variable], ["Each half-year", approved?.variablePerHalfYear]].map(([k, v]) => (
                             <div key={k as string}><dt className="eyebrow">{k as string}</dt><dd className="mt-1 text-xl font-bold text-ink-900 dark:text-white">{inr(v as number)}</dd></div>
                         ))}
                     </dl>
                 </div>
-                <p className="max-w-[72ch] text-sm text-ink-500 dark:text-ink-400">Variable pay is paid in two equal halves each year. Accept it, or reject it and have it postponed by 3 or 6 months. There is no counter-offer. When you accept you can also ask for a change in designation or team.</p>
+                <p className="max-w-[72ch] text-sm text-ink-500 dark:text-ink-400">
+                    Variable pay is paid in two equal halves each year.{" "}
+                    {view.can.reject ? "Accept it, or reject it and have it postponed by 3 or 6 months. " : "This is the hike agreed with you, so it is accepted here. "}
+                    {view.can.ask && `When you accept you can ask for a change in designation or team; it goes to ${view.route.source === "FL_TEAM" ? `${view.route.fl?.name ?? "your FL"} first, then ${view.route.el?.name ?? "your EL"}` : view.route.el?.name ?? "your EL"}.`}
+                </p>
                 <div className="flex flex-wrap justify-end gap-3">
-                    <Button size="lg" variant="bordered" color="danger" onPress={() => setRejectOpen(true)}>Reject</Button>
+                    {view.can.reject && <Button size="lg" variant="bordered" color="danger" onPress={() => setRejectOpen(true)}>Reject</Button>}
                     <Button size="lg" color="success" onPress={() => setAcceptOpen(true)}>Accept</Button>
                 </div>
             </div>
@@ -218,30 +220,30 @@ export default function MyAppraisal() {
                 {won.length > 0 && <Celebration name={firstName} won={won} />}
                 <p className="eyebrow">Final decision</p>
                 <MoneyCard title="Hike accepted" money={approved} accent />
-                {notWon.length > 0 && (
-                    <div className="flex flex-col gap-2">
-                        <p className="eyebrow">{won.length ? "Your other request" : "Requested changes"}</p>
-                        <ul className="divide-y divide-ink-100 border border-ink-200 dark:divide-white/5 dark:border-white/10">
-                            {notWon.map((x) => <ChangeRow key={x.field} view={view} {...x} />)}
-                        </ul>
-                    </div>
-                )}
-                {!asked.length && <p className="text-sm text-ink-500">You did not ask for a change in designation or team.</p>}
+                {requestsBlock}
+                {!view.requests.length && <p className="text-sm text-ink-500">You did not ask for a change in designation or team.</p>}
             </div>
         );
     } else if (c.status === "POSTPONED") {
-        proposed = <Waiting icon={<Clock size={22} />} title={`Postponed to ${day(c.postponedUntil)}`}>You rejected the offer. {view.response?.hrStatus === "APPROVED" ? "HR has approved the postponement." : "HR has been asked to follow up."}</Waiting>;
-    } else if (submitted || c.status === "ASSESSOR_OPEN" || c.status === "FINANCE_REVIEW") {
-        proposed = <Waiting icon={<Hourglass size={22} />} title="Waiting for the final amount">Your hike proposal is with your reviewers. As soon as their reviews are in, the final amount appears here and you can accept or reject it.</Waiting>;
+        proposed = <Waiting icon={<Clock size={22} />} title={`Postponed to ${day(c.postponedUntil)}`}>You rejected the offer. {view.response?.hrStatus === "APPROVED" ? "HR has approved the postponement." : "HR has been asked to follow up."} Your hike will be decided again then.</Waiting>;
     } else {
-        proposed = <Waiting icon={<Hourglass size={22} />} title="Nothing to show yet">Submit your hike proposal first. Once it has been reviewed and the EL approves the final amount, it appears here.</Waiting>;
+        const waitText: Partial<Record<Stage, string>> = {
+            APPEAL_OPEN: "Submit your hike proposal first. Once your department's budget is set and your hike decided, it appears here.",
+            SUBMITTED: "Your appeal is in. When everyone in your department has appealed, the Finance Head sets the department's budget.",
+            BUDGET_REVIEW: "Everyone in your department has appealed. The Finance Head is reviewing the department and setting its budget.",
+            IN_ALLOCATION: "Your department has its budget. Your hike is being decided now.",
+            AWAITING_EL: "Your hike has been decided and is waiting for the final approval.",
+        };
+        proposed = (
+            <div className="flex flex-col gap-5">
+                <Tracker stage={view.stage} />
+                <Waiting icon={<Hourglass size={22} />} title={c.status === "EMPLOYEE_OPEN" ? "Nothing to show yet" : "Waiting for your hike"}>{waitText[view.stage] ?? ""}</Waiting>
+            </div>
+        );
     }
 
     return (
         <div className="flex flex-col gap-6">
-            {view.financeComment && c.status === "FINANCE_REVIEW" && (
-                <Banner tone="warn"><b>Note from Finance about the budget:</b> {view.financeComment}</Banner>
-            )}
             <Panel>
                 <div className={showForm ? "flex flex-wrap items-center justify-between gap-4 px-2 py-2" : "flex flex-col items-center gap-5 px-4 py-12 text-center"}>
                     <div className={showForm ? "flex items-center gap-4" : "flex flex-col items-center gap-5"}>
@@ -278,19 +280,23 @@ export default function MyAppraisal() {
                                         ) : (
                                             <div className={COLS2}><MoneyCard title="Expected hike" money={view.expected} /><MoneyCard title="Target hike" money={view.target} /></div>
                                         )}
-                                        <div className="flex flex-col gap-4 border-t border-ink-200 pt-5 dark:border-white/10">
-                                            <p className="eyebrow">Why this hike</p>
-                                            {editable ? (
-                                                <div className={COLS2}>{ANSWER_QUESTIONS.map(([key, label]) => <Textarea key={key} label={label} minRows={3} value={answers[key] ?? ""} onValueChange={(v) => setAnswers((a) => ({ ...a, [key]: v }))} />)}</div>
-                                            ) : (
-                                                <div className={COLS2}>{ANSWER_QUESTIONS.map(([key, label]) => <ReadText key={key} label={label} value={answers[key]} />)}</div>
-                                            )}
+                                        <div className="border-t border-ink-200 pt-5 dark:border-white/10">
+                                            {editable ? <Textarea label={WHY_LABEL} minRows={4} value={why} onValueChange={setWhy} isRequired /> : <ReadText label={WHY_LABEL} value={why} />}
                                         </div>
-                                        {editable && saveBar}
+                                        {editable && (
+                                            <div className="flex flex-wrap items-center justify-end gap-3 border-t border-ink-200 pt-4 dark:border-white/10">
+                                                <p className="mr-auto text-xs text-ink-500">{submitted ? `Submitted ${day(view.self?.submittedAt)}.` : view.timed ? `Not submitted yet. Open until ${day(c.employeeWindowEnd)}.` : "Not submitted yet."}</p>
+                                                <Button variant="bordered" isLoading={saving === "draft"} isDisabled={saving !== null} onPress={() => save(false)}>Save draft</Button>
+                                                <Button color="primary" isLoading={saving === "submit"} isDisabled={saving !== null} onPress={() => save(true)}>Submit appeal</Button>
+                                            </div>
+                                        )}
                                     </div>
                                 </Tab>
                                 <Tab key="proposed" title={<span className="flex items-center gap-2">Proposed hike{c.status === "OFFERED" && <span className="h-2 w-2 bg-brand-600" aria-label="Ready" />}</span>}>
-                                    <div className="flex flex-col gap-6 pb-5 pt-3">{proposed}{assessorsBlock}</div>
+                                    <div className="flex flex-col gap-6 pb-5 pt-3">
+                                        {c.status === "OFFERED" && <Banner>Your hike was approved by {view.route.el?.name ?? "your EL"}.</Banner>}
+                                        {proposed}
+                                    </div>
                                 </Tab>
                             </Tabs>
                         </div>

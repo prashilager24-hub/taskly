@@ -3,11 +3,17 @@ import { Lock } from "lucide-react";
 import { cn } from "@heroui/theme";
 
 import { Chip, Input } from "@/components/ui";
-import type { Level, Money, Status } from "./api";
-import { STATUS_COLOR, STATUS_LABEL, inr, parseAmount, showAmount, splitPreview, VARIABLE_PCT } from "./format";
+import type { Level, Money, RoundStatus, Stage, Status } from "./api";
+import { ROUND_COLOR, ROUND_LABEL, STAGE_COLOR, STAGE_LABEL, STATUS_COLOR, STATUS_LABEL, inr, parseAmount, showAmount, splitPreview, VARIABLE_PCT } from "./format";
 
 export const StatusChip = ({ status }: { status: Status }) => (
     <Chip size="sm" variant="flat" color={STATUS_COLOR[status]}>{STATUS_LABEL[status]}</Chip>
+);
+export const StageChip = ({ stage }: { stage: Stage }) => (
+    <Chip size="sm" variant="flat" color={STAGE_COLOR[stage]}>{STAGE_LABEL[stage]}</Chip>
+);
+export const RoundChip = ({ status }: { status: RoundStatus }) => (
+    <Chip size="sm" variant="flat" color={ROUND_COLOR[status]}>{ROUND_LABEL[status]}</Chip>
 );
 
 export const Banner = ({ tone = "info", children }: { tone?: "info" | "warn"; children: ReactNode }) => (
@@ -81,9 +87,33 @@ export const COLS2 = "grid grid-cols-1 gap-4 md:grid-cols-2";
 export const COLS4 = "grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4";
 
 /** The questions that go with the hike proposal. Older answers to other questions stay stored but are no longer asked or shown. */
-export const ANSWER_QUESTIONS: [string, string][] = [
-    ["whyDeserveSalary", "Why do you think you deserve this salary?"],
-    ["biggestMilestone", "Biggest milestone"],
-    ["biggestAchievement", "Biggest achievement"],
-    ["whyExpectThisSalary", "Why do you expect this much salary?"],
-];
+/** The one question of the appeal (stored with the answers, key whyExpectThisSalary) */
+export const WHY_KEY = "whyExpectThisSalary";
+export const WHY_LABEL = "Why are you expecting this salary / hike?";
+
+const boxCls = "h-9 w-full border border-ink-200 bg-transparent px-2.5 text-right text-[13px] tabular-nums text-ink-900 outline-none placeholder:text-ink-400 focus:border-brand-500 disabled:opacity-60 dark:border-white/10 dark:bg-ink-900 dark:text-white";
+/** A compact rupee box for tables: Indian grouping while typing, null when empty */
+export const AmountBox = ({ value, onChange, label, disabled }: { value: number | null; onChange: (v: number | null) => void; label: string; disabled?: boolean }) => (
+    <input aria-label={label} inputMode="numeric" placeholder="₹ per year" className={boxCls} value={showAmount(value)} disabled={disabled} onChange={(e) => onChange(parseAmount(e.target.value))} />
+);
+export const TextBox = ({ value, onChange, label, placeholder, disabled }: { value: string; onChange: (v: string) => void; label: string; placeholder?: string; disabled?: boolean }) => (
+    <input aria-label={label} placeholder={placeholder} className={boxCls.replace("text-right ", "text-left ").replace(" tabular-nums", "")} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} />
+);
+
+/** How much of a budget is given out, in coloured parts, and what is left (red when over) */
+export function BudgetBar({ total, parts }: { total: number; parts: { label: string; amount: number; color: string }[] }) {
+    const used = parts.reduce((t, p) => t + p.amount, 0);
+    const left = total - used;
+    return (
+        <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <p className="text-sm text-ink-600 dark:text-ink-300"><b className="text-ink-900 dark:text-white">{inr(used)}</b> of {inr(total)} given out</p>
+                <p className={cn("text-sm font-bold tabular-nums", left < 0 ? "text-rose-600" : "text-emerald-600")}>{left < 0 ? `${inr(-left)} over` : `${inr(left)} left`}</p>
+            </div>
+            <div className="flex h-2.5 w-full overflow-hidden bg-ink-100 dark:bg-white/10" role="img" aria-label={`${inr(used)} of ${inr(total)} given out`}>
+                {parts.map((p) => <span key={p.label} style={{ width: `${total ? Math.min(100, (p.amount / total) * 100) : 0}%` }} className={p.color} />)}
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1">{parts.map((p) => <span key={p.label} className="inline-flex items-center gap-1.5 text-xs text-ink-500"><span className={cn("h-2 w-2", p.color)} />{p.label} {inr(p.amount)}</span>)}</div>
+        </div>
+    );
+}

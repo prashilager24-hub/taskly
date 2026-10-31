@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { splitHike } from './appraisal.calc';
-import { maskCycle, maskTeamRow, type FullCycle, type Status, type TeamRow } from './appraisal.mask';
+import { maskCycle, type FullCycle, type Status } from './appraisal.mask';
 
 const money = (n: number) => { const s = splitHike(n, 'ASSOCIATE'); return { annual: s.annualAmount, fixed: s.fixed, variable: s.variable, variablePct: s.variablePct, variablePerHalfYear: s.variablePerHalfYear }; };
 
@@ -23,7 +23,7 @@ const as = (o: Record<string, unknown>, k: string) => o[k] as Record<string, unk
 
 describe('maskCycle: comments travel upwards only', () => {
   it('EMPLOYEE: sees each assessor hike and comment once submitted; never their rating, manager feedback or quarter ratings', () => {
-    for (const st of ['ASSESSOR_OPEN', 'OFFERED', 'ACCEPTED'] as const) {
+    for (const st of ['SUBMITTED', 'OFFERED', 'ACCEPTED'] as const) {
       const m = maskCycle(full(st), 'EMPLOYEE');
       const a = m['assessors'] as Record<string, Record<string, unknown>>;
       expect(a['A1'], st).toEqual({ comment: 'strong', submittedAt: 'x' });
@@ -33,11 +33,11 @@ describe('maskCycle: comments travel upwards only', () => {
       expect(has((m['quarters'] as object[])[0], 'ratings'), st).toBe(false);
       for (const k of ['self', 'request', 'pms', 'expected', 'target']) expect(has(m, k), k).toBe(true);
     }
-    expect(has(maskCycle(full('ASSESSOR_OPEN'), 'EMPLOYEE'), 'approved')).toBe(false);
+    expect(has(maskCycle(full('SUBMITTED'), 'EMPLOYEE'), 'approved')).toBe(false);
     expect(has(maskCycle(full('OFFERED'), 'EMPLOYEE'), 'approved')).toBe(true);
   });
   it('EMPLOYEE: a draft review shows nothing, neither hike nor comment', () => {
-    const f = full('ASSESSOR_OPEN');
+    const f = full('SUBMITTED');
     f.assessors.A2 = { ...f.assessors.A2!, submittedAt: null };
     const m = maskCycle(f, 'EMPLOYEE');
     expect((m['assessors'] as Record<string, unknown>)['A2']).toBeNull();
@@ -47,10 +47,10 @@ describe('maskCycle: comments travel upwards only', () => {
     const rr = as(maskCycle(full('OFFERED'), 'EMPLOYEE'), 'requestReviews') as { DESIGNATION: Record<string, unknown> };
     expect(has(rr.DESIGNATION, 'A1')).toBe(false);
     expect(rr.DESIGNATION['A2']).toEqual({ decision: 'APPROVED' });
-    expect(has(maskCycle(full('ASSESSOR_OPEN'), 'EMPLOYEE'), 'requestReviews')).toBe(false);
+    expect(has(maskCycle(full('SUBMITTED'), 'EMPLOYEE'), 'requestReviews')).toBe(false);
   });
   it('FL (A1): sees the Associate incl. expected / target hike and their own review; nothing the EL wrote, no approved hike', () => {
-    const m = maskCycle(full('ASSESSOR_OPEN'), 'A1');
+    const m = maskCycle(full('SUBMITTED'), 'A1');
     for (const k of ['approved', 'financeComment']) expect(has(m, k), k).toBe(false);
     for (const k of ['self', 'request', 'pms', 'expected', 'target']) expect(has(m, k), k).toBe(true);
     expect(as(m, 'assessors')['A2']).toBeNull();
@@ -63,7 +63,7 @@ describe('maskCycle: comments travel upwards only', () => {
     expect((m['quarters'] as { ratings: Record<string, unknown> }[])[0]!.ratings['A2']).toBeNull();
   });
   it('EL (A2): sees the Associate incl. expected / target, the FL review with manager feedback, both proposals and the approved hike', () => {
-    const m = maskCycle(full('FINANCE_REVIEW'), 'A2');
+    const m = maskCycle(full('SUBMITTED'), 'A2');
     expect(has(m, 'financeComment')).toBe(false);
     for (const k of ['expected', 'target', 'approved']) expect(has(m, k), k).toBe(true);
     expect(has(as(m, 'assessors')['A1'] as object, 'managerFeedback')).toBe(true);
@@ -72,7 +72,7 @@ describe('maskCycle: comments travel upwards only', () => {
     expect(has(m, 'requestReviews')).toBe(true);
   });
   it('FINANCE: sees everything, including the self review, PMS, requests, both reviews and manager feedback', () => {
-    const m = maskCycle(full('FINANCE_REVIEW'), 'FINANCE');
+    const m = maskCycle(full('SUBMITTED'), 'FINANCE');
     for (const k of ['self', 'request', 'pms', 'requestReviews', 'expected', 'target', 'minimal', 'approved', 'assessors', 'financeComment']) expect(has(m, k), k).toBe(true);
     expect(has(as(m, 'assessors')['A1'] as object, 'managerFeedback')).toBe(true);
     expect(has((m['quarters'] as object[])[0], 'goals')).toBe(true);
@@ -83,19 +83,12 @@ describe('maskCycle: comments travel upwards only', () => {
     expect(has(m['cycle'], 'currentAnnualCtc')).toBe(false);
   });
   it('Finance note about the budget reaches the employee only when Finance approves their hike (no assessor)', () => {
-    const el = full('FINANCE_REVIEW');
+    const el = full('SUBMITTED');
     el.cycle.level = 'HEAD_EL';
     el.cycle.assessor1 = null;
     el.cycle.assessor2 = null;
     expect(has(maskCycle(el, 'EMPLOYEE'), 'financeComment')).toBe(true);
-    expect(has(maskCycle(full('FINANCE_REVIEW'), 'EMPLOYEE'), 'financeComment')).toBe(false);
+    expect(has(maskCycle(full('SUBMITTED'), 'EMPLOYEE'), 'financeComment')).toBe(false);
     for (const r of ['A1', 'A2', 'HR'] as const) expect(has(maskCycle(el, r), 'financeComment'), r).toBe(false);
   });
-});
-
-describe('maskTeamRow', () => {
-  const row = (myRole: TeamRow['myRole']): TeamRow => ({ cycleId: 1, userId: 10, employeeName: 'Asha', level: 'ASSOCIATE', status: 'FINANCE_REVIEW', start: '2026-11-02', employeeWindowEnd: 'a', assessorWindowEnd: 'b', late: false, selfSubmitted: true, a1Submitted: true, a2Submitted: false, myRole, assessor1Name: 'Ben', assessor2Name: 'Cara', pmsFinalAvg: 8, pmsQuarters: 1, asksDesignation: true, asksTeam: false, canApprove: false, requestsPending: false, canDecideRequests: false, expected: money(1), minimal: { A1: money(2), A2: null }, approved: money(3) });
-  it('A1 sees the expected hike but not the approved one', () => { const m = maskTeamRow(row('A1')); expect(has(m, 'expected')).toBe(true); expect(has(m, 'approved')).toBe(false); });
-  it('A2 sees expected and approved', () => { const m = maskTeamRow(row('A2')); expect(has(m, 'approved')).toBe(true); expect(has(m, 'expected')).toBe(true); });
-  it('FINANCE sees all three', () => { const m = maskTeamRow(row('FINANCE')); for (const k of ['expected', 'minimal', 'approved']) expect(has(m, k)).toBe(true); });
 });

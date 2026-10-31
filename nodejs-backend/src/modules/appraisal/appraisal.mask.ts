@@ -5,7 +5,7 @@
 import type { EmployeeLevel } from './appraisal.calc';
 
 export type ViewRole = 'EMPLOYEE' | 'A1' | 'A2' | 'FINANCE' | 'HR';
-export type Status = 'EMPLOYEE_OPEN' | 'ASSESSOR_OPEN' | 'FINANCE_REVIEW' | 'OFFERED' | 'ACCEPTED' | 'POSTPONED';
+export type Status = 'EMPLOYEE_OPEN' | 'SUBMITTED' | 'OFFERED' | 'ACCEPTED' | 'POSTPONED';
 export type HikeKind = 'EXPECTED' | 'TARGET' | 'MINIMAL' | 'APPROVED';
 
 export interface Money { annual: number; fixed: number; variable: number; variablePct: number; variablePerHalfYear: number }
@@ -20,7 +20,7 @@ export interface PmsQuarter {
   comments: string; achievements: string; failures: string;
 }
 export type RequestField = 'DESIGNATION' | 'TEAM';
-export interface RequestReviews { A1: { comment: string } | null; A2: { comment: string; decision: 'APPROVED' | 'REJECTED' | null } | null }
+export interface RequestReviews { A1: { comment: string; recommendation?: 'SUPPORT' | 'NOT_SUPPORT' | null } | null; A2: { comment: string; decision: 'APPROVED' | 'REJECTED' | null } | null }
 
 /** Everything about a cycle, before masking */
 export interface FullCycle {
@@ -131,30 +131,4 @@ export function maskCycle(full: FullCycle, role: ViewRole): Record<string, unkno
 
   out['response'] = full.response;
   return out;
-}
-
-// ── Team list rows ────────────────────────────────────────────────────────────────────────────────
-
-export interface TeamRow {
-  cycleId: number; userId: number; employeeName: string; level: EmployeeLevel; status: Status; start: string;
-  employeeWindowEnd: string; assessorWindowEnd: string; late: boolean;
-  selfSubmitted: boolean; a1Submitted: boolean; a2Submitted: boolean; myRole: 'A1' | 'A2' | 'FINANCE';
-  assessor1Name: string | null; assessor2Name: string | null; pmsFinalAvg: number | null; pmsQuarters: number; asksDesignation: boolean; asksTeam: boolean; canApprove: boolean;
-  /** The employee accepted and asked for a designation / team change the EL has not decided yet */
-  requestsPending: boolean; canDecideRequests: boolean;
-  expected: Money | null; minimal: { A1: Money | null; A2: Money | null }; approved: Money | null;
-}
-
-/** A1 sees the employee's expected hike and their own proposal, never the approved one; A2 sees both proposals and the approved hike; Finance sees everything */
-export function maskTeamRow(row: TeamRow): Record<string, unknown> {
-  const base = {
-    cycleId: row.cycleId, userId: row.userId, employeeName: row.employeeName, level: row.level, status: row.status, start: row.start,
-    employeeWindowEnd: row.employeeWindowEnd, assessorWindowEnd: row.assessorWindowEnd, late: row.late,
-    selfSubmitted: row.selfSubmitted, a1Submitted: row.a1Submitted, a2Submitted: row.a2Submitted, myRole: row.myRole,
-    assessor1Name: row.assessor1Name, assessor2Name: row.assessor2Name, pmsFinalAvg: row.pmsFinalAvg, pmsQuarters: row.pmsQuarters, asksDesignation: row.asksDesignation, asksTeam: row.asksTeam, canApprove: row.canApprove,
-    requestsPending: row.requestsPending, canDecideRequests: row.canDecideRequests,
-  };
-  if (row.myRole === 'A1') return { ...base, expected: row.expected, minimal: row.minimal };
-  if (row.myRole === 'A2') return { ...base, expected: row.expected, minimal: row.minimal, approved: row.approved };
-  return { ...base, expected: row.expected, minimal: row.minimal, approved: row.approved };
 }

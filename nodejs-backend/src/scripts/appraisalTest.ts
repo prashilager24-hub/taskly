@@ -4,7 +4,7 @@
  *   npx tsx src/scripts/appraisalTest.ts seed              create the "Appraisal Cycle Test" department, its EL, FL, 3 associates, Finance and HR, and start the first associate's cycle
  *   npx tsx src/scripts/appraisalTest.ts status            where each test cycle is
  *   npx tsx src/scripts/appraisalTest.ts start <email>     start a cycle today for a test person
- *   npx tsx src/scripts/appraisalTest.ts advance <email> <assessor|finance|return>
+ *   npx tsx src/scripts/appraisalTest.ts advance <email> <submit|return>
  *        assessor : employee window over, assessors' window open (day 16)
  *        finance  : assessors' window over, with Finance (day 31)
  *        return   : a postponed offer comes back to the assessors
@@ -137,22 +137,14 @@ async function latestCycle(key: string) {
 async function advance(who: string, stage: string) {
   const id = await latestCycle(who);
   const today = todayIST();
-  if (stage === 'assessor' || stage === 'finance') {
-    const start = addDays(today, stage === 'assessor' ? -15 : -30);
-    await pool.execute('UPDATE AppraisalCycle SET CycleStartDate = ?, EmployeeWindowEnd = ?, AssessorWindowEnd = ? WHERE CycleID = ? AND Status IN (\'EMPLOYEE_OPEN\', \'ASSESSOR_OPEN\')', [start, addDays(start, 14), addDays(start, 29), id]);
-  } else if (stage === 'return') {
+  if (stage === 'return') {
     await pool.execute("UPDATE AppraisalCycle SET PostponedUntil = ? WHERE CycleID = ? AND Status = 'POSTPONED'", [addDays(today, -1), id]);
-  } else throw new Error('Stage must be assessor, finance or return');
+  } else if (stage === 'submit') {
+    // stands in for the person pressing Submit: the appeal goes in without expected / target amounts
+    const [res] = await pool.execute<mysql.ResultSetHeader>("UPDATE AppraisalCycle SET Status = 'SUBMITTED' WHERE CycleID = ? AND Status = 'EMPLOYEE_OPEN'", [id]);
+    if (res.affectedRows) await pool.execute('INSERT INTO AppraisalAudit (CycleID, ActorID, Action, Detail) VALUES (?, NULL, ?, ?)', [id, 'STATUS_CHANGE', JSON.stringify({ from: 'EMPLOYEE_OPEN', to: 'SUBMITTED', by: 'test tool' })]);
+  } else throw new Error('Stage must be submit or return');
   console.log(JSON.stringify(await runAppraisalCycle()));
-  // with date windows off the job moves nothing by date, so set the next status directly
-  if (!env.APPRAISAL_TIME_WINDOWS) {
-    const move: Record<string, [string, string]> = { assessor: ['EMPLOYEE_OPEN', 'ASSESSOR_OPEN'], finance: ['ASSESSOR_OPEN', 'FINANCE_REVIEW'] };
-    const m = move[stage];
-    if (m) {
-      const [res] = await pool.execute<mysql.ResultSetHeader>('UPDATE AppraisalCycle SET Status = ? WHERE CycleID = ? AND Status = ?', [m[1], id, m[0]]);
-      if (res.affectedRows) await pool.execute('INSERT INTO AppraisalAudit (CycleID, ActorID, Action, Detail) VALUES (?, NULL, ?, ?)', [id, 'STATUS_CHANGE', JSON.stringify({ from: m[0], to: m[1], by: 'test tool' })]);
-    }
-  }
   await status();
 }
 
@@ -167,7 +159,7 @@ async function reset(who?: string) {
   const like = who ? email(who.replace(/^appraisal\.|@tapmind\.test$/g, '')) : EMAIL_LIKE;
   await pool.execute('DELETE FROM AppraisalAudit WHERE CycleID IN (SELECT CycleID FROM AppraisalCycle WHERE UserID IN (SELECT UserID FROM Users WHERE UserEmail LIKE ?))', [like]);
   const [res] = await pool.execute<mysql.ResultSetHeader>('DELETE FROM AppraisalCycle WHERE UserID IN (SELECT UserID FROM Users WHERE UserEmail LIKE ?)', [like]);
-  if (!who) await pool.execute('DELETE FROM AppraisalBudget WHERE DepartmentID IN (SELECT DepartmentID FROM Department WHERE DepartmentName = ?)', [DEPT]).then(() => pool.execute('DELETE FROM AppraisalBudgetAlloc WHERE DepartmentID IN (SELECT DepartmentID FROM Department WHERE DepartmentName = ?)', [DEPT]));
+  if (!who) await pool.execute('DELETE FROM AppraisalRound WHERE DepartmentID IN (SELECT DepartmentID FROM Department WHERE DepartmentName = ?)', [DEPT]);
   console.log(`deleted ${res.affectedRows} cycles${who ? '' : ' and the test budget'}`);
 }
 
@@ -190,8 +182,8 @@ async function remove() {
   else if (cmd === 'start') { console.log(await startCycle(await userId((a ?? '').replace(/^appraisal\.|@tapmind\.test$/g, '')))); await status(); }
   else if (cmd === 'advance') await advance(a ?? '', b ?? '');
   else if (cmd === 'reset') await reset(a);
-  else if (cmd === 'reset-budget') { await pool.execute('DELETE FROM AppraisalBudgetAlloc WHERE DepartmentID IN (SELECT DepartmentID FROM Department WHERE DepartmentName = ?)', [DEPT]); await pool.execute('DELETE FROM AppraisalBudget WHERE DepartmentID IN (SELECT DepartmentID FROM Department WHERE DepartmentName = ?)', [DEPT]); console.log('test budget cleared'); }
+  else if (cmd === 'reset-budget') { await pool.execute('DELETE FROM AppraisalRound WHERE DepartmentID IN (SELECT DepartmentID FROM Department WHERE DepartmentName = ?)', [DEPT]); console.log('test budget round cleared (budget, split, shares, allocations)'); }
   else if (cmd === 'remove') await remove();
-  else console.log('Commands: seed | status | start <email> | advance <email> <assessor|finance|return> | reset [name] | reset-budget | remove');
+  else console.log('Commands: seed | status | start <email> | advance <email> <submit|return> | reset [name] | reset-budget | remove');
   process.exit(0);
 })().catch((e) => { console.error(String(e.message ?? e)); process.exit(1); });

@@ -17,6 +17,35 @@ Summary: one or two lines on what and why.
 
 ---
 
+## 2026-10-31 — Appraisal flow v2: requests go up, money comes down (branch appraisal-flow-v2)
+
+Summary: the appraisal now follows the "Taskly – Appraisal Cycle Workflow" brief. Everyone (Associate / Intern, FL, EL) appeals with expected hike, target hike and why. When a department is complete the Finance Head is told, reviews it and sets its budget with a reason. The EL splits it: their own hike (agreed with Management), people reporting to them directly, and a share with a note for each FL. Each FL allocates their share to the team with a reason per person, adds their own hike, and sends it to the EL, who approves (no reject). The hikes then go out. Associates / Interns may accept or reject; FLs and ELs accept. Designation / team requests: an Associate's goes to their FL, who forwards it with a recommendation to the EL; an FL's goes straight to the EL; the EL's approval opens the celebration. Built on a separate branch so it can be dropped: the previous flow is on appraisal-module (commit 317b4df).
+
+### Frontend
+- New pages ([components/appraisal/](../frontend/src/components/appraisal)): **Department Budgets** (Finance Head: all departments of an April / October cycle with appeals in, totals and status; a department page with every appeal on a timeline, the totals and the budget with a required reason), **Budget Split** (EL: the budget and the Finance Head's note, own hike with Management's comment, direct reports, a share and note per FL, then the FL proposals to approve), **Team Allocation** (FL: the share and the EL's note, a hike and reason per team member, own hike in its own box, justification, Submit to EL), **Change Requests** (FL forwards with Recommend / Do not recommend; EL approves or not), and a read-only **person page** (`/appraisal/person/:cycleId`).
+- My Appraisal: one question ("Why are you expecting this salary / hike?"), a five-step tracker while waiting, Reject only for Associates / Interns, requests show where they are (with FL / with EL), the celebration stays.
+- Removed: Team Appraisals, the assessor review form, the old Budget page. Sidebar: My Appraisal, Department Budgets, Budget Split, Team Allocation, Change Requests, HR Postponements, Appraisal Setup, each shown only to whoever needs it.
+
+### Backend
+- New [appraisal.flow.ts](../nodejs-backend/src/modules/appraisal/appraisal.flow.ts): department rounds (department + period), who decides each person's hike (EL own / EL direct / FL team / FL own), the Finance Head's board and budget, the EL's split and approval, the FL's allocation, postponed hikes returning to whoever decided them, in-app notifications at every hand-off.
+- [appraisal.service.ts](../nodejs-backend/src/modules/appraisal/appraisal.service.ts): appeal submit -> SUBMITTED and "department complete" check; employee and person views with the stage; respond (FL / EL cannot reject; request routing; HR told of a rejection); `forwardRequests`; `decideRequests` by the department's EL; new sidebar data. Assessor reviews, the auto-decider and Finance approval of single hikes are gone; [appraisal.budget.ts](../nodejs-backend/src/modules/appraisal/appraisal.budget.ts) removed.
+- Routes: `GET /periods`, `GET /departments`, `GET /departments/:id/:period`, `PUT /departments/:id/:period/budget`, `GET /split`, `PUT /split/:id/:period`, `PUT /split/:id/:period/shares/:fl/approve`, `PUT /split/:id/:period/direct/:cycleId`, `GET /allocation`, `PUT /allocation/:id/:period`, `GET /requests`, `PUT /cycles/:id/request-forward`. Removed: `/team`, `/assessor-review`, `/budget-approval`, `/finance-note`, `/budget*`.
+- Daily job: with date windows on, a department goes to the Finance Head when the appeal window closes (non-submitters marked); postponed hikes return to the FL (EL approves again) or the EL.
+- `npx tsx src/scripts/appraisalFlowCheck.ts`: end-to-end check of the whole flow on a temporary department (41 checks; everything it creates is deleted).
+
+### Database
+- `009_appraisal_flow_v2.sql` (`npm run db:migrate`): cycle statuses become EMPLOYEE_OPEN / SUBMITTED / OFFERED / ACCEPTED / POSTPONED (old ASSESSOR_OPEN / FINANCE_REVIEW -> SUBMITTED); cycles get `DepartmentID` and `PeriodStart`; new tables `AppraisalRound`, `AppraisalShare`, `AppraisalAllocation`; `AppraisalRequestReview.Recommendation`. The old `AppraisalBudget` / `AppraisalBudgetAlloc` tables are left in place, unused.
+- To go back to appraisal-module: run `src/config/migrations/down/009_appraisal_flow_v2.down.sql` by hand, then switch branch.
+
+### Env / config
+none
+
+### Notes
+- Decisions taken as recommended in the blueprint: a department also goes to the Finance Head when the window closes; the EL's own hike counts against the department budget and the EL accepts it; own hikes come out of the budget being split; FLs have no Reject; after the EL approves only an Admin can change a hike; hike reasons are seen by the EL and Finance Head only; FL / EL come from the user record.
+- While testing (`APPRAISAL_TIME_WINDOWS=false`) department members who have not opened My Appraisal count as "not submitted"; the Finance Head can still set a budget early.
+
+---
+
 ## 2026-10-31 — Appraisal: assessor chain, HR setup, testing mode (branch appraisal-module, checkpoint before the v2 flow)
 
 Summary: the last assessor set on an appraisal decides the hike; HR keeps joining date, level and CTC and the April / October cycle follows; while date windows are off everyone can open and appeal. Checkpoint commit before the v2 flow (branch appraisal-flow-v2).

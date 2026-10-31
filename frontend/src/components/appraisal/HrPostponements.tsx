@@ -3,14 +3,14 @@ import { Spinner } from "@heroui/react";
 
 import { Panel, SummaryBar } from "@/components/page";
 import { Button, Chip, Textarea, addToast } from "@/components/ui";
-import { appraisalApi, errorText, type CycleView } from "./api";
+import { appraisalApi, errorText, type HrItem } from "./api";
 import { LEVEL_LABEL, day } from "./format";
 import { COLS2, ReadText } from "./parts";
 
 const HR_COLOR = { PENDING: "warning", APPROVED: "success", RETURNED: "danger" } as const;
 const HR_LABEL = { PENDING: "Waiting for HR", APPROVED: "Approved", RETURNED: "Returned" } as const;
 
-function Card({ item, onDone }: { item: CycleView; onDone: () => void }) {
+function Card({ item, onDone }: { item: HrItem; onDone: () => void }) {
     const r = item.response!;
     const [comment, setComment] = useState(r.hrComment ?? "");
     const [busy, setBusy] = useState<"APPROVED" | "RETURNED" | null>(null);
@@ -41,7 +41,7 @@ function Card({ item, onDone }: { item: CycleView; onDone: () => void }) {
 
 // HR Postponements: rejected offers. HR approves or returns the postponement; the cycle itself is not changed by HR.
 export default function HrPostponements() {
-    const [items, setItems] = useState<CycleView[]>([]);
+    const [items, setItems] = useState<HrItem[]>([]);
     const [loading, setLoading] = useState(true);
     const load = useCallback(async () => {
         try { setItems(await appraisalApi.hr()); }

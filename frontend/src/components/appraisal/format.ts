@@ -10,10 +10,14 @@ export const MAX_AMOUNT = 100_000_000;
 const money = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
 export const inr = (n: number | null | undefined) => (n == null || Number.isNaN(n) ? "—" : `₹${money.format(Math.round(n))}`);
 
-export function splitPreview(annual: number, level: Level) {
-    const variable = Math.round((annual * VARIABLE_PCT[level]) / 100);
-    return { annual, fixed: annual - variable, variable, perHalf: variable / 2 };
+export function splitPreview(annual: number, level: Level, own?: { mode: "PCT" | "AMOUNT"; value: number | null } | null) {
+    const variable = own && own.value != null
+        ? Math.min(annual, Math.round(own.mode === "PCT" ? (annual * Math.min(100, own.value)) / 100 : own.value))
+        : Math.round((annual * VARIABLE_PCT[level]) / 100);
+    return { annual, fixed: annual - variable, variable, perHalf: variable / 2, pct: annual ? Math.round((variable / annual) * 100) : VARIABLE_PCT[level] };
 }
+/** a / b as a whole percentage, or "—" */
+export const pctOf = (a: number | null | undefined, b: number | null | undefined) => (a == null || !b ? "—" : `${Math.round((a / b) * 100)}%`);
 
 /** "2026-11-02" → "02 Nov 2026" (the string is a calendar day; no time zone can move it) */
 export function day(iso: string | null | undefined) {
@@ -42,10 +46,10 @@ export const STAGE_COLOR: Record<Stage, "default" | "primary" | "secondary" | "s
     APPEAL_OPEN: "primary", SUBMITTED: "default", BUDGET_REVIEW: "secondary", IN_ALLOCATION: "secondary", AWAITING_EL: "warning", OFFERED: "warning", ACCEPTED: "success", POSTPONED: "danger",
 };
 export const ROUND_LABEL: Record<RoundStatus, string> = {
-    COLLECTING: "Collecting appeals", READY_FOR_FINANCE: "Ready for Finance", BUDGET_WITH_EL: "Budget with EL", SHARES_WITH_FLS: "Shares with FLs", FINALISED: "Finalised",
+    COLLECTING: "Collecting appeals", READY_FOR_FINANCE: "Ready for Finance", BUDGET_WITH_EL: "Waiting for EL to accept", BUDGET_NEGOTIATION: "EL negotiating", BUDGET_ACCEPTED: "Budget accepted", SHARES_WITH_FLS: "Shares with FLs", FINALISED: "Finalised",
 };
 export const ROUND_COLOR: Record<RoundStatus, "default" | "primary" | "secondary" | "success" | "warning" | "danger"> = {
-    COLLECTING: "default", READY_FOR_FINANCE: "warning", BUDGET_WITH_EL: "secondary", SHARES_WITH_FLS: "primary", FINALISED: "success",
+    COLLECTING: "default", READY_FOR_FINANCE: "warning", BUDGET_WITH_EL: "secondary", BUDGET_NEGOTIATION: "danger", BUDGET_ACCEPTED: "primary", SHARES_WITH_FLS: "primary", FINALISED: "success",
 };
 export const SHARE_LABEL: Record<ShareStatus, string> = { PLANNED: "Not sent", SHARE_RECEIVED: "Share received", DRAFT: "Draft", SUBMITTED: "Waiting for EL", APPROVED: "Approved" };
 export const SHARE_COLOR: Record<ShareStatus, "default" | "primary" | "secondary" | "success" | "warning" | "danger"> = { PLANNED: "default", SHARE_RECEIVED: "primary", DRAFT: "secondary", SUBMITTED: "warning", APPROVED: "success" };

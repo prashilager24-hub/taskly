@@ -120,7 +120,7 @@ export default function Allocation() {
             {data.waiting.map((w) => (
                 <Panel key={`${w.department}-${w.period}`} title={`${w.department} · ${periodLabel(w.period)}`}>
                     <div className="flex flex-col gap-3">
-                        <Banner>{w.status === "BUDGET_WITH_EL" ? `The Finance Head has given the department its budget. ${w.el?.name ?? "Your EL"} is splitting it; your share arrives here with a note.` : `Your team budget arrives here once the Finance Head sets the department's budget and ${w.el?.name ?? "your EL"} splits it.`}</Banner>
+                        <Banner>{w.status === "BUDGET_ACCEPTED" ? `${w.el?.name ?? "Your EL"} has the department's budget and is splitting it; your share arrives here with a note.` : w.status === "BUDGET_WITH_EL" || w.status === "BUDGET_NEGOTIATION" ? `The Finance Head and ${w.el?.name ?? "your EL"} are agreeing the department's budget. Your share arrives here once it is split.` : `Your team budget arrives here once the Finance Head sets the department's budget and ${w.el?.name ?? "your EL"} splits it.`}</Banner>
                         <SummaryBar className="mb-0" items={[{ label: "In your team (and you)", value: w.team }, { label: "Appeals in", value: `${w.submitted} / ${w.team}` }]} />
                     </div>
                 </Panel>

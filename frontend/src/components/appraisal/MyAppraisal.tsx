@@ -5,10 +5,14 @@ import { Award, BadgeCheck, Check, CheckCircle2, Clock, Gift, Hourglass, PartyPo
 
 import { Panel } from "@/components/page";
 import { Button, Chip, Tab, Tabs, Textarea, addToast } from "@/components/ui";
-import { appraisalApi, errorText, type ChangeRequest, type MyView, type Stage } from "./api";
+import { appraisalApi, errorText, type ChangeRequest, type Money, type MyView, type Stage, type VariableOverride } from "./api";
 import { REQ_COLOR, REQ_LABEL, day, inr } from "./format";
 import { AcceptModal, RejectModal } from "./OfferModal";
-import { Banner, COLS2, HikeField, MoneyCard, ReadText, WHY_KEY, WHY_LABEL } from "./parts";
+import { Banner, COLS2, HikeField, MoneyCard, ReadText, WHY_KEY, WHY_LABEL, type OwnVariable } from "./parts";
+
+/** The variable pay the person set themselves on a saved hike, back into the form */
+const ownOf = (m: Money | null | undefined): OwnVariable => (m?.override ? { mode: m.override, value: m.override === "PCT" ? m.variablePct : m.variable } : null);
+const sendOwn = (o: OwnVariable): VariableOverride | null => (o && o.value != null ? { mode: o.mode, value: o.value } : null);
 import PmsTable from "./PmsTable";
 import QuarterGrid from "./QuarterGrid";
 
@@ -109,6 +113,8 @@ export default function MyAppraisal() {
     const [why, setWhy] = useState("");
     const [expected, setExpected] = useState<number | null>(null);
     const [target, setTarget] = useState<number | null>(null);
+    const [expectedOwn, setExpectedOwn] = useState<OwnVariable>(null);
+    const [targetOwn, setTargetOwn] = useState<OwnVariable>(null);
 
     const load = useCallback(async () => {
         try {
@@ -118,6 +124,8 @@ export default function MyAppraisal() {
                 setWhy(v.self?.answers?.[WHY_KEY] ?? "");
                 setExpected(v.expected?.annual ?? null);
                 setTarget(v.target?.annual ?? null);
+                setExpectedOwn(ownOf(v.expected));
+                setTargetOwn(ownOf(v.target));
                 // once the hike is ready, the page opens straight on the Proposed hike tab
                 if (v.cycle.status === "OFFERED" && !jumped.current) { jumped.current = true; setShowForm(true); setTab("proposed"); }
             }
@@ -139,9 +147,10 @@ export default function MyAppraisal() {
 
     const save = async (submit: boolean) => {
         if (submit && (expected == null || target == null || !why.trim())) { addToast({ title: "Fill in all three", description: "Expected hike, target hike, and why you expect it.", color: "warning" }); return; }
+        if ([expectedOwn, targetOwn].some((o) => o && o.value == null)) { addToast({ title: "Enter your variable pay", description: "Type the percentage or amount, or untick Variable pay override.", color: "warning" }); return; }
         setSaving(submit ? "submit" : "draft");
         try {
-            await appraisalApi.appeal(c.id, { answers: { [WHY_KEY]: why }, quarters: [], expectedHike: expected, targetHike: target, submit });
+            await appraisalApi.appeal(c.id, { answers: { [WHY_KEY]: why }, quarters: [], expectedHike: expected, targetHike: target, expectedVariable: sendOwn(expectedOwn), targetVariable: sendOwn(targetOwn), submit });
             addToast({ title: submit ? "Appeal submitted" : "Draft saved", description: submit ? "Your hike will appear in the Proposed hike tab once it is decided." : undefined, color: "success" });
             await load();
             if (submit) setTab("proposed");
@@ -206,7 +215,7 @@ export default function MyAppraisal() {
                 <p className="max-w-[72ch] text-sm text-ink-500 dark:text-ink-400">
                     Variable pay is paid in two equal halves each year.{" "}
                     {view.can.reject ? "Accept it, or reject it and have it postponed by 3 or 6 months. " : "This is the hike agreed with you, so it is accepted here. "}
-                    {view.can.ask && `When you accept you can ask for a change in designation or team; it goes to ${view.route.source === "FL_TEAM" ? `${view.route.fl?.name ?? "your FL"} first, then ${view.route.el?.name ?? "your EL"}` : view.route.el?.name ?? "your EL"}.`}
+                    {view.can.ask && (view.route.source === "EL_OWN" ? "When you accept you can add a change in your designation or team that you agreed with Management; it is recorded straight away." : `When you accept you can ask for a change in designation or team; it goes to ${view.route.source === "FL_TEAM" ? `${view.route.fl?.name ?? "your FL"} first, then ${view.route.el?.name ?? "your EL"}` : view.route.el?.name ?? "your EL"}.`)}
                 </p>
                 <div className="flex flex-wrap justify-end gap-3">
                     {view.can.reject && <Button size="lg" variant="bordered" color="danger" onPress={() => setRejectOpen(true)}>Reject</Button>}
@@ -271,11 +280,11 @@ export default function MyAppraisal() {
                                 </Tab>
                                 <Tab key="hike" title="Hike proposal">
                                     <div className="flex flex-col gap-5 pb-5 pt-3">
-                                        <p className="max-w-[72ch] text-sm text-ink-500 dark:text-ink-400">Enter each amount as an <b>annual</b> figure. It is split into fixed and variable pay for your level, so you never type the split.</p>
+                                        <p className="max-w-[72ch] text-sm text-ink-500 dark:text-ink-400">Enter each amount as an <b>annual</b> figure. It is split into fixed and variable pay for your level. To set your own variable pay, tick Variable pay override and enter a percentage or an amount.</p>
                                         {editable ? (
                                             <div className={COLS2}>
-                                                <HikeField label="Expected hike (per year)" value={expected} onChange={setExpected} level={c.level} />
-                                                <HikeField label="Target hike (per year)" value={target} onChange={setTarget} level={c.level} />
+                                                <HikeField label="Expected hike (per year)" value={expected} onChange={setExpected} level={c.level} own={expectedOwn} onOwn={setExpectedOwn} />
+                                                <HikeField label="Target hike (per year)" value={target} onChange={setTarget} level={c.level} own={targetOwn} onOwn={setTargetOwn} />
                                             </div>
                                         ) : (
                                             <div className={COLS2}><MoneyCard title="Expected hike" money={view.expected} /><MoneyCard title="Target hike" money={view.target} /></div>
@@ -294,7 +303,7 @@ export default function MyAppraisal() {
                                 </Tab>
                                 <Tab key="proposed" title={<span className="flex items-center gap-2">Proposed hike{c.status === "OFFERED" && <span className="h-2 w-2 bg-brand-600" aria-label="Ready" />}</span>}>
                                     <div className="flex flex-col gap-6 pb-5 pt-3">
-                                        {c.status === "OFFERED" && <Banner>Your hike was approved by {view.route.el?.name ?? "your EL"}.</Banner>}
+                                        {c.status === "OFFERED" && <Banner>{view.route.source === "EL_OWN" ? "Your hike, as agreed with Management." : `Your hike was approved by ${view.route.el?.name ?? "your EL"}.`}</Banner>}
                                         {proposed}
                                     </div>
                                 </Tab>

@@ -41,6 +41,8 @@ const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
 const ANSWER_KEYS = ['goalsAchieved', 'goalsNotAchievedWhy', 'howRatingAchieved', 'difficultiesAndWhy', 'howUpdatingGoalsTargets', 'whoApprovesGoalsTargets', 'whyDeserveSalary', 'whyExpectThisSalary', 'biggestMilestone', 'biggestAchievement'] as const;
 const answers = z.object(Object.fromEntries(ANSWER_KEYS.map((k) => [k, text.optional()])) as Record<(typeof ANSWER_KEYS)[number], z.ZodOptional<z.ZodString>>).strict();
 
+const variableOverride = z.object({ mode: z.enum(['PCT', 'AMOUNT']), value: amount });
+
 const SelfReview = z.object({
   // Part B (written answers) is no longer asked; still accepted from older clients
   answers: answers.optional().default({}),
@@ -48,6 +50,8 @@ const SelfReview = z.object({
   quarters: z.array(z.object({ quarter: quarterNo, goals: text.optional(), targets: text.optional(), comments: text.optional(), biggestAchievements: text.optional(), biggestFailures: text.optional() })).max(4).optional(),
   expectedHike: amount.nullable().optional(),
   targetHike: amount.nullable().optional(),
+  expectedVariable: variableOverride.nullable().optional(),
+  targetVariable: variableOverride.nullable().optional(),
   request: z.object({ newDesignation: z.string().max(150).optional(), designationComment: text.optional(), newTeam: z.string().max(150).optional(), teamComment: text.optional() }).optional(),
   submit: z.boolean(),
 });
@@ -63,6 +67,7 @@ const HrDecision = z.object({ status: z.enum(['APPROVED', 'RETURNED']), comment:
 const Person = z.object({ dateOfJoining: date.nullable(), level: z.enum(['ASSOCIATE', 'MANAGER', 'HEAD_EL']).nullable(), currentAnnualCtc: amount.nullable() });
 const Period = z.object({ period: date.optional() });
 const BudgetBody = z.object({ amount, comment: z.string().trim().min(1, 'Write why this budget is given').max(4000) });
+const BudgetResponse = z.object({ accept: z.boolean(), comment: text.optional(), amount: amount.nullable().optional() });
 const SplitBody = z.object({
   own: z.object({ amount, comment: text.optional() }).nullable().optional(),
   direct: z.array(z.object({ cycleId: z.number().int().positive(), amount, reason: text.optional() })).max(500).optional(),
@@ -81,7 +86,7 @@ const People = z.object({ rows: z.array(Person.extend({ userId: z.number().int()
 // ── Routes ────────────────────────────────────────────────────────────────────────────────────────
 
 // Department, A1 / A2, level and CTC edits reach the appraisals nobody has decided yet before anyone reads or acts on them
-const SYNCED = ['/availability', '/departments', '/departments/:departmentId/:period', '/departments/:departmentId/:period/budget', '/split', '/split/:departmentId/:period',
+const SYNCED = ['/availability', '/departments', '/departments/:departmentId/:period', '/departments/:departmentId/:period/budget', '/split', '/split/:departmentId/:period', '/split/:departmentId/:period/budget-response',
   '/allocation', '/allocation/:departmentId/:period', '/requests', '/cycles/:cycleId'];
 router.all(SYNCED, (req, _res, next) => { svc.syncOpenCycles(req.method !== 'GET').then(() => next(), next); });
 
@@ -116,6 +121,7 @@ router.put('/departments/:departmentId/:period/budget', validate(BudgetBody), ha
 // EL: the budget from the Finance Head, the split, the FL proposals to approve
 router.get('/split', handler(async (req, res) => { sendSuccess(res, await flow.elRounds(me(req))); }));
 router.put('/split/:departmentId/:period', validate(SplitBody), handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.saveSplit(me(req), roleOf(req), departmentId, period, req.body); sendSuccess(res, true); }));
+router.put('/split/:departmentId/:period/budget-response', validate(BudgetResponse), handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.respondBudget(me(req), roleOf(req), departmentId, period, req.body); sendSuccess(res, true); }));
 router.put('/split/:departmentId/:period/shares/:flUserId/approve', handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.approveShare(me(req), roleOf(req), departmentId, period, Number(req.params['flUserId'])); sendSuccess(res, true); }));
 router.put('/split/:departmentId/:period/direct/:cycleId', validate(DirectBody), handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.offerDirect(me(req), roleOf(req), departmentId, period, Number(req.params['cycleId']), req.body.amount, req.body.reason ?? ''); sendSuccess(res, true); }));
 

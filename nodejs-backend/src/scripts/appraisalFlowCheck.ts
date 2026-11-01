@@ -58,7 +58,13 @@ async function main() {
   ok(r0.people.find((p) => p.userId === ids.a1)?.source === 'FL_TEAM', 'Associate under FL is FL_TEAM');
   ok(r0.people.find((p) => p.userId === ids.d1)?.source === 'EL_DIRECT', 'Associate reporting to EL is EL_DIRECT');
   const amounts: Record<string, [number, number]> = { el: [300000, 250000], fl: [150000, 120000], a1: [120000, 90000], a2: [60000, 50000], d1: [80000, 60000] };
-  for (const k of ['el', 'fl', 'a1', 'a2']) await svc.saveSelfReview(cyc[k], ids[k], { answers: { whyExpectThisSalary: `why ${k}` }, quarters: [], expectedHike: amounts[k][0], targetHike: amounts[k][1], submit: true });
+  for (const k of ['el', 'fl', 'a2']) await svc.saveSelfReview(cyc[k], ids[k], { answers: { whyExpectThisSalary: `why ${k}` }, quarters: [], expectedHike: amounts[k][0], targetHike: amounts[k][1], submit: true });
+  // a1 sets their own variable pay: 25% on the expected hike, ₹5,000 on the target
+  await throws(() => svc.saveSelfReview(cyc.a1, ids.a1, { answers: {}, quarters: [], expectedHike: 120000, targetHike: 90000, targetVariable: { mode: 'AMOUNT', value: 95000 }, submit: false }), 'variable pay above the hike is refused');
+  await svc.saveSelfReview(cyc.a1, ids.a1, { answers: { whyExpectThisSalary: 'why a1' }, quarters: [], expectedHike: 120000, targetHike: 90000, expectedVariable: { mode: 'PCT', value: 25 }, targetVariable: { mode: 'AMOUNT', value: 5000 }, submit: true });
+  const a1x = await svc.myCycle(ids.a1, 2);
+  ok(a1x!.expected?.variable === 30000 && a1x!.expected?.fixed === 90000 && a1x!.expected?.override === 'PCT', `own variable 25%: fixed 90000 + variable 30000 (${a1x!.expected?.fixed} + ${a1x!.expected?.variable})`);
+  ok(a1x!.target?.variable === 5000 && a1x!.target?.fixed === 85000 && a1x!.target?.variablePct === 6 && a1x!.target?.override === 'AMOUNT', 'own variable ₹5,000: fixed 85000, 6%');
   ok((await flow.loadRound(pool, deptId, period)).status === 'COLLECTING', 'still collecting with 4 of 5');
   await svc.saveSelfReview(cyc.d1, ids.d1, { answers: { whyExpectThisSalary: 'why d1' }, quarters: [], expectedHike: 80000, targetHike: 60000, submit: true });
   const r1 = await flow.loadRound(pool, deptId, period);
@@ -74,9 +80,25 @@ async function main() {
   await flow.setBudget(141, deptId, period, 500000, 'Good year');
   ok((await flow.loadRound(pool, deptId, period)).status === 'BUDGET_WITH_EL', 'budget with the EL');
 
+  // 2b. the EL negotiates, the Finance Head revises, the EL accepts; nothing can be split before that
+  await throws(() => flow.saveSplit(ids.el, 3, deptId, period, { send: false }), 'split before accepting is refused');
+  await throws(() => flow.respondBudget(ids.el, 3, deptId, period, { accept: false, comment: ' ' }), 'negotiating without a comment is refused');
+  await throws(() => flow.respondBudget(ids.fl, 4, deptId, period, { accept: true }), 'only the EL answers the budget');
+  await flow.respondBudget(ids.el, 3, deptId, period, { accept: false, comment: 'Team grew this year', amount: 650000 });
+  ok((await flow.loadRound(pool, deptId, period)).status === 'BUDGET_NEGOTIATION', 'EL negotiating');
+  ok((await svc.availability(141, svc.FINANCE_HEAD_ROLE)).departments.pending >= 1, 'Finance Head has it to answer');
+  ok((await svc.myCycle(ids.a1, 2))!.stage === 'BUDGET_REVIEW', 'associate stage stays: budget being set');
+  await throws(() => flow.respondBudget(ids.el, 3, deptId, period, { accept: true }), 'EL cannot accept while waiting for the Finance Head');
+  await flow.setBudget(141, deptId, period, 600000, 'Meet in the middle');
+  await flow.respondBudget(ids.el, 3, deptId, period, { accept: true, comment: 'Agreed' });
+  const rn = await flow.loadRound(pool, deptId, period);
+  ok(rn.status === 'BUDGET_ACCEPTED' && rn.budget === 600000 && !!rn.elAcceptedAt, 'EL accepted 600000');
+  ok(rn.budgetLog.map((l) => l.action).join(',') === 'PROPOSED,NEGOTIATE,REVISED,ACCEPTED' && rn.budgetLog[1].amount === 650000 && rn.budgetLog[1].comment === 'Team grew this year', 'every step logged with its comment');
+  await throws(() => flow.setBudget(141, deptId, period, 700000, 'more'), 'Finance cannot change an accepted budget');
+
   // 3. EL splits
   await throws(() => flow.saveSplit(ids.fl, 4, deptId, period, { send: false }), 'only the EL can split');
-  await throws(() => flow.saveSplit(ids.el, 3, deptId, period, { own: { amount: 200000 }, shares: [{ flUserId: ids.fl, amount: 400000 }], send: false }), 'over budget is refused');
+  await throws(() => flow.saveSplit(ids.el, 3, deptId, period, { own: { amount: 300000 }, shares: [{ flUserId: ids.fl, amount: 400000 }], send: false }), 'over budget is refused');
   await flow.saveSplit(ids.el, 3, deptId, period, { own: { amount: 120000, comment: 'Agreed with the CEO' }, direct: [{ cycleId: cyc.d1, amount: 50000, reason: 'Ran hiring' }], shares: [{ flUserId: ids.fl, amount: 300000, comment: 'Reward a1' }], send: true });
   const r2 = await flow.loadRound(pool, deptId, period);
   ok(r2.status === 'SHARES_WITH_FLS', 'shares with FLs');
@@ -96,6 +118,8 @@ async function main() {
   await flow.approveShare(ids.el, 3, deptId, period, ids.fl);
   const r3 = await flow.loadRound(pool, deptId, period);
   ok(r3.status === 'FINALISED', 'round finalised');
+  const a1r = r3.people.find((p) => p.userId === ids.a1)!;
+  ok(a1r.approved === 110000 && a1r.approvedFixed === 99000 && a1r.approvedVariable === 11000, 'approved hike has its fixed and variable');
   const a1v = await svc.myCycle(ids.a1, 2);
   ok(a1v!.cycle.status === 'OFFERED' && a1v!.approved?.annual === 110000 && a1v!.can.reject, 'associate offered 110000 and may reject');
   const flv = await svc.myCycle(ids.fl, 4);
@@ -119,8 +143,9 @@ async function main() {
   ok((await svc.myCycle(ids.fl, 4))!.requests[0]?.stage === 'WITH_EL', 'FL request goes straight to the EL');
   await svc.decideRequests(cyc.fl, ids.el, 3, { team: { decision: 'REJECTED' } });
   ok((await svc.myCycle(ids.fl, 4))!.requests[0]?.stage === 'NOT_APPROVED', 'FL request not approved');
-  await throws(() => svc.respond(cyc.el, ids.el, { decision: 'ACCEPT', request: { newDesignation: 'CTO' } }), 'EL change request is refused');
-  await svc.respond(cyc.el, ids.el, { decision: 'ACCEPT' });
+  await svc.respond(cyc.el, ids.el, { decision: 'ACCEPT', request: { newDesignation: 'CTO', designationComment: 'Agreed with the CEO' } });
+  const elDone = await svc.myCycle(ids.el, 3);
+  ok(elDone!.requests[0]?.stage === 'APPROVED' && elDone!.requests[0]?.value === 'CTO', 'EL adds their own change: recorded as approved');
 
   // 7. associate rejects, the hike comes back to the FL after the months, FL re-proposes, EL approves
   await svc.respond(cyc.a2, ids.a2, { decision: 'REJECT', postponeMonths: 3, reason: 'Too low', expectations: '80k' });
@@ -196,6 +221,7 @@ async function edits(period: string) {
 
   // Budget set on B: B is frozen. Moving fl2 out of B no longer moves their appraisal
   await flow.setBudget(141, B, period, 100000, 'E2E');
+  await flow.respondBudget(ids.el2, 3, B, period, { accept: true });
   await pool.execute('UPDATE DepartmentUser SET DepartmentID = ? WHERE DepartmentID = ? AND UserID = ?', [C, B, ids.fl2]);
   await svc.syncOpenCycles(true);
   ok((await cycleRow(ids.fl2))['DepartmentID'] === B, 'after the budget is set, a department move does not move the appraisal');

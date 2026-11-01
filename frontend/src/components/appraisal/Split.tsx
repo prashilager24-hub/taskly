@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Spinner } from "@heroui/react";
-import { CheckCircle2, Hourglass } from "lucide-react";
+import { CheckCircle2, Handshake, Hourglass, MessageSquareWarning } from "lucide-react";
 
 import { Panel, SummaryBar } from "@/components/page";
 import { Button, Chip, Textarea, addToast } from "@/components/ui";
 import { appraisalApi, errorText, type Round, type RoundPerson } from "./api";
-import { LEVEL_LABEL, SHARE_COLOR, SHARE_LABEL, STATUS_LABEL, day, inr, periodLabel } from "./format";
-import { AmountBox, Banner, BudgetBar, HikeField, RoundChip, TextBox } from "./parts";
+import { LEVEL_LABEL, SHARE_COLOR, SHARE_LABEL, day, inr, parseAmount, periodLabel, showAmount } from "./format";
+import { AmountBox, Banner, BudgetBar, BudgetLog, HikeField, RoundChip, SplitTable, TextBox } from "./parts";
 
 const th = "px-4 py-2.5 text-left";
 const Name = ({ p }: { p: RoundPerson }) => (
@@ -33,6 +33,66 @@ function Waiting({ r }: { r: Round }) {
                 </table>
             </div>
             {r.notStarted.length > 0 && <p className="text-xs text-ink-500">Not opened their appraisal yet: {r.notStarted.map((n) => n.name).join(", ")}</p>}
+        </div>
+    );
+}
+
+// ── The budget from the Finance Head: accept it or negotiate ─────────────────────────────────────
+
+function BudgetAnswer({ r, onDone }: { r: Round; onDone: () => void }) {
+    const waitingOnFinance = r.status === "BUDGET_NEGOTIATION";
+    const [mode, setMode] = useState<"accept" | "negotiate" | null>(null);
+    const [comment, setComment] = useState("");
+    const [ask, setAsk] = useState("");
+    const [busy, setBusy] = useState(false);
+    const send = async () => {
+        if (mode === "negotiate" && !comment.trim()) { addToast({ title: "Write what you would like changed and why", color: "warning" }); return; }
+        setBusy(true);
+        try {
+            await appraisalApi.respondBudget(r.departmentId, r.period, { accept: mode === "accept", comment: comment.trim() || undefined, amount: mode === "negotiate" ? parseAmount(ask) : undefined });
+            addToast(mode === "accept" ? { title: "Budget accepted", description: "You can split it now.", color: "success" } : { title: "Sent to the Finance Head", description: "They will revise the budget and send it back to you.", color: "success" });
+            setMode(null); setComment(""); setAsk(""); onDone();
+        } catch (e) { addToast({ title: "Could not send", description: errorText(e), color: "danger" }); }
+        finally { setBusy(false); }
+    };
+
+    return (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+            <div className="flex flex-col gap-4">
+                <div className={waitingOnFinance ? "border border-ink-200 p-5 dark:border-white/10" : "border border-brand-600 bg-brand-50 p-5 dark:bg-brand-600/10"}>
+                    <p className="eyebrow">{waitingOnFinance ? "Budget offered by the Finance Head" : `Budget proposed by the Finance Head · ${day(r.budgetSetAt)}`}</p>
+                    <p className="mt-2 text-3xl font-bold tabular-nums text-ink-900 dark:text-white">{inr(r.budget)}</p>
+                    {r.financeComment && <p className="mt-3 max-w-[80ch] whitespace-pre-wrap border-l-2 border-brand-500 pl-3 text-sm text-ink-700 dark:text-ink-200">{r.financeComment}</p>}
+                    <p className="mt-3 text-xs text-ink-500">Department total expected {inr(r.totals.expected)} · targeted {inr(r.totals.target)}</p>
+                </div>
+                {waitingOnFinance ? (
+                    <Banner>You asked the Finance Head to change this budget. It comes back to you here once they revise it.</Banner>
+                ) : mode == null ? (
+                    <div className="flex flex-col gap-3">
+                        <p className="text-sm text-ink-600 dark:text-ink-300">Accept the budget to start splitting it, or negotiate it with the Finance Head. You split it only after you accept it.</p>
+                        <div className="flex flex-wrap gap-2">
+                            <Button color="success" startContent={<Handshake size={16} />} onPress={() => setMode("accept")}>Accept budget</Button>
+                            <Button variant="bordered" color="warning" startContent={<MessageSquareWarning size={16} />} onPress={() => setMode("negotiate")}>Negotiate budget</Button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex flex-col gap-3 border border-ink-200 p-4 dark:border-white/10">
+                        <p className="text-sm font-semibold text-ink-900 dark:text-white">{mode === "accept" ? `Accept ${inr(r.budget)} for ${r.department}?` : "Negotiate the budget"}</p>
+                        {mode === "negotiate" && (
+                            <label className="flex flex-col gap-1.5">
+                                <span className="eyebrow">Amount you ask for (optional)</span>
+                                <input inputMode="numeric" placeholder="₹ per year" value={ask} onChange={(e) => setAsk(showAmount(parseAmount(e.target.value)))} className="h-10 w-60 border border-ink-200 bg-transparent px-3 font-bold tabular-nums text-ink-900 outline-none focus:border-brand-500 dark:border-white/10 dark:text-white" />
+                            </label>
+                        )}
+                        <Textarea label={mode === "accept" ? "Comment (optional)" : "What would you like changed, and why (required)"} minRows={3} value={comment} onValueChange={setComment} description="The Finance Head sees it, and it stays in the budget log." />
+                        <div className="flex justify-end gap-2">
+                            <Button variant="light" isDisabled={busy} onPress={() => setMode(null)}>Back</Button>
+                            <Button color={mode === "accept" ? "success" : "warning"} isLoading={busy} isDisabled={mode === "negotiate" && !comment.trim()} onPress={send}>{mode === "accept" ? "Accept budget" : "Send to the Finance Head"}</Button>
+                        </div>
+                    </div>
+                )}
+            </div>
+            <Panel title="Budget discussion"><BudgetLog log={r.budgetLog} budget={r.budget} /></Panel>
         </div>
     );
 }
@@ -72,10 +132,10 @@ function SplitForm({ r, onDone }: { r: Round; onDone: () => void }) {
     return (
         <div className="flex flex-col gap-6">
             <div className="border border-brand-600 bg-brand-50 p-5 dark:bg-brand-600/10">
-                <p className="eyebrow">Budget from the Finance Head · {day(r.budgetSetAt)}</p>
+                <p className="eyebrow">Agreed budget · you accepted it {day(r.elAcceptedAt)}</p>
                 <p className="mt-2 text-3xl font-bold tabular-nums text-ink-900 dark:text-white">{inr(r.budget)}</p>
                 {r.financeComment && <p className="mt-3 max-w-[80ch] whitespace-pre-wrap border-l-2 border-brand-500 pl-3 text-sm text-ink-700 dark:text-ink-200">{r.financeComment}</p>}
-                <p className="mt-3 text-xs text-ink-500">Department asked for {inr(r.totals.expected)} (target {inr(r.totals.target)}). Discuss the split with your assessors, then enter it here.</p>
+                <p className="mt-3 text-xs text-ink-500">Department total expected {inr(r.totals.expected)} · targeted {inr(r.totals.target)}. Discuss the split with your assessors, then enter it here.</p>
             </div>
             <BudgetBar total={r.budget ?? 0} parts={[
                 ...(own ? [{ label: "My own hike", amount: ownAmt ?? 0, color: "bg-emerald-500" }] : []),
@@ -209,11 +269,10 @@ function After({ r, onDone }: { r: Round; onDone: () => void }) {
     const waiting = r.shares.filter((s) => s.status === "SUBMITTED");
     const others = r.shares.filter((s) => s.status !== "SUBMITTED");
     const returned = r.people.filter((p) => p.source === "EL_DIRECT" && p.status === "SUBMITTED");
-    const SRC = { EL_OWN: "My own", EL_DIRECT: "Reports to me", FL_TEAM: "FL team", FL_OWN: "FL's own" } as const;
     return (
         <div className="flex flex-col gap-6">
             <BudgetBar total={r.budget ?? 0} parts={[
-                { label: "Decided by me", amount: r.people.filter((p) => p.source === "EL_OWN" || p.source === "EL_DIRECT").reduce((t, p) => t + (p.allocation ?? 0), 0), color: "bg-emerald-500" },
+                { label: "My own and direct reports", amount: r.people.filter((p) => p.source === "EL_OWN" || p.source === "EL_DIRECT").reduce((t, p) => t + (p.allocation ?? 0), 0), color: "bg-emerald-500" },
                 ...r.shares.map((s, i) => ({ label: s.name, amount: s.amount, color: ["bg-brand-500", "bg-violet-500", "bg-amber-500", "bg-rose-500", "bg-teal-500"][i % 5] })),
             ]} />
             {returned.map((p) => <DirectReturned key={p.cycleId} r={r} p={p} onDone={onDone} />)}
@@ -230,21 +289,8 @@ function After({ r, onDone }: { r: Round; onDone: () => void }) {
                     ))}
                 </Panel>
             )}
-            <Panel flush title="Everyone in the department">
-                <div className="overflow-x-auto">
-                    <table className="w-full min-w-[640px] text-sm">
-                        <thead><tr className="border-b border-ink-200 bg-ink-50 dark:border-white/10 dark:bg-ink-800">{["Person", "Decided by", "Hike", "Status"].map((h) => <th key={h} className={th}>{h}</th>)}</tr></thead>
-                        <tbody>{r.people.map((p) => (
-                            <tr key={p.cycleId} className="border-b border-ink-100 last:border-0 dark:border-white/5">
-                                <td className="px-4 py-3"><Name p={p} /></td>
-                                <td className="px-4 py-3 text-xs text-ink-600 dark:text-ink-300">{SRC[p.source]}{p.source.startsWith("FL") ? ` · ${r.shares.find((s) => s.flUserId === p.flUserId)?.name ?? ""}` : ""}</td>
-                                <td className="px-4 py-3 tabular-nums">{inr(p.approved ?? p.allocation)}</td>
-                                <td className="px-4 py-3 text-xs">{STATUS_LABEL[p.status]}</td>
-                            </tr>
-                        ))}</tbody>
-                    </table>
-                </div>
-            </Panel>
+            <Panel flush title={r.status === "FINALISED" ? "Final split" : "Split so far"}><SplitTable r={r} /></Panel>
+            <Panel title="Budget discussion"><BudgetLog log={r.budgetLog} budget={r.budget} /></Panel>
         </div>
     );
 }
@@ -260,7 +306,7 @@ export default function Split() {
     }, []);
     useEffect(() => { load(); }, [load]);
     const r = rounds?.[pick];
-    const todo = useMemo(() => (rounds ?? []).map((x) => (x.status === "BUDGET_WITH_EL" ? 1 : 0) + x.shares.filter((s) => s.status === "SUBMITTED").length), [rounds]);
+    const todo = useMemo(() => (rounds ?? []).map((x) => (x.status === "BUDGET_WITH_EL" || x.status === "BUDGET_ACCEPTED" ? 1 : 0) + x.shares.filter((s) => s.status === "SUBMITTED").length), [rounds]);
     if (!rounds) return <div className="flex justify-center py-20"><Spinner /></div>;
     if (!rounds.length || !r) return <Panel><p className="py-10 text-center text-sm text-ink-500">Nobody in the departments you lead has an appraisal yet.</p></Panel>;
 
@@ -275,14 +321,15 @@ export default function Split() {
             </div>
             <SummaryBar className="mb-0" items={[
                 { label: "Appeals in", value: `${r.totals.submitted} / ${r.totals.people}` },
-                { label: "Total expected", value: inr(r.totals.expected), hint: `Target ${inr(r.totals.target)}` },
-                { label: "Budget", value: r.budget == null ? "Not set yet" : inr(r.budget) },
+                { label: "Department total expected", value: inr(r.totals.expected), hint: `Targeted ${inr(r.totals.target)}` },
+                { label: "Budget", value: r.elAcceptedAt ? inr(r.budget) : r.status === "BUDGET_WITH_EL" ? "Not accepted" : r.status === "BUDGET_NEGOTIATION" ? "Negotiating" : "Not set yet", hint: r.status === "BUDGET_WITH_EL" ? "Accept it below to split it" : r.status === "BUDGET_NEGOTIATION" ? "With the Finance Head" : undefined },
                 { label: "FLs", value: r.shares.length || r.fls.length },
             ]} />
             {r.budget == null || r.status === "COLLECTING" || r.status === "READY_FOR_FINANCE" ? <Panel title="Waiting for the budget"><Waiting r={r} /></Panel>
-                : r.status === "BUDGET_WITH_EL" ? <SplitForm key={`${r.departmentId}-${r.period}`} r={r} onDone={load} />
+                : r.status === "BUDGET_WITH_EL" || r.status === "BUDGET_NEGOTIATION" ? <BudgetAnswer key={`${r.departmentId}-${r.period}-${r.budgetLog.length}`} r={r} onDone={load} />
+                : r.status === "BUDGET_ACCEPTED" ? <SplitForm key={`${r.departmentId}-${r.period}`} r={r} onDone={load} />
                 : <After r={r} onDone={load} />}
-            {r.status === "BUDGET_WITH_EL" && <p className="flex items-center gap-2 text-xs text-ink-500"><Hourglass size={12} />Nothing is sent until you press Send shares to FLs.</p>}
+            {r.status === "BUDGET_ACCEPTED" && <p className="flex items-center gap-2 text-xs text-ink-500"><Hourglass size={12} />Nothing is sent until you press Send shares to FLs.</p>}
         </div>
     );
 }

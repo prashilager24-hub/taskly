@@ -2,6 +2,7 @@
  * Appraisal flow v2: requests go up, money comes down.
  *   1. Everyone (Associate / Intern, FL, EL) appeals: expected hike, target hike, why.
  *   2. When a department is complete, the Finance Head is told; they review it and set its budget with a reason.
+ *      The EL accepts it or negotiates (with a comment); the Finance Head revises it; every step is logged. Only an accepted budget is split.
  *   3. The EL splits the budget: their own hike (agreed with Management), people reporting to them directly, a share per FL.
  *   4. Each FL turns their share into hikes for the team and their own, with reasons, and sends it to the EL.
  *   5. The EL approves (there is no reject). The hikes go out to the people in My Appraisal.
@@ -17,7 +18,8 @@ type Conn = mysql.PoolConnection;
 type Db = mysql.Pool | Conn;
 
 export type Source = 'EL_OWN' | 'EL_DIRECT' | 'FL_TEAM' | 'FL_OWN';
-export type RoundStatus = 'COLLECTING' | 'READY_FOR_FINANCE' | 'BUDGET_WITH_EL' | 'SHARES_WITH_FLS' | 'FINALISED';
+export type RoundStatus = 'COLLECTING' | 'READY_FOR_FINANCE' | 'BUDGET_WITH_EL' | 'BUDGET_NEGOTIATION' | 'BUDGET_ACCEPTED' | 'SHARES_WITH_FLS' | 'FINALISED';
+export type BudgetAction = 'PROPOSED' | 'REVISED' | 'NEGOTIATE' | 'ACCEPTED';
 export type ShareStatus = 'PLANNED' | 'SHARE_RECEIVED' | 'DRAFT' | 'SUBMITTED' | 'APPROVED';
 /** Where one person's appraisal stands, as the statuses list in the blueprint */
 export type Stage = 'APPEAL_OPEN' | 'SUBMITTED' | 'BUDGET_REVIEW' | 'IN_ALLOCATION' | 'AWAITING_EL' | 'OFFERED' | 'ACCEPTED' | 'POSTPONED';
@@ -55,13 +57,15 @@ export interface RoundPerson {
   a1: { userId: number; name: string } | null; source: Source; flUserId: number | null;
   expected: number | null; target: number | null; why: string; submittedAt: string | null;
   pmsAvg: number | null; pmsQuarters: number; currentAnnualCtc: number | null;
-  allocation: number | null; reason: string; approved: number | null;
+  allocation: number | null; reason: string; approved: number | null; approvedFixed: number | null; approvedVariable: number | null;
 }
 export interface Share { flUserId: number; name: string; amount: number; elComment: string; status: ShareStatus; justification: string; submittedAt: string | null; approvedAt: string | null; people: number; teamExpected: number; allocated: number }
 export interface Round {
   roundId: number | null; departmentId: number; department: string; period: string;
   el: { userId: number; name: string } | null; status: RoundStatus;
-  budget: number | null; financeComment: string; budgetSetAt: string | null; elSentAt: string | null;
+  budget: number | null; financeComment: string; budgetSetAt: string | null; elAcceptedAt: string | null; elSentAt: string | null;
+  /** Every budget step between the Finance Head and the EL, oldest first */
+  budgetLog: { action: BudgetAction; amount: number | null; comment: string; at: string; by: { userId: number; name: string } | null }[];
   people: RoundPerson[]; notStarted: { userId: number; name: string }[];
   fls: { userId: number; name: string }[]; shares: Share[];
   totals: { people: number; submitted: number; expected: number; target: number; allocated: number };
@@ -100,12 +104,13 @@ export async function loadRound(db: Db, departmentId: number, period: string): P
       WHERE c.DepartmentID = ? AND c.PeriodStart = ? ORDER BY u.UserName`, [departmentId, period]);
   const ids = cs.map((c) => c['CycleID'] as number);
   const uids = cs.map((c) => c['UserID'] as number);
-  const [hk] = ids.length ? await db.query<Row[]>(`SELECT CycleID, Kind, ByRole, AnnualAmount FROM AppraisalHike WHERE CycleID IN (?)`, [ids]) : [[]];
+  const [hk] = ids.length ? await db.query<Row[]>(`SELECT CycleID, Kind, ByRole, AnnualAmount, FixedAmount, VariableAmount FROM AppraisalHike WHERE CycleID IN (?)`, [ids]) : [[]];
   const [sf] = ids.length ? await db.query<Row[]>(`SELECT CycleID, AnswersJson, SubmittedAt FROM AppraisalReview WHERE ReviewerRole = 'SELF' AND CycleID IN (?)`, [ids]) : [[]];
   const [al] = ids.length ? await db.query<Row[]>(`SELECT * FROM AppraisalAllocation WHERE CycleID IN (?)`, [ids]) : [[]];
   const [pm] = uids.length ? await db.query<Row[]>(
     `SELECT emp_id, AVG(final_rating) AS avg, COUNT(*) AS cnt FROM quarterlyreview WHERE emp_id IN (?) AND quarter_end_date <= ? AND quarter_end_date > DATE_SUB(?, INTERVAL 12 MONTH) GROUP BY emp_id`,
     [uids, period, period]) : [[]];
+  const [lg] = row ? await db.query<Row[]>('SELECT l.*, u.UserName FROM AppraisalBudgetLog l LEFT JOIN Users u ON u.UserID = l.ActorID WHERE l.RoundID = ? ORDER BY l.CreatedAt, l.LogID', [row['RoundID']]) : [[]];
   const [sh] = row ? await db.query<Row[]>(`SELECT s.*, u.UserName FROM AppraisalShare s JOIN Users u ON u.UserID = s.FlUserID WHERE s.RoundID = ? ORDER BY u.UserName`, [row['RoundID']]) : [[]];
 
   const elId = dept.el?.userId ?? null;
@@ -133,6 +138,7 @@ export async function loadRound(db: Db, departmentId: number, period: string): P
       expected: hike(id, 'EXPECTED', 'EMPLOYEE'), target: hike(id, 'TARGET', 'EMPLOYEE'), why: (answers?.whyExpectThisSalary as string) ?? '',
       submittedAt: iso(s?.['SubmittedAt']), pmsAvg: p ? Math.round(Number(p['avg']) * 100) / 100 : null, pmsQuarters: p ? Number(p['cnt']) : 0,
       currentAnnualCtc: n(c['CurrentAnnualCtc']), allocation: n(a?.['AnnualAmount']), reason: (a?.['Reason'] as string) ?? '', approved: hike(id, 'APPROVED'),
+      approvedFixed: n(hk.find((h) => h['CycleID'] === id && h['Kind'] === 'APPROVED')?.['FixedAmount']), approvedVariable: n(hk.find((h) => h['CycleID'] === id && h['Kind'] === 'APPROVED')?.['VariableAmount']),
     };
   });
 
@@ -164,7 +170,8 @@ export async function loadRound(db: Db, departmentId: number, period: string): P
   return {
     roundId: (row?.['RoundID'] as number | undefined) ?? null, departmentId, department: dept.name, period, el: dept.el,
     status: stored === 'COLLECTING' && complete ? 'READY_FOR_FINANCE' : stored,
-    budget: n(row?.['Budget']), financeComment: (row?.['FinanceComment'] as string) ?? '', budgetSetAt: iso(row?.['BudgetSetAt']), elSentAt: iso(row?.['ElSentAt']),
+    budget: n(row?.['Budget']), financeComment: (row?.['FinanceComment'] as string) ?? '', budgetSetAt: iso(row?.['BudgetSetAt']), elAcceptedAt: iso(row?.['ElAcceptedAt']), elSentAt: iso(row?.['ElSentAt']),
+    budgetLog: lg.map((l) => ({ action: l['Action'] as BudgetAction, amount: n(l['Amount']), comment: (l['Comment'] as string) ?? '', at: iso(l['CreatedAt'])!, by: l['ActorID'] ? { userId: l['ActorID'] as number, name: (l['UserName'] as string) ?? '' } : null })),
     people, notStarted, fls: [...fls].map(([userId, name]) => ({ userId, name })), shares,
     totals: { people: total, submitted, expected: people.reduce((t, p) => t + (p.expected ?? 0), 0), target: people.reduce((t, p) => t + (p.target ?? 0), 0), allocated: people.reduce((t, p) => t + (p.allocation ?? 0), 0) },
     complete,
@@ -178,7 +185,8 @@ export function stageOf(p: { status: string; source: Source; flUserId: number | 
   if (p.status === 'ACCEPTED') return 'ACCEPTED';
   if (p.status === 'POSTPONED') return 'POSTPONED';
   if (!round || round.status === 'COLLECTING') return 'SUBMITTED';
-  if (round.status === 'READY_FOR_FINANCE') return 'BUDGET_REVIEW';
+  // until the EL has accepted the budget, it is still being set
+  if (['READY_FOR_FINANCE', 'BUDGET_WITH_EL', 'BUDGET_NEGOTIATION'].includes(round.status)) return 'BUDGET_REVIEW';
   if ((p.source === 'FL_TEAM' || p.source === 'FL_OWN') && round.shares.find((s) => s.flUserId === p.flUserId)?.status === 'SUBMITTED') return 'AWAITING_EL';
   return 'IN_ALLOCATION';
 }
@@ -265,6 +273,10 @@ export async function board(period: string) {
       WHERE d.IsDepartmentArchived = 0 AND NOT EXISTS (SELECT 1 FROM AppraisalCycle c WHERE c.UserID = u.UserID AND c.PeriodStart = ?)
       GROUP BY d.DepartmentID`, [period]) : [[]];
   const [rounds] = await pool.query<Row[]>('SELECT * FROM AppraisalRound WHERE PeriodStart = ?', [period]);
+  // what each EL asked for in their latest negotiation, for the rows waiting on the Finance Head
+  const [asks] = await pool.query<Row[]>(
+    `SELECT l.RoundID, l.Amount, l.Comment FROM AppraisalBudgetLog l JOIN AppraisalRound r ON r.RoundID = l.RoundID
+      WHERE r.PeriodStart = ? AND r.Status = 'BUDGET_NEGOTIATION' AND l.Action = 'NEGOTIATE' ORDER BY l.CreatedAt, l.LogID`, [period]);
   return depts.map((d) => {
     const id = d['DepartmentID'] as number;
     const a = agg.find((x) => x['DepartmentID'] === id);
@@ -276,6 +288,7 @@ export async function board(period: string) {
       departmentId: id, department: d['DepartmentName'] as string, el: d['ElID'] ? { userId: d['ElID'] as number, name: (d['ElName'] as string) ?? '' } : null,
       people, submitted, expected: Number(a?.['exp'] ?? 0), target: Number(a?.['tgt'] ?? 0), allocated: Number(a?.['alloc'] ?? 0),
       budget: n(r?.['Budget']), status: stored === 'COLLECTING' && people > 0 && submitted === people ? 'READY_FOR_FINANCE' as RoundStatus : stored,
+      ask: (() => { const a = asks.filter((x) => x['RoundID'] === r?.['RoundID']).at(-1); return a ? { amount: n(a['Amount']), comment: (a['Comment'] as string) ?? '' } : null; })(),
     };
   });
 }
@@ -284,12 +297,17 @@ export async function setBudget(actor: number, departmentId: number, period: str
   if (!comment.trim()) throw AppError.badRequest('Write why this budget is given');
   const r = await loadRound(pool, departmentId, period);
   if (!r.el) throw AppError.badRequest('This department has no Executive Leader to give a budget to');
-  if (r.status === 'SHARES_WITH_FLS' || r.status === 'FINALISED') throw AppError.conflict('The EL has already split this budget');
+  if (r.status === 'BUDGET_ACCEPTED' || r.status === 'SHARES_WITH_FLS' || r.status === 'FINALISED') throw AppError.conflict(`${r.el.name} has already accepted this budget`);
   if (amount > MAX_AMOUNT) throw AppError.badRequest('That amount is too large');
   const id = await ensureRound(pool, departmentId, period);
+  const revised = r.budgetLog.length > 0;
   await pool.execute("UPDATE AppraisalRound SET Budget = ?, FinanceComment = ?, BudgetSetBy = ?, BudgetSetAt = ?, Status = 'BUDGET_WITH_EL' WHERE RoundID = ?", [amount, comment.trim(), actor, new Date(), id]);
-  await notify([r.el.userId], `Budget for ${r.department}: ${inr(amount)}`, `Finance Head's note: ${comment.trim()}`, '/appraisal/split', actor);
+  await logBudget(id, actor, revised ? 'REVISED' : 'PROPOSED', amount, comment.trim());
+  await notify([r.el.userId], `${revised ? 'Revised budget' : 'Budget'} for ${r.department}: ${inr(amount)}`, `Finance Head's note: ${comment.trim()}. Accept it or negotiate it in Budget Split.`, '/appraisal/split', actor);
 }
+
+const logBudget = (roundId: number, actor: number, action: BudgetAction, amount: number | null, comment: string) =>
+  pool.execute('INSERT INTO AppraisalBudgetLog (RoundID, ActorID, Action, Amount, Comment, CreatedAt) VALUES (?, ?, ?, ?, ?, ?)', [roundId, actor, action, amount, comment || null, new Date()]);
 
 // ── EL: split the budget, approve FL proposals ───────────────────────────────────────────────────
 
@@ -300,6 +318,32 @@ const leads = async (userId: number, departmentId: number) => {
 const mustLead = async (userId: number, appRole: number, departmentId: number) => {
   if (appRole !== 1 && !(await leads(userId, departmentId))) throw AppError.forbidden('Only the Executive Leader of this department can do this');
 };
+
+/**
+ * The EL's answer to the Finance Head's budget: accept it (then it can be split), or negotiate with a comment and, if they
+ * like, the amount they ask for. The Finance Head then revises it and it comes back to the EL. Every step is logged.
+ */
+export async function respondBudget(actor: number, appRole: number, departmentId: number, period: string, input: { accept: boolean; comment?: string; amount?: number | null }) {
+  await mustLead(actor, appRole, departmentId);
+  const r = await loadRound(pool, departmentId, period);
+  if (r.status !== 'BUDGET_WITH_EL' || r.roundId == null) {
+    throw AppError.conflict(r.status === 'BUDGET_NEGOTIATION' ? 'You have already asked the Finance Head to change it. Wait for their answer.' : 'There is no budget waiting for your answer');
+  }
+  const comment = input.comment?.trim() ?? '';
+  if (!input.accept && !comment) throw AppError.badRequest('Write what you would like changed and why');
+  if (input.amount != null && input.amount > MAX_AMOUNT) throw AppError.badRequest('That amount is too large');
+  const name = r.el?.name ?? 'The EL';
+  if (input.accept) {
+    await pool.execute("UPDATE AppraisalRound SET Status = 'BUDGET_ACCEPTED', ElAcceptedAt = ? WHERE RoundID = ? AND Status = 'BUDGET_WITH_EL'", [new Date(), r.roundId]);
+    await logBudget(r.roundId, actor, 'ACCEPTED', r.budget, comment);
+    await notify(await deps.financeUsers(), `${name} accepted the budget for ${r.department}`, `${inr(r.budget ?? 0)}${comment ? `. ${comment}` : ''}`, `/appraisal/departments/${departmentId}/${period}`, actor, 'success');
+  } else {
+    await pool.execute("UPDATE AppraisalRound SET Status = 'BUDGET_NEGOTIATION' WHERE RoundID = ? AND Status = 'BUDGET_WITH_EL'", [r.roundId]);
+    await logBudget(r.roundId, actor, 'NEGOTIATE', input.amount ?? null, comment);
+    await notify(await deps.financeUsers(), `${name} wants to negotiate the budget for ${r.department}`,
+      `${input.amount != null ? `Asks for ${inr(input.amount)} instead of ${inr(r.budget ?? 0)}. ` : ''}${comment}`, `/appraisal/departments/${departmentId}/${period}`, actor, 'warning');
+  }
+}
 
 /** The rounds of the departments this person leads, newest first */
 export async function elRounds(userId: number) {
@@ -350,7 +394,10 @@ export interface SplitInput {
 export async function saveSplit(actor: number, appRole: number, departmentId: number, period: string, input: SplitInput) {
   await mustLead(actor, appRole, departmentId);
   const r = await loadRound(pool, departmentId, period);
-  if (r.status !== 'BUDGET_WITH_EL' || r.budget == null) throw AppError.conflict(r.budget == null ? 'The Finance Head has not given this department a budget yet' : 'This budget has already been split');
+  if (r.status !== 'BUDGET_ACCEPTED' || r.budget == null) {
+    throw AppError.conflict(r.budget == null ? 'The Finance Head has not given this department a budget yet'
+      : r.status === 'BUDGET_WITH_EL' || r.status === 'BUDGET_NEGOTIATION' ? 'Accept the budget before you split it' : 'This budget has already been split');
+  }
   const own = r.people.find((p) => p.source === 'EL_OWN');
   const direct = r.people.filter((p) => p.source === 'EL_DIRECT');
   if (input.own && !own) throw AppError.badRequest('You have no appraisal in this department to give yourself a hike in');

@@ -17,6 +17,35 @@ Summary: one or two lines on what and why.
 
 ---
 
+## 2026-11-01 — Appraisal: budget negotiation, own variable pay, final split view, departments follow edits (branch appraisal-flow-v2)
+
+Summary: changes from the manager's review. The EL now accepts the Finance Head's budget or negotiates it (with a comment and, optionally, the amount they ask for); the Finance Head revises it; every step is logged and shown to both. Only an accepted budget can be split. Employees can override their variable pay on the hikes they appeal for. After the split, the EL and the Finance Head see one final table per department. An EL can add their own designation / team change. Separately (commit bc13711), a person's appraisal follows their department membership and user-record edits until the budget is set.
+
+### Frontend
+- Department Budgets (Finance Head): columns renamed "Department Total Expected" / "Department Total Targeted"; the button is "Submit budget" ("Submit revised budget" after the first one); a department whose EL is negotiating is highlighted on the board ("<EL> resubmitted for negotiation", asks ₹…) with a Respond button, and on its page with the EL's comment; a "Budget discussion" timeline shows every step; finalised departments have "View split", opening the final table.
+- Budget Split (EL): a new first step, Accept budget / Negotiate budget (comment required, amount optional), beside the discussion timeline; the budget is not shown in the summary until accepted; the split opens only after accepting. After the split the "Decided by" column is gone; the bottom table is the final split: Name, Expected hike, Targeted hike, Accepted hike (fixed and variable under it), % of total budget, % of expected, % of targeted, with totals.
+- My Appraisal: each hike field has a "Variable pay override" tick with Custom % / Custom ₹; fixed and variable are worked out from it. An EL accepting their hike can add a designation / team change, recorded at once.
+- Team Allocation: the waiting message covers the budget being agreed.
+
+### Backend
+- [appraisal.flow.ts](../nodejs-backend/src/modules/appraisal/appraisal.flow.ts): round statuses BUDGET_WITH_EL (waiting for the EL), BUDGET_NEGOTIATION, BUDGET_ACCEPTED; `setBudget` logs PROPOSED / REVISED and is refused once accepted; new `respondBudget` (accept, or negotiate with a comment and optional amount; notifies the Finance Head); `saveSplit` needs an accepted budget; the round carries `budgetLog`, `elAcceptedAt`, and the approved fixed / variable per person; board rows carry the EL's latest ask.
+- [appraisal.service.ts](../nodejs-backend/src/modules/appraisal/appraisal.service.ts): `splitWith` (level percentage, or the employee's own percentage / amount; variable can't exceed the hike); the appeal takes `expectedVariable` / `targetVariable`; level changes leave an own variable pay alone; an EL's own change request is stored as approved; menu counters include negotiations (Finance Head) and budgets to accept (EL). From bc13711: `syncOpenCycles` keeps undecided appraisals in line with department membership, A1 / A2, level and CTC until the department's budget is set; an EL in several departments lands in the one they lead; an inactive EL counts as none.
+- Route: `PUT /appraisal/split/:departmentId/:period/budget-response` { accept, comment?, amount? }.
+- `npx tsx src/scripts/appraisalFlowCheck.ts`: 69 checks (negotiation, own variable pay, EL change request, department / record edits).
+
+### Database
+- `010_appraisal_budget_negotiation.sql` (`npm run db:migrate`): AppraisalRound.Status gains BUDGET_NEGOTIATION and BUDGET_ACCEPTED, new column `ElAcceptedAt`; new table `AppraisalBudgetLog`; AppraisalHike gets `VariableOverride` (PCT / AMOUNT / NULL).
+- To undo: `src/config/migrations/down/010_appraisal_budget_negotiation.down.sql` by hand (before the 009 down script if going back to appraisal-module).
+
+### Env / config
+none
+
+### Notes
+- A budget already sent to an EL before this change shows as "Waiting for EL to accept": the EL accepts it before splitting.
+- An EL's own designation / team change needs nobody's approval (agreed with Management); tell us if Management or the Finance Head should approve it instead.
+
+---
+
 ## 2026-10-31 — Appraisal flow v2: requests go up, money comes down (branch appraisal-flow-v2)
 
 Summary: the appraisal now follows the "Taskly – Appraisal Cycle Workflow" brief. Everyone (Associate / Intern, FL, EL) appeals with expected hike, target hike and why. When a department is complete the Finance Head is told, reviews it and sets its budget with a reason. The EL splits it: their own hike (agreed with Management), people reporting to them directly, and a share with a note for each FL. Each FL allocates their share to the team with a reason per person, adds their own hike, and sends it to the EL, who approves (no reject). The hikes then go out. Associates / Interns may accept or reject; FLs and ELs accept. Designation / team requests: an Associate's goes to their FL, who forwards it with a recommendation to the EL; an FL's goes straight to the EL; the EL's approval opens the celebration. Built on a separate branch so it can be dropped: the previous flow is on appraisal-module (commit 317b4df).

@@ -10,7 +10,8 @@ const empty = { newDesignation: "", designationComment: "", newTeam: "", teamCom
 
 /**
  * Accepting the hike. Before it is final, the person may ask for a new designation and / or a new team, each with a reason.
- * Both are optional. An Associate's / Intern's request goes to their FL, who forwards it to the EL; anyone else's goes to the EL.
+ * Both are optional. An Associate's / Intern's request goes to their FL, who forwards it to the EL; an FL's goes to the EL;
+ * an EL adds their own (agreed with Management) and it is recorded straight away.
  */
 export function AcceptModal({ view, open, onOpenChange, onDone }: { view: MyView; open: boolean; onOpenChange: (o: boolean) => void; onDone: () => void }) {
     const a = view.approved;
@@ -18,13 +19,14 @@ export function AcceptModal({ view, open, onOpenChange, onDone }: { view: MyView
     const [busy, setBusy] = useState(false);
     const asking = view.can.ask && !!(req.newDesignation.trim() || req.newTeam.trim());
     const viaFl = view.route.source === "FL_TEAM";
-    const goesTo = viaFl ? `${view.route.fl?.name ?? "your FL"}, who passes it to ${view.route.el?.name ?? "your EL"} for the decision` : `${view.route.el?.name ?? "your EL"}, who gives the decision`;
+    const own = view.route.source === "EL_OWN";
+    const goesTo = own ? "your record straight away, as agreed with Management" : viaFl ? `${view.route.fl?.name ?? "your FL"}, who passes it to ${view.route.el?.name ?? "your EL"} for the decision` : `${view.route.el?.name ?? "your EL"}, who gives the decision`;
 
     const accept = async () => {
         setBusy(true);
         try {
             await appraisalApi.accept(view.cycle.id, asking ? req : undefined);
-            addToast({ title: "Hike accepted", description: asking ? `Your request goes to ${goesTo}.` : undefined, color: "success" });
+            addToast({ title: "Hike accepted", description: asking ? (own ? "Your change is recorded." : `Your request goes to ${goesTo}.`) : undefined, color: "success" });
             onOpenChange(false); setReq(empty); onDone();
         } catch (e) { addToast({ title: "Could not accept", description: errorText(e), color: "danger" }); }
         finally { setBusy(false); }
@@ -42,8 +44,8 @@ export function AcceptModal({ view, open, onOpenChange, onDone }: { view: MyView
                         <ModalBody>
                             {view.can.ask ? <div className="flex flex-col gap-4 pb-2">
                                 <div>
-                                    <p className="text-sm font-semibold text-ink-900 dark:text-white">Would you like to ask for a change in designation or team?</p>
-                                    <p className="mt-1 text-sm text-ink-500 dark:text-ink-400">This is optional. Leave it empty if you don't need a change right now. Anything you ask for goes to {goesTo}.</p>
+                                    <p className="text-sm font-semibold text-ink-900 dark:text-white">{own ? "Add a change in your designation or team" : "Would you like to ask for a change in designation or team?"}</p>
+                                    <p className="mt-1 text-sm text-ink-500 dark:text-ink-400">{own ? "Optional. Add what you agreed with Management; it is recorded straight away, nobody else approves it." : `This is optional. Leave it empty if you don't need a change right now. Anything you ask for goes to ${goesTo}.`}</p>
                                 </div>
                                 <div className={COLS2}>
                                     <Input label="New designation (optional)" value={req.newDesignation} onValueChange={(v) => setReq((r) => ({ ...r, newDesignation: v }))} />
@@ -55,7 +57,7 @@ export function AcceptModal({ view, open, onOpenChange, onDone }: { view: MyView
                         </ModalBody>
                         <ModalFooter>
                             <Button variant="light" isDisabled={busy} onPress={onClose}>Back</Button>
-                            <Button color="success" isLoading={busy} onPress={accept}>{asking ? "Accept and send my requests" : "Accept, no change needed"}</Button>
+                            <Button color="success" isLoading={busy} onPress={accept}>{asking ? (own ? "Accept and record the change" : "Accept and send my requests") : "Accept, no change needed"}</Button>
                         </ModalFooter>
                     </>
                 )}

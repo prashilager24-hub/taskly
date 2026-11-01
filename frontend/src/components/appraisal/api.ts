@@ -10,14 +10,18 @@ export type Level = "ASSOCIATE" | "MANAGER" | "HEAD_EL";
 export type Status = "EMPLOYEE_OPEN" | "SUBMITTED" | "OFFERED" | "ACCEPTED" | "POSTPONED";
 /** Where one person's appraisal stands (the statuses list) */
 export type Stage = "APPEAL_OPEN" | "SUBMITTED" | "BUDGET_REVIEW" | "IN_ALLOCATION" | "AWAITING_EL" | "OFFERED" | "ACCEPTED" | "POSTPONED";
-export type RoundStatus = "COLLECTING" | "READY_FOR_FINANCE" | "BUDGET_WITH_EL" | "SHARES_WITH_FLS" | "FINALISED";
+export type RoundStatus = "COLLECTING" | "READY_FOR_FINANCE" | "BUDGET_WITH_EL" | "BUDGET_NEGOTIATION" | "BUDGET_ACCEPTED" | "SHARES_WITH_FLS" | "FINALISED";
+export type BudgetAction = "PROPOSED" | "REVISED" | "NEGOTIATE" | "ACCEPTED";
 export type ShareStatus = "PLANNED" | "SHARE_RECEIVED" | "DRAFT" | "SUBMITTED" | "APPROVED";
 export type Source = "EL_OWN" | "EL_DIRECT" | "FL_TEAM" | "FL_OWN";
 export type RequestStage = "WITH_FL" | "WITH_EL" | "APPROVED" | "NOT_APPROVED";
 export type Decision = "APPROVED" | "REJECTED";
 export type RequestField = "DESIGNATION" | "TEAM";
 
-export interface Money { annual: number; fixed: number; variable: number; variablePct: number; variablePerHalfYear: number }
+/** override: the employee set the variable pay themselves; null / missing: the level's percentage */
+export interface Money { annual: number; fixed: number; variable: number; variablePct: number; variablePerHalfYear: number; override?: "PCT" | "AMOUNT" | null }
+/** Variable pay the employee sets on a hike they appeal for: a percentage of it, or an amount out of it */
+export interface VariableOverride { mode: "PCT" | "AMOUNT"; value: number }
 export interface Person { userId: number; name: string }
 
 export interface CycleInfo {
@@ -59,16 +63,19 @@ export interface RoundPerson {
     a1: Person | null; source: Source; flUserId: number | null;
     expected: number | null; target: number | null; why: string; submittedAt: string | null;
     pmsAvg: number | null; pmsQuarters: number; currentAnnualCtc: number | null;
-    allocation: number | null; reason: string; approved: number | null;
+    allocation: number | null; reason: string; approved: number | null; approvedFixed: number | null; approvedVariable: number | null;
 }
 export interface Share { flUserId: number; name: string; amount: number; elComment: string; status: ShareStatus; justification: string; submittedAt: string | null; approvedAt: string | null; people: number; teamExpected: number; allocated: number }
 export interface Round {
     roundId: number | null; departmentId: number; department: string; period: string; el: Person | null; status: RoundStatus;
-    budget: number | null; financeComment: string; budgetSetAt: string | null; elSentAt: string | null;
+    budget: number | null; financeComment: string; budgetSetAt: string | null; elAcceptedAt: string | null; elSentAt: string | null;
+    budgetLog: BudgetLogEntry[];
     people: RoundPerson[]; notStarted: Person[]; fls: Person[]; shares: Share[];
     totals: { people: number; submitted: number; expected: number; target: number; allocated: number }; complete: boolean;
 }
-export interface BoardRow { departmentId: number; department: string; el: Person | null; people: number; submitted: number; expected: number; target: number; allocated: number; budget: number | null; status: RoundStatus }
+/** One step between the Finance Head and the EL on a department's budget */
+export interface BudgetLogEntry { action: BudgetAction; amount: number | null; comment: string; at: string; by: Person | null }
+export interface BoardRow { departmentId: number; department: string; el: Person | null; people: number; submitted: number; expected: number; target: number; allocated: number; budget: number | null; status: RoundStatus; ask: { amount: number | null; comment: string } | null }
 export interface FlShare { roundId: number; departmentId: number; department: string; period: string; el: Person | null; share: Share; people: (RoundPerson & { own: boolean; stage: Stage })[] }
 export interface FlWaiting { department: string; period: string; status: RoundStatus; el: Person | null; team: number; submitted: number }
 export interface InboxItem { cycleId: number; name: string; level: Level; department: string | null; role: PersonView["role"]; source: Source | null; fl: Person | null; approved: Money | null; requests: ChangeRequest[]; can: { forward: boolean; decide: boolean } }
@@ -92,7 +99,7 @@ export interface PersonBody { dateOfJoining: string | null; level: Level | null;
 /** Who acts as Finance: chosen in Appraisal Setup, or the head of the Strategic Financial Management department */
 export interface FinanceHead { userId: number | null; name: string | null; email: string | null; source: "setting" | "department" | "none"; department: string }
 
-export interface AppealBody { answers: Record<string, string>; quarters: never[]; expectedHike: number | null; targetHike: number | null; submit: boolean }
+export interface AppealBody { answers: Record<string, string>; quarters: never[]; expectedHike: number | null; targetHike: number | null; expectedVariable?: VariableOverride | null; targetVariable?: VariableOverride | null; submit: boolean }
 export interface SplitBody {
     own?: { amount: number; comment?: string } | null;
     direct?: { cycleId: number; amount: number; reason?: string }[];
@@ -122,6 +129,7 @@ export const appraisalApi = {
     setBudget: (departmentId: number, period: string, amount: number, comment: string) => axios.put(`${BASE}/departments/${departmentId}/${period}/budget`, { amount, comment }),
 
     split: () => unwrap<Round[]>(axios.get(`${BASE}/split`)),
+    respondBudget: (departmentId: number, period: string, body: { accept: boolean; comment?: string; amount?: number | null }) => axios.put(`${BASE}/split/${departmentId}/${period}/budget-response`, body),
     saveSplit: (departmentId: number, period: string, body: SplitBody) => axios.put(`${BASE}/split/${departmentId}/${period}`, body),
     approveShare: (departmentId: number, period: string, flUserId: number) => axios.put(`${BASE}/split/${departmentId}/${period}/shares/${flUserId}/approve`),
     offerDirect: (departmentId: number, period: string, cycleId: number, amount: number, reason: string) => axios.put(`${BASE}/split/${departmentId}/${period}/direct/${cycleId}`, { amount, reason }),

@@ -8,7 +8,8 @@ export type ViewRole = 'EMPLOYEE' | 'A1' | 'A2' | 'FINANCE' | 'HR';
 export type Status = 'EMPLOYEE_OPEN' | 'SUBMITTED' | 'OFFERED' | 'ACCEPTED' | 'POSTPONED';
 export type HikeKind = 'EXPECTED' | 'TARGET' | 'MINIMAL' | 'APPROVED';
 
-export interface Money { annual: number; fixed: number; variable: number; variablePct: number; variablePerHalfYear: number }
+/** override: the employee set the variable pay themselves (PCT: as a percentage, AMOUNT: as an amount); null: the level's percentage */
+export interface Money { annual: number; fixed: number; variable: number; variablePct: number; variablePerHalfYear: number; override?: 'PCT' | 'AMOUNT' | null }
 export interface Person { userId: number; name: string }
 
 /** One quarter of the PMS review that Part A shows. Taken from PMS, never typed in the appraisal. */

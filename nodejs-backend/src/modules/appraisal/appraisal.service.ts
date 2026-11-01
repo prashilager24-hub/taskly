@@ -124,7 +124,7 @@ function requestReviewsOf(rows: Row[], field: RequestField): RequestReviews {
   return { A1: a1 ? { comment: a1['Comment'] ?? '', recommendation: a1['Recommendation'] ?? null } : null, A2: a2 ? { comment: a2['Comment'] ?? '', decision: a2['Decision'] ?? null } : null };
 }
 
-const moneyOf = (r: Row): Money => ({ annual: Number(r['AnnualAmount']), fixed: Number(r['FixedAmount']), variable: Number(r['VariableAmount']), variablePct: Number(r['VariablePct']), variablePerHalfYear: Number(r['VariableAmount']) / 2 });
+const moneyOf = (r: Row): Money => ({ annual: Number(r['AnnualAmount']), fixed: Number(r['FixedAmount']), variable: Number(r['VariableAmount']), variablePct: Number(r['VariablePct']), variablePerHalfYear: Number(r['VariableAmount']) / 2, override: (r['VariableOverride'] as VariableOverride['mode'] | null) ?? null });
 
 export async function loadFull(cycleId: number, db: Db = pool): Promise<FullCycle | null> {
   const [cs] = await db.execute<Row[]>(
@@ -249,7 +249,7 @@ function employeeView(full: FullCycle, ctx: Ctx) {
     route: { source: src, fl: ctx?.fl ?? null, el: ctx?.round.el ?? null },
     can: {
       appeal: c.status === 'EMPLOYEE_OPEN' && (!TIMED || todayIST() <= c.employeeWindowEnd),
-      respond: c.status === 'OFFERED', reject: c.status === 'OFFERED' && mayReject(src), ask: src !== 'EL_OWN',
+      respond: c.status === 'OFFERED', reject: c.status === 'OFFERED' && mayReject(src), ask: true,
     },
     self: full.self, expected: full.expected, target: full.target, pms: full.pms, slots: full.slots,
     approved: out ? full.approved : null,
@@ -355,6 +355,8 @@ export interface SelfReviewInput {
   answers: Record<string, string>;
   quarters?: { quarter: number; goals?: string; targets?: string; comments?: string; biggestAchievements?: string; biggestFailures?: string }[];
   expectedHike?: number | null; targetHike?: number | null;
+  /** The employee's own variable pay on each hike, instead of the level's percentage */
+  expectedVariable?: VariableOverride | null; targetVariable?: VariableOverride | null;
   request?: { newDesignation?: string; designationComment?: string; newTeam?: string; teamComment?: string };
   submit: boolean;
 }
@@ -368,17 +370,29 @@ async function lock(c: Conn, cycleId: number) {
   return { id: r['CycleID'] as number, userId: r['UserID'] as number, status: r['Status'] as Status, level: r['EmployeeLevel'] as EmployeeLevel, a1: r['Assessor1UserID'] as number | null, a2: r['Assessor2UserID'] as number | null, start: r['Start'] as string, empEnd: r['EmpEnd'] as string, assEnd: r['AssEnd'] as string, departmentId: r['DepartmentID'] as number | null, period: r['Period'] as string | null };
 }
 
-async function putHike(c: Conn, cycleId: number, kind: 'EXPECTED' | 'TARGET' | 'MINIMAL' | 'APPROVED', by: 'EMPLOYEE' | 'A1' | 'A2' | 'FINANCE', amount: number | null | undefined, level: EmployeeLevel, actor: number) {
+/** Variable pay the employee sets themselves: a percentage of the hike, or an amount out of it */
+export interface VariableOverride { mode: 'PCT' | 'AMOUNT'; value: number }
+
+/** Fixed + variable for a hike: the level's percentage, or the employee's own percentage / amount */
+export function splitWith(amount: number, level: EmployeeLevel, own?: VariableOverride | null) {
+  if (!own) return { ...splitHike(amount, level), override: null };
+  if (own.mode === 'PCT' && (own.value < 0 || own.value > 100)) throw AppError.badRequest('Variable pay must be between 0% and 100%');
+  if (own.mode === 'AMOUNT' && own.value > amount) throw AppError.badRequest('Variable pay cannot be more than the hike');
+  const variable = Math.round(own.mode === 'PCT' ? (amount * own.value) / 100 : own.value);
+  return { annualAmount: amount, fixed: amount - variable, variable, variablePct: amount ? Math.round((variable / amount) * 100) : 0, override: own.mode };
+}
+
+async function putHike(c: Conn, cycleId: number, kind: 'EXPECTED' | 'TARGET' | 'MINIMAL' | 'APPROVED', by: 'EMPLOYEE' | 'A1' | 'A2' | 'FINANCE', amount: number | null | undefined, level: EmployeeLevel, actor: number, own?: VariableOverride | null) {
   if (amount == null) {
     await c.execute('DELETE FROM AppraisalHike WHERE CycleID = ? AND Kind = ? AND ByRole = ?', [cycleId, kind, by]);
     return;
   }
-  // the split is always worked out here; the client never sends it
-  const s = splitHike(amount, level);
+  // the split is always worked out here; the client sends at most the employee's own variable pay
+  const s = splitWith(amount, level, own);
   await c.execute(
-    `INSERT INTO AppraisalHike (CycleID, Kind, ByRole, AnnualAmount, FixedAmount, VariableAmount, VariablePct, EnteredBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-     ON DUPLICATE KEY UPDATE AnnualAmount = VALUES(AnnualAmount), FixedAmount = VALUES(FixedAmount), VariableAmount = VALUES(VariableAmount), VariablePct = VALUES(VariablePct), EnteredBy = VALUES(EnteredBy)`,
-    [cycleId, kind, by, s.annualAmount, s.fixed, s.variable, s.variablePct, actor]);
+    `INSERT INTO AppraisalHike (CycleID, Kind, ByRole, AnnualAmount, FixedAmount, VariableAmount, VariablePct, VariableOverride, EnteredBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE AnnualAmount = VALUES(AnnualAmount), FixedAmount = VALUES(FixedAmount), VariableAmount = VALUES(VariableAmount), VariablePct = VALUES(VariablePct), VariableOverride = VALUES(VariableOverride), EnteredBy = VALUES(EnteredBy)`,
+    [cycleId, kind, by, s.annualAmount, s.fixed, s.variable, s.variablePct, s.override, actor]);
 }
 
 export async function saveSelfReview(cycleId: number, userId: number, input: SelfReviewInput) {
@@ -402,8 +416,8 @@ export async function saveSelfReview(cycleId: number, userId: number, input: Sel
          ON DUPLICATE KEY UPDATE Goals = VALUES(Goals), Targets = VALUES(Targets), Comments = VALUES(Comments), BiggestAchievements = VALUES(BiggestAchievements), BiggestFailures = VALUES(BiggestFailures)`,
         [cycleId, q.quarter, q.goals ?? null, q.targets ?? null, q.comments ?? null, q.biggestAchievements ?? null, q.biggestFailures ?? null]);
     }
-    await putHike(c, cycleId, 'EXPECTED', 'EMPLOYEE', input.expectedHike, cy.level, userId);
-    await putHike(c, cycleId, 'TARGET', 'EMPLOYEE', input.targetHike, cy.level, userId);
+    await putHike(c, cycleId, 'EXPECTED', 'EMPLOYEE', input.expectedHike, cy.level, userId, input.expectedVariable);
+    await putHike(c, cycleId, 'TARGET', 'EMPLOYEE', input.targetHike, cy.level, userId, input.targetVariable);
     if (input.request) {
       const r = input.request;
       await c.execute(
@@ -431,7 +445,6 @@ export async function respond(cycleId: number, userId: number, input: RespondInp
   const src = ctx?.person.source ?? null;
   const asking = input.decision === 'ACCEPT' && !!(input.request?.newDesignation?.trim() || input.request?.newTeam?.trim());
   if (input.decision === 'REJECT' && !mayReject(src)) throw AppError.forbidden('Your hike was agreed with you, so it can only be accepted');
-  if (asking && src === 'EL_OWN') throw AppError.badRequest('A designation or team change for an EL is not asked here');
   const out = await tx(async (c) => {
     const cy = await lock(c, cycleId);
     if (cy.userId !== userId) throw AppError.forbidden('Only the employee can answer the offer');
@@ -452,6 +465,12 @@ export async function respond(cycleId: number, userId: number, input: RespondInp
         await c.execute('INSERT INTO AppraisalRequest (CycleID, NewDesignation, DesignationComment, NewTeam, TeamComment) VALUES (?, ?, ?, ?, ?)',
           [cycleId, q.newDesignation?.trim() || null, q.newDesignation?.trim() ? q.designationComment?.trim() || null : null, q.newTeam?.trim() || null, q.newTeam?.trim() ? q.teamComment?.trim() || null : null]);
         await audit(c, cycleId, userId, 'CHANGE_REQUESTED', { designation: q.newDesignation ?? null, team: q.newTeam ?? null });
+        // an EL adds their own change themselves (agreed with Management): it is recorded as approved, nobody else decides it
+        if (src === 'EL_OWN') {
+          for (const [field, val] of [['DESIGNATION', q.newDesignation], ['TEAM', q.newTeam]] as const) {
+            if (val?.trim()) await c.execute("INSERT INTO AppraisalRequestReview (CycleID, Field, ReviewerRole, Comment, Decision, DecidedBy) VALUES (?, ?, 'A2', 'Added by the EL', 'APPROVED', ?)", [cycleId, field, userId]);
+          }
+        }
       }
       return { status: 'ACCEPTED' as const, postponedUntil: null };
     }
@@ -465,7 +484,7 @@ export async function respond(cycleId: number, userId: number, input: RespondInp
     return { status: 'POSTPONED' as const, postponedUntil: until };
   });
   const name = ctx?.person.name ?? 'Someone';
-  if (asking) {
+  if (asking && src !== 'EL_OWN') {
     // an Associate's / Intern's request goes to their FL first; everyone else's straight to the EL
     const toFl = src === 'FL_TEAM' && !!ctx?.person.flUserId;
     const what = [input.request?.newDesignation?.trim() && `Designation: ${input.request.newDesignation.trim()}`, input.request?.newTeam?.trim() && `Team: ${input.request.newTeam.trim()}`].filter(Boolean).join(' · ');
@@ -606,7 +625,7 @@ export function syncOpenCycles(force = false): Promise<void> {
       await pool.execute('UPDATE AppraisalCycle SET DepartmentID = ?, Assessor1UserID = ?, Assessor2UserID = ?, EmployeeLevel = ?, VariablePct = ?, CurrentAnnualCtc = ? WHERE CycleID = ?',
         [next.DepartmentID, next.Assessor1UserID, next.Assessor2UserID, next.EmployeeLevel, pct, next.CurrentAnnualCtc, id]);
       // the split of any hike already typed follows the level
-      if (changed.includes('EmployeeLevel')) await pool.execute('UPDATE AppraisalHike SET VariablePct = ?, VariableAmount = ROUND(AnnualAmount * ? / 100), FixedAmount = AnnualAmount - ROUND(AnnualAmount * ? / 100) WHERE CycleID = ?', [pct, pct, pct, id]);
+      if (changed.includes('EmployeeLevel')) await pool.execute('UPDATE AppraisalHike SET VariablePct = ?, VariableAmount = ROUND(AnnualAmount * ? / 100), FixedAmount = AnnualAmount - ROUND(AnnualAmount * ? / 100) WHERE CycleID = ? AND VariableOverride IS NULL', [pct, pct, pct, id]);
       await audit(pool, id, null, 'UPDATED_FROM_RECORDS', Object.fromEntries(changed.map((k) => [k, { from: before[k], to: next[k] }])));
       if (changed.includes('DepartmentID')) for (const d of [c['DepartmentID'], next.DepartmentID]) if (d) moved.set(`${d}|${c['P']}`, [d as number, c['P'] as string]);
     }
@@ -680,7 +699,7 @@ async function savePerson(userId: number, input: PersonInput, actor: number) {
     for (const o of open) {
       await pool.execute('UPDATE AppraisalCycle SET EmployeeLevel = ?, VariablePct = ?, CurrentAnnualCtc = ? WHERE CycleID = ?', [input.level, pct, input.currentAnnualCtc, o['CycleID']]);
       // the split of any hike already typed follows the new level
-      await pool.execute('UPDATE AppraisalHike SET VariablePct = ?, VariableAmount = ROUND(AnnualAmount * ? / 100), FixedAmount = AnnualAmount - ROUND(AnnualAmount * ? / 100) WHERE CycleID = ?', [pct, pct, pct, o['CycleID']]);
+      await pool.execute('UPDATE AppraisalHike SET VariablePct = ?, VariableAmount = ROUND(AnnualAmount * ? / 100), FixedAmount = AnnualAmount - ROUND(AnnualAmount * ? / 100) WHERE CycleID = ? AND VariableOverride IS NULL', [pct, pct, pct, o['CycleID']]);
     }
   }
   return { cycleStarted: await ensureCycle(userId, actor) };
@@ -713,10 +732,10 @@ export async function availability(userId: number, appRole: number) {
   const fin = isFinance(appRole);
   const hr = isHr(appRole);
   const num = (r: Row | undefined, k: string) => Number(r?.[k] ?? 0);
-  const [ready] = fin ? await pool.execute<Row[]>("SELECT COUNT(*) AS n FROM AppraisalRound WHERE Status = 'READY_FOR_FINANCE'") : [[]];
+  const [ready] = fin ? await pool.execute<Row[]>("SELECT COUNT(*) AS n FROM AppraisalRound WHERE Status IN ('READY_FOR_FINANCE', 'BUDGET_NEGOTIATION')") : [[]];
   const [leads] = await pool.execute<Row[]>('SELECT DepartmentID FROM Department WHERE ExecutiveLeaderID = ? AND IsDepartmentArchived = 0', [userId]);
   const [elTodo] = leads.length ? await pool.query<Row[]>(
-    `SELECT (SELECT COUNT(*) FROM AppraisalRound r WHERE r.DepartmentID IN (?) AND r.Status = 'BUDGET_WITH_EL')
+    `SELECT (SELECT COUNT(*) FROM AppraisalRound r WHERE r.DepartmentID IN (?) AND r.Status IN ('BUDGET_WITH_EL', 'BUDGET_ACCEPTED'))
           + (SELECT COUNT(*) FROM AppraisalShare s JOIN AppraisalRound r ON r.RoundID = s.RoundID WHERE r.DepartmentID IN (?) AND s.Status = 'SUBMITTED') AS n`,
     [leads.map((d) => d['DepartmentID']), leads.map((d) => d['DepartmentID'])]) : [[]];
   const [shares] = await pool.execute<Row[]>("SELECT COUNT(*) AS n, SUM(Status IN ('SHARE_RECEIVED','DRAFT')) AS todo FROM AppraisalShare WHERE FlUserID = ? AND Status <> 'PLANNED'", [userId]);

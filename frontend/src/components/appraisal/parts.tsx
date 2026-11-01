@@ -91,8 +91,11 @@ const LOG_TEXT: Record<BudgetAction, string> = { PROPOSED: "proposed the budget"
 const LOG_DOT: Record<BudgetAction, string> = { PROPOSED: "bg-brand-600", REVISED: "bg-brand-600", NEGOTIATE: "bg-rose-500", ACCEPTED: "bg-emerald-500" };
 
 /** Every budget step between the Finance Head and the EL, oldest first, each with its comment */
-export function BudgetLog({ log, budget }: { log: BudgetLogEntry[]; budget: number | null }) {
+export function BudgetLog({ log }: { log: BudgetLogEntry[]; budget?: number | null }) {
     if (!log.length) return <p className="text-sm text-ink-500">No budget yet.</p>;
+    // what the Finance Head had on offer when each step was taken
+    let offer: number | null = null;
+    const offered = log.map((l) => { const before = offer; if (l.action === "PROPOSED" || l.action === "REVISED") offer = l.amount; return before; });
     return (
         <ol className="flex flex-col">
             {log.map((l, i) => (
@@ -104,7 +107,7 @@ export function BudgetLog({ log, budget }: { log: BudgetLogEntry[]; budget: numb
                     </div>
                     {l.amount != null && (
                         <p className="text-sm tabular-nums text-ink-700 dark:text-ink-200">
-                            {l.action === "NEGOTIATE" ? <>Asked for <b className="text-rose-600">{inr(l.amount)}</b>{budget != null ? <span className="text-ink-500"> (offered {inr(budget)})</span> : null}</> : <b>{inr(l.amount)}</b>}
+                            {l.action === "NEGOTIATE" ? <>Asked for <b className="text-rose-600">{inr(l.amount)}</b>{offered[i] != null ? <span className="text-ink-500"> (offered {inr(offered[i])})</span> : null}</> : <b>{inr(l.amount)}</b>}
                         </p>
                     )}
                     {l.comment && <p className="max-w-[70ch] whitespace-pre-wrap border-l-2 border-ink-200 pl-3 text-sm text-ink-700 dark:border-white/10 dark:text-ink-200">{l.comment}</p>}

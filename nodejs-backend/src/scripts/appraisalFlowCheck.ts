@@ -9,6 +9,7 @@ type Row = mysql.RowDataPacket;
 const DEPT = 'E2E Flow v2 (temporary)';
 const ids: Record<string, number> = {};
 let deptId = 0;
+const extraDepts: number[] = [];
 let failures = 0;
 const ok = (cond: unknown, what: string) => { console.log(`${cond ? 'PASS' : 'FAIL'}  ${what}`); if (!cond) failures++; };
 const throws = async (fn: () => Promise<unknown>, what: string) => { try { await fn(); ok(false, what); } catch (e) { ok(true, `${what} (${(e as Error).message})`); } };
@@ -28,10 +29,11 @@ async function cleanup() {
     await pool.query('DELETE FROM AppraisalCycle WHERE UserID IN (?)', [all]);
   }
   await pool.execute('DELETE FROM Notification WHERE Title LIKE ?', [`${DEPT}%`]);
-  if (deptId) {
-    await pool.execute('DELETE FROM AppraisalRound WHERE DepartmentID = ?', [deptId]);
-    await pool.execute('DELETE FROM DepartmentUser WHERE DepartmentID = ?', [deptId]);
-    await pool.execute('DELETE FROM Department WHERE DepartmentID = ?', [deptId]);
+  await pool.execute('DELETE FROM Notification WHERE Title LIKE ?', ['E2E edits%']);
+  for (const id of [deptId, ...extraDepts].filter(Boolean)) {
+    await pool.execute('DELETE FROM AppraisalRound WHERE DepartmentID = ?', [id]);
+    await pool.execute('DELETE FROM DepartmentUser WHERE DepartmentID = ?', [id]);
+    await pool.execute('DELETE FROM Department WHERE DepartmentID = ?', [id]);
   }
   if (all.length) await pool.query('DELETE FROM Users WHERE UserID IN (?)', [all]);
 }
@@ -138,6 +140,72 @@ async function main() {
   const avFl = await svc.availability(ids.fl, 4);
   ok(avEl.split.show && avEl.requests.show && !avEl.departments.show, 'EL menus: split, requests');
   ok(avFl.allocation.show && avFl.requests.show && !avFl.split.show, 'FL menus: allocation, requests');
+
+  await edits(period);
+}
+
+const dept = async (name: string, el: number, members: number[]) => {
+  const [d] = await pool.execute<mysql.ResultSetHeader>('INSERT INTO Department (DepartmentName, ExecutiveLeaderID, DepartmentStatus, IsDepartmentArchived) VALUES (?, ?, 1, 0)', [name, el]);
+  extraDepts.push(d.insertId);
+  for (const m of members) await pool.execute('INSERT INTO DepartmentUser (DepartmentID, UserID) VALUES (?, ?)', [d.insertId, m]);
+  return d.insertId;
+};
+const cycleRow = async (userId: number) => (await pool.execute<Row[]>('SELECT * FROM AppraisalCycle WHERE UserID = ?', [userId]))[0][0]!;
+
+// 9. Admin / HR edit departments and user records while appraisals are open: the appraisal follows until the budget is set
+async function edits(period: string) {
+  await user('el2', 3); await user('fl2', 4); await user('m1', 2); await user('el3', 3);
+  await pool.execute('UPDATE Users SET ELManagerID = ? WHERE UserID = ?', [ids.el2, ids.fl2]);
+  await pool.execute('UPDATE Users SET ReportingManagerID = ?, ELManagerID = ? WHERE UserID = ?', [ids.fl2, ids.el2, ids.m1]);
+  const B = await dept('E2E edits B', ids.el2, [ids.el2, ids.fl2, ids.m1]);
+  const C = await dept('E2E edits C', ids.el3, [ids.el3]);
+  // el3 is also a member of B (lower id) but leads C: their own appraisal belongs in C
+  await pool.execute('INSERT INTO DepartmentUser (DepartmentID, UserID) VALUES (?, ?)', [B, ids.el3]);
+  const cy: Record<string, number> = {};
+  for (const k of ['el2', 'fl2', 'm1', 'el3']) cy[k] = (await svc.myCycle(ids[k], 2))!.cycle.id;
+  ok((await cycleRow(ids.el3))['DepartmentID'] === C, 'member of two departments: an EL lands in the one they lead');
+  ok((await cycleRow(ids.m1))['DepartmentID'] === B && (await cycleRow(ids.m1))['Assessor1UserID'] === ids.fl2, 'm1 in B under fl2');
+  for (const k of ['el2', 'fl2', 'm1']) await svc.saveSelfReview(cy[k], ids[k], { answers: { whyExpectThisSalary: 'x' }, quarters: [], expectedHike: 10000, targetHike: 9000, submit: true });
+  await pool.execute('DELETE FROM DepartmentUser WHERE DepartmentID = ? AND UserID = ?', [B, ids.el3]);
+  await svc.syncOpenCycles(true);
+  ok((await flow.loadRound(pool, B, period)).status === 'READY_FOR_FINANCE', 'B ready with its 3 appeals');
+
+  // Admin moves m1 from B to C and makes el3 their manager
+  await pool.execute('UPDATE DepartmentUser SET DepartmentID = ? WHERE DepartmentID = ? AND UserID = ?', [C, B, ids.m1]);
+  await pool.execute('UPDATE Users SET ReportingManagerID = ?, ELManagerID = ? WHERE UserID = ?', [ids.el3, ids.el3, ids.m1]);
+  await svc.syncOpenCycles(true);
+  const m1 = await cycleRow(ids.m1);
+  ok(m1['DepartmentID'] === C && m1['Assessor1UserID'] === ids.el3, 'moved: m1 is now in C under el3');
+  const rB = await flow.loadRound(pool, B, period);
+  const rC = await flow.loadRound(pool, C, period);
+  ok(rB.people.length === 2 && rB.status === 'READY_FOR_FINANCE', 'B: 2 people left, still ready');
+  ok(rC.people.find((p) => p.userId === ids.m1)?.source === 'EL_DIRECT' && rC.status === 'COLLECTING', 'C: m1 reports to the EL directly; el3 has not appealed, so collecting');
+  ok((await flow.board(period)).filter((b) => b.departmentId === C)[0]?.people === 2, 'board counts 2 in C');
+
+  // HR changes m1's level and CTC (Appraisal Setup) after they appealed
+  await pool.execute("UPDATE Users SET EmployeeLevel = 'MANAGER', CurrentAnnualCtc = 900000 WHERE UserID = ?", [ids.m1]);
+  await svc.syncOpenCycles(true);
+  const m1b = await cycleRow(ids.m1);
+  ok(m1b['EmployeeLevel'] === 'MANAGER' && m1b['VariablePct'] === 20 && Number(m1b['CurrentAnnualCtc']) === 900000, 'level and CTC follow the user record');
+  const [hk] = await pool.execute<Row[]>("SELECT VariablePct FROM AppraisalHike WHERE CycleID = ? AND Kind = 'EXPECTED'", [cy.m1]);
+  ok(hk[0]?.['VariablePct'] === 20, 'typed hike split follows the new level');
+
+  // el3 appeals: C becomes ready
+  await svc.saveSelfReview(cy.el3, ids.el3, { answers: { whyExpectThisSalary: 'x' }, quarters: [], expectedHike: 10000, targetHike: 9000, submit: true });
+  ok((await flow.loadRound(pool, C, period)).status === 'READY_FOR_FINANCE', 'C ready once el3 appeals');
+
+  // Budget set on B: B is frozen. Moving fl2 out of B no longer moves their appraisal
+  await flow.setBudget(141, B, period, 100000, 'E2E');
+  await pool.execute('UPDATE DepartmentUser SET DepartmentID = ? WHERE DepartmentID = ? AND UserID = ?', [C, B, ids.fl2]);
+  await svc.syncOpenCycles(true);
+  ok((await cycleRow(ids.fl2))['DepartmentID'] === B, 'after the budget is set, a department move does not move the appraisal');
+
+  // An inactive EL counts as none
+  await pool.execute('UPDATE Users SET UserStatus = 0 WHERE UserID = ?', [ids.el3]);
+  ok((await flow.loadRound(pool, C, period)).el === null, 'inactive EL counts as no EL');
+  ok((await flow.board(period)).find((b) => b.departmentId === C)?.el === null, 'board shows C without an EL, still listed');
+  await throws(() => flow.setBudget(141, C, period, 1000, 'x'), 'no budget for a department without an EL');
+  await pool.execute('UPDATE Users SET UserStatus = 1 WHERE UserID = ?', [ids.el3]);
 }
 
 main()

@@ -95,6 +95,14 @@ export async function assessorsOf(userId: number) {
   return { level: p.level, ...assessorsFor(c, p) };
 }
 
+/** Assessors of several people from one read of the user records */
+export async function assessorsOfMany(userIds: number[]) {
+  const c = await load();
+  const out = new Map<number, Assessors>();
+  for (const id of userIds) { const p = c.people.get(id); if (p) out.set(id, assessorsFor(c, p)); }
+  return out;
+}
+
 export async function hierarchy() {
   const c = await load();
   const people = [...c.people.values()].filter((p) => p.active).map((p) => {

@@ -13,7 +13,7 @@ import { env } from '../config/env';
 import { logger } from '../config/logger';
 import { sendMail } from '../utils/mailer';
 import { addDays, todayIST } from '../modules/appraisal/appraisal.calc';
-import { audit, ensureCycle } from '../modules/appraisal/appraisal.service';
+import { audit, ensureCycle, syncOpenCycles } from '../modules/appraisal/appraisal.service';
 import { closeAppealWindows, returnPostponed } from '../modules/appraisal/appraisal.flow';
 
 type Row = mysql.RowDataPacket;
@@ -56,6 +56,7 @@ async function reminders(today: string) {
 /** One run of the job. `today` is injectable so a run can be tried on any date. */
 export async function runAppraisalCycle(today: string = todayIST()) {
   const created = await createCycles(today);
+  await syncOpenCycles(true);
   // with date windows off (APPRAISAL_TIME_WINDOWS) a department goes to the Finance Head as soon as everyone has appealed
   const timed = env.APPRAISAL_TIME_WINDOWS;
   const closed = timed ? await closeAppealWindows(today) : 0;

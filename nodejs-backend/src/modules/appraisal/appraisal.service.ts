@@ -2,7 +2,7 @@ import type mysql from 'mysql2/promise';
 import { pool } from '../../config/db';
 import { env } from '../../config/env';
 import { AppError } from '../../utils/AppError';
-import { assessorsOf, levelOf } from '../access/hierarchy';
+import { assessorsOf, assessorsOfMany, levelOf } from '../access/hierarchy';
 import { addMonths, currentCycleStart, cycleMonthOf, cycleWindows, periodOf, quarterSlots, splitHike, todayIST, VARIABLE_PCT, type EmployeeLevel } from './appraisal.calc';
 import * as flow from './appraisal.flow';
 import { maskCycle, type FullCycle, type Money, type PmsQuarter, type RequestField, type RequestReviews, type Status } from './appraisal.mask';
@@ -263,6 +263,7 @@ export async function myCycle(userId: number, _appRole: number) {
   const [rows] = await pool.execute<Row[]>('SELECT CycleID FROM AppraisalCycle WHERE UserID = ? ORDER BY CycleStartDate DESC, CycleID DESC', [userId]);
   const id = (rows[0]?.['CycleID'] as number | undefined) ?? (!TIMED ? (await startForTesting(userId)) ?? undefined : undefined);
   if (!id) return null;
+  await syncOpenCycles(true);
   const full = await loadFull(id);
   return full ? employeeView(full, await flow.contextOf(id)) : null;
 }
@@ -554,11 +555,65 @@ export interface Appraisee { UserID: number; EmployeeLevel: EmployeeLevel; Curre
 
 /** Inserts one cycle with the snapshot of level, assessors and CTC. Returns null when the person already has a cycle for that year. */
 /** An EL belongs to the department they lead; everyone else to their first department */
+/**
+ * The department the person is a member of (as set in Departments). Someone in several takes one they lead first (an EL's
+ * own hike sits in their own department's budget), then the first; someone in none falls back to a department they lead.
+ */
 async function departmentOf(db: Db, userId: number): Promise<number | null> {
   const [d] = await db.execute<Row[]>(
-    `SELECT COALESCE((SELECT MIN(DepartmentID) FROM Department WHERE ExecutiveLeaderID = ? AND IsDepartmentArchived = 0),
-                     (SELECT MIN(DepartmentID) FROM DepartmentUser WHERE UserID = ?)) AS D`, [userId, userId]);
+    `SELECT COALESCE((SELECT du.DepartmentID FROM DepartmentUser du JOIN Department d ON d.DepartmentID = du.DepartmentID
+                       WHERE du.UserID = ? AND d.IsDepartmentArchived = 0 ORDER BY (d.ExecutiveLeaderID <=> ?) DESC, du.DepartmentID LIMIT 1),
+                     (SELECT MIN(DepartmentID) FROM Department WHERE ExecutiveLeaderID = ? AND IsDepartmentArchived = 0)) AS D`, [userId, userId, userId]);
   return (d[0]?.['D'] as number | null) ?? null;
+}
+
+let syncing: Promise<void> | null = null;
+let syncedAt = 0;
+
+/**
+ * Keeps every appraisal nobody has decided yet in line with the records Admin and HR edit: the department (Departments),
+ * A1 / A2 (the user record), the level and the CTC (Appraisal Setup). Once the department's budget is set, or a hike is
+ * entered for the person, their appraisal stays as it is. Runs before the appraisal lists are read (at most every few seconds).
+ */
+export function syncOpenCycles(force = false): Promise<void> {
+  if (syncing) return syncing;
+  if (!force && Date.now() - syncedAt < 5_000) return Promise.resolve();
+  syncing = (async () => {
+    const [cs] = await pool.query<Row[]>(
+      `SELECT c.CycleID, c.UserID, c.DepartmentID, ${D('c.PeriodStart', 'P')}, c.Assessor1UserID, c.Assessor2UserID, c.EmployeeLevel, c.CurrentAnnualCtc,
+              u.EmployeeLevel AS ULevel, u.CurrentAnnualCtc AS UCtc
+         FROM AppraisalCycle c JOIN Users u ON u.UserID = c.UserID
+         LEFT JOIN AppraisalRound r ON r.DepartmentID = c.DepartmentID AND r.PeriodStart = c.PeriodStart
+        WHERE c.Status IN ('EMPLOYEE_OPEN', 'SUBMITTED') AND (r.RoundID IS NULL OR r.Budget IS NULL)
+          AND NOT EXISTS (SELECT 1 FROM AppraisalAllocation a WHERE a.CycleID = c.CycleID)`);
+    if (!cs.length) return;
+    const assessors = await assessorsOfMany(cs.map((c) => c['UserID'] as number));
+    const moved = new Map<string, [number, string]>();
+    for (const c of cs) {
+      const id = c['CycleID'] as number;
+      const a = assessors.get(c['UserID'] as number);
+      const next = {
+        DepartmentID: (await departmentOf(pool, c['UserID'] as number)) ?? (c['DepartmentID'] as number | null),
+        Assessor1UserID: a ? a.accessor1?.userId ?? null : (c['Assessor1UserID'] as number | null),
+        Assessor2UserID: a ? a.accessor2?.userId ?? null : (c['Assessor2UserID'] as number | null),
+        EmployeeLevel: (c['ULevel'] as EmployeeLevel | null) ?? (c['EmployeeLevel'] as EmployeeLevel),
+        CurrentAnnualCtc: c['UCtc'] != null ? Number(c['UCtc']) : (c['CurrentAnnualCtc'] == null ? null : Number(c['CurrentAnnualCtc'])),
+      };
+      const before = { ...next, DepartmentID: c['DepartmentID'], Assessor1UserID: c['Assessor1UserID'], Assessor2UserID: c['Assessor2UserID'], EmployeeLevel: c['EmployeeLevel'], CurrentAnnualCtc: c['CurrentAnnualCtc'] == null ? null : Number(c['CurrentAnnualCtc']) };
+      const changed = (Object.keys(next) as (keyof typeof next)[]).filter((k) => next[k] !== before[k]);
+      if (!changed.length) continue;
+      const pct = VARIABLE_PCT[next.EmployeeLevel];
+      await pool.execute('UPDATE AppraisalCycle SET DepartmentID = ?, Assessor1UserID = ?, Assessor2UserID = ?, EmployeeLevel = ?, VariablePct = ?, CurrentAnnualCtc = ? WHERE CycleID = ?',
+        [next.DepartmentID, next.Assessor1UserID, next.Assessor2UserID, next.EmployeeLevel, pct, next.CurrentAnnualCtc, id]);
+      // the split of any hike already typed follows the level
+      if (changed.includes('EmployeeLevel')) await pool.execute('UPDATE AppraisalHike SET VariablePct = ?, VariableAmount = ROUND(AnnualAmount * ? / 100), FixedAmount = AnnualAmount - ROUND(AnnualAmount * ? / 100) WHERE CycleID = ?', [pct, pct, pct, id]);
+      await audit(pool, id, null, 'UPDATED_FROM_RECORDS', Object.fromEntries(changed.map((k) => [k, { from: before[k], to: next[k] }])));
+      if (changed.includes('DepartmentID')) for (const d of [c['DepartmentID'], next.DepartmentID]) if (d) moved.set(`${d}|${c['P']}`, [d as number, c['P'] as string]);
+    }
+    // a department someone left or joined may now be complete, or no longer be
+    for (const [d, p] of moved.values()) await flow.recheckRound(d, p);
+  })().finally(() => { syncing = null; syncedAt = Date.now(); });
+  return syncing;
 }
 
 export async function insertCycle(db: Db, u: Appraisee, start: string, actor: number | null): Promise<number | null> {

@@ -80,6 +80,11 @@ const People = z.object({ rows: z.array(Person.extend({ userId: z.number().int()
 
 // ── Routes ────────────────────────────────────────────────────────────────────────────────────────
 
+// Department, A1 / A2, level and CTC edits reach the appraisals nobody has decided yet before anyone reads or acts on them
+const SYNCED = ['/availability', '/departments', '/departments/:departmentId/:period', '/departments/:departmentId/:period/budget', '/split', '/split/:departmentId/:period',
+  '/allocation', '/allocation/:departmentId/:period', '/requests', '/cycles/:cycleId'];
+router.all(SYNCED, (req, _res, next) => { svc.syncOpenCycles(req.method !== 'GET').then(() => next(), next); });
+
 router.get('/finance-head', handler(async (_req, res) => { sendSuccess(res, await svc.financeHead()); }));
 router.put('/finance-head', validate(z.object({ userId: z.number().int().positive() })), handler(async (req, res) => { sendSuccess(res, await svc.setFinanceHead(roleOf(req), req.body.userId)); }));
 router.get('/availability', handler(async (req, res) => { sendSuccess(res, await svc.availability(me(req), roleOf(req))); }));

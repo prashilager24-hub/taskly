@@ -68,12 +68,15 @@ export interface Round {
   complete: boolean;
 }
 
+/** The department's EL, only while that person is an active user (an archived or inactive EL counts as none) */
+const EL_JOIN = 'LEFT JOIN Users e ON e.UserID = d.ExecutiveLeaderID AND e.UserStatus = 1 AND e.IsUserArchived = 0';
+
 async function deptRow(db: Db, departmentId: number) {
   const [d] = await db.execute<Row[]>(
-    `SELECT d.DepartmentID, d.DepartmentName, d.ExecutiveLeaderID, e.UserName AS ElName FROM Department d LEFT JOIN Users e ON e.UserID = d.ExecutiveLeaderID
+    `SELECT d.DepartmentID, d.DepartmentName, e.UserID AS ElID, e.UserName AS ElName FROM Department d ${EL_JOIN}
       WHERE d.DepartmentID = ? AND d.IsDepartmentArchived = 0`, [departmentId]);
   if (!d[0]) throw AppError.notFound('Department not found');
-  return { id: d[0]['DepartmentID'] as number, name: d[0]['DepartmentName'] as string, el: d[0]['ExecutiveLeaderID'] ? { userId: d[0]['ExecutiveLeaderID'] as number, name: (d[0]['ElName'] as string) ?? '' } : null };
+  return { id: d[0]['DepartmentID'] as number, name: d[0]['DepartmentName'] as string, el: d[0]['ElID'] ? { userId: d[0]['ElID'] as number, name: (d[0]['ElName'] as string) ?? '' } : null };
 }
 
 async function roundRow(db: Db, departmentId: number, period: string) {
@@ -209,6 +212,19 @@ export async function onAppealSubmitted(departmentId: number | null, period: str
   }
 }
 
+/** People moved in or out of a department whose budget is not set yet: it is ready for the Finance Head only while it is still complete */
+export async function recheckRound(departmentId: number, period: string) {
+  const row = await roundRow(pool, departmentId, period);
+  if (row && row['Budget'] != null) return;
+  const r = await loadRound(pool, departmentId, period).catch(() => null);
+  if (!r || !r.totals.people) {
+    if (row) await pool.execute('DELETE FROM AppraisalRound WHERE RoundID = ? AND Budget IS NULL', [row['RoundID']]);
+    return;
+  }
+  if (row?.['Status'] === 'READY_FOR_FINANCE' && !r.complete) await pool.execute("UPDATE AppraisalRound SET Status = 'COLLECTING', ReadyAt = NULL WHERE RoundID = ? AND Budget IS NULL", [row['RoundID']]);
+  else await onAppealSubmitted(departmentId, period, null);
+}
+
 /** Date windows on: once a period's appeal window (days 1 to 15) has passed, every department of that period goes to the Finance Head */
 export async function closeAppealWindows(today: string) {
   const [rows] = await pool.query<Row[]>(
@@ -230,8 +246,10 @@ export async function periods() {
 
 export async function board(period: string) {
   const [depts] = await pool.query<Row[]>(
-    `SELECT d.DepartmentID, d.DepartmentName, d.ExecutiveLeaderID, e.UserName AS ElName FROM Department d LEFT JOIN Users e ON e.UserID = d.ExecutiveLeaderID
-      WHERE d.IsDepartmentArchived = 0 AND d.DepartmentStatus = 1 AND d.ExecutiveLeaderID IS NOT NULL ORDER BY d.DepartmentName`);
+    `SELECT d.DepartmentID, d.DepartmentName, e.UserID AS ElID, e.UserName AS ElName FROM Department d ${EL_JOIN}
+      WHERE d.IsDepartmentArchived = 0 AND d.DepartmentStatus = 1
+        AND (e.UserID IS NOT NULL OR EXISTS (SELECT 1 FROM AppraisalCycle c WHERE c.DepartmentID = d.DepartmentID AND c.PeriodStart = ?))
+      ORDER BY d.DepartmentName`, [period]);
   const [agg] = await pool.query<Row[]>(
     `SELECT c.DepartmentID, COUNT(*) AS cnt, SUM(c.Status <> 'EMPLOYEE_OPEN') AS sub,
             SUM(e.AnnualAmount) AS exp, SUM(t.AnnualAmount) AS tgt, SUM(a.AnnualAmount) AS alloc
@@ -255,7 +273,7 @@ export async function board(period: string) {
     const submitted = Number(a?.['sub'] ?? 0);
     const stored = (r?.['Status'] as RoundStatus | undefined) ?? 'COLLECTING';
     return {
-      departmentId: id, department: d['DepartmentName'] as string, el: d['ExecutiveLeaderID'] ? { userId: d['ExecutiveLeaderID'] as number, name: (d['ElName'] as string) ?? '' } : null,
+      departmentId: id, department: d['DepartmentName'] as string, el: d['ElID'] ? { userId: d['ElID'] as number, name: (d['ElName'] as string) ?? '' } : null,
       people, submitted, expected: Number(a?.['exp'] ?? 0), target: Number(a?.['tgt'] ?? 0), allocated: Number(a?.['alloc'] ?? 0),
       budget: n(r?.['Budget']), status: stored === 'COLLECTING' && people > 0 && submitted === people ? 'READY_FOR_FINANCE' as RoundStatus : stored,
     };

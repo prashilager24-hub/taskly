@@ -5,10 +5,11 @@ import DateRangeField from "@/components/DateRangeField";
 // (button, presets, calendar), so pages no longer wrap it in a Dropdown.
 export interface DateRangeValue { startDate: string; endDate: string }
 
-export default function CustomDateRangePicker({ value, onChange, compact }: { value: DateRangeValue; onChange: (range: DateRangeValue) => void; compact?: boolean }) {
+export default function CustomDateRangePicker({ value, onChange, compact, fieldLabel }: { value: DateRangeValue; onChange: (range: DateRangeValue) => void; compact?: boolean; fieldLabel?: string }) {
     return (
         <DateRangeField
             compact={compact}
+            fieldLabel={fieldLabel}
             value={{ start: value.startDate, end: value.endDate }}
             onChange={(r) => onChange({ startDate: r.start, endDate: r.end })}
         />

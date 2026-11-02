@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { Link } from "react-router-dom";
 import { KeyRound, Pencil, Plus, Power, Search } from "lucide-react";
 
 import { Segmented } from "@/components/page";
@@ -101,8 +102,10 @@ function AccessCanvas({ user, catalog, onClose, onChanged }: { user: UserRow | n
 
 // ── Add / edit user ──────────────────────────────────────────────────────────────────────────────
 
-interface FullUser { userID: number; userName: string; userEmail: string; employeeID: string | null; roleID: number; secondaryRoleID: number | null; departments: { departmentID: number }[]; reportingManagerId: number | null; elManagerId: number | null; appraisalCycle: string | null; feedbackresolverteam: string | null }
-const BLANK = { employeeID: "", name: "", email: "", password: "", roleID: "", secondaryRoleID: "", departmentID: "", reportingManagerId: "", elManagerId: "", appraisalCycle: "QUARTERLY" };
+interface FullUser { userID: number; userName: string; userEmail: string; employeeID: string | null; roleID: number; secondaryRoleID: number | null; departments: { departmentID: number }[]; reportingManagerId: number | null; elManagerId: number | null; appraisalCycle: string | null; feedbackresolverteam: string | null; designation: string | null; jobLevel: string | null; band: string | null; isNewJoiner?: boolean; joiningCycle?: string | null }
+// April–September joiners belong to the April intake, the rest to October
+const thisCycle = () => { const m = new Date().getMonth() + 1; return m >= 4 && m <= 9 ? "APRIL" : "OCTOBER"; };
+const BLANK = { newJoiner: "yes", joiningCycle: thisCycle(), designation: "", jobLevel: "", band: "", employeeID: "", name: "", email: "", password: "", roleID: "", secondaryRoleID: "", departmentID: "", reportingManagerId: "", elManagerId: "", appraisalCycle: "QUARTERLY" };
 
 function UserCanvas({ open, editing, roles, departments, people, onClose, onSaved }: { open: boolean; editing: FullUser | null; roles: RoleRow[]; departments: DepartmentRow[]; people: UserRow[]; onClose: () => void; onSaved: () => void }) {
     const [f, setF] = useState(BLANK);
@@ -115,10 +118,12 @@ function UserCanvas({ open, editing, roles, departments, people, onClose, onSave
             employeeID: editing.employeeID ?? "", name: editing.userName, email: editing.userEmail, password: "", roleID: String(editing.roleID),
             secondaryRoleID: editing.secondaryRoleID ? String(editing.secondaryRoleID) : "", departmentID: editing.departments?.[0] ? String(editing.departments[0].departmentID) : "",
             reportingManagerId: editing.reportingManagerId ? String(editing.reportingManagerId) : "", elManagerId: editing.elManagerId ? String(editing.elManagerId) : "", appraisalCycle: editing.appraisalCycle || "QUARTERLY",
-        } : BLANK);
+            designation: editing.designation ?? "", jobLevel: editing.jobLevel ?? "", band: editing.band ?? "",
+            newJoiner: editing.isNewJoiner ? "yes" : "no", joiningCycle: editing.joiningCycle || thisCycle(),
+        } : { ...BLANK, joiningCycle: thisCycle() });
     }, [open, editing]);
 
-    const valid = f.name.trim().length >= 2 && /\S+@\S+\.\S+/.test(f.email) && !!f.roleID && (editing || f.password.length >= 6);
+    const valid = f.name.trim().length >= 2 && /\S+@\S+\.\S+/.test(f.email) && !!f.roleID && !!f.designation.trim() && !!f.jobLevel.trim() && !!f.band.trim() && (editing || f.password.length >= 6);
 
     const save = async () => {
         setSaving(true);
@@ -126,6 +131,8 @@ function UserCanvas({ open, editing, roles, departments, people, onClose, onSave
             employeeID: f.employeeID || null, userName: f.name.trim(), userEmail: f.email.trim(), roleID: Number(f.roleID),
             secondaryRoleID: f.secondaryRoleID ? Number(f.secondaryRoleID) : null, departmentID: f.departmentID ? Number(f.departmentID) : null,
             reportingManagerId: f.reportingManagerId ? Number(f.reportingManagerId) : null, elManagerId: f.elManagerId ? Number(f.elManagerId) : null, appraisalCycle: f.appraisalCycle,
+            designation: f.designation.trim(), jobLevel: f.jobLevel.trim(), band: f.band.trim(),
+            isNewJoiner: f.newJoiner === "yes", ...(f.newJoiner === "yes" ? { joiningCycle: f.joiningCycle } : {}),
         };
         try {
             if (editing) await axios.put(`${API}/User/update`, { ...payload, userID: editing.userID });
@@ -151,6 +158,17 @@ function UserCanvas({ open, editing, roles, departments, people, onClose, onSave
                         <Input label="Employee ID" labelPlacement="outside" placeholder="EMP001" value={f.employeeID} onValueChange={set("employeeID")} />
                         <Input label="Email" labelPlacement="outside" type="email" placeholder="name@company.com" value={f.email} onValueChange={set("email")} isRequired className="sm:col-span-2" />
                         {!editing && <Input label="Temporary password" labelPlacement="outside" type="password" placeholder="At least 6 characters" value={f.password} onValueChange={set("password")} isRequired className="sm:col-span-2" />}
+                    </div>
+                    <p className="eyebrow">Position</p>
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+                        <Input label="Designation" labelPlacement="outside" placeholder="Senior Engineer" value={f.designation} onValueChange={set("designation")} isRequired className="sm:col-span-3" />
+                        <Input label="Level" labelPlacement="outside" placeholder="L4" value={f.jobLevel} onValueChange={set("jobLevel")} isRequired />
+                        <Input label="Band" labelPlacement="outside" placeholder="B2" value={f.band} onValueChange={set("band")} isRequired />
+                    </div>
+                    <p className="eyebrow">Onboarding</p>
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                        {pick("New joiner", f.newJoiner, set("newJoiner"), [{ key: "yes", label: "Yes — show Onboarding Experience until they submit it" }, { key: "no", label: "No" }])}
+                        {f.newJoiner === "yes" && pick("Joining cycle", f.joiningCycle, set("joiningCycle"), [{ key: "APRIL", label: "April cycle" }, { key: "OCTOBER", label: "October cycle" }])}
                     </div>
                     <p className="eyebrow">Role and department</p>
                     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -179,6 +197,8 @@ function UserCanvas({ open, editing, roles, departments, people, onClose, onSave
 export default function UsersTab({ catalog, roles, departments, onChanged }: { catalog: ModuleDef[]; roles: RoleRow[]; departments: DepartmentRow[]; onChanged: () => void }) {
     const [users, setUsers] = useState<UserRow[]>([]);
     const [full, setFull] = useState<FullUser[]>([]);
+    // "April" / "October" for a user still flagged as a new joiner
+    const newOf = (id: number) => { const f = full.find((x) => x.userID === id); return f?.isNewJoiner ? (f.joiningCycle === "APRIL" ? "Apr" : f.joiningCycle === "OCTOBER" ? "Oct" : "") || "New" : ""; };
     const [loading, setLoading] = useState(true);
     const [q, setQ] = useState("");
     const [role, setRole] = useState("all");
@@ -232,7 +252,7 @@ export default function UsersTab({ catalog, roles, departments, onChanged }: { c
                     <tbody>
                         {shown.map((u) => (
                             <tr key={u.userId} className="border-b border-ink-100 last:border-0 hover:bg-ink-50/60 dark:border-white/5 dark:hover:bg-white/5">
-                                <td className="px-4 py-3"><p className="font-semibold text-ink-900 dark:text-white">{u.name}</p><p className="text-xs text-ink-500 dark:text-ink-400">{u.email}</p></td>
+                                <td className="px-4 py-3"><Link to={`/profile/${u.userId}`} className="font-semibold text-ink-900 hover:text-brand-600 hover:underline dark:text-white">{u.name}</Link>{newOf(u.userId) && <span className="ml-2 bg-brand-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-700 dark:bg-brand-500/15 dark:text-brand-300">New · {newOf(u.userId)}</span>}<p className="text-xs text-ink-500 dark:text-ink-400">{u.email}</p></td>
                                 <td className="px-4 py-3">{u.roleName}{u.secondaryRoleName && <span className="text-ink-500"> + {u.secondaryRoleName}</span>}</td>
                                 <td className="px-4 py-3 text-ink-700 dark:text-ink-200">{u.departments.join(", ") || "—"}</td>
                                 <td className="px-4 py-3">{u.hasOverrides ? <Chip size="sm" color="warning" variant="flat">Custom</Chip> : <span className="text-xs text-ink-500">As role</span>}</td>

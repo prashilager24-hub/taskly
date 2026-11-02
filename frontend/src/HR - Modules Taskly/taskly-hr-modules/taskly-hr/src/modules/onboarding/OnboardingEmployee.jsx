@@ -5,7 +5,7 @@ import {
   Screen, Field, BackLink, Scale, ScaleLegend, Section,
   Pill, Empty, ContextBar, CardStat, Cards, THead,
 } from "../../components/ui";
-import { ONB_SECTIONS, ONB_QUESTIONS, ONB_TEXT_Q } from "../../lib/questions";
+import { onboardingStructure } from "../../lib/surveyStructure";
 import { one, surveyScore } from "../../lib/metrics";
 
 export default function OnboardingEmployee({ surveys = [], onSubmit, currentUser }) {
@@ -15,28 +15,29 @@ export default function OnboardingEmployee({ surveys = [], onSubmit, currentUser
   const [feedback, setFeedback] = useState("");
 
   const active = mine.find((s) => s.id === openId);
-  const complete = ONB_QUESTIONS.every((_, i) => answers[i]) && feedback.trim().length > 0;
+  const st = active ? onboardingStructure(active) : null;
+  const complete = !!st && st.questions.every((_, i) => answers[i]) && (!st.textQuestion || feedback.trim().length > 0);
 
   const reset = () => { setOpenId(null); setAnswers({}); setFeedback(""); };
 
   if (active) {
     let qNo = 0;
     return (
-      <Screen id="1.2" title="Onboarding Experience Survey" sub="For new joiners after induction / onboarding">
+      <Screen id="1.2" title={st.name} sub="For new joiners after induction / onboarding">
         <BackLink onClick={reset}>Back to my surveys</BackLink>
         <ContextBar
-          title="Onboarding Experience Survey"
+          title={st.name}
           meta={`${active.employee} · ${active.dept} · Joined ${active.joined} · Due ${active.due}`}
         />
         <ScaleLegend />
 
-        {ONB_SECTIONS.map((sec) => (
+        {st.sections.map((sec) => (
           <div key={sec.section}>
             <Section>{sec.section}</Section>
             {sec.questions.map((q) => {
               const idx = qNo++;
               return (
-                <Field key={idx} label={`${idx + 1}. ${q}`}>
+                <Field key={idx} label={`${idx + 1}. ${q.text}`}>
                   <Scale value={answers[idx]} onChange={(n) => setAnswers({ ...answers, [idx]: n })} />
                 </Field>
               );
@@ -44,16 +45,20 @@ export default function OnboardingEmployee({ surveys = [], onSubmit, currentUser
           </div>
         ))}
 
-        <Section>Open feedback</Section>
-        <Field label={`8. ${ONB_TEXT_Q}`}>
-          <Textarea
-            rows={3}
-            value={feedback}
-            onChange={(e) => setFeedback(e.target.value)}
-            placeholder="Type your answer…"
-            variant="bordered"
-          />
-        </Field>
+        {st.textQuestion && (
+          <>
+            <Section>Open feedback</Section>
+            <Field label={`${st.ratingCount + 1}. ${st.textQuestion}`}>
+              <Textarea
+                rows={3}
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                placeholder="Type your answer…"
+                variant="bordered"
+              />
+            </Field>
+          </>
+        )}
 
         <div className="flex gap-2.5 mt-4">
           <Button
@@ -62,7 +67,7 @@ export default function OnboardingEmployee({ surveys = [], onSubmit, currentUser
             className="text-white"
             isDisabled={!complete}
             onPress={() => {
-              onSubmit(active.id, ONB_QUESTIONS.map((_, i) => answers[i]), feedback);
+              onSubmit(active.id, st.questions.map((_, i) => answers[i]), feedback);
               reset();
             }}
             startContent={<Send size={14} />}
@@ -71,7 +76,7 @@ export default function OnboardingEmployee({ surveys = [], onSubmit, currentUser
           </Button>
           {/* <Button size="sm" variant="flat" onPress={reset}>Save draft</Button> */}
         </div>
-        {!complete && <div className="text-[11px] text-ink-400 mt-2">All 7 ratings and Q8 are required.</div>}
+        {!complete && <div className="text-[11px] text-ink-400 mt-2">All {st.ratingCount} ratings{st.textQuestion ? ` and Q${st.ratingCount + 1}` : ""} are required.</div>}
       </Screen>
     );
   }
@@ -83,7 +88,7 @@ export default function OnboardingEmployee({ surveys = [], onSubmit, currentUser
         <tbody>
           {mine.map((s) => (
             <tr key={s.id} className="border-b border-ink-100 dark:border-white/10 last:border-0">
-              <td className="py-3">Onboarding Experience Survey</td>
+              <td className="py-3">{(s.template && s.template.name) || "Onboarding Experience Survey"}</td>
               <td className="py-3 text-ink-500 dark:text-ink-400 text-[13px]">{s.sentOn}</td>
               <td className="py-3 text-ink-500 dark:text-ink-400 text-[13px]">{s.due}</td>
               <td className="py-3">

@@ -15,6 +15,7 @@ import { sendSuccess } from '../../utils/response';
 import * as svc from './hr.service';
 import * as qs from './query.service';
 import * as ob from './onboarding.service';
+import * as eng from './engagement.service';
 
 // ── Query router  (/hrFeedback/query) — port of Java QueryController ─────────
 // Responses use Java's ApiResponse { success, message, data, timestamp }; the HR frontend reads `data`.
@@ -74,47 +75,39 @@ const engagementRouter = Router();
 engagementRouter.use(authenticate);
 
 const EngagementSubmitSchema = z.object({
-  survey_id: z.number().int().positive(),
-  user_id: z.number().int().positive(),
-  responses: z.record(z.unknown()),
+  surveyId: z.string().trim().min(1, 'Survey ID is required'),
+  months: z.array(z.number().int().min(1).max(10)).min(1),
+  rest: z.array(z.number().int().min(1).max(10)).min(1),
+  feedback: z.string().nullish(),
+  anonymous: z.boolean().nullish(),
 });
 
 const RolloutSchema = z.object({
-  survey_id: z.number().int().positive(),
-  department_ids: z.array(z.number().int().positive()).optional(),
-  user_ids: z.array(z.number().int().positive()).optional(),
+  quarter: z.string().trim().min(1, 'Quarter is required'),
+  months: z.array(z.string().min(1)).min(1),
+  closes: z.string().trim().min(1, 'Closing date is required'),
+  notifyList: z.string().nullish(),
+  recipients: z.array(z.unknown()).nullish(),
+  templateId: z.number().int().positive().nullish(),
 });
 
-// GET  /engagement/surveys/open
-engagementRouter.get('/surveys/open', async (_req, res, next) => {
-  try { sendSuccess(res, await svc.getSurveys()); } catch (e) { next(e); }
+engagementRouter.get('/surveys/open', async (req, res, next) => {
+  try { apiOk(res, await eng.getOpenSurveys(who(req).id)); } catch (e) { next(e); }
 });
-
-// POST /engagement/submit
 engagementRouter.post('/submit', validate(EngagementSubmitSchema), async (req, res, next) => {
-  try { sendSuccess(res, await svc.submitSurveyResponse(req.body), 201); } catch (e) { next(e); }
+  try { apiOk(res, await eng.submitResponse(who(req).id, who(req).name, req.body), 'Response recorded successfully'); } catch (e) { next(e); }
 });
-
-// GET  /engagement/surveys  or  /engagement/surveys/list
-engagementRouter.get(['/surveys', '/surveys/list'], async (_req, res, next) => {
-  try { sendSuccess(res, await svc.getSurveys()); } catch (e) { next(e); }
+engagementRouter.get(['/surveys', '/surveys/list'], async (req, res, next) => {
+  try { apiOk(res, await eng.getSurveysHR(typeof req.query['fy'] === 'string' ? req.query['fy'] : undefined)); } catch (e) { next(e); }
 });
-
-// GET  /engagement/scores/:surveyId
 engagementRouter.get('/scores/:surveyId', async (req, res, next) => {
-  try {
-    sendSuccess(res, await svc.getSurveyResponses(Number(req.params['surveyId'])));
-  } catch (e) { next(e); }
+  try { apiOk(res, await eng.getScores(String(req.params['surveyId']))); } catch (e) { next(e); }
 });
-
-// POST /engagement/rollout
 engagementRouter.post('/rollout', validate(RolloutSchema), async (req, res, next) => {
-  try { sendSuccess(res, await svc.rolloutSurvey(req.body)); } catch (e) { next(e); }
+  try { apiOk(res, await eng.rollout(req.body), 'Survey rolled out successfully', 201); } catch (e) { next(e); }
 });
-
-// GET  /engagement/admin
 engagementRouter.get('/admin', async (_req, res, next) => {
-  try { sendSuccess(res, await svc.getSurveys()); } catch (e) { next(e); }
+  try { apiOk(res, await eng.getAdmin()); } catch (e) { next(e); }
 });
 
 // ── Onboarding router  (/hrFeedback/onboarding) ──────────────────────────────
@@ -123,7 +116,7 @@ onboardingRouter.use(authenticate);
 
 const OnboardingSubmitSchema = z.object({
   surveyId: z.string().trim().min(1, 'Survey ID is required'),
-  answers: z.array(z.number().int().min(1).max(10)).length(7, 'Exactly 7 answers required'),
+  answers: z.array(z.number().int().min(1).max(10)).min(1, 'Answer the questions'),
   feedback: z.string().nullish(),
 });
 
@@ -132,6 +125,7 @@ const OnboardingSendSchema = z.object({
   dueDate: z.string().trim().min(1, 'Due date is required'),
   notifyList: z.string().nullish(),
   departmentOverrides: z.record(z.string()).nullish(),
+  templateId: z.number().int().positive().nullish(),
 });
 
 onboardingRouter.get('/surveys/mine', async (req, res, next) => {

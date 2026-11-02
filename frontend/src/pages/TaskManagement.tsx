@@ -9,7 +9,8 @@ import { Select, SelectItem } from "@/components/ui";
 import { Textarea } from "@/components/ui";
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
-import ReusableTable, { TableColumn, TableAction } from "@/components/table"
+import { TableAction } from "@/components/table"
+import DepartmentSplit, { TypeTag } from "@/components/DepartmentSplit";
 import { title } from "@/components/primitives";
 import { format } from "date-fns";
 import { RollerCoaster } from 'lucide-react';
@@ -40,10 +41,6 @@ const TaskManagement: React.FC = () => {
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [toggleStatusValue, setToggleStatusValue] = useState<boolean | null>(null);
     const [tableRefreshKey, setTableRefreshKey] = useState(0);
-    const [pageNumber, setPageNumber] = useState(1)
-    const [totalRecords, settotalRecords] = useState(0)
-    const [pageSize, setPageSize] = useState(10)
-    const [searchValue, setSearchValue] = useState("")
     const [tasks, setTasks] = useState<Task[]>([
 
     ]);
@@ -96,6 +93,7 @@ const TaskManagement: React.FC = () => {
 
             // append new task to table
             setTasks((prev) => [...prev, data.data]);
+            setTableRefreshKey((p) => p + 1);
 
             setIsModalOpen(false);
             setNewTask({
@@ -155,6 +153,7 @@ const TaskManagement: React.FC = () => {
             setTasks(prev =>
                 prev.map(t => (t.taskID === id ? data.data : t))
             );
+            setTableRefreshKey((p) => p + 1);
 
             setIsModalOpen(false);
             setNewTask({
@@ -183,25 +182,6 @@ const TaskManagement: React.FC = () => {
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
     // Table configuration
-    const taskColumns: TableColumn[] = [
-        {
-            key: 'createdAt',
-            label: 'Created At',
-            sortable: true,
-            renderCell: (item) =>
-                item.createdAt
-                    ? format(new Date(item.createdAt), "dd MMM yyyy")
-                    : "—",
-        }, { key: 'taskName', label: 'Task Name', sortable: true },
-        // { key: 'description', label: 'Description' },
-        { key: 'departmentID', label: 'Department ID', sortable: true },
-        { key: 'departmentName', label: 'department Name', sortable: true },
-        { key: 'standardTimeMins', label: 'Standard Time (mins)', sortable: true },
-        { key: 'frequency', label: 'Frequency', sortable: true },
-        { key: 'isDynamic', label: 'Dynamic', sortable: true },
-        { key: 'isActive', label: 'Status', sortable: true },
-
-    ];
 
     const taskActions: TableAction[] = [
         {
@@ -270,14 +250,14 @@ const TaskManagement: React.FC = () => {
         const fetchTasks = async () => {
             try {
                 const bodyData = {
-                    searchText: searchValue,
+                    searchText: "",
                     filter: "",
                     startDate: "",
                     endDate: ""
                 };
 
                 const { data } = await axios.post(
-                    `/t2.0/authentificationUtilization/departmentTasks/list?page=${pageNumber}&size=${pageSize}`,
+                    `/t2.0/authentificationUtilization/departmentTasks/list?page=0&size=0`,
                     bodyData,
                     { headers: { "Content-Type": "application/json" } }
                 );
@@ -302,14 +282,13 @@ const TaskManagement: React.FC = () => {
 
 
                 setTasks(tasks);
-                settotalRecords(data.response.totalRecords);
             } catch (err) {
                 console.error("Error fetching tasks:", err);
             }
         };
         fetchTasks();
 
-    }, [authUserLD, pageSize, pageNumber, searchValue])
+    }, [authUserLD, tableRefreshKey])
 
     const handleToggleStatus = async () => {
         if (selectedRows.length !== 1 || toggleStatusValue === null) return;
@@ -356,6 +335,19 @@ const TaskManagement: React.FC = () => {
         setTableRefreshKey(prev => prev + 1);
     };
 
+    const openAdd = (dept = "") => {
+        setIsEditing(false);
+        setNewTask({ taskName: "", description: "", departmentID: dept, standardTimeMins: 30, frequency: "Daily", isDynamic: false });
+        setSelectedDepartment(dept);
+        setIsModalOpen(true);
+    };
+
+    // every active department, plus the ones an item names that the list did not return
+    const splitDepartments = [
+        ...departmentList.filter((d) => String(d.status ?? "Active") === "Active").map((d) => ({ id: Number(d.key), name: d.name })),
+        ...tasks.filter((i: any) => i.departmentName).map((i: any) => ({ id: Number(i.departmentID), name: i.departmentName })),
+    ];
+
     return (
         <div>
 
@@ -375,21 +367,7 @@ const TaskManagement: React.FC = () => {
                     </Button>
                     <Button
                         size="sm"
-                        color="primary" onPress={() => {
-                            setIsEditing(false);
-                            setNewTask({
-                                taskName: "",
-                                description: "",
-                                departmentID: "",
-                                standardTimeMins: 30,
-                                frequency: "Daily",
-                                isDynamic: false
-                            });
-                            setSelectedDepartment("");
-                            setIsModalOpen(true);
-                        }}
-
-
+                        color="primary" onPress={() => openAdd()}
                     >
                         Add New Task
                     </Button>
@@ -398,113 +376,25 @@ const TaskManagement: React.FC = () => {
             </div>
 
 
-            {/* Tasks Table */}
-            {selectedRows.length > 0 && (
-                <div className="flex justify-between items-center bg-ink-100 dark:bg-ink-800 p-3 rounded mb-3 shadow">
-                    <span className="font-semibold">
-                        {selectedRows.length} task(s) selected
-                    </span>
-
-                    <div className='flex gap-3'>
-
-                        <Button
-                            color="danger"
-                            variant='flat'
-
-                            onPress={() => {
-                                if (selectedRows.length !== 1) {
-                                    addToast({
-                                        title: "Select exactly one task",
-                                        description: "You can activate/deactivate only one task at a time.",
-                                        color: "warning",
-                                    });
-                                    return;
-                                }
-                                setToggleStatusValue(false);
-                                setConfirmOpen(true);
-                            }}
-                        >
-                            Deactivate
-                        </Button>
-
-                        <Button
-                            color="success"
-                            variant="flat"
-                            onPress={() => {
-                                if (selectedRows.length !== 1) {
-                                    addToast({
-                                        title: "Select exactly one task",
-                                        description: "You can activate/deactivate only one task at a time.",
-                                        color: "warning",
-                                    });
-                                    return;
-                                }
-                                setToggleStatusValue(true);
-                                setConfirmOpen(true);
-                            }}
-                        >
-                            Activate
-                        </Button>
-
-                    </div>
-
-                </div>
-            )}
-
-            <div className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 overflow-hidden p-6">
-                <ReusableTable
-                    key={tableRefreshKey}
-                    data={tasks}
-                    columns={taskColumns}
-                    actions={taskActions}
-                    totalRecords={totalRecords}
-                    searchable={true}
-                    searchPlaceholder="Search tasks..."
-                    searchKeys={['taskName', 'description']}
-                    filterable={true}
-                    onRowsPerPageChange={(value) => {
-                        setPageSize(value)
-
-                    }}
-                    onPageChange={(page) => {
-                        setPageNumber(page)
-                    }}
-                    onSearchChangeProp={(value) => {
-                        setSearchValue(value);
-                        // console.log("Search in parent:", value);
-                    }}
-                    filterOptions={[
-                        {
-                            key: 'frequency',
-                            label: 'Frequency',
-                            options: [
-                                { key: 'Daily', label: 'Daily' },
-                                { key: 'Weekly', label: 'Weekly' },
-                                { key: 'Monthly', label: 'Monthly' },
-                                { key: 'Dynamic', label: 'Dynamic' },
-                                { key: 'Not Daily', label: 'Not Daily' }
-                            ]
-                        }
-                        ,
-                        {
-                            key: 'isActive',
-                            label: 'Status',
-                            options: [
-                                { key: 'true', label: 'Active' },
-                                { key: 'false', label: 'Inactive' }
-                            ]
-                        }
-                    ]}
-                    selectable={true}
-                    sortable={true}
-                    paginated={true}
-                    emptyContent="No tasks found"
-                    onAdd={() => setIsModalOpen(true)}
-                    addButtonLabel="Add New Task"
-                    getRowId={(item) => item.taskID}
-                    onSelectionChange={(rows) => setSelectedRows(rows)}
-                />
-            </div>
+            <DepartmentSplit<any>
+                noun="task"
+                items={tasks}
+                departments={splitDepartments}
+                deptOf={(t) => Number(t.departmentID)}
+                isActive={(t) => !!t.isActive}
+                idOf={(t) => t.taskID}
+                searchText={(t) => `${t.taskName} ${t.description ?? ""}`}
+                columns={[
+                    { label: "Task", cell: (t) => <span className="font-semibold text-ink-900 dark:text-white">{t.taskName}</span>, className: "min-w-[220px] max-w-[360px] whitespace-normal break-words" },
+                    { label: "Standard time", cell: (t) => (t.standardTimeMins === "N/A" || t.standardTimeMins == null ? "—" : `${t.standardTimeMins} mins`), className: "whitespace-nowrap" },
+                    { label: "How often", cell: (t) => t.frequency || "—" },
+                    { label: "Type", cell: (t) => <TypeTag dynamic={t.isDynamic} /> },
+                    { label: "Created", cell: (t) => (t.createdAt ? format(new Date(t.createdAt), "dd MMM yyyy") : "—"), className: "whitespace-nowrap" },
+                ]}
+                onAdd={(id) => openAdd(String(id))}
+                onEdit={(t) => taskActions[0].onAction(t)}
+                onToggle={(t) => { setSelectedRows([t]); setToggleStatusValue(!t.isActive); setConfirmOpen(true); }}
+            />
 
             {/* Create / edit canvas */}
             <Drawer

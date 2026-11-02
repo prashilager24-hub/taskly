@@ -41,6 +41,11 @@ interface UserRow {
   ReportingManagerID: number | null;
   ELManagerID: number | null;
   AppraisalCycle: string | null;
+  Designation?: string | null;
+  JobLevel?: string | null;
+  Band?: string | null;
+  IsNewJoiner?: number | boolean | null;
+  JoiningCycle?: string | null;
   UserCreateTime?: Date | string | null;
 }
 
@@ -71,7 +76,8 @@ function signToken(user: UserRow, sessionId: string, expiresInSeconds: number): 
 const USER_SELECT = `
   SELECT UserID, UserEmail, UserName, UserPassword, RoleID, SecondaryRoleID,
          UserStatus, IsUserArchived, EmployeeID, ReportingManagerID,
-         ELManagerID, AppraisalCycle, FeedbackResolverTeam, ThemePreference, TwoFactor, UserCreateTime
+         ELManagerID, AppraisalCycle, FeedbackResolverTeam, ThemePreference, TwoFactor, UserCreateTime,
+         Designation, JobLevel, Band, IsNewJoiner, JoiningCycle
   FROM Users`;
 
 interface SessionDepartment {
@@ -126,6 +132,11 @@ async function buildSessionPayload(user: SessionUser, token: string) {
     userName: user.UserName,
     userEmail: user.UserEmail,
     employeeID: user.EmployeeID,
+    designation: user.Designation ?? null,
+    jobLevel: user.JobLevel ?? null,
+    band: user.Band ?? null,
+    isNewJoiner: !!user.IsNewJoiner,
+    joiningCycle: user.JoiningCycle ?? null,
     // Joining date: Onboarding Experience is shown to new joiners for their first 45 days
     joinedAt: user.UserCreateTime ?? null,
     // Saved Dark / Light choice; null until the user picks one at first sign-in (AUTH-11)
@@ -271,6 +282,12 @@ export async function getRole(roleId: number) {
 // ─────────────────────────────────────────────────────────────
 // POST /User/create
 // ─────────────────────────────────────────────────────────────
+/** The April or October intake a person joining on this date belongs to (Apr–Sep → April, otherwise October) */
+export function joiningCycleFor(d: Date): 'APRIL' | 'OCTOBER' {
+  const m = d.getMonth() + 1;
+  return m >= 4 && m <= 9 ? 'APRIL' : 'OCTOBER';
+}
+
 export async function createUser(input: CreateUserInput, createdBy: number) {
   // Check duplicate email
   const [dup] = await pool.execute<mysql.RowDataPacket[]>(
@@ -285,8 +302,8 @@ export async function createUser(input: CreateUserInput, createdBy: number) {
     `INSERT INTO Users
        (UserEmail, UserName, UserPassword, RoleID, SecondaryRoleID,
         UserStatus, IsUserArchived, EmployeeID, ReportingManagerID,
-        ELManagerID, AppraisalCycle, FeedbackResolverTeam)
-     VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?)`,
+        ELManagerID, AppraisalCycle, FeedbackResolverTeam, Designation, JobLevel, Band, IsNewJoiner, JoiningCycle)
+     VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       input.userEmail,
       input.userName,
@@ -298,6 +315,11 @@ export async function createUser(input: CreateUserInput, createdBy: number) {
       input.elManagerId ?? null,
       input.appraisalCycle ?? null,
       input.feedbackresolverteam ?? null,
+      input.designation || null,
+      input.jobLevel || null,
+      input.band || null,
+      input.isNewJoiner === false ? 0 : 1,
+      input.isNewJoiner === false ? null : (input.joiningCycle ?? joiningCycleFor(new Date())),
     ],
   );
 
@@ -329,6 +351,14 @@ export async function updateUser(input: UpdateUserInput) {
   if (input.elManagerId !== undefined) { fields.push('ELManagerID = ?'); values.push(input.elManagerId); }
   if (input.appraisalCycle !== undefined) { fields.push('AppraisalCycle = ?'); values.push(input.appraisalCycle); }
   if (input.feedbackresolverteam !== undefined) { fields.push('FeedbackResolverTeam = ?'); values.push(input.feedbackresolverteam); }
+  if (input.designation !== undefined) { fields.push('Designation = ?'); values.push(input.designation || null); }
+  if (input.jobLevel !== undefined) { fields.push('JobLevel = ?'); values.push(input.jobLevel || null); }
+  if (input.band !== undefined) { fields.push('Band = ?'); values.push(input.band || null); }
+  if (input.isNewJoiner !== undefined) {
+    fields.push('IsNewJoiner = ?'); values.push(input.isNewJoiner ? 1 : 0);
+    if (!input.isNewJoiner) { fields.push('JoiningCycle = ?'); values.push(null); }
+  }
+  if (input.isNewJoiner !== false && input.joiningCycle !== undefined) { fields.push('JoiningCycle = ?'); values.push(input.joiningCycle); }
 
   if (fields.length > 0) {
     values.push(input.userID);
@@ -392,6 +422,7 @@ export async function getUsers(input: UsersReadInput) {
     `SELECT DISTINCT u.UserID, u.UserEmail, u.UserName, u.RoleID, u.SecondaryRoleID,
             u.UserStatus, u.IsUserArchived, u.EmployeeID,
             u.ReportingManagerID, u.ELManagerID, u.AppraisalCycle, u.FeedbackResolverTeam,
+            u.Designation, u.JobLevel, u.Band, u.IsNewJoiner, u.JoiningCycle,
             u.UserCreateTime,
             rm.UserName AS ReportingManagerName, elm.UserName AS ELManagerName
      FROM Users u
@@ -439,6 +470,11 @@ export async function getUsers(input: UsersReadInput) {
     elManagerName: u['ELManagerName'],
     appraisalCycle: u['AppraisalCycle'],
     feedbackresolverteam: u['FeedbackResolverTeam'],
+    designation: u['Designation'] ?? null,
+    jobLevel: u['JobLevel'] ?? null,
+    band: u['Band'] ?? null,
+    isNewJoiner: !!u['IsNewJoiner'],
+    joiningCycle: u['JoiningCycle'] ?? null,
     userCreateTime: u['UserCreateTime'] instanceof Date
       ? u['UserCreateTime'].toISOString().slice(0, 19).replace('T', ' ')
       : u['UserCreateTime'],

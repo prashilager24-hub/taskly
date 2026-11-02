@@ -114,8 +114,14 @@ export async function setDepartmentAccess(actor: number, departmentId: number, p
 
 interface Layers { roleIds: number[]; roleNames: string[]; role: Privileges; departments: { id: number; name: string }[]; department: Privileges; grants: Privileges; denies: Privileges; isSuperAdmin: boolean }
 
+// What the HR and L&D team get on top of their role, so a new HR member can manage survey templates straight away.
+// It sits in the role layer: Access Management shows it there and a personal removal still takes it away.
+const HR_TEAM_DEFAULTS: Privileges = {
+  hr_onb_templates: [...ACTIONS], hr_eng_templates: [...ACTIONS],
+};
+
 async function layersOf(userId: number): Promise<Layers> {
-  const [[u]] = await pool.execute<Row[]>('SELECT RoleID, SecondaryRoleID FROM Users WHERE UserID = ?', [userId]);
+  const [[u]] = await pool.execute<Row[]>('SELECT RoleID, SecondaryRoleID, FeedbackResolverTeam FROM Users WHERE UserID = ?', [userId]);
   if (!u) throw AppError.notFound('User not found');
   const roleIds = [u['RoleID'], u['SecondaryRoleID']].filter((x): x is number => !!x);
   const [roles] = await pool.query<Row[]>('SELECT RoleID, RoleName, RolePrivileges FROM AMRole WHERE RoleID IN (?) AND IsRoleArchived = 0 AND RoleStatus = 1', [roleIds.length ? roleIds : [0]]);
@@ -126,7 +132,8 @@ async function layersOf(userId: number): Promise<Layers> {
        AND (d.DepartmentID IN (SELECT DepartmentID FROM DepartmentUser WHERE UserID = ?) OR d.ExecutiveLeaderID = ? OR d.FunctionalLeaderID = ?)`, [userId, userId, userId]);
   const [[o]] = await pool.execute<Row[]>('SELECT Grants, Denies FROM UserAccess WHERE UserID = ?', [userId]);
   return {
-    roleIds, roleNames: roles.map((r) => r['RoleName']), role: union(...roles.map((r) => parse(r['RolePrivileges']))),
+    roleIds, roleNames: roles.map((r) => r['RoleName']),
+    role: union(...roles.map((r) => parse(r['RolePrivileges'])), ...(['HR', 'L_D'].includes(String(u['FeedbackResolverTeam'] ?? '')) ? [HR_TEAM_DEFAULTS] : [])),
     departments: depts.map((d) => ({ id: d['DepartmentID'], name: d['DepartmentName'] })), department: union(...depts.map((d) => parse(d['Privileges']))),
     grants: parse(o?.['Grants']), denies: parse(o?.['Denies'], false), isSuperAdmin: roleIds.includes(1),
   };

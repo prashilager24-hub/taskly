@@ -144,9 +144,9 @@ export default function TasklyHRModules({ section } = {}) {
     }
   };
 
-  const sendSurvey = async (joinerName, due) => {
+  const sendSurvey = async (joinerName, due, templateId) => {
     try {
-      const res = await api.sendOnboardingSurvey([joinerName], due, NOTIFY_LIST);
+      const res = await api.sendOnboardingSurvey([joinerName], due, NOTIFY_LIST, templateId);
       notify(`Survey sent to ${joinerName}. Reminder scheduled if not submitted by ${due}.`);
       fetchData();
     } catch (err) {
@@ -229,9 +229,9 @@ export default function TasklyHRModules({ section } = {}) {
     }
   };
 
-  const rolloutEngagement = async ({ quarter, months, closes, recipients = [] }) => {
+  const rolloutEngagement = async ({ quarter, months, closes, recipients = [], templateId }) => {
     try {
-      const res = await api.rolloutEngagement(quarter, months, closes, NOTIFY_LIST, recipients);
+      const res = await api.rolloutEngagement(quarter, months, closes, NOTIFY_LIST, recipients, templateId);
       setEngagement((p) => [{ ...res, responses: [] }, ...p]);
       notify(`"${quarter}" rolled out to ${recipients.length || "all"} employee(s).`);
     } catch (err) {

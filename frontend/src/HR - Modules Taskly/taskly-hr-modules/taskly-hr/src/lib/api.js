@@ -47,8 +47,8 @@ export const fetchOnboardingSurveys = (status = "all", dateRange = "90") =>
 export const fetchOnboardingScores = () =>
   GET(`${BASE}/onboarding/scores`).then((r) => payload(r));
 
-export const sendOnboardingSurvey = (recipients, dueDate, notifyList) =>
-  POST(`${BASE}/onboarding/send`, { recipients, dueDate, notifyList }).then((r) => payload(r));
+export const sendOnboardingSurvey = (recipients, dueDate, notifyList, templateId) =>
+  POST(`${BASE}/onboarding/send`, { recipients, dueDate, notifyList, templateId: templateId || undefined }).then((r) => payload(r));
 
 export const fetchOnboardingAdmin = () =>
   GET(`${BASE}/onboarding/admin`).then((r) => payload(r));
@@ -99,8 +99,8 @@ export const fetchEngagementSurveys = (fy) =>
 export const fetchEngagementScores = (surveyId) =>
   GET(`${BASE}/engagement/scores/${surveyId}`).then((r) => payload(r));
 
-export const rolloutEngagement = (quarter, months, closes, notifyList, recipients = []) =>
-  POST(`${BASE}/engagement/rollout`, { quarter, months, closes, notifyList, recipients }).then((r) => payload(r));
+export const rolloutEngagement = (quarter, months, closes, notifyList, recipients = [], templateId) =>
+  POST(`${BASE}/engagement/rollout`, { quarter, months, closes, notifyList, recipients, templateId: templateId || undefined }).then((r) => payload(r));
 
 export const fetchEngagementAdmin = () =>
   GET(`${BASE}/engagement/admin`).then((r) => payload(r));
@@ -113,3 +113,22 @@ export const fetchUsers = (searchText = "") =>
     searchText,
     departmentID: 0,
   }).then((r) => r.data.response?.users || []);
+
+/* ── Survey templates (Onboarding and Engagement questions) ── */
+export const fetchTemplates = (kind, all = false) =>
+  GET(`${BASE}/templates?kind=${kind}${all ? "&all=1" : ""}`).then((r) => payload(r).templates ?? []);
+
+export const fetchTemplate = (id) =>
+  GET(`${BASE}/templates/${id}`).then((r) => payload(r));
+
+export const saveTemplate = (template) =>
+  (template.id
+    ? axios.put(`${BASE}/templates/${template.id}`, template, auth())
+    : POST(`${BASE}/templates`, template)
+  ).then((r) => payload(r));
+
+export const setTemplateActive = (id, active) =>
+  axios.put(`${BASE}/templates/${id}/active`, { active }, auth()).then((r) => payload(r));
+
+export const setTemplateDefault = (id) =>
+  axios.put(`${BASE}/templates/${id}/default`, {}, auth()).then((r) => payload(r));

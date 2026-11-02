@@ -1,4 +1,5 @@
 import { pool } from '../../config/db';
+import { calculateGoal, type RevisedGoal } from '../calculations/calculationLogic';
 import type mysql from 'mysql2/promise';
 import { AppError } from '../../utils/AppError';
 import { toBool, toLocalDateTime, toNum } from '../../utils/javaCompat';
@@ -449,8 +450,16 @@ export async function updateGoal(input: { userId: number; goalId: number; workDa
     `SELECT g.*, u.UserName, dg.GoalName FROM UserGoalData g
      LEFT JOIN Users u ON u.UserID = g.UserID LEFT JOIN DepartmentGoal dg ON dg.GoalID = g.GoalID
      WHERE g.UserGoalDataID = ?`, [id]);
-  const fixed = toNum(g!['FixedGoal']) ?? 0;
-  const achieved = toNum(g!['AchievedGoal']) ?? 0;
+  const workDate = toLocalDateTime(g!['WorkDate'])?.slice(0, 10) ?? null;
+  const revised = parseJson(g!['RevisedGoal']);
+  const calc = await calculateGoal({
+    kind: 'entry', userId: Number(g!['UserID']), departmentId: Number(g!['DepartmentID']), goalId: Number(g!['GoalID']),
+    fixed: toNum(g!['FixedGoal']), achieved: toNum(g!['AchievedGoal']), revised: revised as RevisedGoal,
+    taskUnits: async (task) => {
+      const [[x]] = await pool.query<mysql.RowDataPacket[]>('SELECT COALESCE(SUM(AchivedUnits), 0) AS n FROM UserWorkData WHERE UserID = ? AND WorkDate = ? AND DepartmentID = ? AND TaskID = ? AND IsForTarget = 1', [g!['UserID'], workDate, g!['DepartmentID'], task]);
+      return Number(x?.['n'] ?? 0);
+    },
+  });
   return {
     userGoalDataID: id,
     workDate: toLocalDateTime(g!['WorkDate'])?.slice(0, 10) ?? null,
@@ -459,12 +468,12 @@ export async function updateGoal(input: { userId: number; goalId: number; workDa
     departmentID: g!['DepartmentID'],
     goalID: g!['GoalID'],
     goalName: g!['GoalName'] ?? null,
-    fixedGoal: fixed,
-    achievedGoal: achieved,
-    goalEfficiencyPercent: fixed > 0 ? Math.round((achieved / fixed) * 10000) / 100 : 0,
-    recalculatedTarget: null,
+    fixedGoal: calc.fixed ?? 0,
+    achievedGoal: calc.achieved ?? 0,
+    goalEfficiencyPercent: calc.efficiency,
+    recalculatedTarget: calc.recalculatedTarget,
     comment: g!['Comment'] ?? null,
-    revisedGoal: parseJson(g!['RevisedGoal']),
+    revisedGoal: revised,
     approvedByEL: toBool(g!['ApprovedByEL']),
   };
 }

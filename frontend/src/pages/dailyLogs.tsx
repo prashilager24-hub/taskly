@@ -11,6 +11,7 @@ import axios from "axios";
 import ReusableTable, { TableColumn, TableAction } from "@/components/table";
 import CustomDateRangePicker from "../components/customDateRangePicker"
 import DailyLogsFilterDropdown from "@/components/DailyLogsFilterDropdown";
+import MissingLogsButton from "@/components/MissingLogsButton";
 import { format } from "date-fns";
 
 interface DailyTaskLog {
@@ -494,6 +495,7 @@ export default function DailyLogs() {
                             Download All
                         </Button> */}
 
+                        {user?.userRole === 1 && !user?.departmentID && <MissingLogsButton />}
                         <CustomDateRangePicker value={dateRange} onChange={(range) => setDateRange(range)} />
                     </div>
 

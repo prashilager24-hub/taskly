@@ -15,3 +15,8 @@ function privileges(): Record<string, string[]> {
 export function hasModuleAccess(module: string, action: Action = "read"): boolean {
     return privileges()[module]?.includes(action) ?? false;
 }
+
+/** Whether the module appears in this session's privileges at all (a session from before the module existed lacks it) */
+export function hasModuleKey(module: string): boolean {
+    return module in privileges();
+}

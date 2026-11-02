@@ -17,7 +17,7 @@ const iso = (d: DateValue) => d.toString();
 const safe = (s?: string | null): CalendarDate | null => { try { return s ? parseDate(s) : null; } catch { return null; } };
 const label = (d: DateValue) => d.toDate(tz).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 
-export default function DateRangeField({ value, onChange, maxToday = true, compact = false }: { value: IsoRange; onChange: (r: IsoRange) => void; maxToday?: boolean; compact?: boolean }) {
+export default function DateRangeField({ value, onChange, maxToday = true, compact = false, fieldLabel }: { value: IsoRange; onChange: (r: IsoRange) => void; maxToday?: boolean; compact?: boolean; fieldLabel?: string }) {
     const [open, setOpen] = useState(false);
     // Inside a canvas / modal the calendar renders within it, so a click on a day is not an
     // "outside click" that would dismiss the canvas
@@ -40,8 +40,16 @@ export default function DateRangeField({ value, onChange, maxToday = true, compa
     return (
         <Popover placement={host ? "bottom-end" : "bottom-start"} isOpen={open} onOpenChange={(o) => { if (o) setHost((triggerRef.current?.closest("[role=dialog]") as HTMLElement | null) ?? undefined); setOpen(o); }} portalContainer={host}>
             <PopoverTrigger>
-                <Button ref={triggerRef} variant="bordered" size={compact ? "sm" : undefined} className={compact ? "w-full justify-between" : "min-w-[280px] justify-between"} startContent={<CalendarDays size={15} className="text-brand-600" />}>
-                    <span className="flex-1 text-left">{chosen ? `${label(chosen.start)} → ${label(chosen.end)}` : "All dates"}</span>
+                <Button ref={triggerRef} variant="bordered" size={compact ? "sm" : undefined} className={fieldLabel ? "h-14 w-full min-w-0 justify-between" : compact ? "w-full justify-between" : "min-w-[280px] justify-between"} startContent={<CalendarDays size={15} className="text-brand-600" />}>
+                    {fieldLabel ? (
+                        // same shape as the Select fields beside it: small label over the value
+                        <span className="flex flex-1 flex-col items-start text-left leading-tight">
+                            <span className="eyebrow !text-[10px]">{fieldLabel}</span>
+                            <span className="text-sm">{chosen ? `${label(chosen.start)} → ${label(chosen.end)}` : "All dates"}</span>
+                        </span>
+                    ) : (
+                        <span className="flex-1 text-left">{chosen ? `${label(chosen.start)} → ${label(chosen.end)}` : "All dates"}</span>
+                    )}
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="p-0">

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui";
 
 import axios from "axios";
+import { yearRange } from "@/lib/years";
 import { format } from "date-fns";
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import CustomDateRangePicker from "../components/customDateRangePicker";
@@ -26,13 +27,7 @@ const QUARTERS = [
     "Q4",
 ];
 
-const YEARS = [
-    "ALL",
-    "2024",
-    "2025",
-    "2026",
-    "2027",
-];
+const YEARS = ["ALL", ...yearRange(1).map(String)];
 
 // =========================
 export default function DashboardFilters({
@@ -521,7 +516,7 @@ export default function DashboardFilters({
 
     const DateRangeDropdown = useCallback(
         ({ value, onChange }: { value: DateRange; onChange: (r: DateRange) => void }) => (
-            <CustomDateRangePicker value={value} onChange={onChange} />
+            <CustomDateRangePicker value={value} onChange={onChange} fieldLabel="Date range" />
         ),
         []
     );

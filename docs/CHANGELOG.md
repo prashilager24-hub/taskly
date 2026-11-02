@@ -17,6 +17,57 @@ Summary: one or two lines on what and why.
 
 ---
 
+## 2026-10-30 — Survey templates for Onboarding and Engagement  (commit: e9b0e0f)
+Summary: HR can add Onboarding Experience and Employee Engagement surveys with their own questions; permissions are in Access Management and HR has them by default. The Node engagement backend, which was only placeholders, is now a real port of Java.
+### Frontend
+- New canvas **Manage templates** (`modules/templates/SurveyTemplates.jsx`) on the Onboarding and Engagement HR consoles: add, edit, copy, set default, turn on/off; questions can be rating, open or (engagement) monthly, grouped into sections for onboarding.
+- Send new survey / Roll out survey now pick a **Survey template**. Employee form, HR console and admin views read the questions from the survey (`lib/surveyStructure.js`); surveys from before templates use the original questions. The HR-team block of an onboarding survey starts at the first section whose name contains "HR".
+### Backend
+- New `modules/hr/surveyTemplates.{service,routes}.ts` at `/hrFeedback/templates` (list is open to signed-in users; changes need the template permission of that kind).
+- `engagement.service.ts`: port of Java EngagementService (open surveys, submit, HR list, scores, rollout, admin), with the template's questions. Push notifications are not ported.
+- Onboarding send/submit use the template: a survey keeps a copy of its questions, and answers are checked against it.
+- Access: new modules `hr_onb_templates` and `hr_eng_templates`. HR role (4) and everyone whose Feedback Resolver Team is HR or L&D get them by default (`HR_TEAM_DEFAULTS` in `access.service.ts`); a personal removal still takes them away.
+### Database
+- Migration `011_survey_templates.sql`: `SurveyTemplate`, `SurveyTemplateQuestion`, `TemplateID`/`Questions` on `onboarding_surveys` and `engagement_surveys`, and the two current surveys as default templates. Run `npm run db:migrate`.
+
+---
+
+## 2026-10-30 — Goals Achieved list matches Java  (commit: e9b0e0f)
+Summary: `POST /userGoalData/list` now follows Java `listPaginated`, so the Goals page shows the same rows and averages as production.
+### Frontend
+- none
+### Backend
+- New `jobs/efficiencyCalculation.ts`: port of Java `calculateAndSaveDailyEfficiency`. Rebuilds `EfficiencyUtilizationSummary` from the work entries (plus live TAM accounts, dept 23, and closed-position goals, dept 22) every day at 6:00 AM IST (`node-cron`, started in `server.ts`) and on `GET /calculateAll` (was a stub; now returns 200 so the dashboard refreshes). Old rows are replaced in one transaction, so a failed run leaves the table untouched. The per-row rules (`calculateEfficiency`) are in `calculationLogic.ts`. Checked against the Java-built table: 9,748 of 9,749 rows identical; the one row differs because its entries changed after Java last ran.
+- `calculationLogic.ts` also holds the target rules: `calculateTarget({ kind: 'day' | 'revision' | 'dayAverage' | 'groupAverage' | 'units' })` (department day rules, EL-revised targets, user / department / EL / company averages, Entry Approval %). The daily Target Achieved % itself is still read from `EfficiencyUtilizationSummary` (Java `EfficiencyServiceImpl` is not ported).
+- New `modules/calculations/calculationLogic.ts`: goal rules in one place. `calculateGoal({ kind: 'entry' | 'day' | 'user' })` for a goal entry, a user day, a user over a range; `loadGoalContexts` loads the data for the range case. The Goals list, goal form, dashboard rollup (`dashboardRollup.ts`) and efficiency report (`efficiencySummary.service.ts`) all call it. Adds the April–June 2026 rules for users 153/154/155 to the dashboard, so company Q2 goal % is now 66.88 like production.
+- `userGoalData.service.ts`: newest entry first (by id; `sortBy=workDate` supported), per-department efficiency (depts 37, 13, 1, 22, 14/31/32, user 129), monthly breakdown with quarterly goals counted across their quarter, overall % from the dashboard goal rollup (`dashboardRollup.ts` now also returns `goalOf`/`usersInDept`), department 21/37 sum-over-sum. Response uses Java's `{ status, statusCode, message, response }` envelope.
+### Database
+- none
+### Notes
+- Verified against production on 33 of 35 request shapes. Not ported: Goal = Target users' April–June rows and user 155 April–June sum/sum;  `sortBy=workDate` tie order is arbitrary in Java.
+
+---
+
+## 2026-10-29 — User profile with level/band and sign-in activity  (commit: e9b0e0f)
+Summary: every person has a profile (position, role, department, reporting line) with their sign-in/sign-out log; Designation, Level and Band are captured when a user is created.
+### Frontend
+- New page `pages/profile.tsx` at `/profile` (own) and `/profile/:userId` (admins); topbar menu has **My profile**; user names in Access Management → Users link to it.
+- Users drawer has a **Position** section (Designation, Level, Band), all required, and an **Onboarding** section: New joiner (default Yes) + April/October cycle. Users list shows a `New · Apr/Oct` capsule.
+- Onboarding Experience is shown to a user only while flagged new (`lib/onboarding.ts`); HR's survey recipient picker lists new joiners first with the same capsule.
+### Backend
+- New `modules/profile`: `GET /profile[/:userId]` and `GET /profile[/:userId]/activity?days=`. Other people's profiles need `accessmgmt` read.
+- `designation/jobLevel/band` added to user create/update/read and the session payload (`auth.schema.ts`, `auth.service.ts`).
+- Activity times are formatted in SQL (the DB stores server local time, the pool reads as UTC).
+- `Users.IsNewJoiner` / `JoiningCycle` in create/update/read, session payload and `/access/me`; submitting the onboarding survey clears the flag (`onboarding.service.ts`).
+- Onboarding Experience is also shown to HR / L&D team members (`feedbackresolverteam` HR or L_D), not only role 1/4.
+- HR Support pages are separate access modules (`hr_onboarding`, `hr_query`, `hr_engagement`) under `hrfeedback` in `catalog.ts`; sidebar and `pages/hrFeedback.tsx` check each one (page redirects to the first allowed one).
+### Database
+- Migrations `008_user_profile.sql` (`Users.Designation`, `JobLevel`, `Band`) `009_new_joiner.sql` (`IsNewJoiner`, `JoiningCycle`; users from the last 45 days without a submitted survey are backfilled as new) and `010_hr_support_permissions.sql` (everyone who had Support keeps all three pages). Run `npm run db:migrate`.
+### Notes
+- Existing users have empty position fields; editing one requires filling all three.
+
+---
+
 ## 2026-10-29 — Dashboard matches production, role-based overviews, Sales Forward removed  (commits: 7edc52e, b0f9468, d5fbc95)
 
 Summary: the Node `DashBoardAll` numbers now match the Java backend (production). Executive Leaders, Functional Leaders and everyone else get the same overview design as Admin, scoped to their own data. Sales Forward is removed from the menu and from Access Management.

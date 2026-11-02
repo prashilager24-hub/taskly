@@ -131,8 +131,6 @@ export function DeptMap({ items, hover, onHover }: { items: Bubble[]; hover: num
     );
 }
 
-type Side = "top" | "attention" | "leaders";
-
 /** One compact ranked row: name, a small bar, the number */
 export function RankRow({ name, sub, value, level, active, onEnter, index }: { name: string; sub: string; value: number; level: Level; active?: boolean; onEnter?: () => void; index: number }) {
     return (
@@ -169,7 +167,6 @@ export default function AdminOverview({ company, departments, executiveLeaders, 
     scope: Scope; onScope: (s: Scope) => void; loading: boolean; rules?: ReactNode; onWiden: () => void;
 }) {
     const [hover, setHover] = useState<number | null>(null);
-    const [side, setSide] = useState<Side>("top");
 
     const items: Bubble[] = useMemo(() => departments.map((d) => {
         const target = num(d.AvgTargetPercent);
@@ -177,8 +174,6 @@ export default function AdminOverview({ company, departments, executiveLeaders, 
     }), [departments]);
 
     const counts = useMemo(() => items.reduce((c, r) => ({ ...c, [r.level]: c[r.level] + 1 }), { High: 0, "At Par": 0, Low: 0 } as Record<Level, number>), [items]);
-    const top = useMemo(() => [...items].sort((a, b) => b.target - a.target).slice(0, 12), [items]);
-    const attention = useMemo(() => [...items].sort((a, b) => a.target - b.target).slice(0, 12), [items]);
     const leaders = useMemo(() => [...executiveLeaders].map((l) => ({ id: num(l.ELID), name: l.ELName ?? "Unknown", target: num(l.AvgTargetPercent), util: num(l.AvgUtilizationPercent), depts: num(l.TotalDepts) })).sort((a, b) => b.target - a.target), [executiveLeaders]);
     void functionalLeaders;
 
@@ -189,7 +184,7 @@ export default function AdminOverview({ company, departments, executiveLeaders, 
         <div className="flex flex-col gap-3 lg:h-[calc(100vh-300px)] lg:min-h-[520px]">
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <Segmented size="sm" label="Departments shown" value={scope} onChange={onScope}
-                    options={[{ key: "all", label: "Whole company" }, { key: "business", label: "Business" }, { key: "support", label: "Support functions" }]} />
+                    options={[{ key: "all", label: "Company Overview" }, { key: "business", label: "Business Team" }, { key: "support", label: "Support Team" }]} />
                 <div className="flex items-center gap-4 text-[11px] text-ink-500 dark:text-ink-400">
                     {loading && <span className="eyebrow animate-pulse">Updating…</span>}
                     {(["High", "At Par", "Low"] as Level[]).map((l) => <span key={l} className="flex items-center gap-1.5"><span className={cn("h-2 w-2", LEVEL_STYLE[l].bar)} aria-hidden />{l} <b className="text-ink-900 dark:text-white">{counts[l]}</b></span>)}
@@ -232,13 +227,11 @@ export default function AdminOverview({ company, departments, executiveLeaders, 
 
                     {/* Ranked lists + rules */}
                     <Reveal index={2} className="flex min-h-0 flex-col border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900">
-                        <div className="border-b border-ink-200 p-3 dark:border-white/10">
-                            <Segmented size="sm" label="Ranking" value={side} onChange={setSide} options={[{ key: "top", label: "Top" }, { key: "attention", label: "Needs help" }, { key: "leaders", label: "Leaders" }]} />
+                        <div className="border-b border-ink-200 px-4 py-3 dark:border-white/10">
+                            <h2 className="text-xs font-bold uppercase tracking-wide text-ink-900 dark:text-white">Leaders</h2>
                         </div>
-                        <ul key={side} className="min-h-[170px] flex-1 divide-y divide-ink-100 overflow-y-auto dark:divide-white/5">
-                            {side === "leaders"
-                                ? leaders.map((l, i) => <RankRow key={l.id} index={i} name={l.name} sub={`${l.depts} ${l.depts === 1 ? "department" : "departments"} · util ${l.util.toFixed(0)}%`} value={l.target} level={levelOf(l.target)} />)
-                                : (side === "top" ? top : attention).map((d, i) => <RankRow key={d.id} index={i} name={d.name} sub={`${d.users} ${d.users === 1 ? "person" : "people"} · util ${d.util.toFixed(0)}% · ${d.hours.toFixed(1)}h`} value={d.target} level={d.level} active={hover === d.id} onEnter={() => setHover(d.id)} />)}
+                        <ul className="min-h-[170px] flex-1 divide-y divide-ink-100 overflow-y-auto dark:divide-white/5">
+                            {leaders.map((l, i) => <RankRow key={l.id} index={i} name={l.name} sub={`${l.depts} ${l.depts === 1 ? "department" : "departments"} · util ${l.util.toFixed(0)}%`} value={l.target} level={levelOf(l.target)} />)}
                         </ul>
                         <Rules />
                     </Reveal>

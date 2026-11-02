@@ -18,18 +18,11 @@ import {
     DropdownItem,
     Tabs,
     Tab,
-    Drawer,
-    DrawerContent,
-    DrawerHeader,
-    DrawerBody,
-    DrawerFooter,
-    Button,
     Select, SelectItem
 } from "@/components/ui";
 
 import { title } from "@/components/primitives";
 import axios from "axios";
-import { EmptyContainer } from "@/components";
 import EfficiencyTable from "@/components/table2";
 import ELDashboard from "@/components/ElDashboard";
 import AdminOverview from "@/components/overview/AdminOverview";
@@ -670,13 +663,10 @@ export default function DashboardPage() {
     }, []);
     const dateModification = useDashboardStore((state) => state.dateModification);
     const toggleDateModification = useDashboardStore((state) => state.toggleDateModification);
-    const [isLogDrawerOpen, setIsLogDrawerOpen] = useState(false);
-    const [logUsers, setLogUsers] = useState<any[]>([]);
     const [refresh, setRefresh] = useState(false);
     // Company view starts on a month so there is something to see; people see their last week
     const [dateRange, setDateRange] = useState<DateRange>(() => getTodayRange(user?.userRole === 1 ? 30 : 7));
     const [goalDateRange, setGoalDateRange] = useState<DateRange>(() => getTodayRange(7));
-    const [dateRangeLog, setDateRangeLog] = useState<DateRange>(() => getTodayRange(7));
     const [selectedDepartment, setSelectedDepartment] = useState(
         user?.departmentID ? String(user.departmentID) : ""
     );
@@ -818,22 +808,6 @@ export default function DashboardPage() {
         handleRunReport();
     }, [handleRunReport]);
 
-    const handleLog = useCallback(async () => {
-        setLoading(true);
-        try {
-            const res = await axios.get(
-                `/t2.0/authentificationUtilization/MissingData?startDate=${dateRangeLog.startDate}&endDate=${dateRangeLog.endDate}`,
-                { headers: { "Content-Type": "application/json" } }
-            );
-            setLogUsers(res.data ?? []);
-            addToast({ title: "Success", description: "Log Successfully Generated", color: "success" });
-        } catch {
-            addToast({ title: "Error", description: "Failed to fetch log data", color: "danger" });
-        } finally {
-            setLoading(false);
-        }
-    }, [dateRangeLog]);
-
     const handleDownload = useCallback(async () => {
         setLoading(true);
         try {
@@ -881,65 +855,11 @@ export default function DashboardPage() {
     // ── JSX ───────────────────────────────────────────────────────────────────
     return (
         <div>
-            {/* ── Missing Logs Drawer ─────────────────────────────────────────── */}
-            <Drawer size="4xl" isOpen={isLogDrawerOpen} onOpenChange={setIsLogDrawerOpen}>
-                <DrawerContent>
-                    {(onClose) => (
-                        <>
-                            <DrawerHeader className="flex flex-col gap-1">Person not Logged</DrawerHeader>
-                            <DrawerBody>
-                                <div className="flex justify-center items-center gap-3">
-                                    <DateRangeDropdown value={dateRangeLog} onChange={setDateRangeLog} />
-                                    <Button color="primary" onPress={handleLog}>
-                                        Run Log
-                                    </Button>
-                                </div>
-
-                                {logUsers.length === 0 && !loading && (
-                                    <EmptyContainer title="No Missing Logs" description="No users found for selected date range" />
-                                )}
-
-                                {logUsers.length > 0 && (
-                                    <div className="divide-y rounded-lg border mt-4">
-                                        {logUsers.map((u) => (
-                                            <div key={u.userID} className="p-3 flex flex-col">
-                                                <span className="font-medium text-sm">{u.userName}</span>
-                                                <span className="text-xs text-ink-500 dark:text-ink-400">{u.userEmail}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </DrawerBody>
-                            <DrawerFooter>
-                                <Button color="danger" variant="light" onPress={onClose}>
-                                    Close
-                                </Button>
-                            </DrawerFooter>
-                        </>
-                    )}
-                </DrawerContent>
-            </Drawer>
-
             {/* ── Page Header ─────────────────────────────────────────────────── */}
             <div className="mb-3 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
                 <PageTitle title="Taskly overview" subtitle="View detailed insights into your department's daily work" />
 
                 <div className="flex items-center gap-2 whitespace-nowrap">
-                    <Button
-                        size="sm"
-                        variant="bordered"
-                        onPress={() => {
-                            window.open("https://docs.google.com/spreadsheets/d/1qoniokvvEugnYDyaISblNbrCoeH7cJrdt_HksaWT-Vs/edit?gid=1681648508#gid=1681648508");
-                        }}
-                    >
-                        View goal & target
-                    </Button>
-
-                    {user?.userRole === 1 && !user?.departmentID && (
-                        <Button size="sm" variant="bordered" onPress={() => setIsLogDrawerOpen(true)}>
-                            Missing logs
-                        </Button>
-                    )}
                     <DateRangeDropdown
                         value={dateRange}
                         onChange={setDateRange}

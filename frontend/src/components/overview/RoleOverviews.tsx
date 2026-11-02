@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { cn } from "@heroui/theme";
 
-import { Segmented } from "@/components/page";
 import { Bullet, DeptMap, RankRow, Rules, Speedometer, type Bubble } from "./AdminOverview";
 import { CountUp, LEVEL_STYLE, Reveal, levelOf, num, type Level } from "./parts";
 
@@ -125,7 +124,6 @@ function Empty({ title, text, onWiden }: { title: string; text: string; onWiden:
 // `leader` is one leader from DashBoardAll (leader -> departments -> users), already rolled up by the API.
 export function TeamOverview({ leader, loading, onWiden }: { leader: any | null; loading: boolean; onWiden: () => void }) {
     const [hover, setHover] = useState<number | null>(null);
-    const [side, setSide] = useState<"top" | "attention" | "departments">("top");
 
     const departments: any[] = leader?.departments ?? [];
 
@@ -143,8 +141,6 @@ export function TeamOverview({ leader, loading, onWiden }: { leader: any | null;
 
     const headcount = useMemo(() => new Set(departments.flatMap((d) => (d.users ?? []).map((u: any) => u.UserID))).size, [departments]);
     const counts = useMemo(() => people.reduce((c, p) => ({ ...c, [p.level]: c[p.level] + 1 }), { High: 0, "At Par": 0, Low: 0 } as Record<Level, number>), [people]);
-    const top = useMemo(() => [...people].sort((a, b) => b.target - a.target).slice(0, 12), [people]);
-    const attention = useMemo(() => [...people].sort((a, b) => a.target - b.target).slice(0, 12), [people]);
     const depts = useMemo(() => departments.map((d) => ({ id: d.DepartmentID as number, name: spaced(d.DepartmentName), target: num(d.AvgTargetPercent), util: num(d.AvgUtilizationPercent), hours: num(d.AvgTotalWork), people: (d.users ?? []).length as number })).sort((a, b) => b.target - a.target), [departments]);
 
     const name: string = leader?.ELName ?? leader?.FLName ?? "";
@@ -187,13 +183,11 @@ export function TeamOverview({ leader, loading, onWiden }: { leader: any | null;
                     </Reveal>
 
                     <Reveal index={2} className="flex min-h-0 flex-col border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900">
-                        <div className="border-b border-ink-200 p-3 dark:border-white/10">
-                            <Segmented size="sm" label="Ranking" value={side} onChange={setSide} options={[{ key: "top", label: "Top" }, { key: "attention", label: "Needs help" }, { key: "departments", label: "Departments" }]} />
+                        <div className="border-b border-ink-200 px-4 py-3 dark:border-white/10">
+                            <h2 className="text-xs font-bold uppercase tracking-wide text-ink-900 dark:text-white">Departments</h2>
                         </div>
-                        <ul key={side} className="min-h-[170px] flex-1 divide-y divide-ink-100 overflow-y-auto dark:divide-white/5">
-                            {side === "departments"
-                                ? depts.map((d, i) => <RankRow key={d.id} index={i} name={d.name} sub={`${d.people} ${d.people === 1 ? "person" : "people"} · util ${d.util.toFixed(0)}% · ${d.hours.toFixed(1)}h`} value={d.target} level={levelOf(d.target)} />)
-                                : (side === "top" ? top : attention).map((p, i) => <RankRow key={p.id} index={i} name={p.name} sub={`${p.sub ?? ""} · util ${p.util.toFixed(0)}% · ${p.hours.toFixed(1)}h`} value={p.target} level={p.level} active={hover === p.id} onEnter={() => setHover(p.id)} />)}
+                        <ul className="min-h-[170px] flex-1 divide-y divide-ink-100 overflow-y-auto dark:divide-white/5">
+                            {depts.map((d, i) => <RankRow key={d.id} index={i} name={d.name} sub={`${d.people} ${d.people === 1 ? "person" : "people"} · util ${d.util.toFixed(0)}% · ${d.hours.toFixed(1)}h`} value={d.target} level={levelOf(d.target)} />)}
                         </ul>
                         <Rules />
                     </Reveal>

@@ -620,6 +620,9 @@ import axios from "axios";
 import { Segmented } from "@/components/page";
 import DashboardFilters from "./pmsdashboardapi";
 import AdminAnalytics from "./AdminAnalytics";
+import { hasModuleAccess, hasModuleKey } from "@/lib/permissions";
+import PmsCoverage, { type Overview } from "./PmsCoverage";
+import MonthlyAnalytics from "./MonthlyAnalytics";
 import {
     finalGradeFromPercent,
     finalGradeBand,
@@ -1311,10 +1314,15 @@ function SummaryCard({
 
 export default function QuarterlyReviewDashboard() {
     const [reviews, setReviews] = useState<any[]>([]);
-    const [monthly, setMonthly] = useState(false);
-    const [view, setView] = useState<"person" | "analytics">("person");
+    // Quarterly / Manager feedback views are separate permissions. A session older than them falls back to the PMS Dashboard grant.
+    const viewAllowed = (id: string) => (hasModuleKey(id) ? hasModuleAccess(id) : hasModuleAccess("pms_dashboard"));
+    const canQuarterly = viewAllowed("pms_dash_quarterly");
+    const canFeedback = viewAllowed("pms_dash_feedback");
+    const [monthly, setMonthly] = useState(!canQuarterly && canFeedback);
+    const [view, setView] = useState<"person" | "analytics">("analytics"); // company view first; only people allowed to see it get it
     const [pickedId, setPickedId] = useState<any>(null);
     const [allReviews, setAllReviews] = useState<any[]>([]);
+    const [overview, setOverview] = useState<Overview | null>(null);
 
     const authUserLD = localStorage.getItem("authUserLD");
     const authUser = authUserLD ? JSON.parse(authUserLD) : null;
@@ -1344,6 +1352,14 @@ export default function QuarterlyReviewDashboard() {
         }).then((r) => setAllReviews(r.data || [])).catch(() => setAllReviews([]));
     }, [view, isPrivileged]);
 
+    // Who has been reviewed and who has not, plus the monthly manager feedback
+    useEffect(() => {
+        if (view !== "analytics" || !isPrivileged) return;
+        axios.get("/t2.0/authentificationUtilization/pms-overview", { headers: { Authorization: `Bearer ${authUser?.token}` } })
+            .then((r) => setOverview(r.data))
+            .catch(() => setOverview(null));
+    }, [view, isPrivileged]);
+
     const sorted = useMemo(() => [...reviews].sort(newestFirst), [reviews]);
     const current = sorted.find((r) => r.id === pickedId) ?? sorted[0] ?? null;
     // Tabs read in calendar order (Q1, Q2, …); the newest one is still the one opened by default
@@ -1361,7 +1377,7 @@ export default function QuarterlyReviewDashboard() {
                     label="Review type"
                     value={monthly ? "manager" : "employee"}
                     onChange={(v) => setMonthly(v === "manager")}
-                    options={[{ key: "employee", label: "Quarterly reviews" }, { key: "manager", label: "Manager feedback" }]}
+                    options={[...(canQuarterly ? [{ key: "employee", label: "Quarterly reviews" }] : []), ...(canFeedback ? [{ key: "manager", label: "Manager feedback" }] : [])]}
                 />
                 {isPrivileged && (
                     <Segmented
@@ -1375,7 +1391,14 @@ export default function QuarterlyReviewDashboard() {
             </div>
 
             {view === "analytics" && isPrivileged ? (
-                allReviews.length > 0 ? <AdminAnalytics reviews={allReviews} /> : <p className="border border-dashed border-ink-300 py-16 text-center text-sm text-ink-500 dark:border-white/15">Loading analytics…</p>
+                <div className="flex flex-col gap-2">
+                    {overview
+                        ? <PmsCoverage key={monthly ? "monthly" : "quarterly"} type={monthly ? "monthly" : "quarterly"} overview={overview} />
+                        : <p className="border border-dashed border-ink-300 py-16 text-center text-sm text-ink-500 dark:border-white/15">Loading overview…</p>}
+                    {monthly
+                        ? (overview ? <MonthlyAnalytics overview={overview} /> : null)
+                        : (allReviews.length > 0 ? <AdminAnalytics reviews={allReviews} /> : null)}
+                </div>
             ) : (
                 <>
                     <DashboardFilters reviews={reviews} setReviews={setReviews} monthly={monthly} onFiltersChange={handleFiltersChange} />

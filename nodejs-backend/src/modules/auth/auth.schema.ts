@@ -31,6 +31,11 @@ export const CreateUserSchema = z.object({
   elManagerId: z.number().int().positive().optional().nullable(),
   appraisalCycle: z.string().optional().nullable(),
   feedbackresolverteam: z.string().optional().nullable(),
+  designation: z.string().trim().max(120).optional().nullable(),
+  jobLevel: z.string().trim().max(20).optional().nullable(),
+  band: z.string().trim().max(20).optional().nullable(),
+  isNewJoiner: z.boolean().optional(),
+  joiningCycle: z.enum(['APRIL', 'OCTOBER']).optional().nullable(),
 });
 
 export const UpdateUserSchema = z.object({
@@ -45,6 +50,11 @@ export const UpdateUserSchema = z.object({
   elManagerId: z.number().int().positive().optional().nullable(),
   appraisalCycle: z.string().optional().nullable(),
   feedbackresolverteam: z.string().optional().nullable(),
+  designation: z.string().trim().max(120).optional().nullable(),
+  jobLevel: z.string().trim().max(20).optional().nullable(),
+  band: z.string().trim().max(20).optional().nullable(),
+  isNewJoiner: z.boolean().optional(),
+  joiningCycle: z.enum(['APRIL', 'OCTOBER']).optional().nullable(),
 });
 
 export const UsersReadSchema = z.object({

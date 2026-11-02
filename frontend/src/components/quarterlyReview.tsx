@@ -28,12 +28,9 @@ import { finalGradeFromPercent, finalGradeLabelFromPercent } from "../lib/pmsGra
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const QUARTERS = ["Q1", "Q2", "Q3", "Q4"];
-const currentYear = new Date().getFullYear();
+import { yearRange } from "@/lib/years";
 
-const YEARS = Array.from(
-    { length: 5 },
-    (_, index) => currentYear - 2 + index
-);
+const YEARS = yearRange(1);
 const FEEDBACK_CATS = ["Exceeds Expectations", "Meets Expectations", "Needs Improvement"];
 const FEEDBACK_TYPES = ["Productivity", "Quality", "Ownership", "Communication"];
 const STATUSES = ["On Track", "At Risk", "Delayed"];

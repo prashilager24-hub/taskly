@@ -7,6 +7,7 @@ import { authenticate } from '../../middlewares/auth';
 import { validate } from '../../middlewares/validate';
 import { z } from 'zod';
 import { sendSuccess } from '../../utils/response';
+import { javaOk } from '../../utils/javaCompat';
 import { reviewStatusSummary } from '../reviews/pmsReviews.service';
 import * as svc from './userGoalData.service';
 
@@ -20,6 +21,9 @@ const ListFilterSchema = z.object({
   departmentID: optId,
   goalID: optId,
   eLID: optId,
+  fLID: optId,
+  goalStartDate: z.string().nullish(),
+  goalEndDate: z.string().nullish(),
   startDate: z.string().nullish(),
   endDate: z.string().nullish(),
   searchText: z.string().nullish(),
@@ -44,7 +48,9 @@ router.post('/list', validate(ListFilterSchema), async (req, res, next) => {
   try {
     const page = req.query['page'] ? Number(req.query['page']) : undefined;
     const size = req.query['size'] ? Number(req.query['size']) : undefined;
-    sendSuccess(res, await svc.listUserGoalData(req.body, page, size));
+    const sortBy = req.query['sortBy'] ? String(req.query['sortBy']) : undefined;
+    // Java answers with { status, statusCode, message, response }
+    res.json(javaOk('Paginated user goal data retrieved successfully', await svc.listUserGoalData(req.body, page, size, sortBy)));
   } catch (e) { next(e); }
 });
 

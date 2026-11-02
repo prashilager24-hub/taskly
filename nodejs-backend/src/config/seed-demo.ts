@@ -49,7 +49,7 @@ async function main() {
   const hash = await bcrypt.hash(PASSWORD, 10);
 
   // ── Roles: privilege maps the sidebar understands ───────────────────────────
-  const employee = { dashboard: ['read'], reports: ['read'], perf: ['read'], mydata: ['read'], goals: ['read'], dataentry: ALL, pms: ['read', 'create', 'update'], hrfeedback: ['read', 'create'] };
+  const employee = { dashboard: ['read'], reports: ['read'], perf: ['read'], mydata: ['read'], goals: ['read'], dataentry: ALL, pms: ['read', 'create', 'update'], hrfeedback: ['read', 'create'], hr_onboarding: ['read', 'create'], hr_query: ['read', 'create'], hr_engagement: ['read', 'create'] };
   const leader = { ...employee, entryApproval: ALL, userHistory: ['read'], queryReport: ['read'], pms: ALL };
   await pool.query('UPDATE AMRole SET RolePrivileges = ?, RoleDescription = ? WHERE RoleID = 2', [priv(employee), 'Standard employee access']);
   await pool.query('UPDATE AMRole SET RolePrivileges = ?, RoleDescription = ? WHERE RoleID = 3', [priv(leader), 'Executive Leader — their departments']);

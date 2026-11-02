@@ -2,13 +2,15 @@ import { useState, useEffect } from "react";
 import { Plus, Send, Search, X, ArrowLeft } from "lucide-react";
 import { DayPicker } from "react-day-picker";
 import { format } from "date-fns";
-import { Button, Input, Select, SelectItem, Chip, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "../../../../../../components/ui";
+import { Button, Input, Select, SelectItem, Chip, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerHeader } from "../../../../../../components/ui";
 import * as api from "../../lib/api";
 import {
   Screen, Field, Section, Pill, Cards, CardStat,
   Distribution, QuestionAverages, THead,
 } from "../../components/ui";
-import { ONB_SHORT, ONB_HR_BLOCK_START, ONB_QUESTIONS } from "../../lib/questions";
+import { onboardingStructure, dominantOnboarding } from "../../lib/surveyStructure";
+import { hasModuleAccess } from "../../../../../../lib/permissions";
+import SurveyTemplates from "../templates/SurveyTemplates";
 import { avg, one, pct, surveyScore } from "../../lib/metrics";
 
 export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) {
@@ -19,6 +21,16 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("90");
   const [detailSurvey, setDetailSurvey] = useState(null);
+  const detailSt = onboardingStructure(detailSurvey);
+  const [managing, setManaging] = useState(false);
+  const [templates, setTemplates] = useState([]);
+  const [templateId, setTemplateId] = useState("");
+  const canManageTemplates = hasModuleAccess("hr_onb_templates");
+
+  const loadTemplates = () => api.fetchTemplates("ONBOARDING")
+    .then((list) => { setTemplates(list); setTemplateId((cur) => (cur && list.some((t) => String(t.id) === cur) ? cur : String((list.find((t) => t.isDefault) || list[0] || {}).id || ""))); })
+    .catch(() => setTemplates([]));
+  useEffect(() => { if (sending) loadTemplates(); }, [sending]);
 
   const [allUsers, setAllUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -32,9 +44,14 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
       .finally(() => setLoadingUsers(false));
   }, [sending]);
 
-  const filteredUsers = allUsers.filter((u) =>
-    u.userName.toLowerCase().includes(userSearch.toLowerCase())
-  );
+  // new joiners first, so they are the ones HR sends to
+  const filteredUsers = allUsers
+    .filter((u) => u.userName.toLowerCase().includes(userSearch.toLowerCase()))
+    .sort((a, b) => Number(!!b.isNewJoiner) - Number(!!a.isNewJoiner));
+  const cycleLabel = (c) => (c === "APRIL" ? "Apr cycle" : c === "OCTOBER" ? "Oct cycle" : "");
+  const NewTag = ({ u }) => (u.isNewJoiner
+    ? <span className="shrink-0 bg-primary-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-700">New{u.joiningCycle ? ` · ${cycleLabel(u.joiningCycle)}` : ""}</span>
+    : null);
 
   const toggleUser = (user) => {
     setSelectedUsers((prev) =>
@@ -50,8 +67,11 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
 
   const submitted = surveys.filter((s) => s.status === "submitted");
   const scores = submitted.map(surveyScore);
-  const processBlock = submitted.map((s) => avg(s.answers.slice(0, ONB_HR_BLOCK_START)));
-  const hrBlock = submitted.map((s) => avg(s.answers.slice(ONB_HR_BLOCK_START)));
+  // each survey is split into its process and HR-team questions by its own template
+  const processBlock = submitted.map((s) => avg(s.answers.slice(0, onboardingStructure(s).hrBlockStart)));
+  const hrBlock = submitted.filter((s) => onboardingStructure(s).hrBlockStart < s.answers.length).map((s) => avg(s.answers.slice(onboardingStructure(s).hrBlockStart)));
+  // surveys that share the most common set of questions line up in the "average by question" chart
+  const common = dominantOnboarding(submitted);
 
   return (
     <>
@@ -68,9 +88,12 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
               <SelectItem key="30">Last 30 days</SelectItem>
             </Select>
           </div>
-          <Button size="sm" color="primary" className="text-white" onPress={() => setSending(true)} startContent={<Plus size={14} />}>
-            Send new survey
-          </Button>
+          <div className="flex gap-2">
+            {canManageTemplates && <Button size="sm" variant="bordered" onPress={() => setManaging(true)}>Manage templates</Button>}
+            <Button size="sm" color="primary" className="text-white" onPress={() => setSending(true)} startContent={<Plus size={14} />}>
+              Send new survey
+            </Button>
+          </div>
         </div>
 
         <table className="w-full text-sm">
@@ -94,7 +117,7 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
                 </td>
                 <td className="py-3 font-semibold">
                   {s.status === "submitted"
-                    ? one(avg(s.answers.slice(ONB_HR_BLOCK_START)))
+                    ? (onboardingStructure(s).hrBlockStart < s.answers.length ? one(avg(s.answers.slice(onboardingStructure(s).hrBlockStart))) : "—")
                     : <span className="text-ink-400 font-normal">—</span>}
                 </td>
               </tr>
@@ -134,13 +157,13 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
 
           <Cards>
             <CardStat hero label="Overall score" value={one(surveyScore(detailSurvey))} unit="/10" />
-            <CardStat label="Process block (Q1–Q4)" value={one(avg(detailSurvey.answers.slice(0, ONB_HR_BLOCK_START)))} unit="/10" />
-            <CardStat label="HR team block (Q5–Q7)" value={one(avg(detailSurvey.answers.slice(ONB_HR_BLOCK_START)))} unit="/10" />
+            <CardStat label={`Process block (Q1–Q${detailSt.hrBlockStart})`} value={one(avg(detailSurvey.answers.slice(0, detailSt.hrBlockStart)))} unit="/10" />
+            {detailSt.hrBlockStart < detailSurvey.answers.length && <CardStat label={`HR team block (Q${detailSt.hrBlockStart + 1}–Q${detailSurvey.answers.length})`} value={one(avg(detailSurvey.answers.slice(detailSt.hrBlockStart)))} unit="/10" />}
           </Cards>
 
           <Section>Individual answers</Section>
           <div className="space-y-3">
-            {ONB_QUESTIONS.map((q, i) => (
+            {detailSt.questions.map((q, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div className="text-xs text-ink-600 dark:text-ink-300 flex-1 min-w-0" title={q}>
                   <span className="font-secondary text-ink-400 mr-1.5">Q{i + 1}.</span>
@@ -172,10 +195,15 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
         </Screen>
       )}
 
-      {sending && (
-        <Screen id="1.4" title="Send new survey" sub="Slide-over from the console">
-          <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))" }}>
-            <div>
+      <Drawer isOpen={sending} onOpenChange={(o) => !o && setSending(false)} placement="right" size="xl">
+        <DrawerContent>
+          {() => (
+            <>
+              <DrawerHeader className="flex flex-col gap-0.5">
+                <span className="text-lg font-semibold">Send new survey</span>
+                <span className="text-xs font-normal text-ink-500 dark:text-ink-400">Onboarding Experience Survey, to the new joiners you pick</span>
+              </DrawerHeader>
+              <DrawerBody className="gap-5">
               <Field label="Recipients (new joiners)">
                 <div className="border border-ink-300 dark:border-white/15 rounded-md bg-white dark:bg-ink-900">
                   <div className="flex items-center gap-2 px-2.5 py-1.5 border-b border-ink-200 dark:border-white/10">
@@ -212,7 +240,7 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
                       ))}
                     </div>
                   )}
-                  <div className="max-h-48 overflow-y-auto">
+                  <div className="max-h-72 overflow-y-auto">
                     {filteredUsers.length === 0 && !loadingUsers && (
                       <div className="px-3 py-2.5 text-xs text-ink-400">No users found.</div>
                     )}
@@ -230,7 +258,7 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="truncate">{u.userName}</div>
+                            <div className="flex items-center gap-2"><span className="truncate">{u.userName}</span><NewTag u={u} /></div>
                             <div className="text-[11px] text-ink-400 truncate">{u.departmentName || u.userEmail}</div>
                           </div>
                         </button>
@@ -242,11 +270,12 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
                   <div className="text-[11px] text-ink-400 mt-1">{selectedUsers.length} recipient{selectedUsers.length > 1 ? "s" : ""} selected</div>
                 )}
               </Field>
-              <Field label="Survey">
-                <Input isReadOnly variant="bordered" value="Onboarding Experience Survey — 7 ratings + 1 open question" />
+              <Field label="Survey template">
+                <Select variant="bordered" aria-label="Survey template" selectedKeys={templateId ? [templateId] : []} disallowEmptySelection
+                  onSelectionChange={(k) => setTemplateId(String(Array.from(k)[0] ?? ""))}>
+                  {templates.map((t) => <SelectItem key={String(t.id)} textValue={t.name}>{t.name}{t.isDefault ? " (default)" : ""} · {t.questionCount} questions</SelectItem>)}
+                </Select>
               </Field>
-            </div>
-            <div>
               <Field label="Due date">
                 <Dropdown>
                   <DropdownTrigger>
@@ -269,17 +298,16 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
               <Field label="Notify on submission">
                 <Input variant="bordered" defaultValue={notifyList} />
               </Field>
-            </div>
-          </div>
-          <div className="flex gap-2.5">
+              </DrawerBody>
+              <DrawerFooter>
             <Button
               size="sm"
               color="primary"
               className="text-white"
-              isDisabled={selectedUsers.length === 0 || !dueDate}
+              isDisabled={selectedUsers.length === 0 || !dueDate || !templateId}
               startContent={<Send size={14} />}
               onPress={() => {
-                selectedUsers.forEach((u) => onSend(u.userName, format(dueDate, "dd MMM yyyy")));
+                selectedUsers.forEach((u) => onSend(u.userName, format(dueDate, "dd MMM yyyy"), templateId ? Number(templateId) : undefined));
                 setSelectedUsers([]);
                 setDueDate(null);
                 setSending(false);
@@ -288,9 +316,13 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
               Send survey
             </Button>
             <Button size="sm" variant="flat" onPress={() => setSending(false)}>Cancel</Button>
-          </div>
-        </Screen>
-      )}
+              </DrawerFooter>
+            </>
+          )}
+        </DrawerContent>
+      </Drawer>
+
+      <SurveyTemplates kind="ONBOARDING" isOpen={managing} onClose={() => setManaging(false)} onChanged={loadTemplates} />
 
       <Screen id="1.5" title="Onboarding scores" sub="Computed live from the responses above">
         <Cards>
@@ -305,7 +337,7 @@ export default function OnboardingHR({ surveys = [], notifyList = "", onSend }) 
         <Distribution values={submitted.flatMap((s) => s.answers)} />
 
         <Section>Average by question</Section>
-        <QuestionAverages labels={ONB_SHORT} rows={submitted.map((s) => s.answers)} />
+        <QuestionAverages labels={common.st.short} rows={common.surveys.map((s) => s.answers)} />
 
         <Section>Q8 — what to improve</Section>
         <div className="space-y-2.5">

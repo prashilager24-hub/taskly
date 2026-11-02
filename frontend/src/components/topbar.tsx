@@ -3,9 +3,10 @@ import { useEffect } from "react";
 import { Dropdown, DropdownMenu, DropdownTrigger, DropdownItem } from "@/components/ui";
 import SwitchUserModal from "./SwitchUserModal";
 import ThemeToggle from "./ThemeToggle";
+import GoalTargetDoc from "./GoalTargetDoc";
 import NotificationBell from "./notifications/NotificationBell";
 import { pageMeta } from "./sidebar";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 // Custom Icons
 const MenuIcon = (props: any) => (
@@ -35,6 +36,7 @@ interface TopbarProps {
 }
 
 export const Topbar: React.FC<TopbarProps> = ({ toggleSidebar, title }) => {
+    const navigate = useNavigate();
     const meta = pageMeta(useLocation().pathname);
 
     const authUserLD = localStorage.getItem("authUserLD");
@@ -84,6 +86,7 @@ export const Topbar: React.FC<TopbarProps> = ({ toggleSidebar, title }) => {
 
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
                 <SwitchUserModal />
+                <GoalTargetDoc />
                 <ThemeToggle />
 
                 <NotificationBell />
@@ -109,6 +112,8 @@ export const Topbar: React.FC<TopbarProps> = ({ toggleSidebar, title }) => {
                             <p className="eyebrow">Signed in as</p>
                             <p className="text-sm font-medium">{user?.email ?? user?.name}</p>
                         </DropdownItem>
+
+                        <DropdownItem key="myprofile" textValue="My profile" onPress={() => navigate("/profile")}>My profile</DropdownItem>
 
                         <DropdownItem
                             key="logout"

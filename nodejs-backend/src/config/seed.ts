@@ -17,8 +17,8 @@ async function seed() {
   const ALL_ACTIONS = ['read', 'create', 'update', 'delete'];
   const MODULE_IDS = [
     'dashboard', 'reports', 'perf', 'mydata', 'goals', 'entryApproval', 'userHistory', 'queryReport',
-    'dataentry', 'admin', 'accessmgmt', 'deptmgmt', 'taskmgmt', 'targetmgmt', 'goalmgmt',
-    'pms', 'hrfeedback',
+    'dataentry', 'admin', 'accessmgmt', 'deptmgmt', 'datamgmt', 'taskmgmt', 'targetmgmt', 'goalmgmt',
+    'pms', 'hrfeedback', 'hr_onboarding', 'hr_query', 'hr_engagement', 'hr_onb_templates', 'hr_eng_templates',
   ];
   const rootPrivileges = JSON.stringify(Object.fromEntries(MODULE_IDS.map((m) => [m, ALL_ACTIONS])));
   await pool.execute(`

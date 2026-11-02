@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { calculateAndSaveDailyEfficiency } from '../../jobs/efficiencyCalculation';
 import { authenticate } from '../../middlewares/auth';
 import { validate } from '../../middlewares/validate';
 import { z } from 'zod';
@@ -89,17 +90,13 @@ router.post('/download-efficiency-summary', validate(EfficiencySummaryFilterSche
   } catch (e) { next(e); }
 });
 
-// GET /calculateAll  → triggers efficiency recalculation (admin only)
+// GET /calculateAll  → rebuilds the efficiency and utilization summary (also runs every day at 6:00 AM IST)
 // Port of Java EfficiencyUtilizationController.calculateAndSaveEfficiencyUtilization()
 router.get('/calculateAll', async (_req, res, next) => {
   try {
-    // Recalculate is a heavy background operation — return immediately
-    // The real calculation logic lives in EfficiencyServiceImpl.java (843 lines)
-    // and is a candidate for a separate scheduled job port.
-    // For now: respond with acknowledgement; full port tracked separately.
-    res
-      .status(202)
-      .json({ status: true, message: 'Efficiency and Utilization summary recalculation accepted' });
+    const result = await calculateAndSaveDailyEfficiency();
+    if (result.skipped) { res.status(202).send(result.reason); return; }
+    res.status(200).send(' Efficiency and Utilization summary calculated and saved successfully.');
   } catch (e) { next(e); }
 });
 

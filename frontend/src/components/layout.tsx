@@ -23,6 +23,7 @@ export default function Layout({ children }) {
                 try {
                     const me = JSON.parse(localStorage.getItem("authUserLD") || "null");
                     if (me && fresh.joinedAt && me.joinedAt !== fresh.joinedAt) { me.joinedAt = fresh.joinedAt; localStorage.setItem("authUserLD", JSON.stringify(me)); joinedChanged = true; }
+                    if (me && typeof fresh.isNewJoiner === "boolean" && me.isNewJoiner !== fresh.isNewJoiner) { me.isNewJoiner = fresh.isNewJoiner; localStorage.setItem("authUserLD", JSON.stringify(me)); joinedChanged = true; }
                 } catch { /* ignore */ }
                 const before = localStorage.getItem("roles");
                 const next = JSON.stringify(fresh);

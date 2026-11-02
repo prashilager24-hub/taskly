@@ -11,6 +11,8 @@ import { authenticate } from '../../middlewares/auth';
 import { sendSuccess } from '../../utils/response';
 import * as svc from './reviews.service';
 import * as pms from './pmsReviews.service';
+import { pmsOverview } from './pmsOverview.service';
+import { requireModule } from '../../middlewares/permission';
 
 // ── Monthly Reviews (Java contract: camelCase DTOs, plain arrays) ────────────
 const monthlyRouter = Router();
@@ -90,7 +92,16 @@ goalEfficiencyRouter.post('/list', async (req, res, next) => {
   try { sendSuccess(res, await svc.getGoalEfficiency(req.body)); } catch (e) { next(e); }
 });
 
-export { monthlyRouter, quarterlyRouter, quarterlyAliasRouter, goalEfficiencyRouter };
+// ── PMS dashboard overview (company analytics) ───────────────────────────────
+const pmsOverviewRouter = Router();
+pmsOverviewRouter.use(authenticate, requireModule('pms_dashboard'));
+
+// GET /pms-overview  → who should be reviewed, quarterly reviews, monthly manager feedback
+pmsOverviewRouter.get('/', async (_req, res, next) => {
+  try { res.json(await pmsOverview()); } catch (e) { next(e); }
+});
+
+export { monthlyRouter, quarterlyRouter, quarterlyAliasRouter, goalEfficiencyRouter, pmsOverviewRouter };
 
 // Default export for backward-compat (not used when app.ts imports named)
 export default monthlyRouter;

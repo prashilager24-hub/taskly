@@ -8,7 +8,9 @@ import {
   Screen, Field, Section, Pill, Cards, CardStat, Distribution,
   QuestionAverages, Empty, OpenPoint, THead,
 } from "../../components/ui";
-import { ENG_REST_SHORT } from "../../lib/questions";
+import { engagementStructure } from "../../lib/surveyStructure";
+import { hasModuleAccess } from "../../../../../../lib/permissions";
+import SurveyTemplates from "../templates/SurveyTemplates";
 import { avg, one, pct, respValues, engAvg } from "../../lib/metrics";
 
 const QUARTERS = [
@@ -25,6 +27,15 @@ export default function EngagementHR({ surveys = [], headcount = 0, notifyList =
   const [selected, setSelected] = useState(null);
   const [detailData, setDetailData] = useState(null);
   const [loadingScores, setLoadingScores] = useState(false);
+  const [managing, setManaging] = useState(false);
+  const [templates, setTemplates] = useState([]);
+  const [templateId, setTemplateId] = useState("");
+  const canManageTemplates = hasModuleAccess("hr_eng_templates");
+
+  const loadTemplates = () => api.fetchTemplates("ENGAGEMENT")
+    .then((list) => { setTemplates(list); setTemplateId((cur) => (cur && list.some((t) => String(t.id) === cur) ? cur : String((list.find((t) => t.isDefault) || list[0] || {}).id || ""))); })
+    .catch(() => setTemplates([]));
+  useEffect(() => { if (rolling) loadTemplates(); }, [rolling]);
 
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [userSearch, setUserSearch] = useState("");
@@ -64,6 +75,7 @@ export default function EngagementHR({ surveys = [], headcount = 0, notifyList =
   };
 
   const detail = surveys.find((s) => s.id === selected);
+  const detailSt = engagementStructure(detail);
   const detailRes = detailData?.responses ?? detail?.responses ?? [];
   const monthLabels = detailData?.months?.length
     ? detailData.months.map((m, i) => `Month ${i + 1}: ${m}`)
@@ -88,6 +100,7 @@ export default function EngagementHR({ surveys = [], headcount = 0, notifyList =
       months: q.months,
       closes: format(closes, "dd MMM yyyy"),
       recipients: selectedUsers.map((u) => u.userID),
+      templateId: templateId ? Number(templateId) : undefined,
     });
     setQuarter("");
     setCloses(undefined);
@@ -102,9 +115,12 @@ export default function EngagementHR({ surveys = [], headcount = 0, notifyList =
           <Select size="sm" variant="bordered" className="w-32" aria-label="FY filter">
             <SelectItem key="fy26">FY26</SelectItem>
           </Select>
-          <Button size="sm" color="primary" className="text-white" startContent={<Plus size={14} />} onPress={() => setRolling(true)}>
-            Roll out new survey
-          </Button>
+          <div className="flex gap-2">
+            {canManageTemplates && <Button size="sm" variant="bordered" onPress={() => setManaging(true)}>Manage templates</Button>}
+            <Button size="sm" color="primary" className="text-white" startContent={<Plus size={14} />} onPress={() => setRolling(true)}>
+              Roll out new survey
+            </Button>
+          </div>
         </div>
 
         <table className="w-full text-sm">
@@ -132,6 +148,8 @@ export default function EngagementHR({ surveys = [], headcount = 0, notifyList =
           Response rate sits next to the average on purpose — a 9.0 from 43% of the org is not a 9.0.
         </div>
       </Screen>
+
+      <SurveyTemplates kind="ENGAGEMENT" isOpen={managing} onClose={() => setManaging(false)} onChanged={loadTemplates} />
 
       {rolling && (
         <Screen id="3.3" title="Roll out new engagement survey">
@@ -247,14 +265,17 @@ export default function EngagementHR({ surveys = [], headcount = 0, notifyList =
               <Field label="Notify on submission">
                 <Input variant="bordered" defaultValue={notifyList} />
               </Field>
-              <Field label="Survey">
-                <Input isReadOnly variant="bordered" value="Employee Engagement Survey — 5 ratings + 1 open question" />
+              <Field label="Survey template">
+                <Select variant="bordered" aria-label="Survey template" selectedKeys={templateId ? [templateId] : []} disallowEmptySelection
+                  onSelectionChange={(k) => setTemplateId(String(Array.from(k)[0] ?? ""))}>
+                  {templates.map((t) => <SelectItem key={String(t.id)} textValue={t.name}>{t.name}{t.isDefault ? " (default)" : ""} · {t.questionCount} questions</SelectItem>)}
+                </Select>
               </Field>
             </div>
           </div>
 
           <div className="flex gap-2.5">
-            <Button size="sm" color="primary" className="text-white" isDisabled={!canRollout} startContent={<Send size={14} />} onPress={rollOut}>
+            <Button size="sm" color="primary" className="text-white" isDisabled={!canRollout || !templateId} startContent={<Send size={14} />} onPress={rollOut}>
               Roll out survey
             </Button>
             <Button size="sm" variant="flat" onPress={() => setRolling(false)}>Cancel</Button>
@@ -282,8 +303,7 @@ export default function EngagementHR({ surveys = [], headcount = 0, notifyList =
               <Cards>
                 <CardStat hero label="Quarter average" value={one(engAvg({ ...detail, responses: detailRes }))} unit="/10" note={`${detailRes.length} responses`} />
                 <CardStat label="Responses" value={detailRes.length} unit={`/${detail.sentTo}`} note={`${pct(detailRes.length, detail.sentTo)}% response rate`} />
-                <CardStat label={ENG_REST_SHORT[0]} value={one(avg(detailRes.map((r) => r.rest[0])))} unit="/10" />
-                <CardStat label={ENG_REST_SHORT[1]} value={one(avg(detailRes.map((r) => r.rest[1])))} unit="/10" />
+                {detailSt.rest.map((r, i) => <CardStat key={i} label={r.short || r.text} value={one(avg(detailRes.map((x) => x.rest[i])))} unit="/10" />)}
                 <CardStat label="Written feedback" value={detailRes.filter((r) => r.feedback).length} note="Comments received" />
               </Cards>
 
@@ -291,7 +311,7 @@ export default function EngagementHR({ surveys = [], headcount = 0, notifyList =
               <QuestionAverages labels={monthLabels} rows={detailRes.map((r) => r.months)} />
 
               <Section>Average by question</Section>
-              <QuestionAverages labels={ENG_REST_SHORT} rows={detailRes.map((r) => r.rest)} />
+              <QuestionAverages labels={detailSt.rest.map((r) => r.short || r.text)} rows={detailRes.map((r) => r.rest)} />
 
               <Section>Score distribution</Section>
               <Distribution values={detailRes.flatMap(respValues)} />

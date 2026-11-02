@@ -6,6 +6,7 @@ import {
   Award,
   BarChart3,
   Bell,
+  Database,
   Building2,
   GitPullRequestArrow,
   LayoutGrid,
@@ -73,12 +74,11 @@ export const MENU: MenuItem[] = [
     href: "pms",
     module: "pms",
     children: [
-      { icon: Goal, label: "Goal Setting", href: "pms/goal-setting", module: "pms_goals" },
-      { icon: MessageSquareText, label: "Manager Feedback", href: "pms/manager-feedback", module: "pms_feedback" },
       { icon: ClipboardList, label: "Quarterly Review", href: "pms/quarterly-review", module: "pms_quarterly" },
       { icon: FileText, label: "Report", href: "pms/report", module: "pms_report" },
     ],
   },
+  { icon: MessageSquareText, label: "Manager Feedback", href: "manager-feedback", module: "pms_feedback" },
   {
     icon: Award,
     label: "Appraisal",
@@ -102,12 +102,23 @@ export const MENU: MenuItem[] = [
     href: "reports",
     module: "reports",
     children: [
-      { icon: FileText, label: "Performance Insights", href: "efficiency-report", module: "perf" },
-      { icon: Users, label: "User Data", href: "daily-log", module: "mydata" },
-      { icon: Goal, label: "Goals Achieved", href: "goals", module: "goals" },
-      { icon: CheckCircle2, label: "Entry Approval", href: "entry-approval", module: "entryApproval" },
-      { icon: History, label: "User History", href: "user-history", module: "userHistory" },
+      { icon: FileText, label: "Employee Performance Insights", href: "efficiency-report", module: "perf" },
+      { icon: Users, label: "User Logs", href: "daily-log", module: "mydata" },
+      { icon: Goal, label: "Employee Goals", href: "goals", module: "goals" },
+      { icon: CheckCircle2, label: "Logs Approval", href: "entry-approval", module: "entryApproval" },
+      { icon: History, label: "User Archive Logs", href: "user-history", module: "userHistory" },
       { icon: MessageSquareText, label: "Query Report", href: "query-report", module: "queryReport" },
+    ],
+  },
+  {
+    icon: Database,
+    label: "Data Management",
+    href: "data-management",
+    module: "datamgmt",
+    children: [
+      { icon: ClipboardList, label: "Task Management", href: "tasks", module: "taskmgmt" },
+      { icon: Target, label: "Target Management", href: "target", module: "targetmgmt" },
+      { icon: Goal, label: "Goal Management", href: "Goal-management", module: "goalmgmt" },
     ],
   },
   {
@@ -118,22 +129,19 @@ export const MENU: MenuItem[] = [
     children: [
       { icon: ShieldCheck, label: "Access Management", href: "access-management", module: "accessmgmt" },
       { icon: Building2, label: "Departments", href: "departments", module: "deptmgmt" },
-      { icon: ClipboardList, label: "Task Management", href: "tasks", module: "taskmgmt" },
-      { icon: Target, label: "Target Management", href: "target", module: "targetmgmt" },
-      { icon: Goal, label: "Goal Management", href: "Goal-management", module: "goalmgmt" },
       { icon: Bell, label: "Notifications", href: "notifications", module: "notifications" },
     ],
   },
   // Support (formerly HR Feedback); PMS lives on the Dashboard as a tab
   {
     icon: LifeBuoy,
-    label: "Support",
+    label: "HR Support",
     href: "support",
     module: "hrfeedback",
     children: [
-      { icon: Sparkles, label: "Onboarding Experience", href: "support/onboarding", module: "hrfeedback", onlyNewJoiners: true },
-      { icon: MessageSquareText, label: "Query & HR", href: "support/query", module: "hrfeedback" },
-      { icon: Smile, label: "Employee Engagement", href: "support/engagement", module: "hrfeedback" },
+      { icon: Sparkles, label: "Onboarding Experience", href: "support/onboarding", module: "hr_onboarding", onlyNewJoiners: true },
+      { icon: MessageSquareText, label: "Query & HR", href: "support/query", module: "hr_query" },
+      { icon: Smile, label: "Employee Engagement", href: "support/engagement", module: "hr_engagement" },
     ],
   },
 ];
@@ -224,8 +232,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, current
     .toUpperCase();
 
   const itemClass = (on: boolean) =>
-    `group relative flex w-full items-center gap-3 px-3 py-2.5 text-[13px] transition-colors focus-ring ${
-      on ? "bg-white/[0.06] font-medium text-white" : "text-ink-400 hover:bg-white/[0.04] hover:text-white"
+    `group relative flex w-full items-center gap-3 px-3 py-2.5 text-[13px] transition-colors focus-ring ${on ? "bg-white/[0.06] font-medium text-white" : "text-ink-400 hover:bg-white/[0.04] hover:text-white"
     }`;
   const bar = (on: boolean) => (
     <span aria-hidden className={`absolute inset-y-1.5 left-0 w-[3px] transition-colors ${on ? "bg-brand-600" : "bg-transparent"}`} />
@@ -237,9 +244,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, current
       {isOpen && <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden" onClick={toggleSidebar} />}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex h-full w-64 flex-col border-r border-white/10 bg-black text-white transition-transform duration-300 ease-out lg:static lg:translate-x-0 ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed inset-y-0 left-0 z-50 flex h-full w-64 flex-col border-r border-white/10 bg-black text-white transition-transform duration-300 ease-out lg:static lg:translate-x-0 ${isOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         {/* Brand */}
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-5">
@@ -292,9 +298,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, current
                               <li key={child.label}>
                                 <Link to={`/${child.href}`} onClick={() => { setExpanded(item.label); if (isOpen) toggleSidebar(); }} tabIndex={open ? 0 : -1}
                                   aria-current={on ? "page" : undefined}
-                                  className={`relative -ml-px flex items-center border-l py-2 pl-4 pr-2 text-[12.5px] transition-colors focus-ring ${
-                                    on ? "border-brand-600 font-medium text-white" : "border-transparent text-ink-400 hover:border-white/30 hover:text-white"
-                                  }`}>
+                                  className={`relative -ml-px flex items-center border-l py-2 pl-4 pr-2 text-[12.5px] transition-colors focus-ring ${on ? "border-brand-600 font-medium text-white" : "border-transparent text-ink-400 hover:border-white/30 hover:text-white"
+                                    }`}>
                                   {child.label}
                                 </Link>
                               </li>

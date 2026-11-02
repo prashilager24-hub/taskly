@@ -9,7 +9,9 @@ import { Select, SelectItem } from "@/components/ui";
 import { Textarea } from "@/components/ui";
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
-import ReusableTable, { TableColumn, TableAction } from "@/components/table"
+import { TableAction } from "@/components/table"
+import { Check } from 'lucide-react';
+import DepartmentSplit, { TypeTag, targetText } from "@/components/DepartmentSplit";
 import { title } from "@/components/primitives";
 
 interface Goal {
@@ -26,6 +28,8 @@ interface Goal {
     isActive: boolean;
     createdAt: string;
     modifiedAt: string;
+    departmentName?: string;
+    approvedByEL?: boolean;
 }
 
 
@@ -41,13 +45,9 @@ const GoalManagement: React.FC = () => {
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [toggleStatusValue, setToggleStatusValue] = useState<boolean | null>(null);
     const [tableRefreshKey, setTableRefreshKey] = useState(0);
-    const [pageNumber, setPageNumber] = useState(1)
-    const [totalRecords, settotalRecords] = useState(0)
     const [filterStatus, setFilterStatus] = useState(
         ""
     );
-    const [pageSize, setPageSize] = useState(10)
-    const [searchValue, setSearchValue] = useState("")
     const [goals, setGoals] = useState<Goal[]>([]);
 
 
@@ -185,18 +185,6 @@ const GoalManagement: React.FC = () => {
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
     // Table configuration
-    const goalColumns = [
-        { key: "departmentID", label: "Department ID", sortable: true },
-        { key: "goalName", label: "Goal Name", sortable: true },
-        { key: "goalMetric", label: "Metric", sortable: true },
-        { key: "unit", label: "Unit", sortable: true },
-        { key: "frequency", label: "Frequency", sortable: true },
-        { key: "isDynamic", label: "Dynamic", sortable: true },
-        { key: "isActive", label: "Status", sortable: true },
-    ];
-
-
-
 
     const taskActions: TableAction[] = [
         {
@@ -274,7 +262,7 @@ const GoalManagement: React.FC = () => {
         const fetchGoals = async () => {
             const body = {
                 departmentId: 0,
-                searchText: searchValue,
+                searchText: "",
                 filter: "",
                 startDate: "",
                 endDate: "",
@@ -286,7 +274,7 @@ const GoalManagement: React.FC = () => {
                 Authorization: `Bearer ${authUserLD ? JSON.parse(authUserLD).token : ""}`,
             };
             const { data } = await axios.post(
-                `/t2.0/authentificationUtilization/departmentGoals/list?page=${pageNumber}&size=${pageSize}`,
+                `/t2.0/authentificationUtilization/departmentGoals/list?page=0&size=0`,
                 body,
                 { headers }
             );
@@ -305,16 +293,17 @@ const GoalManagement: React.FC = () => {
                 // description: g.description,
                 isActive: g.isActive,
                 liveAccounts: g.liveAccounts,
-                roleID: g.roleID
+                roleID: g.roleID,
+                departmentName: g.departmentName,
+                approvedByEL: g.approvedByEL,
 
             }));
 
             setGoals(mapped);
-            settotalRecords(data.response.totalRecords);
         };
 
         fetchGoals();
-    }, [pageNumber, pageSize, searchValue, tableRefreshKey]);
+    }, [tableRefreshKey]);
 
     const handleToggleStatus = async () => {
         if (selectedRows.length !== 1 || toggleStatusValue === null) return;
@@ -363,6 +352,41 @@ const GoalManagement: React.FC = () => {
     };
 
 
+    const openAdd = (dept = "") => {
+        resetGoalForm();
+        setIsEditing(false);
+        setSelectedDepartment(dept);
+        setFilterStatus(dept);
+        setIsModalOpen(true);
+    };
+
+    // Executive Leaders acknowledge goals, one at a time or all pending in a department
+    const canAcknowledge = authUser?.userRole === 3;
+    const acknowledge = async (ids: number[]) => {
+        try {
+            await axios.put("/t2.0/authentificationUtilization/departmentGoals/approve", { goalIds: ids, userId: authUser.userID },
+                { headers: { "Content-Type": "application/json", Accept: "application/json", Authorization: `Bearer ${authUser?.token ?? ""}` } });
+            addToast({ title: "Goals acknowledged", color: "success" });
+            setTableRefreshKey((p) => p + 1);
+        } catch {
+            addToast({ title: "Could not acknowledge goals", color: "danger" });
+        }
+    };
+
+    // people see the departments they work in or lead; Super Admin sees all
+    const inScope = (deptId: number) => {
+        const mine = (authUser?.departments ?? []).some((x: any) => x.departmentID === deptId);
+        if (authUser?.userRole === 3 || authUser?.userRole === 4) return mine;
+        if (authUser?.userRole === 2) return authUser?.departmentID === deptId;
+        return true;
+    };
+    const visibleGoals = goals.filter((g) => inScope(Number(g.departmentID)));
+    // every active department, plus the ones an item names that the list did not return
+    const splitDepartments = [
+        ...departmentList.filter((d) => inScope(Number(d.key))).filter((d) => String(d.status ?? "Active") === "Active").map((d) => ({ id: Number(d.key), name: d.name })),
+        ...visibleGoals.filter((i: any) => i.departmentName).map((i: any) => ({ id: Number(i.departmentID), name: i.departmentName })),
+    ];
+
     return (
         <div>
 
@@ -381,126 +405,48 @@ const GoalManagement: React.FC = () => {
                     </Button>
                     <Button
                         size="sm"
-                        color="primary" onPress={() => {
-                            setIsEditing(false);
-
-                            setSelectedDepartment("");
-                            setIsModalOpen(true);
-                        }}
-
+                        color="primary" onPress={() => openAdd()}
                     >
                         Add New Goal
                     </Button>
                 </div>
             </div>
 
-            {/* target Table */}
-            {selectedRows.length > 0 && (
-                <div className="flex justify-between items-center bg-ink-100 dark:bg-ink-800 p-3 rounded mb-3 shadow">
-                    <span className="font-semibold">
-                        {selectedRows.length} goal(s) selected
-                    </span>
-
-                    <div className='flex gap-3'>
-
-                        <Button
-                            color="danger"
-                            variant='flat'
-
-                            onPress={() => {
-                                if (selectedRows.length !== 1) {
-                                    addToast({
-                                        title: "Select exactly one task",
-                                        description: "You can activate/deactivate only one task at a time.",
-                                        color: "warning",
-                                    });
-                                    return;
-                                }
-                                setToggleStatusValue(false);
-                                setConfirmOpen(true);
-                            }}
-                        >
-                            Deactivate
-                        </Button>
-
-                        <Button
-                            color="success"
-                            variant="flat"
-                            onPress={() => {
-                                if (selectedRows.length !== 1) {
-                                    addToast({
-                                        title: "Select exactly one task",
-                                        description: "You can activate/deactivate only one task at a time.",
-                                        color: "warning",
-                                    });
-                                    return;
-                                }
-                                setToggleStatusValue(true);
-                                setConfirmOpen(true);
-                            }}
-                        >
-                            Activate
-                        </Button>
-
-                    </div>
-
-                </div>
-            )}
-
-            <div className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 overflow-hidden p-6">
-                <ReusableTable
-                    key={tableRefreshKey}
-                    data={goals}
-                    columns={goalColumns}
-                    actions={taskActions}
-                    totalRecords={totalRecords}
-                    searchable={true}
-                    searchPlaceholder="Search goal..."
-                    searchKeys={['goalName', 'description']}
-                    filterable={true}
-                    onRowsPerPageChange={(value) => {
-                        setPageSize(value)
-
-                    }}
-                    onPageChange={(page) => {
-                        setPageNumber(page)
-                    }}
-                    onSearchChangeProp={(value) => {
-                        setSearchValue(value);
-                        // console.log("Search in parent:", value);
-                    }}
-                    filterOptions={[
-                        {
-                            key: 'frequency',
-                            label: 'Frequency',
-                            options: [
-                                { key: 'Daily', label: 'Daily' },
-                                { key: 'Weekly', label: 'Weekly' },
-                                { key: 'Monthly', label: 'Monthly' },
-                                { key: 'Dynamic', label: 'Dynamic' },
-                                { key: 'Not Daily', label: 'Not Daily' }
-                            ]
-                        }
-                        ,
-                        {
-                            key: 'isActive',
-                            label: 'Status',
-                            options: [
-                                { key: 'true', label: 'Active' },
-                                { key: 'false', label: 'Inactive' }
-                            ]
-                        }
-                    ]}
-                    selectable={true}
-                    sortable={true}
-                    paginated={true}
-                    emptyContent="No goals found"
-                    onAdd={() => setIsModalOpen(true)}
-                    addButtonLabel="Add New Task"
-                    getRowId={(item) => item.goalID}
-                    onSelectionChange={(rows) => setSelectedRows(rows)}
-                />
-            </div>
+            <DepartmentSplit<any>
+                noun="goal"
+                items={visibleGoals}
+                departments={splitDepartments}
+                deptOf={(g) => Number(g.departmentID)}
+                isActive={(g) => !!g.isActive}
+                idOf={(g) => g.goalID}
+                searchText={(g) => `${g.goalName} ${g.goalMetric ?? ""}`}
+                flagCount={(list) => list.filter((g) => g.isActive && !g.approvedByEL).length}
+                flagLabel="not acknowledged"
+                summaryExtra={(list) => { const w = list.filter((g) => !g.approvedByEL).length; return `${list.length - w} acknowledged · ${w} waiting`; }}
+                headerExtra={(list) => {
+                    const pending = list.filter((g) => g.isActive && !g.approvedByEL);
+                    return canAcknowledge && pending.length > 0 ? (
+                        <Button size="sm" variant="bordered" startContent={<Check size={14} />} onPress={() => acknowledge(pending.map((g) => g.goalID))}>Acknowledge {pending.length} pending</Button>
+                    ) : null;
+                }}
+                columns={[
+                    { label: "Goal", cell: (g) => <span className="font-semibold text-ink-900 dark:text-white">{g.goalName || "Untitled"}</span>, className: "min-w-[220px] max-w-[360px] whitespace-normal break-words" },
+                    { label: "Measured by", cell: (g) => g.goalMetric || "—" },
+                    { label: "Target", cell: (g) => targetText(g.metricValue, g.unit), className: "whitespace-nowrap text-ink-900 dark:text-white" },
+                    { label: "How often", cell: (g) => g.frequency || "—" },
+                    { label: "Type", cell: (g) => <TypeTag dynamic={g.isDynamic} /> },
+                    {
+                        label: "Acknowledged", cell: (g) => g.approvedByEL
+                            ? <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400"><Check size={13} /> Acknowledged</span>
+                            : canAcknowledge && g.isActive
+                                ? <button type="button" onClick={() => acknowledge([g.goalID])} className="text-xs font-bold uppercase tracking-wide text-brand-600 hover:underline">Acknowledge</button>
+                                : <span className="text-xs font-semibold text-amber-600">Waiting</span>,
+                    },
+                ]}
+                onAdd={(id) => openAdd(String(id))}
+                onEdit={(g) => taskActions[0].onAction(g)}
+                onToggle={(g) => { setSelectedRows([g]); setToggleStatusValue(!g.isActive); setConfirmOpen(true); }}
+            />
 
             {/* Create / edit canvas */}
             <Drawer

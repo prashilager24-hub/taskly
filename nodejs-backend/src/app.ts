@@ -19,8 +19,10 @@ import { departmentsRouter, primaryDepartmentsRouter } from './modules/departmen
 import tasksRouter from './modules/tasks/tasks.routes';
 import goalsRouter from './modules/goals/goals.routes';
 import targetsRouter from './modules/targets/targets.routes';
-import { monthlyRouter, quarterlyRouter, quarterlyAliasRouter, goalEfficiencyRouter } from './modules/reviews/reviews.routes';
+import profileRouter from './modules/profile/profile.routes';
+import { monthlyRouter, quarterlyRouter, quarterlyAliasRouter, goalEfficiencyRouter, pmsOverviewRouter } from './modules/reviews/reviews.routes';
 import hrRouter, { queryRouter, engagementRouter, onboardingRouter } from './modules/hr/hr.routes';
+import surveyTemplatesRouter from './modules/hr/surveyTemplates.routes';
 import { salesCallsRouter, taCallsRouter, tamRouter } from './modules/sales/sales.routes';
 import pushRouter from './modules/push/push.routes';
 import adminRouter, { adminTicketsRouter, positionsRouter } from './modules/admin/admin.routes';
@@ -79,6 +81,7 @@ const BASE = '/t2.0/authentificationUtilization';
 app.use(`${BASE}/access`, accessRouter);
 app.use(`${BASE}/notifications`, notificationsRouter);
 app.use(`${BASE}/appraisal`, appraisalRouter);
+app.use(`${BASE}/profile`, profileRouter);
 app.use(BASE, authRouter);
 
 // ── Departments & PrimaryDepartments ─────────────────────────────────────────
@@ -123,6 +126,7 @@ app.use(`${BASE}/monthly-reviews`, monthlyRouter);
 app.use(`${BASE}/quarterly-reviews`, quarterlyAliasRouter);
 app.use(`${BASE}/quarterly-review`, quarterlyRouter);
 app.use(`${BASE}/goal-efficiency`, goalEfficiencyRouter);
+app.use(`${BASE}/pms-overview`, pmsOverviewRouter);
 
 // ── HR Feedback ───────────────────────────────────────────────────────────────
 // Java: /t2.0/authentificationUtilization/hrFeedback/query
@@ -132,6 +136,7 @@ app.use(`${BASE}/goal-efficiency`, goalEfficiencyRouter);
 app.use(`${BASE}/hrFeedback/query`, queryRouter);
 app.use(`${BASE}/hrFeedback/engagement`, engagementRouter);
 app.use(`${BASE}/hrFeedback/onboarding`, onboardingRouter);
+app.use(`${BASE}/hrFeedback/templates`, surveyTemplatesRouter);
 app.use(`${BASE}/hrFeedback/push`, pushRouter);
 app.use(`${BASE}/hrFeedback`, hrRouter);  // legacy fallback
 

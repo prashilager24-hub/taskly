@@ -310,7 +310,6 @@ const td = "px-3 py-2.5 text-xs border-t border-default-100 whitespace-nowrap";
 
 export default function AdminAnalytics({ reviews }: { reviews: any[] }) {
     const rows = useMemo(() => reviews.map(toRow), [reviews]);
-    console.log("AdminAnalytics rows:", rows);
     const [selected, setSelected] = useState<Row | null>(null);
 
     const counts = useMemo(() => GRADES.map((g) => rows.filter((r) => r.grade === g).length), [rows]);
@@ -334,7 +333,6 @@ export default function AdminAnalytics({ reviews }: { reviews: any[] }) {
                 target,
                 gap: goal - target,
                 high: t.length ? (t.filter((r) => r.grade >= 7).length / t.length) * 100 : 0,
-                mix: GRADES.map((g) => t.filter((r) => r.grade === g).length),
             };
         });
     }, [rows]);
@@ -428,23 +426,6 @@ export default function AdminAnalytics({ reviews }: { reviews: any[] }) {
                         max={chartMax}
                         showValues
                         height={340}
-                    />
-                </CardBody>
-            </Card>
-
-            {/* EL grade mix */}
-            <SectionTitle title="EL-wise Final Grade Mix" subtitle="Distribution of final grades across each EL team." />
-            <Card className="border border-default-200 shadow-sm">
-                <CardBody className="p-4">
-                    <BarChart
-                        labels={els.map((e) => e.name)}
-                        series={GRADES.map((g, i) => ({
-                            name: `${g} — ${GRADE_LABELS[g]}`,
-                            color: GRADE_COLORS[i],
-                            data: els.map((e) => e.mix[i]),
-                        }))}
-                        max={Math.max(1, ...els.map((e) => e.team))}
-                        stacked
                     />
                 </CardBody>
             </Card>

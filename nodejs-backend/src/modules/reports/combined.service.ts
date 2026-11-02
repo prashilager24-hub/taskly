@@ -1,4 +1,5 @@
 import { pool } from '../../config/db';
+import { calculateTarget } from '../calculations/calculationLogic';
 import type mysql from 'mysql2/promise';
 import { toBool, toLocalDateTime, toNum } from '../../utils/javaCompat';
 
@@ -155,7 +156,7 @@ function buildDailySummary(
     leaveType,
     totalAllocatedHrs: round2(sum(tasks, 'AllocatedTime') / 60),
     totalWorkedHrs: round2(sum(tasks, 'TimeTakenToWork') / 60),
-    targetAchievedPct: totalUnits > 0 ? Math.round((sum(targets, 'AchivedUnits') / totalUnits) * 10000) / 100 : null,
+    targetAchievedPct: calculateTarget({ kind: 'units', achieved: sum(targets, 'AchivedUnits'), units: totalUnits }),
     entries,
   };
 }

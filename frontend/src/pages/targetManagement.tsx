@@ -9,9 +9,9 @@ import { Select, SelectItem } from "@/components/ui";
 import { Textarea } from "@/components/ui";
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
-import ReusableTable, { TableColumn, TableAction } from "@/components/table"
+import { TableAction } from "@/components/table"
+import DepartmentSplit, { TypeTag, targetText } from "@/components/DepartmentSplit";
 import { title } from "@/components/primitives";
-import { format } from "date-fns";
 
 interface Task {
     taskID: number;
@@ -38,13 +38,9 @@ const TargetManagement: React.FC = () => {
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [toggleStatusValue, setToggleStatusValue] = useState<boolean | null>(null);
     const [tableRefreshKey, setTableRefreshKey] = useState(0);
-    const [pageNumber, setPageNumber] = useState(1)
-    const [totalRecords, settotalRecords] = useState(0)
     const [filterStatus, setFilterStatus] = useState(
         ""
     );
-    const [pageSize, setPageSize] = useState(10)
-    const [searchValue, setSearchValue] = useState("")
     const [target, setTarget] = useState<Task[]>([
 
     ]);
@@ -239,27 +235,6 @@ const TargetManagement: React.FC = () => {
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
     // Table configuration
-    const targetColumns = [
-        {
-            key: "createdAt",
-            label: "Created At",
-            sortable: true,
-            renderCell: (item) =>
-                item.createdAt
-                    ? format(new Date(item.createdAt), "dd MMM yyyy")
-                    : "—",
-        }, { key: 'departmentID', label: 'Department ID', sortable: true },     // ✅ Added
-        // { key: 'departmentName', label: 'Department Name', sortable: true }, // ✅ Added
-        { key: 'targetName', label: 'Target Name', sortable: true },
-        { key: 'targetMetric', label: 'Metric', sortable: true },
-        { key: 'unit', label: 'Unit', sortable: true },
-        { key: 'frequency', label: 'Frequency', sortable: true },
-        { key: 'timingType', label: 'Timing Type', sortable: true },
-        { key: 'isDynamic', label: 'Dynamic', sortable: true },
-        { key: 'isActive', label: 'Status', sortable: true },
-    ];
-
-
 
     const taskActions: TableAction[] = [
         {
@@ -330,14 +305,14 @@ const TargetManagement: React.FC = () => {
         const fetchTarget = async () => {
             try {
                 const bodyData = {
-                    searchText: searchValue,
+                    searchText: "",
                     filter: "",
                     startDate: "",
                     endDate: ""
                 };
 
                 const { data } = await axios.post(
-                    `/t2.0/authentificationUtilization/departmentTargets/list?page=${pageNumber}&size=${pageSize}`,
+                    `/t2.0/authentificationUtilization/departmentTargets/list?page=0&size=0`,
                     bodyData,
                     { headers: { "Content-Type": "application/json" } }
                 );
@@ -362,14 +337,13 @@ const TargetManagement: React.FC = () => {
 
                 console.log(targets, "hhh")
                 setTarget(targets);
-                settotalRecords(data.response.totalRecords);
             } catch (err) {
                 console.error("Error fetching target:", err);
             }
         };
         fetchTarget();
 
-    }, [authUserLD, pageSize, pageNumber, searchValue, tableRefreshKey]);
+    }, [authUserLD, tableRefreshKey]);
 
     const handleToggleStatus = async () => {
         if (selectedRows.length !== 1 || toggleStatusValue === null) return;
@@ -418,6 +392,20 @@ const TargetManagement: React.FC = () => {
     };
 
 
+    const openAdd = (dept = "") => {
+        setIsEditing(false);
+        setNewTarget({ targetId: -1, targetName: '', targetMetric: '', metricValue: '', unit: '', frequency: 'Monthly', timingType: 'Ongoing', isDynamic: false, description: '', isActive: true, roleID: '' });
+        setSelectedDepartment(dept);
+        setFilterStatus(dept);
+        setIsModalOpen(true);
+    };
+
+    // every active department, plus the ones an item names that the list did not return
+    const splitDepartments = [
+        ...departmentList.filter((d) => String(d.status ?? "Active") === "Active").map((d) => ({ id: Number(d.key), name: d.name })),
+        ...target.filter((i: any) => i.departmentName).map((i: any) => ({ id: Number(i.departmentID), name: i.departmentName })),
+    ];
+
     return (
         <div>
 
@@ -436,126 +424,33 @@ const TargetManagement: React.FC = () => {
                     </Button>
                     <Button
                         size="sm"
-                        color="primary" onPress={() => {
-                            setIsEditing(false);
-
-                            setSelectedDepartment("");
-                            setIsModalOpen(true);
-                        }}
-
+                        color="primary" onPress={() => openAdd()}
                     >
                         Add New Target
                     </Button>
                 </div>
             </div>
 
-            {/* target Table */}
-            {selectedRows.length > 0 && (
-                <div className="flex justify-between items-center bg-ink-100 dark:bg-ink-800 p-3 rounded mb-3 shadow">
-                    <span className="font-semibold">
-                        {selectedRows.length} task(s) selected
-                    </span>
-
-                    <div className='flex gap-3'>
-
-                        <Button
-                            color="danger"
-                            variant='flat'
-
-                            onPress={() => {
-                                if (selectedRows.length !== 1) {
-                                    addToast({
-                                        title: "Select exactly one task",
-                                        description: "You can activate/deactivate only one task at a time.",
-                                        color: "warning",
-                                    });
-                                    return;
-                                }
-                                setToggleStatusValue(false);
-                                setConfirmOpen(true);
-                            }}
-                        >
-                            Deactivate
-                        </Button>
-
-                        <Button
-                            color="success"
-                            variant="flat"
-                            onPress={() => {
-                                if (selectedRows.length !== 1) {
-                                    addToast({
-                                        title: "Select exactly one task",
-                                        description: "You can activate/deactivate only one task at a time.",
-                                        color: "warning",
-                                    });
-                                    return;
-                                }
-                                setToggleStatusValue(true);
-                                setConfirmOpen(true);
-                            }}
-                        >
-                            Activate
-                        </Button>
-
-                    </div>
-
-                </div>
-            )}
-
-            <div className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 overflow-hidden p-6">
-                <ReusableTable
-                    key={tableRefreshKey}
-                    data={target}
-                    columns={targetColumns}
-                    actions={taskActions}
-                    totalRecords={totalRecords}
-                    searchable={true}
-                    searchPlaceholder="Search target..."
-                    searchKeys={['targetName', 'description']}
-                    filterable={true}
-                    onRowsPerPageChange={(value) => {
-                        setPageSize(value)
-
-                    }}
-                    onPageChange={(page) => {
-                        setPageNumber(page)
-                    }}
-                    onSearchChangeProp={(value) => {
-                        setSearchValue(value);
-                        // console.log("Search in parent:", value);
-                    }}
-                    filterOptions={[
-                        {
-                            key: 'frequency',
-                            label: 'Frequency',
-                            options: [
-                                { key: 'Daily', label: 'Daily' },
-                                { key: 'Weekly', label: 'Weekly' },
-                                { key: 'Monthly', label: 'Monthly' },
-                                { key: 'Dynamic', label: 'Dynamic' },
-                                { key: 'Not Daily', label: 'Not Daily' }
-                            ]
-                        }
-                        ,
-                        {
-                            key: 'isActive',
-                            label: 'Status',
-                            options: [
-                                { key: 'true', label: 'Active' },
-                                { key: 'false', label: 'Inactive' }
-                            ]
-                        }
-                    ]}
-                    selectable={true}
-                    sortable={true}
-                    paginated={true}
-                    emptyContent="No target found"
-                    onAdd={() => setIsModalOpen(true)}
-                    addButtonLabel="Add New Task"
-                    getRowId={(item) => item.targetID} // ✅ FIXED
-                    onSelectionChange={(rows) => setSelectedRows(rows)}
-                />
-            </div>
+            <DepartmentSplit<any>
+                noun="target"
+                items={target}
+                departments={splitDepartments}
+                deptOf={(t) => Number(t.departmentID)}
+                isActive={(t) => !!t.isActive}
+                idOf={(t) => t.targetID}
+                searchText={(t) => `${t.targetName} ${t.targetMetric ?? ""} ${t.description ?? ""}`}
+                columns={[
+                    { label: "Target", cell: (t) => <span className="font-semibold text-ink-900 dark:text-white">{t.targetName}</span>, className: "min-w-[220px] max-w-[360px] whitespace-normal break-words" },
+                    { label: "Measured by", cell: (t) => t.targetMetric || "—" },
+                    { label: "Target value", cell: (t) => targetText(t.metricValue, t.unit), className: "whitespace-nowrap text-ink-900 dark:text-white" },
+                    { label: "How often", cell: (t) => t.frequency || "—" },
+                    { label: "Timing", cell: (t) => t.timingType || "—" },
+                    { label: "Type", cell: (t) => <TypeTag dynamic={t.isDynamic} /> },
+                ]}
+                onAdd={(id) => openAdd(String(id))}
+                onEdit={(t) => taskActions[0].onAction(t)}
+                onToggle={(t) => { setSelectedRows([t]); setToggleStatusValue(!t.isActive); setConfirmOpen(true); }}
+            />
 
             {/* Create / edit canvas */}
             <Drawer

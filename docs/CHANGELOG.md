@@ -17,6 +17,30 @@ Summary: one or two lines on what and why.
 
 ---
 
+## 2026-11-02 — Merge: appraisal module and PMS / notifications work into main  (merge of appraisal-flow-v2 with main 16cf867, a57c6f9)
+
+Summary: brings the whole appraisal module (flow v2) and the earlier PMS section / notifications / hierarchy work from the branch onto main, together with the user profile, HR Support permissions, Goals, calculation and survey template work already on main. Every entry below from both sides is kept.
+
+### Frontend
+- Conflicts resolved: sidebar keeps the new Manager Feedback item and the Appraisal group; App.tsx keeps main's PMS pages (Goal Setting page gone) plus the appraisal pages; the date range field uses main's `fieldLabel` version (DateRangeField, CustomDateRangePicker, PMS dashboard).
+
+### Backend
+- Conflicts resolved: app.ts mounts both `/profile` and `/appraisal`; server.ts schedules both the efficiency calculation (6:00) and the appraisal job (00:30); the access catalog keeps `appraisal`, `pms_feedback` and the HR Support group with its five pages.
+
+### Database
+- **The appraisal migrations are renumbered to run after main's: `012_appraisal.sql` … `017_appraisal_review_reset.sql`** (they were 006–011 on the branch, which clashed with main's 006–011). Down scripts renamed to match (`down/015…017`).
+- New database: `npm run db:migrate` applies 001–017 in order.
+- A database that already ran the branch's appraisal migrations under the old names must rename them first, or they run twice:
+  `UPDATE SchemaMigration SET Name = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(Name,'006_appraisal.sql','012_appraisal.sql'),'007_appraisal_budget_requests','013_appraisal_budget_requests'),'008_appraisal_quarter_comments','014_appraisal_quarter_comments'),'009_appraisal_flow_v2','015_appraisal_flow_v2'),'010_appraisal_budget_negotiation','016_appraisal_budget_negotiation'),'011_appraisal_review_reset','017_appraisal_review_reset');` then `npm run db:migrate`.
+
+### Env / config
+- none new (appraisal: `APPRAISAL_TIME_WINDOWS`, `APPRAISAL_FINANCE_ROLE_IDS`, `APPRAISAL_HR_ROLE_IDS`, `APPRAISAL_JOB_ENABLED` as before).
+
+### Notes
+- docs/APPRAISAL_ARCHITECTURE.md is the first plan and is marked superseded; the CHANGELOG entries describe the module as built.
+- Checked after the merge: backend tsc clean, 21 unit tests, 90-check appraisal flow; frontend `vite build` passes and has the same type errors as main before the merge (all pre-existing, so `npm run build`, which runs `tsc` first, still fails as it did on main); every page opened as Admin, Finance Head, EL, FL and Associate.
+- Found on main, not from the merge: Profile → sign-in activity returns 400 "Invalid user", because `GET ['/', '/:userId']` is registered before `GET ['/activity', …]` in profile.routes.ts, so "activity" is taken as a user id.
+
 ## 2026-11-02 — Appraisal: reset / revise / approve, override on every hike, overview for a Super Administrator (branch appraisal-flow-v2)
 
 Summary: the manager's second review. Associates and FLs only see "Your appeal is submitted and in progress, we will let you know soon". Every hike anyone enters has a variable pay override. The rest of the EL's budget goes to the FLs automatically. The EL, Finance Head and Admin see Budget discussion first, then Appeals, then the split, with old → new CTC and the increase in %. On an FL's proposal, the EL can Reset budget, Revise proposal or Approve proposal. A new Super Administrator role sees an overview of every department. Every accepted hike gets a celebration, and everyone sees their own final split.
@@ -35,9 +59,9 @@ Summary: the manager's second review. Associates and FLs only see "Your appeal i
 - `appraisalFlowCheck.ts`: 90 checks (adds revise, reset, overrides on decided hikes, menus, overview).
 
 ### Database
-- `011_appraisal_review_reset.sql` (`npm run db:migrate`): AppraisalAllocation `VariableMode` / `VariableValue`; AppraisalShare `ReturnComment` / `ReturnedAt`; AppraisalBudgetLog.Action gains RESET; inserts role **Super Administrator** (appraisal + dashboard read).
+- `017_appraisal_review_reset.sql` (`npm run db:migrate`): AppraisalAllocation `VariableMode` / `VariableValue`; AppraisalShare `ReturnComment` / `ReturnedAt`; AppraisalBudgetLog.Action gains RESET; inserts role **Super Administrator** (appraisal + dashboard read).
 - Locally a user was created for it: Super Administrator, superadministrator@tapmind.com (password Test@12345, change it). On other environments create the user in Access Management with that role.
-- To undo: `src/config/migrations/down/011_appraisal_review_reset.down.sql` by hand, before the 010 down script.
+- To undo: `src/config/migrations/down/017_appraisal_review_reset.down.sql` by hand, before the 016 down script.
 
 ### Env / config
 - none
@@ -79,8 +103,8 @@ Summary: changes from the manager's review. The EL now accepts the Finance Head'
 - `npx tsx src/scripts/appraisalFlowCheck.ts`: 69 checks (negotiation, own variable pay, EL change request, department / record edits).
 
 ### Database
-- `010_appraisal_budget_negotiation.sql` (`npm run db:migrate`): AppraisalRound.Status gains BUDGET_NEGOTIATION and BUDGET_ACCEPTED, new column `ElAcceptedAt`; new table `AppraisalBudgetLog`; AppraisalHike gets `VariableOverride` (PCT / AMOUNT / NULL).
-- To undo: `src/config/migrations/down/010_appraisal_budget_negotiation.down.sql` by hand (before the 009 down script if going back to appraisal-module).
+- `016_appraisal_budget_negotiation.sql` (`npm run db:migrate`): AppraisalRound.Status gains BUDGET_NEGOTIATION and BUDGET_ACCEPTED, new column `ElAcceptedAt`; new table `AppraisalBudgetLog`; AppraisalHike gets `VariableOverride` (PCT / AMOUNT / NULL).
+- To undo: `src/config/migrations/down/016_appraisal_budget_negotiation.down.sql` by hand (before the 015 down script if going back to appraisal-module).
 
 ### Env / config
 none
@@ -108,8 +132,8 @@ Summary: the appraisal now follows the "Taskly – Appraisal Cycle Workflow" bri
 - `npx tsx src/scripts/appraisalFlowCheck.ts`: end-to-end check of the whole flow on a temporary department (41 checks; everything it creates is deleted).
 
 ### Database
-- `009_appraisal_flow_v2.sql` (`npm run db:migrate`): cycle statuses become EMPLOYEE_OPEN / SUBMITTED / OFFERED / ACCEPTED / POSTPONED (old ASSESSOR_OPEN / FINANCE_REVIEW -> SUBMITTED); cycles get `DepartmentID` and `PeriodStart`; new tables `AppraisalRound`, `AppraisalShare`, `AppraisalAllocation`; `AppraisalRequestReview.Recommendation`. The old `AppraisalBudget` / `AppraisalBudgetAlloc` tables are left in place, unused.
-- To go back to appraisal-module: run `src/config/migrations/down/009_appraisal_flow_v2.down.sql` by hand, then switch branch.
+- `015_appraisal_flow_v2.sql` (`npm run db:migrate`): cycle statuses become EMPLOYEE_OPEN / SUBMITTED / OFFERED / ACCEPTED / POSTPONED (old ASSESSOR_OPEN / FINANCE_REVIEW -> SUBMITTED); cycles get `DepartmentID` and `PeriodStart`; new tables `AppraisalRound`, `AppraisalShare`, `AppraisalAllocation`; `AppraisalRequestReview.Recommendation`. The old `AppraisalBudget` / `AppraisalBudgetAlloc` tables are left in place, unused.
+- To go back to appraisal-module: run `src/config/migrations/down/015_appraisal_flow_v2.down.sql` by hand, then switch branch.
 
 ### Env / config
 none
@@ -144,6 +168,37 @@ none
 
 ### Notes
 - No minimum tenure before the first appraisal yet.
+
+---
+
+## 2026-10-30 — Survey templates for Onboarding and Engagement  (commit: 16cf867)
+Summary: HR can add Onboarding Experience and Employee Engagement surveys with their own questions; permissions are in Access Management and HR has them by default. The Node engagement backend, which was only placeholders, is now a real port of Java.
+### Frontend
+- New canvas **Manage templates** (`modules/templates/SurveyTemplates.jsx`) on the Onboarding and Engagement HR consoles: add, edit, copy, set default, turn on/off; questions can be rating, open or (engagement) monthly, grouped into sections for onboarding.
+- Send new survey / Roll out survey now pick a **Survey template**. Employee form, HR console and admin views read the questions from the survey (`lib/surveyStructure.js`); surveys from before templates use the original questions. The HR-team block of an onboarding survey starts at the first section whose name contains "HR".
+### Backend
+- New `modules/hr/surveyTemplates.{service,routes}.ts` at `/hrFeedback/templates` (list is open to signed-in users; changes need the template permission of that kind).
+- `engagement.service.ts`: port of Java EngagementService (open surveys, submit, HR list, scores, rollout, admin), with the template's questions. Push notifications are not ported.
+- Onboarding send/submit use the template: a survey keeps a copy of its questions, and answers are checked against it.
+- Access: new modules `hr_onb_templates` and `hr_eng_templates`. HR role (4) and everyone whose Feedback Resolver Team is HR or L&D get them by default (`HR_TEAM_DEFAULTS` in `access.service.ts`); a personal removal still takes them away.
+### Database
+- Migration `011_survey_templates.sql`: `SurveyTemplate`, `SurveyTemplateQuestion`, `TemplateID`/`Questions` on `onboarding_surveys` and `engagement_surveys`, and the two current surveys as default templates. Run `npm run db:migrate`.
+
+---
+
+## 2026-10-30 — Goals Achieved list matches Java  (commit: 16cf867)
+Summary: `POST /userGoalData/list` now follows Java `listPaginated`, so the Goals page shows the same rows and averages as production.
+### Frontend
+- none
+### Backend
+- New `jobs/efficiencyCalculation.ts`: port of Java `calculateAndSaveDailyEfficiency`. Rebuilds `EfficiencyUtilizationSummary` from the work entries (plus live TAM accounts, dept 23, and closed-position goals, dept 22) every day at 6:00 AM IST (`node-cron`, started in `server.ts`) and on `GET /calculateAll` (was a stub; now returns 200 so the dashboard refreshes). Old rows are replaced in one transaction, so a failed run leaves the table untouched. The per-row rules (`calculateEfficiency`) are in `calculationLogic.ts`. Checked against the Java-built table: 9,748 of 9,749 rows identical; the one row differs because its entries changed after Java last ran.
+- `calculationLogic.ts` also holds the target rules: `calculateTarget({ kind: 'day' | 'revision' | 'dayAverage' | 'groupAverage' | 'units' })` (department day rules, EL-revised targets, user / department / EL / company averages, Entry Approval %). The daily Target Achieved % itself is still read from `EfficiencyUtilizationSummary` (Java `EfficiencyServiceImpl` is not ported).
+- New `modules/calculations/calculationLogic.ts`: goal rules in one place. `calculateGoal({ kind: 'entry' | 'day' | 'user' })` for a goal entry, a user day, a user over a range; `loadGoalContexts` loads the data for the range case. The Goals list, goal form, dashboard rollup (`dashboardRollup.ts`) and efficiency report (`efficiencySummary.service.ts`) all call it. Adds the April–June 2026 rules for users 153/154/155 to the dashboard, so company Q2 goal % is now 66.88 like production.
+- `userGoalData.service.ts`: newest entry first (by id; `sortBy=workDate` supported), per-department efficiency (depts 37, 13, 1, 22, 14/31/32, user 129), monthly breakdown with quarterly goals counted across their quarter, overall % from the dashboard goal rollup (`dashboardRollup.ts` now also returns `goalOf`/`usersInDept`), department 21/37 sum-over-sum. Response uses Java's `{ status, statusCode, message, response }` envelope.
+### Database
+- none
+### Notes
+- Verified against production on 33 of 35 request shapes. Not ported: Goal = Target users' April–June rows and user 155 April–June sum/sum;  `sortBy=workDate` tie order is arbitrary in Java.
 
 ---
 
@@ -185,10 +240,10 @@ Summary: yearly appraisal flow from the Appraisal Module spec, reworked after th
 - Access: new `appraisal` module in [access/catalog.ts](../nodejs-backend/src/modules/access/catalog.ts); the router needs `appraisal` read.
 
 ### Database
-- New migration [006_appraisal.sql](../nodejs-backend/src/config/migrations/006_appraisal.sql): adds `Users.DateOfJoining`, `Users.EmployeeLevel`, `Users.CurrentAnnualCtc`; creates `AppraisalCycle`, `AppraisalQuarter`, `AppraisalQuarterReview`, `AppraisalReview`, `AppraisalHike`, `AppraisalRequest`, `AppraisalResponse`, `AppraisalAudit`; gives every role except Admin `appraisal` read.
+- New migration [012_appraisal.sql](../nodejs-backend/src/config/migrations/012_appraisal.sql): adds `Users.DateOfJoining`, `Users.EmployeeLevel`, `Users.CurrentAnnualCtc`; creates `AppraisalCycle`, `AppraisalQuarter`, `AppraisalQuarterReview`, `AppraisalReview`, `AppraisalHike`, `AppraisalRequest`, `AppraisalResponse`, `AppraisalAudit`; gives every role except Admin `appraisal` read.
 - PMS notes (`comments`, `achievements`, `failures`) are derived per quarter in `pmsQuarters`; no schema change. `AppraisalQuarter.Comments` from 008 is no longer filled by the screens.
-- New migration [008_appraisal_quarter_comments.sql](../nodejs-backend/src/config/migrations/008_appraisal_quarter_comments.sql): `AppraisalQuarter.Comments`. The quarter rows are the four calendar quarters that ended before the cycle began (`quarterSlots`), returned as `slots`.
-- New migration [007_appraisal_budget_requests.sql](../nodejs-backend/src/config/migrations/007_appraisal_budget_requests.sql): `AppraisalRequestReview`, `AppraisalBudget`, `AppraisalBudgetAlloc`.
+- New migration [014_appraisal_quarter_comments.sql](../nodejs-backend/src/config/migrations/014_appraisal_quarter_comments.sql): `AppraisalQuarter.Comments`. The quarter rows are the four calendar quarters that ended before the cycle began (`quarterSlots`), returned as `slots`.
+- New migration [013_appraisal_budget_requests.sql](../nodejs-backend/src/config/migrations/013_appraisal_budget_requests.sql): `AppraisalRequestReview`, `AppraisalBudget`, `AppraisalBudgetAlloc`.
 - Backfills `EmployeeLevel` from the role (Executive Leader = HEAD_EL, Functional Leader / Manager / Lead = MANAGER, everyone else = ASSOCIATE; Admins are left empty). **`DateOfJoining` is empty for everyone**: set it in Appraisal Setup, or no cycle starts.
 - **After pulling, run `npm run db:migrate` in `nodejs-backend`.**
 
@@ -254,6 +309,23 @@ Summary: a batch of earlier work that was pushed without a changelog entry, writ
 - Open: Quarterly Review form layout; default module access per level is not driven by the hierarchy yet.
 - Local test accounts `superadmin1@tapmind.com` / `superadmin2@tapmind.com` are created by hand in the local database; they are not part of the repo.
 - Source files use CRLF line endings.
+## 2026-10-29 — User profile with level/band and sign-in activity  (commit: 16cf867)
+Summary: every person has a profile (position, role, department, reporting line) with their sign-in/sign-out log; Designation, Level and Band are captured when a user is created.
+### Frontend
+- New page `pages/profile.tsx` at `/profile` (own) and `/profile/:userId` (admins); topbar menu has **My profile**; user names in Access Management → Users link to it.
+- Users drawer has a **Position** section (Designation, Level, Band), all required, and an **Onboarding** section: New joiner (default Yes) + April/October cycle. Users list shows a `New · Apr/Oct` capsule.
+- Onboarding Experience is shown to a user only while flagged new (`lib/onboarding.ts`); HR's survey recipient picker lists new joiners first with the same capsule.
+### Backend
+- New `modules/profile`: `GET /profile[/:userId]` and `GET /profile[/:userId]/activity?days=`. Other people's profiles need `accessmgmt` read.
+- `designation/jobLevel/band` added to user create/update/read and the session payload (`auth.schema.ts`, `auth.service.ts`).
+- Activity times are formatted in SQL (the DB stores server local time, the pool reads as UTC).
+- `Users.IsNewJoiner` / `JoiningCycle` in create/update/read, session payload and `/access/me`; submitting the onboarding survey clears the flag (`onboarding.service.ts`).
+- Onboarding Experience is also shown to HR / L&D team members (`feedbackresolverteam` HR or L_D), not only role 1/4.
+- HR Support pages are separate access modules (`hr_onboarding`, `hr_query`, `hr_engagement`) under `hrfeedback` in `catalog.ts`; sidebar and `pages/hrFeedback.tsx` check each one (page redirects to the first allowed one).
+### Database
+- Migrations `008_user_profile.sql` (`Users.Designation`, `JobLevel`, `Band`) `009_new_joiner.sql` (`IsNewJoiner`, `JoiningCycle`; users from the last 45 days without a submitted survey are backfilled as new) and `010_hr_support_permissions.sql` (everyone who had Support keeps all three pages). Run `npm run db:migrate`.
+### Notes
+- Existing users have empty position fields; editing one requires filling all three.
 
 ---
 

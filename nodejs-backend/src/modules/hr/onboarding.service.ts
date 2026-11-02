@@ -3,6 +3,7 @@ import { pool } from '../../config/db';
 import { logger } from '../../config/logger';
 import { AppError } from '../../utils/AppError';
 import { sendMail } from '../../utils/mailer';
+import { parseSnapshot, ratingCount, snapshotFor } from './surveyTemplates.service';
 
 // ── Ported from Java OnboardingService (/hrFeedback/onboarding) — Support → Onboarding Experience ──
 // HR sends new joiners a 7-question survey (scores 1–10): questions 1–4 rate the onboarding
@@ -15,7 +16,7 @@ const round1 = (n: number) => Math.round(n * 10) / 10;
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 
 /** Java's "d MMM yyyy", e.g. 7 Oct 2026 */
-function fmtDate(value: unknown): string | null {
+export function fmtDate(value: unknown): string | null {
   if (!value) return null;
   const d = value instanceof Date ? value : new Date(String(value));
   if (Number.isNaN(d.getTime())) return null;
@@ -23,7 +24,7 @@ function fmtDate(value: unknown): string | null {
 }
 
 /** Accepts the same formats as Java: d MMM yyyy, yyyy-MM-dd, dd-MM-yyyy, dd/MM/yyyy */
-function parseDate(input: string): string {
+export function parseDate(input: string): string {
   const s = input.trim();
   let m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
   if (m) return `${m[1]}-${m[2]}-${m[3]}`;
@@ -59,13 +60,17 @@ function employeeItem(s: mysql.RowDataPacket) {
     status: String(s['status']).toLowerCase(),
     answers,
     feedback: s['feedback'] ?? '',
+    // the questions this survey was sent with; null for surveys from before templates (they use the original seven)
+    template: parseSnapshot(s['Questions']),
     score: isSubmitted(s) && answers.length ? round1(avg(answers)) : null,
   };
 }
 
 function hrItem(s: mysql.RowDataPacket) {
   const base = employeeItem(s);
-  const hrBlockAvg = isSubmitted(s) && base.answers.length >= 7 ? round1(avg(base.answers.slice(4, 7))) : null;
+  const rated = base.template ? base.template.questions.filter((q) => q.kind === 'RATING') : null;
+  const start = rated ? Math.max(rated.findIndex((q) => /\bHR\b/i.test(q.section ?? '')), -1) : 4;
+  const hrBlockAvg = isSubmitted(s) && start >= 0 && base.answers.length > start ? round1(avg(base.answers.slice(start))) : null;
   return { ...base, hrBlockAvg };
 }
 
@@ -88,20 +93,29 @@ export async function submitSurvey(employeeId: number, req: { surveyId: string; 
   if (!survey) throw AppError.notFound(`Onboarding survey not found: ${req.surveyId}`);
   if (Number(survey['employee_id']) !== employeeId) throw AppError.badRequest('Survey does not belong to this employee');
   if (isSubmitted(survey)) throw AppError.badRequest('Survey already submitted');
+  const snapshot = parseSnapshot(survey['Questions']);
+  const expected = snapshot ? ratingCount(snapshot) : 7;
+  if (req.answers.length !== expected) throw AppError.badRequest(`Exactly ${expected} answers required`);
 
   await pool.execute(
     "UPDATE onboarding_surveys SET answers = ?, feedback = ?, status = 'SUBMITTED', updated_at = NOW() WHERE id = ?",
     [JSON.stringify(req.answers), req.feedback ?? null, req.surveyId]);
 
+  // answering the survey ends their new-joiner status, which hides Onboarding Experience for them
+  await pool.execute('UPDATE Users SET IsNewJoiner = 0 WHERE UserID = ?', [employeeId]);
+
   const a = req.answers;
   const overall = avg(a);
   const lowest = a.indexOf(Math.min(...a));
+  const labels = snapshot ? snapshot.questions.filter((q) => q.kind === 'RATING').map((q) => q.short || q.text) : QUESTION_LABELS;
+  const blockSplit = snapshot ? snapshot.questions.filter((q) => q.kind === 'RATING').findIndex((q) => /\bHR\b/i.test(q.section ?? '')) : 4;
+  const split = blockSplit < 0 ? a.length : blockSplit;
   await notify(['hr@tapmind.com', 'admin@tapmind.com'], `Onboarding Experience Survey submitted — ${survey['employee_name']}`,
     `<h3>Onboarding Survey Submitted</h3>
      <p><b>Employee:</b> ${survey['employee_name']} (${survey['department']})</p>
      <p><b>Overall Score:</b> ${round1(overall).toFixed(1)}/10</p>
-     <p><b>Process Block Avg:</b> ${round1(avg(a.slice(0, 4))).toFixed(1)} | <b>HR Block Avg:</b> ${round1(avg(a.slice(4, 7))).toFixed(1)}</p>
-     <p><b>Lowest Rated:</b> ${QUESTION_LABELS[lowest]} (${a[lowest]}/10)</p>
+     <p><b>Process Block Avg:</b> ${round1(avg(a.slice(0, split))).toFixed(1)} | <b>HR Block Avg:</b> ${round1(avg(a.slice(split))).toFixed(1)}</p>
+     <p><b>Lowest Rated:</b> ${labels[lowest]} (${a[lowest]}/10)</p>
      <p><b>Feedback:</b> ${req.feedback || 'None'}</p>`);
 
   return { surveyId: req.surveyId, overallScore: round1(overall), submittedAt: new Date().toISOString().slice(0, 19) };
@@ -124,7 +138,8 @@ export async function getScores() {
   const submitted = all.filter(isSubmitted);
   const answers = submitted.map((s) => answersOf(s['answers'])).filter((a) => a.length);
 
-  const questionAverages = Array.from({ length: 7 }, (_, i) =>
+  const questionCount = Math.max(7, ...answers.map((a) => a.length));
+  const questionAverages = Array.from({ length: questionCount }, (_, i) =>
     submitted.length ? round1(answers.reduce((sum, a) => sum + (a[i] ?? 0), 0) / submitted.length) : 0);
   // Java divided the sum of every answer by the number of surveys (e.g. 51.5 "/10"); this is the
   // average of each survey's score, which is what the screen labels it as
@@ -153,8 +168,9 @@ async function nextId(conn: mysql.PoolConnection) {
   return `S-${String(n).padStart(3, '0')}`;
 }
 
-export async function sendSurvey(req: { recipients: string[]; dueDate: string; notifyList?: string | null; departmentOverrides?: Record<string, string> | null }) {
+export async function sendSurvey(req: { recipients: string[]; dueDate: string; notifyList?: string | null; departmentOverrides?: Record<string, string> | null; templateId?: number | null }) {
   const due = parseDate(req.dueDate);
+  const snapshot = await snapshotFor('ONBOARDING', req.templateId);
   const ids: string[] = [];
   const emails: { email: string; name: string }[] = [];
   const conn = await pool.getConnection();
@@ -170,9 +186,9 @@ export async function sendSurvey(req: { recipients: string[]; dueDate: string; n
       const dept = req.departmentOverrides?.[name] ?? user['DepartmentName'] ?? '';
       const id = await nextId(conn);
       await conn.execute(
-        `INSERT INTO onboarding_surveys (id, employee_id, employee_name, department, joined_date, sent_on, due_date, status, created_at, updated_at)
-         VALUES (?, ?, ?, ?, CURDATE(), CURDATE(), ?, 'PENDING', NOW(), NOW())`,
-        [id, user['UserID'], user['UserName'], dept, due]);
+        `INSERT INTO onboarding_surveys (id, employee_id, employee_name, department, joined_date, sent_on, due_date, status, created_at, updated_at, TemplateID, Questions)
+         VALUES (?, ?, ?, ?, CURDATE(), CURDATE(), ?, 'PENDING', NOW(), NOW(), ?, ?)`,
+        [id, user['UserID'], user['UserName'], dept, due, snapshot.templateId, JSON.stringify(snapshot)]);
       ids.push(id);
       emails.push({ email: user['UserEmail'], name: user['UserName'] });
     }

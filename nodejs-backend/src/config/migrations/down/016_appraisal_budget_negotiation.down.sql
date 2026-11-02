@@ -1,4 +1,4 @@
--- Undo 010_appraisal_budget_negotiation.sql. Run by hand, before the 009 down script when going back to appraisal-module.
+-- Undo 016_appraisal_budget_negotiation.sql. Run by hand, before the 015 down script when going back to appraisal-module.
 -- The migration runner never reads this folder.
 
 ALTER TABLE AppraisalHike DROP COLUMN VariableOverride;
@@ -8,4 +8,4 @@ UPDATE AppraisalRound SET Status = 'BUDGET_WITH_EL' WHERE Status IN ('BUDGET_NEG
 ALTER TABLE AppraisalRound DROP COLUMN ElAcceptedAt;
 ALTER TABLE AppraisalRound MODIFY Status ENUM('COLLECTING','READY_FOR_FINANCE','BUDGET_WITH_EL','SHARES_WITH_FLS','FINALISED') NOT NULL DEFAULT 'COLLECTING';
 
-DELETE FROM SchemaMigration WHERE Name = '010_appraisal_budget_negotiation.sql';
+DELETE FROM SchemaMigration WHERE Name = '016_appraisal_budget_negotiation.sql';

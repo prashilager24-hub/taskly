@@ -1,5 +1,5 @@
--- Undo 009_appraisal_flow_v2.sql (only when going back to the branch appraisal-module).
--- Run by hand, e.g.: mysql -u taskly -p utilization < src/config/migrations/down/009_appraisal_flow_v2.down.sql
+-- Undo 015_appraisal_flow_v2.sql (only when going back to the branch appraisal-module).
+-- Run by hand, e.g.: mysql -u taskly -p utilization < src/config/migrations/down/015_appraisal_flow_v2.down.sql
 -- The migration runner never reads this folder.
 
 DROP TABLE IF EXISTS AppraisalAllocation;
@@ -13,4 +13,4 @@ UPDATE AppraisalCycle SET Status = 'ASSESSOR_OPEN' WHERE Status = 'SUBMITTED';
 ALTER TABLE AppraisalCycle MODIFY Status ENUM('EMPLOYEE_OPEN','ASSESSOR_OPEN','FINANCE_REVIEW','OFFERED','ACCEPTED','POSTPONED') NOT NULL DEFAULT 'EMPLOYEE_OPEN';
 ALTER TABLE AppraisalCycle DROP KEY ix_round, DROP COLUMN PeriodStart, DROP COLUMN DepartmentID;
 
-DELETE FROM SchemaMigration WHERE Name = '009_appraisal_flow_v2.sql';
+DELETE FROM SchemaMigration WHERE Name = '015_appraisal_flow_v2.sql';

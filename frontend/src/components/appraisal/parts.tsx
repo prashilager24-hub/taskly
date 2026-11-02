@@ -177,28 +177,25 @@ export function BudgetThread({ log, viewer }: { log: BudgetLogEntry[]; viewer: "
     let offer: number | null = null;
     const offered = log.map((l) => { const before = offer; if (l.action === "PROPOSED" || l.action === "REVISED") offer = l.amount; return before; });
     return (
-        <ol className="flex flex-col gap-5" aria-label="Budget discussion">
+        <ol className="flex flex-col gap-2.5" aria-label="Budget discussion">
             {log.map((l, i) => {
                 const finance = FROM_FINANCE.includes(l.action);
                 const mine = finance === (viewer === "FINANCE");
                 const name = l.by?.name ?? (finance ? "Finance Head" : "EL");
                 return (
-                    <li key={i} className={cn("flex items-start gap-3", mine && "flex-row-reverse")}>
-                        <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center text-xs font-bold text-white", finance ? "bg-brand-600" : "bg-ink-800 dark:bg-ink-600")} aria-hidden>{initials(name)}</span>
-                        <div className={cn("flex w-full max-w-[640px] flex-col gap-2 border p-4", THREAD_TONE[l.action])}>
-                            <div className={cn("flex flex-wrap items-baseline gap-x-3 gap-y-0.5", mine && "flex-row-reverse text-right")}>
-                                <p className="text-sm font-bold text-ink-900 dark:text-white">{name}<span className="ml-1.5 text-xs font-normal text-ink-500">{finance ? "Finance Head" : "Executive Leader"}</span></p>
-                                <span className="text-xs text-ink-500">{when(l.at)}</span>
-                            </div>
-                            <div className={cn("flex flex-col gap-1", mine && "items-end text-right")}>
-                                <p className={cn("eyebrow", THREAD_TEXT[l.action])}>{THREAD_LABEL[l.action]}</p>
-                                {l.amount != null && (l.action === "NEGOTIATE"
-                                    ? <p className="text-sm text-ink-700 dark:text-ink-200">Asks for <b className="text-2xl tabular-nums text-rose-700 dark:text-rose-300">{inr(l.amount)}</b>{offered[i] != null && <span className="ml-1.5 text-ink-500">instead of {inr(offered[i])}</span>}</p>
-                                    : <p className="text-2xl font-bold tabular-nums text-ink-900 dark:text-white">{inr(l.amount)}{l.action === "REVISED" && offered[i] != null && <span className="ml-2 text-sm font-normal text-ink-500">was {inr(offered[i])}</span>}</p>)}
-                                {l.action === "NEGOTIATE" && l.amount == null && <p className="text-sm text-ink-600 dark:text-ink-300">No amount named</p>}
-                                {l.action === "RESET" && <p className="text-sm text-ink-600 dark:text-ink-300">The split was cleared; the budget came back to the EL to accept again.</p>}
-                            </div>
-                            {l.comment && <p className={cn("whitespace-pre-wrap text-[15px] leading-relaxed text-ink-800 dark:text-ink-100", mine && "text-right")}>{l.comment}</p>}
+                    <li key={i} className={cn("flex items-start gap-2", mine && "flex-row-reverse")}>
+                        <span className={cn("mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center text-[10px] font-bold text-white", finance ? "bg-brand-600" : "bg-ink-800 dark:bg-ink-600")} aria-hidden>{initials(name)}</span>
+                        <div className={cn("flex max-w-[520px] flex-col gap-1 border px-3 py-2", THREAD_TONE[l.action], mine && "items-end text-right")}>
+                            <p className={cn("flex flex-wrap items-baseline gap-x-2 text-xs", mine && "flex-row-reverse")}>
+                                <b className="text-ink-900 dark:text-white">{name}</b>
+                                <span className={cn("font-semibold", THREAD_TEXT[l.action])}>{THREAD_LABEL[l.action].toLowerCase()}</span>
+                                <span className="text-ink-500">{when(l.at)}</span>
+                            </p>
+                            {l.amount != null && (l.action === "NEGOTIATE"
+                                ? <p className="text-sm text-ink-700 dark:text-ink-200">Asks <b className="text-base tabular-nums text-rose-700 dark:text-rose-300">{inr(l.amount)}</b>{offered[i] != null && <span className="text-xs text-ink-500"> instead of {inr(offered[i])}</span>}</p>
+                                : <p className="text-base font-bold tabular-nums text-ink-900 dark:text-white">{inr(l.amount)}{l.action === "REVISED" && offered[i] != null && <span className="ml-1.5 text-xs font-normal text-ink-500">was {inr(offered[i])}</span>}</p>)}
+                            {l.action === "RESET" && <p className="text-xs text-ink-600 dark:text-ink-300">Split cleared; the budget came back to the EL to accept again.</p>}
+                            {l.comment && <p className="whitespace-pre-wrap text-sm text-ink-800 dark:text-ink-100">{l.comment}</p>}
                         </div>
                     </li>
                 );
@@ -220,9 +217,9 @@ export function BudgetStrip({ r }: { r: Round }) {
     return (
         <div className="grid grid-cols-1 border border-ink-200 sm:grid-cols-2 xl:grid-cols-4 dark:border-white/10">
             {cells.map((c, i) => (
-                <div key={c.label} className={cn("flex flex-col gap-1 border-ink-200 p-4 dark:border-white/10", i > 0 && "border-t sm:border-t-0 sm:border-l", c.strong && (agreed ? "bg-emerald-50 dark:bg-emerald-500/10" : "bg-brand-50 dark:bg-brand-600/10"))}>
+                <div key={c.label} className={cn("flex flex-col gap-0.5 border-ink-200 px-4 py-3 dark:border-white/10", i > 0 && "border-t sm:border-t-0 sm:border-l", c.strong && (agreed ? "bg-emerald-50 dark:bg-emerald-500/10" : "bg-brand-50 dark:bg-brand-600/10"))}>
                     <p className="eyebrow">{c.label}</p>
-                    <p className="text-2xl font-bold tabular-nums text-ink-900 dark:text-white">{c.value}</p>
+                    <p className="text-xl font-bold tabular-nums text-ink-900 dark:text-white">{c.value}</p>
                     {c.hint && <p className={cn("text-xs", c.strong && agreed ? "font-semibold text-emerald-700 dark:text-emerald-400" : "text-ink-500")}>{c.hint}</p>}
                 </div>
             ))}

@@ -3,7 +3,7 @@ import { pool } from '../../config/db';
 import { env } from '../../config/env';
 import { AppError } from '../../utils/AppError';
 import { assessorsOf, assessorsOfMany, levelOf } from '../access/hierarchy';
-import { addMonths, currentCycleStart, cycleMonthOf, cycleWindows, periodOf, quarterSlots, splitHike, todayIST, VARIABLE_PCT, type EmployeeLevel } from './appraisal.calc';
+import { addMonths, currentCycleStart, cycleMonthOf, cycleWindows, periodOf, quarterSlots, splitWith, todayIST, VARIABLE_PCT, type EmployeeLevel, type VariableOverride } from './appraisal.calc';
 import * as flow from './appraisal.flow';
 import { maskCycle, type FullCycle, type Money, type PmsQuarter, type RequestField, type RequestReviews, type Status } from './appraisal.mask';
 
@@ -58,6 +58,23 @@ export async function setFinanceHead(appRole: number, userId: number) {
   headCache = null;
   return financeHead();
 }
+/** Stands in for the signed-in user's role inside the appraisal module when that user has the Super Administrator role */
+export const OVERVIEW_ROLE = -3;
+const OVERVIEW_ROLE_NAME = 'Super Administrator';
+let overviewCache: { at: number; ids: Set<number> } | null = null;
+/** Whether one of the user's roles is Super Administrator: they see how the appraisal is going in every department, and have no appraisal themselves */
+export async function isSuperAdministrator(userId: number) {
+  if (!overviewCache || Date.now() - overviewCache.at > 60_000) {
+    const [r] = await pool.execute<Row[]>('SELECT RoleID FROM AMRole WHERE RoleName = ? AND IsRoleArchived = 0 AND RoleStatus = 1', [OVERVIEW_ROLE_NAME]);
+    overviewCache = { at: Date.now(), ids: new Set(r.map((x) => x['RoleID'] as number)) };
+  }
+  if (!overviewCache.ids.size) return false;
+  const [u] = await pool.execute<Row[]>('SELECT RoleID, SecondaryRoleID FROM Users WHERE UserID = ?', [userId]);
+  return !!u[0] && (overviewCache.ids.has(u[0]['RoleID'] as number) || overviewCache.ids.has(u[0]['SecondaryRoleID'] as number));
+}
+/** The overview of every department: Admins, the Super Administrator and Finance */
+export const isOverview = (role: number) => role === OVERVIEW_ROLE || isFinance(role);
+
 /** Stands in for the signed-in user's role inside the appraisal module when that user works in the HR department */
 export const HR_MEMBER_ROLE = -2;
 export const isHr = (role: number) => role === 1 || role === HR_MEMBER_ROLE || HR_ROLES.has(role);
@@ -259,7 +276,8 @@ function employeeView(full: FullCycle, ctx: Ctx) {
   };
 }
 
-export async function myCycle(userId: number, _appRole: number) {
+export async function myCycle(userId: number, appRole: number) {
+  if (appRole === OVERVIEW_ROLE) return null;
   const [rows] = await pool.execute<Row[]>('SELECT CycleID FROM AppraisalCycle WHERE UserID = ? ORDER BY CycleStartDate DESC, CycleID DESC', [userId]);
   const id = (rows[0]?.['CycleID'] as number | undefined) ?? (!TIMED ? (await startForTesting(userId)) ?? undefined : undefined);
   if (!id) return null;
@@ -277,7 +295,7 @@ export async function cycleFor(cycleId: number, userId: number, appRole: number)
   const isEl = ctx?.round.el?.userId === userId;
   const isFl = !!ctx && ctx.person.flUserId === userId;
   const named = full.cycle.assessor1?.userId === userId || full.cycle.assessor2?.userId === userId;
-  const fin = isFinance(appRole);
+  const fin = isOverview(appRole);
   if (!isEl && !isFl && !named && !fin) throw AppError.forbidden('You have no part in this appraisal');
   const src = ctx?.person.source ?? null;
   const requests = requestsOf(full, src);
@@ -370,17 +388,7 @@ async function lock(c: Conn, cycleId: number) {
   return { id: r['CycleID'] as number, userId: r['UserID'] as number, status: r['Status'] as Status, level: r['EmployeeLevel'] as EmployeeLevel, a1: r['Assessor1UserID'] as number | null, a2: r['Assessor2UserID'] as number | null, start: r['Start'] as string, empEnd: r['EmpEnd'] as string, assEnd: r['AssEnd'] as string, departmentId: r['DepartmentID'] as number | null, period: r['Period'] as string | null };
 }
 
-/** Variable pay the employee sets themselves: a percentage of the hike, or an amount out of it */
-export interface VariableOverride { mode: 'PCT' | 'AMOUNT'; value: number }
-
-/** Fixed + variable for a hike: the level's percentage, or the employee's own percentage / amount */
-export function splitWith(amount: number, level: EmployeeLevel, own?: VariableOverride | null) {
-  if (!own) return { ...splitHike(amount, level), override: null };
-  if (own.mode === 'PCT' && (own.value < 0 || own.value > 100)) throw AppError.badRequest('Variable pay must be between 0% and 100%');
-  if (own.mode === 'AMOUNT' && own.value > amount) throw AppError.badRequest('Variable pay cannot be more than the hike');
-  const variable = Math.round(own.mode === 'PCT' ? (amount * own.value) / 100 : own.value);
-  return { annualAmount: amount, fixed: amount - variable, variable, variablePct: amount ? Math.round((variable / amount) * 100) : 0, override: own.mode };
-}
+export { splitWith, type VariableOverride };
 
 async function putHike(c: Conn, cycleId: number, kind: 'EXPECTED' | 'TARGET' | 'MINIMAL' | 'APPROVED', by: 'EMPLOYEE' | 'A1' | 'A2' | 'FINANCE', amount: number | null | undefined, level: EmployeeLevel, actor: number, own?: VariableOverride | null) {
   if (amount == null) {
@@ -731,6 +739,7 @@ export async function availability(userId: number, appRole: number) {
   const [mine] = await pool.execute<Row[]>(`SELECT c.CycleID, c.Status FROM AppraisalCycle c WHERE c.UserID = ? AND ${ACTIVE} ORDER BY c.CycleStartDate DESC LIMIT 1`, [userId]);
   const fin = isFinance(appRole);
   const hr = isHr(appRole);
+  const over = isOverview(appRole);
   const num = (r: Row | undefined, k: string) => Number(r?.[k] ?? 0);
   const [ready] = fin ? await pool.execute<Row[]>("SELECT COUNT(*) AS n FROM AppraisalRound WHERE Status IN ('READY_FOR_FINANCE', 'BUDGET_NEGOTIATION')") : [[]];
   const [leads] = await pool.execute<Row[]>('SELECT DepartmentID FROM Department WHERE ExecutiveLeaderID = ? AND IsDepartmentArchived = 0', [userId]);
@@ -745,13 +754,15 @@ export async function availability(userId: number, appRole: number) {
     !TIMED ? [userId, userId, userId, userId] : [userId, userId]);
   const [hrr] = hr ? await pool.execute<Row[]>("SELECT COUNT(*) AS n, SUM(r.HrStatus = 'PENDING') AS pending FROM AppraisalCycle c JOIN AppraisalResponse r ON r.CycleID = c.CycleID WHERE c.Status = 'POSTPONED' AND r.Decision = 'REJECT' AND c.UserID <> ?", [userId]) : [[]];
   // While testing (no date windows) everyone sees My Appraisal; with windows on, it follows each person's cycle
-  const my = { show: mine.length > 0 || (!TIMED && appRole !== 1), status: (mine[0]?.['Status'] as Status | undefined) ?? null, cycleId: (mine[0]?.['CycleID'] as number | undefined) ?? null };
+  const my = { show: appRole !== OVERVIEW_ROLE && (mine.length > 0 || (!TIMED && appRole !== 1)), status: (mine[0]?.['Status'] as Status | undefined) ?? null, cycleId: (mine[0]?.['CycleID'] as number | undefined) ?? null };
   const departments = { show: fin, pending: num(ready[0], 'n') };
   const split = { show: leads.length > 0, pending: num(elTodo[0], 'n') };
-  const allocation = { show: num(shares[0], 'n') > 0 || lead.length > 0, pending: num(shares[0], 'todo') };
+  // an EL gets no team budget (they split the department's), so Team Allocation is not theirs unless they were given a share
+  const allocation = { show: num(shares[0], 'n') > 0 || (lead.length > 0 && !leads.length), pending: num(shares[0], 'todo') };
   const requests = { show: split.show || allocation.show };
   const hrN = { show: hr && num(hrr[0], 'n') > 0, pending: num(hrr[0], 'pending') };
   // HR keeps each person's joining date, level and CTC, before any cycle exists
   const setup = { show: hr };
-  return { my, departments, split, allocation, requests, hr: hrN, setup, any: my.show || departments.show || split.show || allocation.show || hrN.show || setup.show };
+  const overview = { show: over };
+  return { my, departments, overview, split, allocation, requests, hr: hrN, setup, any: my.show || departments.show || overview.show || split.show || allocation.show || hrN.show || setup.show };
 }

@@ -17,6 +17,37 @@ Summary: one or two lines on what and why.
 
 ---
 
+## 2026-11-02 — Appraisal: reset / revise / approve, override on every hike, overview for a Super Administrator (branch appraisal-flow-v2)
+
+Summary: the manager's second review. Associates and FLs only see "Your appeal is submitted and in progress, we will let you know soon". Every hike anyone enters has a variable pay override. The rest of the EL's budget goes to the FLs automatically. The EL, Finance Head and Admin see Budget discussion first, then Appeals, then the split, with old → new CTC and the increase in %. On an FL's proposal, the EL can Reset budget, Revise proposal or Approve proposal. A new Super Administrator role sees an overview of every department. Every accepted hike gets a celebration, and everyone sees their own final split.
+
+### Frontend
+- My Appraisal: once submitted, an Associate / FL sees only "Your appeal is submitted and in progress. We will let you know soon." (no budget or split wording; the EL keeps the tracker). On offer: "Your appraisal hike is released". Accepting shows a celebration (with confetti) whether or not a change was asked, and a "Final split" row of their own: expected, targeted, accepted (fixed / variable), old → new CTC, % of expected / targeted.
+- Budget Split (EL): tabs **Budget discussion** (accept / negotiate, the log) → **Appeals** (with CTC and % on CTC) → **Budget split**. The own hike and direct-report hikes have the variable pay override. The FL shares (now at the bottom) are filled automatically with the rest of the budget, spread by each team's expected total; changing a share sets it by hand. On each FL proposal: **Reset budget** (reason required), **Revise proposal** (optional note), **Approve proposal**. The final split table shows Current CTC → New CTC and CTC increase. Team Allocation is no longer in an EL's menu.
+- Department Budgets detail (Finance Head and Admin, same screen): tabs Budget discussion → Appeals (expected / target as % on CTC) → Split (with CTC), FL shares at the bottom.
+- Team Allocation (FL): override on every team hike and their own; a "sent back to revise" box with the EL's note; waiting text has no budget wording; after approval, a final split of the team and themselves (no team CTC).
+- New page **Appraisal → Overview** ([Overview.tsx](../frontend/src/components/appraisal/Overview.tsx)): every department of a cycle with search, status filter, totals (expected, targeted, budget, decided) and a split view per department (split table with CTC, budget discussion, FL shares). Shown to the Super Administrator, Admins and the Finance Head.
+
+### Backend
+- [appraisal.flow.ts](../nodejs-backend/src/modules/appraisal/appraisal.flow.ts): allocations carry the variable override and the offer uses it; new `reviseShare` (clears the FL's and team's hikes, share back to the FL with the note) and `resetSplit` (withdraws hikes on offer, clears allocations not yet answered and every share, round back to BUDGET_WITH_EL, logged as RESET; accepted / rejected hikes stay); decided hikes cannot be changed in a split or allocation; new `overview(period)`; the FL no longer receives the team's CTC; "hike released" notifications.
+- [appraisal.service.ts](../nodejs-backend/src/modules/appraisal/appraisal.service.ts): Super Administrator role (by name) → `OVERVIEW_ROLE`, no appraisal of their own; `isOverview`; availability has `overview` and hides Team Allocation for ELs without a share. `splitWith` moved to appraisal.calc.ts.
+- Routes: `GET /appraisal/overview?period=`, `PUT /appraisal/split/:d/:p/shares/:fl/revise` { comment? }, `PUT /appraisal/split/:d/:p/reset` { comment }; split, allocation and direct bodies accept `variable` { mode: PCT | AMOUNT, value }.
+- `appraisalFlowCheck.ts`: 90 checks (adds revise, reset, overrides on decided hikes, menus, overview).
+
+### Database
+- `011_appraisal_review_reset.sql` (`npm run db:migrate`): AppraisalAllocation `VariableMode` / `VariableValue`; AppraisalShare `ReturnComment` / `ReturnedAt`; AppraisalBudgetLog.Action gains RESET; inserts role **Super Administrator** (appraisal + dashboard read).
+- Locally a user was created for it: Super Administrator, superadministrator@tapmind.com (password Test@12345, change it). On other environments create the user in Access Management with that role.
+- To undo: `src/config/migrations/down/011_appraisal_review_reset.down.sql` by hand, before the 010 down script.
+
+### Env / config
+- none
+
+### Notes
+- "Team Budget → Budget split, remove Team Allocation if not in use" was read as: Team Allocation is hidden for ELs (they split the department budget in Budget Split).
+- Reset budget keeps hikes people already accepted or rejected; everything else returns to the Finance Head's budget.
+
+---
+
 ## 2026-11-01 — Appraisal: budget negotiation, own variable pay, final split view, departments follow edits (branch appraisal-flow-v2)
 
 Summary: changes from the manager's review. The EL now accepts the Finance Head's budget or negotiates it (with a comment and, optionally, the amount they ask for); the Finance Head revises it; every step is logged and shown to both. Only an accepted budget can be split. Employees can override their variable pay on the hikes they appeal for. After the split, the EL and the Finance Head see one final table per department. An EL can add their own designation / team change. Separately (commit bc13711), a person's appraisal follows their department membership and user-record edits until the budget is set.

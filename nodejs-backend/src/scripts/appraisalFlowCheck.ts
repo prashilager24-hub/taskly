@@ -114,12 +114,46 @@ async function main() {
   ok((await svc.myCycle(ids.a1, 2))!.stage === 'AWAITING_EL', 'associate stage: Waiting for EL approval');
   await throws(() => flow.saveAllocation(ids.fl, deptId, period, { items: [], submit: false }), 'FL cannot edit after submitting');
 
+  // 4b. "Revise proposal": the EL sends it back; the FL's hikes are cleared and the same share is allocated again
+  await throws(() => flow.reviseShare(ids.fl, 4, deptId, period, ids.fl, 'x'), 'only the EL sends a proposal back');
+  await flow.reviseShare(ids.el, 3, deptId, period, ids.fl, 'Give a2 more');
+  const rv = await flow.loadRound(pool, deptId, period);
+  const rvs = rv.shares.find((s) => s.flUserId === ids.fl)!;
+  ok(rvs.status === 'SHARE_RECEIVED' && rvs.returnComment === 'Give a2 more' && !!rvs.returnedAt && rvs.amount === 300000, 'proposal back with the FL, with the note, same share');
+  ok(rv.people.filter((p) => p.flUserId === ids.fl).every((p) => p.allocation == null), "the FL's and the team's hikes are cleared");
+  await flow.saveAllocation(ids.fl, deptId, period, { items: [{ cycleId: cyc.a1, amount: 110000, reason: 'Led release' }, { cycleId: cyc.a2, amount: 60000, reason: 'More now' }, { cycleId: cyc.fl, amount: 120000 }], justification: 'Revised', submit: true });
+
+  // 4c. "Reset budget": back to the Finance Head's budget. d1 accepted first: that stays; the EL's own offer is withdrawn
+  await svc.respond(cyc.d1, ids.d1, { decision: 'ACCEPT' });
+  await throws(() => flow.resetSplit(ids.el, 3, deptId, period, ' '), 'reset without a reason is refused');
+  await flow.resetSplit(ids.el, 3, deptId, period, 'Start again with the CEO');
+  const rr = await flow.loadRound(pool, deptId, period);
+  ok(rr.status === 'BUDGET_WITH_EL' && !rr.elAcceptedAt && !rr.elSentAt && rr.budget === 600000, 'reset: the 600000 budget waits for the EL again');
+  ok(rr.budgetLog.at(-1)?.action === 'RESET' && rr.budgetLog.at(-1)?.comment === 'Start again with the CEO', 'reset logged with its reason');
+  ok(rr.people.find((p) => p.userId === ids.el)?.status === 'SUBMITTED' && rr.people.find((p) => p.userId === ids.el)?.allocation == null, "EL's own offer withdrawn");
+  ok(rr.people.find((p) => p.userId === ids.d1)?.status === 'ACCEPTED' && rr.people.find((p) => p.userId === ids.d1)?.allocation === 50000, 'accepted hike stays');
+  ok(rr.shares.every((s) => s.status === 'PLANNED' && !s.amount) && rr.people.filter((p) => p.flUserId === ids.fl).every((p) => p.allocation == null), 'shares and FL proposals cleared');
+  ok((await svc.myCycle(ids.a1, 2))!.stage === 'BUDGET_REVIEW', 'associate back to: in progress');
+  await throws(() => flow.saveSplit(ids.el, 3, deptId, period, { send: false }), 'split again only after accepting again');
+  await flow.respondBudget(ids.el, 3, deptId, period, { accept: true });
+  await throws(() => flow.saveSplit(ids.el, 3, deptId, period, { direct: [{ cycleId: cyc.d1, amount: 1 }], send: false }), 'an accepted hike cannot be changed');
+  await throws(() => flow.saveSplit(ids.el, 3, deptId, period, { own: { amount: 120000, variable: { mode: 'AMOUNT', value: 130000 } }, send: false }), 'EL variable above the hike is refused');
+  // the EL's own hike with 40% variable; everything left goes to the FL
+  await flow.saveSplit(ids.el, 3, deptId, period, { own: { amount: 120000, comment: 'Agreed with the CEO', variable: { mode: 'PCT', value: 40 } }, shares: [{ flUserId: ids.fl, amount: 430000, comment: 'The rest' }], send: true });
+  const elOffer = await svc.myCycle(ids.el, 3);
+  ok(elOffer!.cycle.status === 'OFFERED' && elOffer!.approved?.variable === 48000 && elOffer!.approved?.fixed === 72000 && elOffer!.approved?.override === 'PCT', 'EL offered 120000 with 40% variable');
+  // the FL sets a2's variable pay themselves
+  await throws(() => flow.saveAllocation(ids.fl, deptId, period, { items: [{ cycleId: cyc.a2, amount: 60000, variable: { mode: 'AMOUNT', value: 70000 } }], submit: false }), 'FL variable above the hike is refused');
+  await flow.saveAllocation(ids.fl, deptId, period, { items: [{ cycleId: cyc.a1, amount: 110000, reason: 'Led release' }, { cycleId: cyc.a2, amount: 60000, reason: 'More now', variable: { mode: 'AMOUNT', value: 15000 } }, { cycleId: cyc.fl, amount: 120000 }], justification: 'Final', submit: true });
+
   // 5. EL approves
   await flow.approveShare(ids.el, 3, deptId, period, ids.fl);
   const r3 = await flow.loadRound(pool, deptId, period);
   ok(r3.status === 'FINALISED', 'round finalised');
   const a1r = r3.people.find((p) => p.userId === ids.a1)!;
   ok(a1r.approved === 110000 && a1r.approvedFixed === 99000 && a1r.approvedVariable === 11000, 'approved hike has its fixed and variable');
+  const a2r = r3.people.find((p) => p.userId === ids.a2)!;
+  ok(a2r.approvedVariable === 15000 && a2r.approvedFixed === 45000 && a2r.variable?.mode === 'AMOUNT', "FL's variable override reaches a2's offer");
   const a1v = await svc.myCycle(ids.a1, 2);
   ok(a1v!.cycle.status === 'OFFERED' && a1v!.approved?.annual === 110000 && a1v!.can.reject, 'associate offered 110000 and may reject');
   const flv = await svc.myCycle(ids.fl, 4);
@@ -158,13 +192,20 @@ async function main() {
   const a2v = await svc.myCycle(ids.a2, 5);
   ok(a2v!.cycle.status === 'OFFERED' && a2v!.approved?.annual === 70000, 'intern offered the revised 70000');
   ok((await svc.myCycle(ids.a1, 2))!.cycle.status === 'ACCEPTED', 'already-accepted associate untouched by the re-approval');
-  await svc.respond(cyc.d1, ids.d1, { decision: 'ACCEPT' });
 
   // 8. menus
   const avEl = await svc.availability(ids.el, 3);
   const avFl = await svc.availability(ids.fl, 4);
   ok(avEl.split.show && avEl.requests.show && !avEl.departments.show, 'EL menus: split, requests');
   ok(avFl.allocation.show && avFl.requests.show && !avFl.split.show, 'FL menus: allocation, requests');
+  ok(!avEl.allocation.show, 'an EL has no Team Allocation');
+  const avOv = await svc.availability(ids.d1, svc.OVERVIEW_ROLE);
+  ok(avOv.overview.show && !avOv.my.show && !avOv.departments.show, 'Super Administrator: Overview only');
+  ok(!(await svc.availability(ids.d1, 2)).overview.show && (await svc.availability(141, svc.FINANCE_HEAD_ROLE)).overview.show && (await svc.availability(1, 1)).overview.show, 'Overview: Admin and Finance Head too, nobody else');
+  const ov = await flow.overview(period);
+  const ovr = ov.rounds.find((r) => r.departmentId === deptId);
+  ok(!!ov.rows.find((r) => r.departmentId === deptId) && ovr?.status === 'FINALISED' && ovr.people.length === 5, 'overview has the department and its split');
+  ok((await flow.flShares(ids.fl))[0]!.people.filter((p) => !p.own).every((p) => p.currentAnnualCtc == null), "FL does not see the team's CTC");
 
   await edits(period);
 }

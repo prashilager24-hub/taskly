@@ -16,6 +16,9 @@ export function splitPreview(annual: number, level: Level, own?: { mode: "PCT" |
         : Math.round((annual * VARIABLE_PCT[level]) / 100);
     return { annual, fixed: annual - variable, variable, perHalf: variable / 2, pct: annual ? Math.round((variable / annual) * 100) : VARIABLE_PCT[level] };
 }
+/** How much the hike raises the CTC: the new CTC and the increase as a percentage of the old one (null without a CTC) */
+export const ctcRise = (ctc: number | null | undefined, hike: number | null | undefined) =>
+    ctc == null || hike == null || !ctc ? null : { now: ctc + hike, pct: Math.round((hike / ctc) * 1000) / 10 };
 /** a / b as a whole percentage, or "—" */
 export const pctOf = (a: number | null | undefined, b: number | null | undefined) => (a == null || !b ? "—" : `${Math.round((a / b) * 100)}%`);
 
@@ -39,7 +42,7 @@ export const STATUS_COLOR: Record<Status, "default" | "primary" | "secondary" | 
 };
 /** One person's place in the flow, as the statuses list names it */
 export const STAGE_LABEL: Record<Stage, string> = {
-    APPEAL_OPEN: "Appeal open", SUBMITTED: "Submitted", BUDGET_REVIEW: "Budget being set", IN_ALLOCATION: "Hike being decided",
+    APPEAL_OPEN: "Appeal open", SUBMITTED: "Submitted", BUDGET_REVIEW: "In progress", IN_ALLOCATION: "Hike being decided",
     AWAITING_EL: "Waiting for EL approval", OFFERED: "Hike ready", ACCEPTED: "Accepted", POSTPONED: "Postponed",
 };
 export const STAGE_COLOR: Record<Stage, "default" | "primary" | "secondary" | "success" | "warning" | "danger"> = {

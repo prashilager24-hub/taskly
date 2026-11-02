@@ -5,10 +5,10 @@ import { Award, BadgeCheck, Check, CheckCircle2, Clock, Gift, Hourglass, PartyPo
 
 import { Panel } from "@/components/page";
 import { Button, Chip, Tab, Tabs, Textarea, addToast } from "@/components/ui";
-import { appraisalApi, errorText, type ChangeRequest, type Money, type MyView, type Stage, type VariableOverride } from "./api";
+import { appraisalApi, errorText, type ChangeRequest, type Money, type MyView, type RoundPerson, type Stage, type VariableOverride } from "./api";
 import { REQ_COLOR, REQ_LABEL, day, inr } from "./format";
 import { AcceptModal, RejectModal } from "./OfferModal";
-import { Banner, COLS2, HikeField, MoneyCard, ReadText, WHY_KEY, WHY_LABEL, type OwnVariable } from "./parts";
+import { Banner, COLS2, HikeField, MoneyCard, ReadText, SplitTable, WHY_KEY, WHY_LABEL, type OwnVariable } from "./parts";
 
 /** The variable pay the person set themselves on a saved hike, back into the form */
 const ownOf = (m: Money | null | undefined): OwnVariable => (m?.override ? { mode: m.override, value: m.override === "PCT" ? m.variablePct : m.variable } : null);
@@ -66,26 +66,43 @@ function ChangeRow({ r, route }: { r: ChangeRequest; route: MyView["route"] }) {
     );
 }
 
-/** An approved designation or team change: the moment to celebrate */
-function Celebration({ name, won }: { name: string; won: ChangeRequest[] }) {
+const CONFETTI = ["bg-emerald-500", "bg-brand-500", "bg-amber-400", "bg-rose-500", "bg-violet-500"];
+/** A short burst of confetti over the celebration (not shown when the person prefers reduced motion) */
+const Confetti = () => (
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden motion-reduce:hidden">
+        <style>{"@keyframes appraisal-confetti{0%{transform:translateY(-24px) rotate(0deg);opacity:1}100%{transform:translateY(460px) rotate(600deg);opacity:0}}"}</style>
+        {Array.from({ length: 40 }, (_, i) => (
+            <span key={i} className={cn("absolute -top-3 h-2.5 w-1.5", CONFETTI[i % 5])}
+                style={{ left: `${(i * 37 + 11) % 100}%`, animation: `appraisal-confetti ${2.4 + (i % 5) * 0.4}s ease-in ${(i % 8) * 0.15}s 1 forwards` }} />
+        ))}
+    </div>
+);
+
+/** The hike accepted, and any approved designation or team change: the moment to celebrate */
+function Celebration({ name, won, hike }: { name: string; won: ChangeRequest[]; hike: Money | null }) {
     const designation = won.find((w) => w.field === "DESIGNATION");
     const team = won.find((w) => w.field === "TEAM");
     return (
         <div className="relative overflow-hidden border border-emerald-500/50 bg-gradient-to-br from-emerald-50 via-white to-brand-50 p-6 dark:from-emerald-500/15 dark:via-ink-900 dark:to-brand-600/15 sm:p-8">
+            <Confetti />
             <Sparkles aria-hidden size={140} strokeWidth={1} className="pointer-events-none absolute -right-6 -top-6 text-emerald-500/15" />
             <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start">
                 <span className="flex h-16 w-16 shrink-0 items-center justify-center bg-emerald-600 text-white shadow-lg shadow-emerald-600/30"><PartyPopper size={32} /></span>
                 <div className="flex min-w-0 flex-col gap-2">
-                    <p className="eyebrow !text-emerald-700 dark:!text-emerald-400">{designation ? "Promotion approved" : "Team change approved"}</p>
+                    <p className="eyebrow !text-emerald-700 dark:!text-emerald-400">{designation ? "Promotion approved" : team ? "Team change approved" : "Hike accepted"}</p>
                     <p className="text-3xl font-bold leading-tight tracking-tight text-ink-900 dark:text-white">Congratulations, {name}!</p>
                     <p className="max-w-[60ch] text-[15px] text-ink-700 dark:text-ink-200">
                         {designation && <>You are now <b className="text-emerald-700 dark:text-emerald-400">{designation.value}</b>. </>}
                         {team && <>{designation ? "And you" : "You"} are moving to <b className="text-emerald-700 dark:text-emerald-400">{team.value}</b>. </>}
-                        Your work this year has been recognised. Well deserved.
+                        Your hike of <b className="text-emerald-700 dark:text-emerald-400">{inr(hike?.annual)}</b> a year is confirmed. Your work this year has been recognised. Well deserved.
                     </p>
                 </div>
             </div>
             <div className="relative mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="flex items-center gap-3 border border-emerald-500/30 bg-white/70 px-4 py-3 dark:bg-ink-900/60">
+                    <Gift size={22} className="shrink-0 text-emerald-600" />
+                    <div className="min-w-0"><p className="eyebrow">New hike per year</p><p className="truncate text-base font-bold text-ink-900 dark:text-white">{inr(hike?.annual)} <span className="text-xs font-normal text-ink-500">Fixed {inr(hike?.fixed)} · Variable {inr(hike?.variable)}</span></p></div>
+                </div>
                 {won.map((w) => (
                     <div key={w.field} className="flex items-center gap-3 border border-emerald-500/30 bg-white/70 px-4 py-3 dark:bg-ink-900/60">
                         {w.field === "DESIGNATION" ? <BadgeCheck size={22} className="shrink-0 text-emerald-600" /> : <Users size={22} className="shrink-0 text-emerald-600" />}
@@ -95,6 +112,17 @@ function Celebration({ name, won }: { name: string; won: ChangeRequest[] }) {
             </div>
         </div>
     );
+}
+
+/** The person's own row of the final split */
+function ownRow(view: MyView): RoundPerson {
+    const c = view.cycle;
+    const a = view.approved;
+    return {
+        cycleId: c.id, userId: c.userId, name: c.employeeName, level: c.level, status: c.status, start: c.start, a1: null, source: view.route.source ?? "FL_TEAM", flUserId: null,
+        expected: view.expected?.annual ?? null, target: view.target?.annual ?? null, why: "", submittedAt: view.self?.submittedAt ?? null, pmsAvg: null, pmsQuarters: 0,
+        currentAnnualCtc: c.currentAnnualCtc ?? null, allocation: a?.annual ?? null, reason: "", approved: a?.annual ?? null, approvedFixed: a?.fixed ?? null, approvedVariable: a?.variable ?? null, variable: null,
+    };
 }
 
 // My Appraisal. "Appeal for Appraisal" opens three tabs: Goals and targets by quarter (from PMS), Hike proposal
@@ -151,7 +179,7 @@ export default function MyAppraisal() {
         setSaving(submit ? "submit" : "draft");
         try {
             await appraisalApi.appeal(c.id, { answers: { [WHY_KEY]: why }, quarters: [], expectedHike: expected, targetHike: target, expectedVariable: sendOwn(expectedOwn), targetVariable: sendOwn(targetOwn), submit });
-            addToast({ title: submit ? "Appeal submitted" : "Draft saved", description: submit ? "Your hike will appear in the Proposed hike tab once it is decided." : undefined, color: "success" });
+            addToast({ title: submit ? "Your appeal is submitted and in progress" : "Draft saved", description: submit ? "We will let you know soon." : undefined, color: "success" });
             await load();
             if (submit) setTab("proposed");
         } catch (e) { addToast({ title: submit ? "Could not submit" : "Could not save", description: errorText(e), color: "danger" }); }
@@ -159,6 +187,8 @@ export default function MyAppraisal() {
     };
 
     const won = c.status === "ACCEPTED" ? view.requests.filter((r) => r.stage === "APPROVED") : [];
+    // Everyone but an EL is told only that their appeal is in progress, never where the department's budget stands
+    const isEl = view.route.source === "EL_OWN";
     const notWon = view.requests.filter((r) => !won.includes(r));
     const firstName = c.employeeName.split(" ")[0];
 
@@ -172,17 +202,17 @@ export default function MyAppraisal() {
         text = `It closed on ${day(c.employeeWindowEnd)}. Your hike is still decided with the rest of your department.`;
         action = <Button size="lg" variant="bordered" onPress={() => open("proposed")}>View my appraisal</Button>;
     } else if (c.status === "SUBMITTED") {
-        icon = <Hourglass size={26} />; title = "Appeal submitted";
-        text = "Your department's budget is being set and your hike decided. It appears in the Proposed hike tab as soon as it is ready.";
-        action = <Button size="lg" variant="bordered" onPress={() => open("proposed")}>See where it is</Button>;
+        icon = <Hourglass size={26} />; title = "Your appeal is submitted and in progress";
+        text = isEl ? "Your department's budget is being agreed and split. Your own hike appears in the Proposed hike tab once you send the split." : "We will let you know soon.";
+        action = <Button size="lg" variant="bordered" onPress={() => open(isEl ? "proposed" : "hike")}>View my appeal</Button>;
     } else if (c.status === "OFFERED") {
-        icon = <Gift size={26} />; title = "Your hike is ready";
-        text = view.can.reject ? "Open the Proposed hike tab to accept it or reject it." : "Open the Proposed hike tab to accept it.";
+        icon = <Gift size={26} />; title = "Your appraisal hike is released";
+        text = view.can.reject ? "Accept it or reject it. When you accept, you can ask for a change in designation or team." : "Accept it. When you accept, you can add a change in designation or team.";
         action = <Button size="lg" color="success" onPress={() => open("proposed")}>See my hike</Button>;
     } else if (c.status === "ACCEPTED" || c.status === "POSTPONED") {
-        icon = <CheckCircle2 size={26} />; title = c.status === "ACCEPTED" ? `You accepted ${inr(approved?.annual)} a year` : "Your hike is postponed";
-        text = c.status === "ACCEPTED" ? "See the final decision in the Proposed hike tab." : `It is postponed to ${day(c.postponedUntil)}.`;
-        action = <Button size="lg" variant="bordered" onPress={() => open("proposed")}>View final decision</Button>;
+        icon = c.status === "ACCEPTED" ? <PartyPopper size={26} /> : <CheckCircle2 size={26} />; title = c.status === "ACCEPTED" ? `Congratulations! You accepted ${inr(approved?.annual)} a year` : "Your hike is postponed";
+        text = c.status === "ACCEPTED" ? "See your celebration and your final split in the Proposed hike tab." : `It is postponed to ${day(c.postponedUntil)}.`;
+        action = c.status === "ACCEPTED" ? <Button size="lg" color="success" startContent={<Sparkles size={16} />} onPress={() => open("proposed")}>See my hike</Button> : <Button size="lg" variant="bordered" onPress={() => open("proposed")}>View final decision</Button>;
         const promoted = won.find((w) => w.field === "DESIGNATION");
         if (won.length) {
             icon = <PartyPopper size={26} />;
@@ -226,9 +256,8 @@ export default function MyAppraisal() {
     } else if (c.status === "ACCEPTED") {
         proposed = (
             <div className="flex flex-col gap-5">
-                {won.length > 0 && <Celebration name={firstName} won={won} />}
-                <p className="eyebrow">Final decision</p>
-                <MoneyCard title="Hike accepted" money={approved} accent />
+                <Celebration name={firstName} won={won} hike={approved} />
+                <Panel flush title="Final split"><SplitTable people={[ownRow(view)]} ctc={view.cycle.currentAnnualCtc != null} /></Panel>
                 {requestsBlock}
                 {!view.requests.length && <p className="text-sm text-ink-500">You did not ask for a change in designation or team.</p>}
             </div>
@@ -236,7 +265,9 @@ export default function MyAppraisal() {
     } else if (c.status === "POSTPONED") {
         proposed = <Waiting icon={<Clock size={22} />} title={`Postponed to ${day(c.postponedUntil)}`}>You rejected the offer. {view.response?.hrStatus === "APPROVED" ? "HR has approved the postponement." : "HR has been asked to follow up."} Your hike will be decided again then.</Waiting>;
     } else {
-        const waitText: Partial<Record<Stage, string>> = {
+        const waitText: Partial<Record<Stage, string>> = !isEl ? {
+            APPEAL_OPEN: "Submit your hike proposal first. Your hike appears here once it is released.",
+        } : {
             APPEAL_OPEN: "Submit your hike proposal first. Once your department's budget is set and your hike decided, it appears here.",
             SUBMITTED: "Your appeal is in. When everyone in your department has appealed, the Finance Head sets the department's budget.",
             BUDGET_REVIEW: "Everyone in your department has appealed. The Finance Head is reviewing the department and setting its budget.",
@@ -245,8 +276,10 @@ export default function MyAppraisal() {
         };
         proposed = (
             <div className="flex flex-col gap-5">
-                <Tracker stage={view.stage} />
-                <Waiting icon={<Hourglass size={22} />} title={c.status === "EMPLOYEE_OPEN" ? "Nothing to show yet" : "Waiting for your hike"}>{waitText[view.stage] ?? ""}</Waiting>
+                {isEl && <Tracker stage={view.stage} />}
+                {c.status === "EMPLOYEE_OPEN" || isEl
+                    ? <Waiting icon={<Hourglass size={22} />} title={c.status === "EMPLOYEE_OPEN" ? "Nothing to show yet" : "Waiting for your hike"}>{waitText[view.stage] ?? ""}</Waiting>
+                    : <Waiting icon={<Hourglass size={22} />} title="Your appeal is submitted and in progress">We will let you know soon.</Waiting>}
             </div>
         );
     }

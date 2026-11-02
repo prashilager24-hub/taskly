@@ -14,14 +14,15 @@ import { AppError } from '../../utils/AppError';
 
 const router = Router();
 router.use(authenticate, requireModule('appraisal', 'read'));
-// The Finance Head acts as Finance in this module, and anyone in the HR department acts as HR, whatever their role is
-// elsewhere (an Admin stays an Admin)
+// The Finance Head acts as Finance in this module, a Super Administrator sees the overview, and anyone in the HR department
+// acts as HR, whatever their role is elsewhere (an Admin stays an Admin)
 router.use((req, _res, next) => {
   if (Number(req.user?.role) === 1) return next();
   const uid = Number(req.user?.sub);
   (async () => {
     const r = req as Request & { appraisalRole?: number };
     if (await svc.isFinanceHead(uid)) r.appraisalRole = svc.FINANCE_HEAD_ROLE;
+    else if (await svc.isSuperAdministrator(uid)) r.appraisalRole = svc.OVERVIEW_ROLE;
     else if (await svc.inHrDepartment(uid)) r.appraisalRole = svc.HR_MEMBER_ROLE;
   })().then(() => next()).catch(next);
 });
@@ -69,24 +70,26 @@ const Period = z.object({ period: date.optional() });
 const BudgetBody = z.object({ amount, comment: z.string().trim().min(1, 'Write why this budget is given').max(4000) });
 const BudgetResponse = z.object({ accept: z.boolean(), comment: text.optional(), amount: amount.nullable().optional() });
 const SplitBody = z.object({
-  own: z.object({ amount, comment: text.optional() }).nullable().optional(),
-  direct: z.array(z.object({ cycleId: z.number().int().positive(), amount, reason: text.optional() })).max(500).optional(),
+  own: z.object({ amount, comment: text.optional(), variable: variableOverride.nullable().optional() }).nullable().optional(),
+  direct: z.array(z.object({ cycleId: z.number().int().positive(), amount, reason: text.optional(), variable: variableOverride.nullable().optional() })).max(500).optional(),
   shares: z.array(z.object({ flUserId: z.number().int().positive(), amount, comment: text.optional() })).max(200).optional(),
   send: z.boolean(),
 });
 const AllocationBody = z.object({
-  items: z.array(z.object({ cycleId: z.number().int().positive(), amount: amount.nullable(), reason: text.optional() })).max(500),
+  items: z.array(z.object({ cycleId: z.number().int().positive(), amount: amount.nullable(), reason: text.optional(), variable: variableOverride.nullable().optional() })).max(500),
   justification: text.optional(),
   submit: z.boolean(),
 });
-const DirectBody = z.object({ amount, reason: text.optional() });
+const DirectBody = z.object({ amount, reason: text.optional(), variable: variableOverride.nullable().optional() });
+const Revise = z.object({ comment: text.optional() });
+const Reset = z.object({ comment: z.string().trim().min(1, 'Write why you are resetting the budget').max(4000) });
 const Forward = z.object({ comment: text.optional(), recommend: z.boolean() });
 const People = z.object({ rows: z.array(Person.extend({ userId: z.number().int().positive() })).min(1).max(5000) });
 
 // ── Routes ────────────────────────────────────────────────────────────────────────────────────────
 
 // Department, A1 / A2, level and CTC edits reach the appraisals nobody has decided yet before anyone reads or acts on them
-const SYNCED = ['/availability', '/departments', '/departments/:departmentId/:period', '/departments/:departmentId/:period/budget', '/split', '/split/:departmentId/:period', '/split/:departmentId/:period/budget-response',
+const SYNCED = ['/availability', '/overview', '/departments', '/departments/:departmentId/:period', '/departments/:departmentId/:period/budget', '/split', '/split/:departmentId/:period', '/split/:departmentId/:period/budget-response',
   '/allocation', '/allocation/:departmentId/:period', '/requests', '/cycles/:cycleId'];
 router.all(SYNCED, (req, _res, next) => { svc.syncOpenCycles(req.method !== 'GET').then(() => next(), next); });
 
@@ -113,17 +116,25 @@ router.get('/periods', handler(async (_req, res) => { sendSuccess(res, await flo
 router.get('/departments', validate(Period, 'query'), handler(async (req, res) => { fin(req); sendSuccess(res, await flow.board((req.query as { period?: string }).period ?? periodOf(todayIST()))); }));
 router.get('/departments/:departmentId/:period', handler(async (req, res) => {
   const { departmentId, period } = deptPeriod(req);
-  if (!svc.isFinance(roleOf(req)) && !(await flow.isElOf(me(req), departmentId))) throw AppError.forbidden('Only the Finance Head or this department\'s EL can see this');
+  if (!svc.isOverview(roleOf(req)) && !(await flow.isElOf(me(req), departmentId))) throw AppError.forbidden('Only the Finance Head or this department\'s EL can see this');
   sendSuccess(res, await flow.loadRound(pool, departmentId, period));
 }));
 router.put('/departments/:departmentId/:period/budget', validate(BudgetBody), handler(async (req, res) => { fin(req); const { departmentId, period } = deptPeriod(req); await flow.setBudget(me(req), departmentId, period, req.body.amount, req.body.comment); sendSuccess(res, true); }));
+
+// Admins, the Super Administrator and the Finance Head: how the appraisal is going in every department
+router.get('/overview', validate(Period, 'query'), handler(async (req, res) => {
+  if (!svc.isOverview(roleOf(req))) throw AppError.forbidden('Only an administrator or the Finance Head can see this');
+  sendSuccess(res, await flow.overview((req.query as { period?: string }).period ?? periodOf(todayIST())));
+}));
 
 // EL: the budget from the Finance Head, the split, the FL proposals to approve
 router.get('/split', handler(async (req, res) => { sendSuccess(res, await flow.elRounds(me(req))); }));
 router.put('/split/:departmentId/:period', validate(SplitBody), handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.saveSplit(me(req), roleOf(req), departmentId, period, req.body); sendSuccess(res, true); }));
 router.put('/split/:departmentId/:period/budget-response', validate(BudgetResponse), handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.respondBudget(me(req), roleOf(req), departmentId, period, req.body); sendSuccess(res, true); }));
 router.put('/split/:departmentId/:period/shares/:flUserId/approve', handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.approveShare(me(req), roleOf(req), departmentId, period, Number(req.params['flUserId'])); sendSuccess(res, true); }));
-router.put('/split/:departmentId/:period/direct/:cycleId', validate(DirectBody), handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.offerDirect(me(req), roleOf(req), departmentId, period, Number(req.params['cycleId']), req.body.amount, req.body.reason ?? ''); sendSuccess(res, true); }));
+router.put('/split/:departmentId/:period/shares/:flUserId/revise', validate(Revise), handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.reviseShare(me(req), roleOf(req), departmentId, period, Number(req.params['flUserId']), req.body.comment ?? ''); sendSuccess(res, true); }));
+router.put('/split/:departmentId/:period/reset', validate(Reset), handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.resetSplit(me(req), roleOf(req), departmentId, period, req.body.comment); sendSuccess(res, true); }));
+router.put('/split/:departmentId/:period/direct/:cycleId', validate(DirectBody), handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.offerDirect(me(req), roleOf(req), departmentId, period, Number(req.params['cycleId']), req.body.amount, req.body.reason ?? '', req.body.variable); sendSuccess(res, true); }));
 
 // FL: the share from the EL, turned into hikes for the team and their own
 router.get('/allocation', handler(async (req, res) => { sendSuccess(res, { shares: await flow.flShares(me(req)), waiting: await flow.flWaiting(me(req)) }); }));

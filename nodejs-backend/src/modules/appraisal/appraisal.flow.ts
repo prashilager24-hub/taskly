@@ -11,7 +11,7 @@
 import type mysql from 'mysql2/promise';
 import { pool } from '../../config/db';
 import { AppError } from '../../utils/AppError';
-import { MAX_AMOUNT, periodOf, splitHike, todayIST, type EmployeeLevel } from './appraisal.calc';
+import { MAX_AMOUNT, periodOf, splitWith, todayIST, type EmployeeLevel, type VariableOverride } from './appraisal.calc';
 
 type Row = mysql.RowDataPacket;
 type Conn = mysql.PoolConnection;
@@ -19,7 +19,7 @@ type Db = mysql.Pool | Conn;
 
 export type Source = 'EL_OWN' | 'EL_DIRECT' | 'FL_TEAM' | 'FL_OWN';
 export type RoundStatus = 'COLLECTING' | 'READY_FOR_FINANCE' | 'BUDGET_WITH_EL' | 'BUDGET_NEGOTIATION' | 'BUDGET_ACCEPTED' | 'SHARES_WITH_FLS' | 'FINALISED';
-export type BudgetAction = 'PROPOSED' | 'REVISED' | 'NEGOTIATE' | 'ACCEPTED';
+export type BudgetAction = 'PROPOSED' | 'REVISED' | 'NEGOTIATE' | 'ACCEPTED' | 'RESET';
 export type ShareStatus = 'PLANNED' | 'SHARE_RECEIVED' | 'DRAFT' | 'SUBMITTED' | 'APPROVED';
 /** Where one person's appraisal stands, as the statuses list in the blueprint */
 export type Stage = 'APPEAL_OPEN' | 'SUBMITTED' | 'BUDGET_REVIEW' | 'IN_ALLOCATION' | 'AWAITING_EL' | 'OFFERED' | 'ACCEPTED' | 'POSTPONED';
@@ -49,6 +49,8 @@ export async function notify(users: (number | null | undefined)[], title: string
 }
 
 const inr = (v: number) => `₹${Math.round(v).toLocaleString('en-IN')}`;
+/** The variable pay stored with an allocation, or null for the level's percentage */
+const overrideOf = (a: Row | undefined): VariableOverride | null => (a?.['VariableMode'] ? { mode: a['VariableMode'] as VariableOverride['mode'], value: Number(a['VariableValue']) } : null);
 
 // ── A department's round ─────────────────────────────────────────────────────────────────────────
 
@@ -58,8 +60,15 @@ export interface RoundPerson {
   expected: number | null; target: number | null; why: string; submittedAt: string | null;
   pmsAvg: number | null; pmsQuarters: number; currentAnnualCtc: number | null;
   allocation: number | null; reason: string; approved: number | null; approvedFixed: number | null; approvedVariable: number | null;
+  /** The variable pay set by whoever decided the hike, instead of the level's percentage */
+  variable: VariableOverride | null;
 }
-export interface Share { flUserId: number; name: string; amount: number; elComment: string; status: ShareStatus; justification: string; submittedAt: string | null; approvedAt: string | null; people: number; teamExpected: number; allocated: number }
+export interface Share {
+  flUserId: number; name: string; amount: number; elComment: string; status: ShareStatus; justification: string; submittedAt: string | null; approvedAt: string | null;
+  /** The EL sent the proposal back to be revised, with this note */
+  returnComment: string; returnedAt: string | null;
+  people: number; teamExpected: number; allocated: number;
+}
 export interface Round {
   roundId: number | null; departmentId: number; department: string; period: string;
   el: { userId: number; name: string } | null; status: RoundStatus;
@@ -139,6 +148,7 @@ export async function loadRound(db: Db, departmentId: number, period: string): P
       submittedAt: iso(s?.['SubmittedAt']), pmsAvg: p ? Math.round(Number(p['avg']) * 100) / 100 : null, pmsQuarters: p ? Number(p['cnt']) : 0,
       currentAnnualCtc: n(c['CurrentAnnualCtc']), allocation: n(a?.['AnnualAmount']), reason: (a?.['Reason'] as string) ?? '', approved: hike(id, 'APPROVED'),
       approvedFixed: n(hk.find((h) => h['CycleID'] === id && h['Kind'] === 'APPROVED')?.['FixedAmount']), approvedVariable: n(hk.find((h) => h['CycleID'] === id && h['Kind'] === 'APPROVED')?.['VariableAmount']),
+      variable: overrideOf(a),
     };
   });
 
@@ -159,6 +169,7 @@ export async function loadRound(db: Db, departmentId: number, period: string): P
     return {
       flUserId, name, amount: Number(s?.['Amount'] ?? 0), elComment: (s?.['ElComment'] as string) ?? '', status: (s?.['Status'] as ShareStatus) ?? 'PLANNED',
       justification: (s?.['Justification'] as string) ?? '', submittedAt: iso(s?.['SubmittedAt']), approvedAt: iso(s?.['ApprovedAt']),
+      returnComment: (s?.['ReturnComment'] as string) ?? '', returnedAt: iso(s?.['ReturnedAt']),
       people: mine.length, teamExpected: team.reduce((t, p) => t + (p.expected ?? 0), 0), allocated: mine.reduce((t, p) => t + (p.allocation ?? 0), 0),
     };
   });
@@ -293,6 +304,14 @@ export async function board(period: string) {
   });
 }
 
+/** How the appraisal is going everywhere: each department's totals and budget, and the split of every department that has appraisals */
+export async function overview(period: string) {
+  const rows = await board(period);
+  const rounds: Round[] = [];
+  for (const r of rows) if (r.people) rounds.push(await loadRound(pool, r.departmentId, period));
+  return { rows, rounds };
+}
+
 export async function setBudget(actor: number, departmentId: number, period: string, amount: number, comment: string) {
   if (!comment.trim()) throw AppError.badRequest('Write why this budget is given');
   const r = await loadRound(pool, departmentId, period);
@@ -355,25 +374,43 @@ export async function elRounds(userId: number) {
   return out;
 }
 
-/** Writes the approved hike and sends the offer to the person (only if they are still waiting for one) */
+/** Writes the approved hike (with the variable pay set on the allocation, if any) and sends the offer to the person, only if they are still waiting for one */
 async function offer(c: Conn, cycleId: number, amount: number, actor: number) {
-  const [cy] = await c.execute<Row[]>('SELECT EmployeeLevel, Status FROM AppraisalCycle WHERE CycleID = ?', [cycleId]);
+  const [cy] = await c.execute<Row[]>('SELECT c.EmployeeLevel, c.Status, a.VariableMode, a.VariableValue FROM AppraisalCycle c LEFT JOIN AppraisalAllocation a ON a.CycleID = c.CycleID WHERE c.CycleID = ?', [cycleId]);
   if (!cy[0] || !['EMPLOYEE_OPEN', 'SUBMITTED'].includes(cy[0]['Status'] as string)) return false;
-  const s = splitHike(amount, cy[0]['EmployeeLevel'] as EmployeeLevel);
+  const s = splitWith(amount, cy[0]['EmployeeLevel'] as EmployeeLevel, overrideOf(cy[0]));
   await c.execute(
-    `INSERT INTO AppraisalHike (CycleID, Kind, ByRole, AnnualAmount, FixedAmount, VariableAmount, VariablePct, EnteredBy) VALUES (?, 'APPROVED', 'FINANCE', ?, ?, ?, ?, ?)
-     ON DUPLICATE KEY UPDATE AnnualAmount = VALUES(AnnualAmount), FixedAmount = VALUES(FixedAmount), VariableAmount = VALUES(VariableAmount), VariablePct = VALUES(VariablePct), EnteredBy = VALUES(EnteredBy)`,
-    [cycleId, s.annualAmount, s.fixed, s.variable, s.variablePct, actor]);
+    `INSERT INTO AppraisalHike (CycleID, Kind, ByRole, AnnualAmount, FixedAmount, VariableAmount, VariablePct, VariableOverride, EnteredBy) VALUES (?, 'APPROVED', 'FINANCE', ?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE AnnualAmount = VALUES(AnnualAmount), FixedAmount = VALUES(FixedAmount), VariableAmount = VALUES(VariableAmount), VariablePct = VALUES(VariablePct), VariableOverride = VALUES(VariableOverride), EnteredBy = VALUES(EnteredBy)`,
+    [cycleId, s.annualAmount, s.fixed, s.variable, s.variablePct, s.override, actor]);
   await c.execute("UPDATE AppraisalCycle SET Status = 'OFFERED' WHERE CycleID = ?", [cycleId]);
   await deps.audit(c, cycleId, actor, 'STATUS_CHANGE', { from: cy[0]['Status'], to: 'OFFERED', annual: amount });
   return true;
 }
 
-async function upsertAlloc(c: Conn, cycleId: number, roundId: number, source: Source, flUserId: number | null, amount: number, reason: string | null, actor: number) {
+/** A hike already out to the person (on offer, accepted or postponed) is not decided again */
+const decided = (p: RoundPerson) => !['EMPLOYEE_OPEN', 'SUBMITTED'].includes(p.status);
+
+/** The variable pay sent with a hike, checked against the amount (throws when it is more than the hike) */
+function variableFor(p: RoundPerson, amount: number, v: VariableOverride | null | undefined) {
+  if (!v) return null;
+  splitWith(amount, p.level, v);
+  return v;
+}
+
+async function upsertAlloc(c: Conn, cycleId: number, roundId: number, source: Source, flUserId: number | null, amount: number, reason: string | null, actor: number, variable: VariableOverride | null = null) {
   await c.execute(
-    `INSERT INTO AppraisalAllocation (CycleID, RoundID, Source, FlUserID, AnnualAmount, Reason, EnteredBy) VALUES (?, ?, ?, ?, ?, ?, ?)
-     ON DUPLICATE KEY UPDATE RoundID = VALUES(RoundID), Source = VALUES(Source), FlUserID = VALUES(FlUserID), AnnualAmount = VALUES(AnnualAmount), Reason = VALUES(Reason), EnteredBy = VALUES(EnteredBy)`,
-    [cycleId, roundId, source, flUserId, amount, reason, actor]);
+    `INSERT INTO AppraisalAllocation (CycleID, RoundID, Source, FlUserID, AnnualAmount, VariableMode, VariableValue, Reason, EnteredBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE RoundID = VALUES(RoundID), Source = VALUES(Source), FlUserID = VALUES(FlUserID), AnnualAmount = VALUES(AnnualAmount), VariableMode = VALUES(VariableMode), VariableValue = VALUES(VariableValue), Reason = VALUES(Reason), EnteredBy = VALUES(EnteredBy)`,
+    [cycleId, roundId, source, flUserId, amount, variable?.mode ?? null, variable?.value ?? null, reason, actor]);
+}
+
+/** Tells people their hike is out: those who may reject it are asked to accept or reject it, the others to accept it */
+async function notifyReleased(people: { userId: number; source: Source }[], actor: number) {
+  const canReject = people.filter((p) => p.source === 'FL_TEAM' || p.source === 'EL_DIRECT').map((p) => p.userId);
+  const acceptOnly = people.filter((p) => p.source === 'FL_OWN' || p.source === 'EL_OWN').map((p) => p.userId);
+  await notify(canReject, 'Your appraisal hike is released', 'Open My Appraisal to accept or reject it. You can ask for a change in designation or team when you accept.', '/appraisal', actor, 'success');
+  await notify(acceptOnly, 'Your appraisal hike is released', 'Open My Appraisal to accept it. You can add a change in designation or team when you accept.', '/appraisal', actor, 'success');
 }
 
 /** When every FL proposal is approved and nobody reporting to the EL is waiting, the round is finalised */
@@ -385,8 +422,8 @@ async function finaliseIfDone(c: Conn, roundId: number) {
 }
 
 export interface SplitInput {
-  own?: { amount: number; comment?: string } | null;
-  direct?: { cycleId: number; amount: number; reason?: string }[];
+  own?: { amount: number; comment?: string; variable?: VariableOverride | null } | null;
+  direct?: { cycleId: number; amount: number; reason?: string; variable?: VariableOverride | null }[];
   shares?: { flUserId: number; amount: number; comment?: string }[];
   send: boolean;
 }
@@ -401,7 +438,15 @@ export async function saveSplit(actor: number, appRole: number, departmentId: nu
   const own = r.people.find((p) => p.source === 'EL_OWN');
   const direct = r.people.filter((p) => p.source === 'EL_DIRECT');
   if (input.own && !own) throw AppError.badRequest('You have no appraisal in this department to give yourself a hike in');
-  for (const d of input.direct ?? []) if (!direct.some((p) => p.cycleId === d.cycleId)) throw AppError.badRequest('That person does not report to you directly in this department');
+  // a hike already accepted before the split was reset stays as it is
+  if (input.own && own && decided(own)) throw AppError.conflict('Your own hike is already decided');
+  for (const d of input.direct ?? []) {
+    const p = direct.find((x) => x.cycleId === d.cycleId);
+    if (!p) throw AppError.badRequest('That person does not report to you directly in this department');
+    if (decided(p)) throw AppError.conflict(`${p.name}'s hike is already decided`);
+  }
+  const ownVar = input.own && own ? variableFor(own, input.own.amount, input.own.variable) : null;
+  const directVar = new Map((input.direct ?? []).map((d) => [d.cycleId, variableFor(direct.find((p) => p.cycleId === d.cycleId)!, d.amount, d.variable)]));
   for (const s of input.shares ?? []) if (!r.fls.some((f) => f.userId === s.flUserId)) throw AppError.badRequest('That person is not an FL in this department');
 
   // what the split will be once saved: saved values, overwritten by what was sent now
@@ -417,8 +462,8 @@ export async function saveSplit(actor: number, appRole: number, departmentId: nu
 
   await deps.tx(async (c) => {
     const roundId = await ensureRound(c, departmentId, period);
-    if (input.own && own) await upsertAlloc(c, own.cycleId, roundId, 'EL_OWN', null, input.own.amount, input.own.comment?.trim() || null, actor);
-    for (const d of input.direct ?? []) await upsertAlloc(c, d.cycleId, roundId, 'EL_DIRECT', null, d.amount, d.reason?.trim() || null, actor);
+    if (input.own && own) await upsertAlloc(c, own.cycleId, roundId, 'EL_OWN', null, input.own.amount, input.own.comment?.trim() || null, actor, ownVar);
+    for (const d of input.direct ?? []) await upsertAlloc(c, d.cycleId, roundId, 'EL_DIRECT', null, d.amount, d.reason?.trim() || null, actor, directVar.get(d.cycleId) ?? null);
     for (const s of input.shares ?? []) {
       await c.execute(
         `INSERT INTO AppraisalShare (RoundID, FlUserID, Amount, ElComment) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE Amount = VALUES(Amount), ElComment = VALUES(ElComment)`,
@@ -437,8 +482,7 @@ export async function saveSplit(actor: number, appRole: number, departmentId: nu
   if (input.send) {
     const after = await loadRound(pool, departmentId, period);
     for (const s of after.shares) await notify([s.flUserId], `Your team budget: ${inr(s.amount)}`, s.elComment ? `Note from ${r.el?.name ?? 'your EL'}: ${s.elComment}` : `From ${r.el?.name ?? 'your EL'}. Allocate it to your team.`, '/appraisal/allocation', actor);
-    const offered = after.people.filter((p) => (p.source === 'EL_OWN' || p.source === 'EL_DIRECT') && p.status === 'OFFERED').map((p) => p.userId);
-    await notify(offered, 'Your hike is ready', 'Open My Appraisal to see it.', '/appraisal', actor, 'success');
+    await notifyReleased(after.people.filter((p) => (p.source === 'EL_OWN' || p.source === 'EL_DIRECT') && p.status === 'OFFERED' && !r.people.find((x) => x.cycleId === p.cycleId && x.status === 'OFFERED')), actor);
   }
 }
 
@@ -447,28 +491,76 @@ export async function approveShare(actor: number, appRole: number, departmentId:
   const r = await loadRound(pool, departmentId, period);
   const s = r.shares.find((x) => x.flUserId === flUserId);
   if (!s || s.status !== 'SUBMITTED') throw AppError.conflict('There is no proposal from this FL waiting for you');
-  const offered: number[] = [];
+  const offered: RoundPerson[] = [];
   await deps.tx(async (c) => {
     await c.execute("UPDATE AppraisalShare SET Status = 'APPROVED', ApprovedAt = ?, ApprovedBy = ? WHERE RoundID = ? AND FlUserID = ?", [new Date(), actor, r.roundId, flUserId]);
-    for (const p of r.people.filter((x) => x.flUserId === flUserId && x.allocation != null)) if (await offer(c, p.cycleId, p.allocation!, actor)) offered.push(p.userId);
+    for (const p of r.people.filter((x) => x.flUserId === flUserId && x.allocation != null)) if (await offer(c, p.cycleId, p.allocation!, actor)) offered.push(p);
     await finaliseIfDone(c, r.roundId!);
   });
-  await notify([flUserId], 'Your team allocation is approved', `${r.el?.name ?? 'Your EL'} approved it. Your team can see their hikes now.`, '/appraisal/allocation', actor, 'success');
-  await notify(offered, 'Your hike is ready', 'Open My Appraisal to see it.', '/appraisal', actor, 'success');
+  await notify([flUserId], 'Your proposal is approved', `${r.el?.name ?? 'Your EL'} approved it. Your team's hikes are released.`, '/appraisal/allocation', actor, 'success');
+  await notifyReleased(offered, actor);
+}
+
+/**
+ * "Revise proposal": the EL sends an FL's proposal back. The hikes the FL entered for the team and their own are cleared
+ * (anyone whose hike is already out keeps it), and the FL allocates the same share again.
+ */
+export async function reviseShare(actor: number, appRole: number, departmentId: number, period: string, flUserId: number, comment: string) {
+  await mustLead(actor, appRole, departmentId);
+  const r = await loadRound(pool, departmentId, period);
+  const s = r.shares.find((x) => x.flUserId === flUserId);
+  if (!s || s.status !== 'SUBMITTED') throw AppError.conflict('There is no proposal from this FL waiting for you');
+  const open = r.people.filter((p) => p.flUserId === flUserId && !decided(p)).map((p) => p.cycleId);
+  await deps.tx(async (c) => {
+    if (open.length) await c.query('DELETE FROM AppraisalAllocation WHERE CycleID IN (?)', [open]);
+    await c.execute("UPDATE AppraisalShare SET Status = 'SHARE_RECEIVED', SubmittedAt = NULL, Justification = NULL, ReturnComment = ?, ReturnedAt = ? WHERE RoundID = ? AND FlUserID = ?",
+      [comment.trim() || null, new Date(), r.roundId, flUserId]);
+  });
+  await notify([flUserId], `${r.el?.name ?? 'Your EL'} sent your proposal back`, `${comment.trim() ? `${comment.trim()} ` : ''}Allocate your ${inr(s.amount)} team budget again and submit it.`, '/appraisal/allocation', actor, 'warning');
+}
+
+/**
+ * "Reset budget": the EL takes the whole split back to the Finance Head's budget. Their acceptance, the split, every FL
+ * share and every hike not yet answered (including hikes on offer, which are withdrawn) are cleared; the budget waits for
+ * the EL to accept or negotiate it again. Hikes people have already accepted or rejected stay as they are.
+ */
+export async function resetSplit(actor: number, appRole: number, departmentId: number, period: string, comment: string) {
+  await mustLead(actor, appRole, departmentId);
+  if (!comment.trim()) throw AppError.badRequest('Write why you are resetting the budget');
+  const r = await loadRound(pool, departmentId, period);
+  if (r.roundId == null || !['BUDGET_ACCEPTED', 'SHARES_WITH_FLS', 'FINALISED'].includes(r.status)) throw AppError.conflict('There is no accepted budget to reset');
+  const withdrawn = r.people.filter((p) => p.status === 'OFFERED');
+  const flsTold = r.shares.filter((s) => s.status !== 'PLANNED').map((s) => s.flUserId);
+  await deps.tx(async (c) => {
+    for (const p of withdrawn) {
+      await c.execute("DELETE FROM AppraisalHike WHERE CycleID = ? AND Kind = 'APPROVED'", [p.cycleId]);
+      await c.execute("UPDATE AppraisalCycle SET Status = 'SUBMITTED' WHERE CycleID = ? AND Status = 'OFFERED'", [p.cycleId]);
+      await deps.audit(c, p.cycleId, actor, 'STATUS_CHANGE', { from: 'OFFERED', to: 'SUBMITTED', why: 'BUDGET_RESET' });
+    }
+    await c.execute("DELETE a FROM AppraisalAllocation a JOIN AppraisalCycle cy ON cy.CycleID = a.CycleID WHERE a.RoundID = ? AND cy.Status IN ('EMPLOYEE_OPEN','SUBMITTED')", [r.roundId]);
+    await c.execute('DELETE FROM AppraisalShare WHERE RoundID = ?', [r.roundId]);
+    await c.execute("UPDATE AppraisalRound SET Status = 'BUDGET_WITH_EL', ElAcceptedAt = NULL, ElSentAt = NULL WHERE RoundID = ?", [r.roundId]);
+  });
+  await logBudget(r.roundId, actor, 'RESET', r.budget, comment.trim());
+  const name = r.el?.name ?? 'The EL';
+  await notify(await deps.financeUsers(), `${name} reset the budget split for ${r.department}`, `${comment.trim()} The ${inr(r.budget ?? 0)} budget is back with ${name} to accept or negotiate.`, `/appraisal/departments/${departmentId}/${period}`, actor, 'warning');
+  await notify(flsTold, `${name} reset the budget split`, 'Your team budget is cleared. You will be told when the new one arrives.', '/appraisal/allocation', actor, 'warning');
+  await notify(withdrawn.map((p) => p.userId).filter((u) => u !== actor), 'Your appraisal hike is being revised', 'Your appraisal is in progress again. We will let you know soon.', '/appraisal', actor);
 }
 
 /** After a postponement, a person who reports to the EL directly gets a new hike from the EL */
-export async function offerDirect(actor: number, appRole: number, departmentId: number, period: string, cycleId: number, amount: number, reason: string) {
+export async function offerDirect(actor: number, appRole: number, departmentId: number, period: string, cycleId: number, amount: number, reason: string, variable?: VariableOverride | null) {
   await mustLead(actor, appRole, departmentId);
   const r = await loadRound(pool, departmentId, period);
   const p = r.people.find((x) => x.cycleId === cycleId && x.source === 'EL_DIRECT');
   if (!p || !r.elSentAt || p.status !== 'SUBMITTED') throw AppError.conflict('There is no hike to decide for this person now');
+  const v = variableFor(p, amount, variable);
   await deps.tx(async (c) => {
-    await upsertAlloc(c, cycleId, r.roundId!, 'EL_DIRECT', null, amount, reason.trim() || null, actor);
+    await upsertAlloc(c, cycleId, r.roundId!, 'EL_DIRECT', null, amount, reason.trim() || null, actor, v);
     await offer(c, cycleId, amount, actor);
     await finaliseIfDone(c, r.roundId!);
   });
-  await notify([p.userId], 'Your hike is ready', 'Open My Appraisal to see it.', '/appraisal', actor, 'success');
+  await notifyReleased([p], actor);
 }
 
 // ── FL: allocate the share ───────────────────────────────────────────────────────────────────────
@@ -483,7 +575,8 @@ export async function flShares(userId: number) {
     const share = r.shares.find((s) => s.flUserId === userId)!;
     out.push({
       roundId: r.roundId, departmentId: r.departmentId, department: r.department, period: r.period, el: r.el, share,
-      people: r.people.filter((p) => p.flUserId === userId).map((p) => ({ ...p, own: p.source === 'FL_OWN', stage: stageOf(p, r) })),
+      // the FL sees their team's appeals and hikes, not their salaries
+      people: r.people.filter((p) => p.flUserId === userId).map((p) => ({ ...p, currentAnnualCtc: p.userId === userId ? p.currentAnnualCtc : null, own: p.source === 'FL_OWN', stage: stageOf(p, r) })),
     });
   }
   return out;
@@ -503,14 +596,19 @@ export async function flWaiting(userId: number) {
   return out;
 }
 
-export interface AllocationInput { items: { cycleId: number; amount: number | null; reason?: string }[]; justification?: string; submit: boolean }
+export interface AllocationInput { items: { cycleId: number; amount: number | null; reason?: string; variable?: VariableOverride | null }[]; justification?: string; submit: boolean }
 
 export async function saveAllocation(actor: number, departmentId: number, period: string, input: AllocationInput) {
   const r = await loadRound(pool, departmentId, period);
   const s = r.shares.find((x) => x.flUserId === actor);
   if (!s || !['SHARE_RECEIVED', 'DRAFT'].includes(s.status)) throw AppError.conflict(s?.status === 'SUBMITTED' ? 'Your proposal is with your EL' : 'There is no team budget for you to allocate here');
   const mine = r.people.filter((p) => p.flUserId === actor);
-  for (const it of input.items) if (!mine.some((p) => p.cycleId === it.cycleId)) throw AppError.badRequest('That person is not in your team for this budget');
+  for (const it of input.items) {
+    const p = mine.find((x) => x.cycleId === it.cycleId);
+    if (!p) throw AppError.badRequest('That person is not in your team for this budget');
+    if (decided(p)) throw AppError.conflict(`${p.name}'s hike is already decided`);
+    if (it.amount != null) variableFor(p, it.amount, it.variable);
+  }
   const amountOf = (p: RoundPerson) => { const it = input.items.find((i) => i.cycleId === p.cycleId); return it ? it.amount : p.allocation; };
   const reasonOf = (p: RoundPerson) => { const it = input.items.find((i) => i.cycleId === p.cycleId); return it ? (it.reason ?? '').trim() : p.reason; };
   const total = mine.reduce((t, p) => t + (amountOf(p) ?? 0), 0);
@@ -528,14 +626,14 @@ export async function saveAllocation(actor: number, departmentId: number, period
     for (const it of input.items) {
       const p = mine.find((x) => x.cycleId === it.cycleId)!;
       if (it.amount == null) { await c.execute('DELETE FROM AppraisalAllocation WHERE CycleID = ?', [it.cycleId]); continue; }
-      await upsertAlloc(c, it.cycleId, r.roundId!, p.source === 'FL_OWN' ? 'FL_OWN' : 'FL_TEAM', actor, it.amount, (it.reason ?? '').trim() || null, actor);
+      await upsertAlloc(c, it.cycleId, r.roundId!, p.source === 'FL_OWN' ? 'FL_OWN' : 'FL_TEAM', actor, it.amount, (it.reason ?? '').trim() || null, actor, it.variable ?? null);
     }
     await c.execute('UPDATE AppraisalShare SET Status = ?, Justification = COALESCE(?, Justification), SubmittedAt = ? WHERE RoundID = ? AND FlUserID = ?',
       [input.submit ? 'SUBMITTED' : 'DRAFT', input.justification?.trim() ?? null, input.submit ? new Date() : null, r.roundId, actor]);
   });
   if (input.submit) {
     const flName = r.fls.find((f) => f.userId === actor)?.name ?? 'An FL';
-    await notify([r.el?.userId], `${flName} sent the team allocation`, `${inr(total)} of ${inr(s.amount)} for ${mine.length} ${mine.length === 1 ? 'person' : 'people'}. Approve it to send the hikes out.`, '/appraisal/split', actor);
+    await notify([r.el?.userId], `${flName} sent a proposal for approval`, `${inr(total)} of ${inr(s.amount)} for ${mine.length} ${mine.length === 1 ? 'person' : 'people'}. Approve it, send it back to be revised, or reset the budget.`, '/appraisal/split', actor);
   }
 }
 

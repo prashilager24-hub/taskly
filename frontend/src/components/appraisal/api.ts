@@ -11,7 +11,7 @@ export type Status = "EMPLOYEE_OPEN" | "SUBMITTED" | "OFFERED" | "ACCEPTED" | "P
 /** Where one person's appraisal stands (the statuses list) */
 export type Stage = "APPEAL_OPEN" | "SUBMITTED" | "BUDGET_REVIEW" | "IN_ALLOCATION" | "AWAITING_EL" | "OFFERED" | "ACCEPTED" | "POSTPONED";
 export type RoundStatus = "COLLECTING" | "READY_FOR_FINANCE" | "BUDGET_WITH_EL" | "BUDGET_NEGOTIATION" | "BUDGET_ACCEPTED" | "SHARES_WITH_FLS" | "FINALISED";
-export type BudgetAction = "PROPOSED" | "REVISED" | "NEGOTIATE" | "ACCEPTED";
+export type BudgetAction = "PROPOSED" | "REVISED" | "NEGOTIATE" | "ACCEPTED" | "RESET";
 export type ShareStatus = "PLANNED" | "SHARE_RECEIVED" | "DRAFT" | "SUBMITTED" | "APPROVED";
 export type Source = "EL_OWN" | "EL_DIRECT" | "FL_TEAM" | "FL_OWN";
 export type RequestStage = "WITH_FL" | "WITH_EL" | "APPROVED" | "NOT_APPROVED";
@@ -20,7 +20,7 @@ export type RequestField = "DESIGNATION" | "TEAM";
 
 /** override: the employee set the variable pay themselves; null / missing: the level's percentage */
 export interface Money { annual: number; fixed: number; variable: number; variablePct: number; variablePerHalfYear: number; override?: "PCT" | "AMOUNT" | null }
-/** Variable pay the employee sets on a hike they appeal for: a percentage of it, or an amount out of it */
+/** Variable pay set by hand on a hike (appeal, or a hike the EL / FL decides): a percentage of it, or an amount out of it */
 export interface VariableOverride { mode: "PCT" | "AMOUNT"; value: number }
 export interface Person { userId: number; name: string }
 
@@ -64,8 +64,15 @@ export interface RoundPerson {
     expected: number | null; target: number | null; why: string; submittedAt: string | null;
     pmsAvg: number | null; pmsQuarters: number; currentAnnualCtc: number | null;
     allocation: number | null; reason: string; approved: number | null; approvedFixed: number | null; approvedVariable: number | null;
+    /** Variable pay set by whoever decided the hike; null: the level's percentage */
+    variable: VariableOverride | null;
 }
-export interface Share { flUserId: number; name: string; amount: number; elComment: string; status: ShareStatus; justification: string; submittedAt: string | null; approvedAt: string | null; people: number; teamExpected: number; allocated: number }
+export interface Share {
+    flUserId: number; name: string; amount: number; elComment: string; status: ShareStatus; justification: string; submittedAt: string | null; approvedAt: string | null;
+    /** The EL sent the proposal back to be revised, with this note */
+    returnComment: string; returnedAt: string | null;
+    people: number; teamExpected: number; allocated: number;
+}
 export interface Round {
     roundId: number | null; departmentId: number; department: string; period: string; el: Person | null; status: RoundStatus;
     budget: number | null; financeComment: string; budgetSetAt: string | null; elAcceptedAt: string | null; elSentAt: string | null;
@@ -85,7 +92,7 @@ export interface HrItem { cycle: CycleInfo; response: Response | null; can: { hr
 
 export interface Availability {
     my: { show: boolean; status: Status | null; cycleId: number | null };
-    departments: { show: boolean; pending: number }; split: { show: boolean; pending: number }; allocation: { show: boolean; pending: number };
+    departments: { show: boolean; pending: number }; overview: { show: boolean }; split: { show: boolean; pending: number }; allocation: { show: boolean; pending: number };
     requests: { show: boolean }; hr: { show: boolean; pending: number }; setup: { show: boolean }; any: boolean;
 }
 export type CycleMonth = "APRIL" | "OCTOBER";
@@ -101,12 +108,14 @@ export interface FinanceHead { userId: number | null; name: string | null; email
 
 export interface AppealBody { answers: Record<string, string>; quarters: never[]; expectedHike: number | null; targetHike: number | null; expectedVariable?: VariableOverride | null; targetVariable?: VariableOverride | null; submit: boolean }
 export interface SplitBody {
-    own?: { amount: number; comment?: string } | null;
-    direct?: { cycleId: number; amount: number; reason?: string }[];
+    own?: { amount: number; comment?: string; variable?: VariableOverride | null } | null;
+    direct?: { cycleId: number; amount: number; reason?: string; variable?: VariableOverride | null }[];
     shares?: { flUserId: number; amount: number; comment?: string }[];
     send: boolean;
 }
-export interface AllocationBody { items: { cycleId: number; amount: number | null; reason?: string }[]; justification?: string; submit: boolean }
+export interface AllocationBody { items: { cycleId: number; amount: number | null; reason?: string; variable?: VariableOverride | null }[]; justification?: string; submit: boolean }
+/** Every department of a period, and the split of each department that has appraisals */
+export interface Overview { rows: BoardRow[]; rounds: Round[] }
 
 const unwrap = <T,>(p: Promise<{ data: { response: T } }>) => p.then((r) => r.data.response);
 export const errorText = (err: any, fallback = "Something went wrong.") => {
@@ -128,11 +137,15 @@ export const appraisalApi = {
     round: (departmentId: number, period: string) => unwrap<Round>(axios.get(`${BASE}/departments/${departmentId}/${period}`)),
     setBudget: (departmentId: number, period: string, amount: number, comment: string) => axios.put(`${BASE}/departments/${departmentId}/${period}/budget`, { amount, comment }),
 
+    overview: (period: string) => unwrap<Overview>(axios.get(`${BASE}/overview`, { params: { period } })),
+
     split: () => unwrap<Round[]>(axios.get(`${BASE}/split`)),
     respondBudget: (departmentId: number, period: string, body: { accept: boolean; comment?: string; amount?: number | null }) => axios.put(`${BASE}/split/${departmentId}/${period}/budget-response`, body),
     saveSplit: (departmentId: number, period: string, body: SplitBody) => axios.put(`${BASE}/split/${departmentId}/${period}`, body),
     approveShare: (departmentId: number, period: string, flUserId: number) => axios.put(`${BASE}/split/${departmentId}/${period}/shares/${flUserId}/approve`),
-    offerDirect: (departmentId: number, period: string, cycleId: number, amount: number, reason: string) => axios.put(`${BASE}/split/${departmentId}/${period}/direct/${cycleId}`, { amount, reason }),
+    reviseShare: (departmentId: number, period: string, flUserId: number, comment: string) => axios.put(`${BASE}/split/${departmentId}/${period}/shares/${flUserId}/revise`, { comment }),
+    resetSplit: (departmentId: number, period: string, comment: string) => axios.put(`${BASE}/split/${departmentId}/${period}/reset`, { comment }),
+    offerDirect: (departmentId: number, period: string, cycleId: number, amount: number, reason: string, variable?: VariableOverride | null) => axios.put(`${BASE}/split/${departmentId}/${period}/direct/${cycleId}`, { amount, reason, variable }),
 
     allocation: () => unwrap<{ shares: FlShare[]; waiting: FlWaiting[] }>(axios.get(`${BASE}/allocation`)),
     saveAllocation: (departmentId: number, period: string, body: AllocationBody) => axios.put(`${BASE}/allocation/${departmentId}/${period}`, body),

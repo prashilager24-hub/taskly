@@ -8,6 +8,7 @@ import {
   Bell,
   Building2,
   GitPullRequestArrow,
+  LayoutGrid,
   CheckCircle2,
   ClipboardCheck,
   ChevronDown,
@@ -85,6 +86,7 @@ export const MENU: MenuItem[] = [
     module: "appraisal",
     children: [
       { icon: Award, label: "My Appraisal", href: "appraisal", module: "appraisal", avail: "my" },
+      { icon: LayoutGrid, label: "Overview", href: "appraisal/overview", module: "appraisal", avail: "overview" },
       { icon: Building2, label: "Department Budgets", href: "appraisal/departments", module: "appraisal", avail: "departments", prefix: true },
       { icon: Wallet, label: "Budget Split", href: "appraisal/split", module: "appraisal", avail: "split" },
       { icon: UserCheck, label: "Team Allocation", href: "appraisal/allocation", module: "appraisal", avail: "allocation" },

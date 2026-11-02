@@ -1,4 +1,6 @@
 /** Fixed + variable split. Every hike amount (expected, target, minimal, approved) goes through splitHike; nobody types the split. */
+import { AppError } from '../../utils/AppError';
+
 export type EmployeeLevel = 'ASSOCIATE' | 'MANAGER' | 'HEAD_EL';
 
 export const VARIABLE_PCT: Record<EmployeeLevel, number> = { ASSOCIATE: 10, MANAGER: 20, HEAD_EL: 30 };
@@ -15,6 +17,18 @@ export function splitHike(annualAmount: number, level: EmployeeLevel) {
     variablePct: pct,
     variablePerHalfYear: variable / 2,
   };
+}
+
+/** Variable pay set by hand instead of the level's percentage: a percentage of the hike, or an amount out of it */
+export interface VariableOverride { mode: 'PCT' | 'AMOUNT'; value: number }
+
+/** Fixed + variable for a hike: the level's percentage, or the overriding percentage / amount */
+export function splitWith(amount: number, level: EmployeeLevel, own?: VariableOverride | null) {
+  if (!own) return { ...splitHike(amount, level), override: null };
+  if (own.mode === 'PCT' && (own.value < 0 || own.value > 100)) throw AppError.badRequest('Variable pay must be between 0% and 100%');
+  if (own.mode === 'AMOUNT' && own.value > amount) throw AppError.badRequest('Variable pay cannot be more than the hike');
+  const variable = Math.round(own.mode === 'PCT' ? (amount * own.value) / 100 : own.value);
+  return { annualAmount: amount, fixed: amount - variable, variable, variablePct: amount ? Math.round((variable / amount) * 100) : 0, variablePerHalfYear: variable / 2, override: own.mode };
 }
 
 // ── Dates: IST calendar days as 'YYYY-MM-DD' strings, so no time zone can move a day ──────────────

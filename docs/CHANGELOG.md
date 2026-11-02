@@ -17,7 +17,7 @@ Summary: one or two lines on what and why.
 
 ---
 
-## 2026-10-30 — Survey templates for Onboarding and Engagement  (commit: e9b0e0f)
+## 2026-10-30 — Survey templates for Onboarding and Engagement  (commit: 16cf867)
 Summary: HR can add Onboarding Experience and Employee Engagement surveys with their own questions; permissions are in Access Management and HR has them by default. The Node engagement backend, which was only placeholders, is now a real port of Java.
 ### Frontend
 - New canvas **Manage templates** (`modules/templates/SurveyTemplates.jsx`) on the Onboarding and Engagement HR consoles: add, edit, copy, set default, turn on/off; questions can be rating, open or (engagement) monthly, grouped into sections for onboarding.
@@ -32,7 +32,7 @@ Summary: HR can add Onboarding Experience and Employee Engagement surveys with t
 
 ---
 
-## 2026-10-30 — Goals Achieved list matches Java  (commit: e9b0e0f)
+## 2026-10-30 — Goals Achieved list matches Java  (commit: 16cf867)
 Summary: `POST /userGoalData/list` now follows Java `listPaginated`, so the Goals page shows the same rows and averages as production.
 ### Frontend
 - none
@@ -48,7 +48,7 @@ Summary: `POST /userGoalData/list` now follows Java `listPaginated`, so the Goal
 
 ---
 
-## 2026-10-29 — User profile with level/band and sign-in activity  (commit: e9b0e0f)
+## 2026-10-29 — User profile with level/band and sign-in activity  (commit: 16cf867)
 Summary: every person has a profile (position, role, department, reporting line) with their sign-in/sign-out log; Designation, Level and Band are captured when a user is created.
 ### Frontend
 - New page `pages/profile.tsx` at `/profile` (own) and `/profile/:userId` (admins); topbar menu has **My profile**; user names in Access Management → Users link to it.

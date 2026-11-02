@@ -55,7 +55,7 @@ const overrideOf = (a: Row | undefined): VariableOverride | null => (a?.['Variab
 // ── A department's round ─────────────────────────────────────────────────────────────────────────
 
 export interface RoundPerson {
-  cycleId: number; userId: number; name: string; level: EmployeeLevel; status: string; start: string;
+  cycleId: number; userId: number; name: string; roleName: string | null; level: EmployeeLevel; status: string; start: string;
   a1: { userId: number; name: string } | null; source: Source; flUserId: number | null;
   expected: number | null; target: number | null; why: string; submittedAt: string | null;
   pmsAvg: number | null; pmsQuarters: number; currentAnnualCtc: number | null;
@@ -108,8 +108,8 @@ export async function loadRound(db: Db, departmentId: number, period: string): P
   const dept = await deptRow(db, departmentId);
   const row = await roundRow(db, departmentId, period);
   const [cs] = await db.query<Row[]>(
-    `SELECT c.CycleID, c.UserID, u.UserName, c.EmployeeLevel, c.Status, c.Assessor1UserID, a1.UserName AS A1Name, c.CurrentAnnualCtc, ${D('c.CycleStartDate', 'Start')}
-       FROM AppraisalCycle c JOIN Users u ON u.UserID = c.UserID LEFT JOIN Users a1 ON a1.UserID = c.Assessor1UserID
+    `SELECT c.CycleID, c.UserID, u.UserName, ro.RoleName, c.EmployeeLevel, c.Status, c.Assessor1UserID, a1.UserName AS A1Name, c.CurrentAnnualCtc, ${D('c.CycleStartDate', 'Start')}
+       FROM AppraisalCycle c JOIN Users u ON u.UserID = c.UserID LEFT JOIN AMRole ro ON ro.RoleID = u.RoleID LEFT JOIN Users a1 ON a1.UserID = c.Assessor1UserID
       WHERE c.DepartmentID = ? AND c.PeriodStart = ? ORDER BY u.UserName`, [departmentId, period]);
   const ids = cs.map((c) => c['CycleID'] as number);
   const uids = cs.map((c) => c['UserID'] as number);
@@ -142,7 +142,7 @@ export async function loadRound(db: Db, departmentId: number, period: string): P
     const source: Source = (a?.['Source'] as Source | undefined) ?? (uid === elId ? 'EL_OWN' : fls.has(uid) ? 'FL_OWN' : a1 && fls.has(a1) ? 'FL_TEAM' : 'EL_DIRECT');
     const flUserId = a ? (a['FlUserID'] as number | null) : source === 'FL_OWN' ? uid : source === 'FL_TEAM' ? a1 : null;
     return {
-      cycleId: id, userId: uid, name: c['UserName'], level: c['EmployeeLevel'], status: c['Status'], start: c['Start'],
+      cycleId: id, userId: uid, name: c['UserName'], roleName: (c['RoleName'] as string | null) ?? null, level: c['EmployeeLevel'], status: c['Status'], start: c['Start'],
       a1: a1 ? { userId: a1, name: (c['A1Name'] as string) ?? '' } : null, source, flUserId,
       expected: hike(id, 'EXPECTED', 'EMPLOYEE'), target: hike(id, 'TARGET', 'EMPLOYEE'), why: (answers?.whyExpectThisSalary as string) ?? '',
       submittedAt: iso(s?.['SubmittedAt']), pmsAvg: p ? Math.round(Number(p['avg']) * 100) / 100 : null, pmsQuarters: p ? Number(p['cnt']) : 0,

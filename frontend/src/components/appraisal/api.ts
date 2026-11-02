@@ -59,7 +59,7 @@ export interface PersonView extends ViewBase {
 }
 
 export interface RoundPerson {
-    cycleId: number; userId: number; name: string; level: Level; status: Status; start: string;
+    cycleId: number; userId: number; name: string; roleName: string | null; level: Level; status: Status; start: string;
     a1: Person | null; source: Source; flUserId: number | null;
     expected: number | null; target: number | null; why: string; submittedAt: string | null;
     pmsAvg: number | null; pmsQuarters: number; currentAnnualCtc: number | null;

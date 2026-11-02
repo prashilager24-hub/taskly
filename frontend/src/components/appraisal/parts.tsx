@@ -236,6 +236,9 @@ const dayShort = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString
  * compares with what they expected and targeted. With `budget`, its share of that budget; with `ctc`, the old CTC, the new
  * one and the increase. The EL and the Finance Head see the department's; an FL their team and their own; a person their own.
  */
+/** Who the person is in the round: EL or FL by their place in it, otherwise Intern by role, else their level */
+export const whoIs = (p: RoundPerson) => p.source === "EL_OWN" ? "EL" : p.source === "FL_OWN" ? "FL" : /intern/i.test(p.roleName ?? "") ? "Intern" : p.level === "HEAD_EL" ? "Head" : p.level === "MANAGER" ? "Manager" : "Associate";
+
 export function SplitTable({ people, budget, budgetLabel = "% of total budget", ctc }: { people: RoundPerson[]; budget?: number | null; budgetLabel?: string; ctc?: boolean }) {
     const rows = people.map((p) => {
         const hike = p.approved ?? p.allocation;
@@ -250,19 +253,19 @@ export function SplitTable({ people, budget, budgetLabel = "% of total budget", 
     const oldCtc = withCtc.reduce((t, x) => t + x.p.currentAnnualCtc!, 0);
     const ctcHike = withCtc.reduce((t, x) => t + (x.hike ?? 0), 0);
     const showBudget = budget !== undefined;
-    const heads = ["Name", "Expected hike", "Targeted hike", "Accepted hike", ...(ctc ? ["Current CTC → New CTC", "CTC increase"] : []), ...(showBudget ? [budgetLabel] : []), "% of expected", "% of targeted"];
+    const heads = ["Name", "Expected hike", "Targeted hike", "Accepted hike", ...(ctc ? ["Current CTC → New CTC", "CTC increase"] : []), ...(showBudget ? [budgetLabel] : []), "% of expected", "% of targeted", "Status"];
     const th = "px-4 py-2.5 text-left";
     const num = "px-4 py-3 text-right tabular-nums";
     return (
         <div className="overflow-x-auto">
             <table className={cn("w-full text-sm", ctc ? "min-w-[1120px]" : "min-w-[820px]")}>
                 <thead><tr className="border-b border-ink-200 bg-ink-50 dark:border-white/10 dark:bg-ink-800">
-                    {heads.map((h, i) => <th key={h} className={cn(th, i > 0 && "text-right")}>{h}</th>)}
+                    {heads.map((h, i) => <th key={h} className={cn(th, i > 0 && i < heads.length - 1 && "text-right")}>{h}</th>)}
                 </tr></thead>
                 <tbody>
                     {rows.map(({ p, hike, split, rise }) => (
                         <tr key={p.cycleId} className="border-b border-ink-100 align-top last:border-0 dark:border-white/5">
-                            <td className="px-4 py-3"><p className="font-semibold text-ink-900 dark:text-white">{p.name}</p><p className="text-xs text-ink-500">{STATUS_LABEL[p.status]}</p></td>
+                            <td className="px-4 py-3"><p className="font-semibold text-ink-900 dark:text-white">{p.name}</p><p className="text-xs text-ink-500">{whoIs(p)}</p></td>
                             <td className={num}>{inr(p.expected)}</td>
                             <td className={num}>{inr(p.target)}</td>
                             <td className={num}>
@@ -274,6 +277,7 @@ export function SplitTable({ people, budget, budgetLabel = "% of total budget", 
                             {showBudget && <td className={num}>{pctOf(hike, budget)}</td>}
                             <td className={num}>{pctOf(hike, p.expected)}</td>
                             <td className={num}>{pctOf(hike, p.target)}</td>
+                            <td className="px-4 py-3"><StatusChip status={p.status} /></td>
                         </tr>
                     ))}
                     {!rows.length && <tr><td colSpan={heads.length} className="px-4 py-8 text-center text-sm text-ink-500">Nobody here has an appraisal yet.</td></tr>}
@@ -288,6 +292,7 @@ export function SplitTable({ people, budget, budgetLabel = "% of total budget", 
                     {showBudget && <td className={num}>{pctOf(total, budget)}</td>}
                     <td className={num}>{pctOf(total, expected)}</td>
                     <td className={num}>{pctOf(total, target)}</td>
+                    <td />
                 </tr></tfoot>}
             </table>
         </div>

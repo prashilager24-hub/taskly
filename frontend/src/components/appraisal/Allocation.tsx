@@ -59,7 +59,15 @@ function ShareCard({ s, onDone }: { s: FlShare; onDone: () => void }) {
             )}
             {s.share.status === "SUBMITTED" && <Banner>Sent to {s.el?.name ?? "your EL"} for approval. You cannot change it now.</Banner>}
             {s.share.status === "APPROVED" && <Banner>Approved by {s.el?.name ?? "your EL"}. Your team's hikes are released.</Banner>}
-            {editable && <p className="max-w-[80ch] text-sm text-ink-500 dark:text-ink-400">Agree the hikes with your EL in person, then enter them here with the reason for each. Your own hike goes in its own box. When you submit, your EL approves it and the hikes go out.</p>}
+            {!editable && (
+                <>
+                    <Panel flush title={s.share.status === "APPROVED" ? "Final split · my team and me" : "Proposal sent · my team and me"}><SplitTable people={s.people} budget={s.share.amount} budgetLabel="% of team budget" /></Panel>
+                    {s.share.justification && <div className="flex flex-col gap-1"><p className="eyebrow">Justification for the team</p><p className="whitespace-pre-wrap border-l-2 border-brand-500 pl-3 text-sm text-ink-800 dark:text-ink-100">{s.share.justification}</p></div>}
+                </>
+            )}
+            {editable && (
+                <>
+            <p className="max-w-[80ch] text-sm text-ink-500 dark:text-ink-400">Agree the hikes with your EL in person, then enter them here with the reason for each. Your own hike goes in its own box. When you submit, your EL approves it and the hikes go out.</p>
             <BudgetBar total={s.share.amount} parts={[{ label: "Team", amount: teamTotal, color: "bg-brand-500" }, ...(me ? [{ label: "My own hike", amount: ownAmt, color: "bg-violet-500" }] : [])]} />
 
             <Panel flush title={`My team · ${team.length} ${team.length === 1 ? "person" : "people"}`}>
@@ -98,9 +106,10 @@ function ShareCard({ s, onDone }: { s: FlShare; onDone: () => void }) {
                 </div>
             )}
 
-            {s.share.status === "APPROVED" && <Panel flush title="Final split · my team and me"><SplitTable people={s.people} budget={s.share.amount} budgetLabel="% of team budget" /></Panel>}
+            <Textarea label="Justification for the team as a whole" minRows={3} value={justification} onValueChange={setJustification} description="Why the hikes are spread this way. Your EL sees it with the proposal." />
 
-            <Textarea label="Justification for the team as a whole" minRows={3} isDisabled={!editable} value={justification} onValueChange={setJustification} description="Why the hikes are spread this way. Your EL sees it with the proposal." />
+                </>
+            )}
 
             {editable && (
                 <div className="flex flex-wrap items-center justify-end gap-3">

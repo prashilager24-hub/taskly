@@ -119,7 +119,7 @@ function ownRow(view: MyView): RoundPerson {
     const c = view.cycle;
     const a = view.approved;
     return {
-        cycleId: c.id, userId: c.userId, name: c.employeeName, level: c.level, status: c.status, start: c.start, a1: null, source: view.route.source ?? "FL_TEAM", flUserId: null,
+        cycleId: c.id, userId: c.userId, name: c.employeeName, roleName: null, level: c.level, status: c.status, start: c.start, a1: null, source: view.route.source ?? "FL_TEAM", flUserId: null,
         expected: view.expected?.annual ?? null, target: view.target?.annual ?? null, why: "", submittedAt: view.self?.submittedAt ?? null, pmsAvg: null, pmsQuarters: 0,
         currentAnnualCtc: c.currentAnnualCtc ?? null, allocation: a?.annual ?? null, reason: "", approved: a?.annual ?? null, approvedFixed: a?.fixed ?? null, approvedVariable: a?.variable ?? null, variable: null,
     };

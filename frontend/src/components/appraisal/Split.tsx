@@ -7,7 +7,7 @@ import { Panel, SummaryBar } from "@/components/page";
 import { Button, Chip, Tab, Tabs, Textarea, addToast } from "@/components/ui";
 import { appraisalApi, errorText, type Round, type RoundPerson } from "./api";
 import { LEVEL_LABEL, SHARE_COLOR, SHARE_LABEL, ctcRise, day, inr, parseAmount, pctOf, periodLabel, showAmount, splitPreview } from "./format";
-import { Banner, BudgetBar, BudgetLog, HikeCell, HikeField, RoundChip, SplitTable, TextBox, ownFrom, ownInvalid, ownToSend, type OwnVariable } from "./parts";
+import { Banner, BudgetBar, BudgetStrip, BudgetThread, HikeCell, HikeField, RoundChip, SplitTable, TextBox, ownFrom, ownInvalid, ownToSend, type OwnVariable } from "./parts";
 
 const th = "px-4 py-2.5 text-left";
 const COLORS = ["bg-brand-500", "bg-violet-500", "bg-amber-500", "bg-rose-500", "bg-teal-500"];
@@ -50,8 +50,8 @@ function Appeals({ r }: { r: Round }) {
 
 // ── Budget discussion tab: the budget from the Finance Head, accepted or negotiated, and the log ─────
 
+/** Under the conversation: accept the proposed budget, or negotiate it with a comment and, if wanted, an amount */
 function BudgetAnswer({ r, onDone }: { r: Round; onDone: () => void }) {
-    const waitingOnFinance = r.status === "BUDGET_NEGOTIATION";
     const [mode, setMode] = useState<"accept" | "negotiate" | null>(null);
     const [comment, setComment] = useState("");
     const [ask, setAsk] = useState("");
@@ -66,40 +66,37 @@ function BudgetAnswer({ r, onDone }: { r: Round; onDone: () => void }) {
         } catch (e) { addToast({ title: "Could not send", description: errorText(e), color: "danger" }); }
         finally { setBusy(false); }
     };
-
+    if (r.status === "BUDGET_NEGOTIATION") return <Banner>You asked the Finance Head to change the budget. Their answer appears here in the discussion.</Banner>;
     return (
-        <div className="flex flex-col gap-4">
-            <div className={waitingOnFinance ? "border border-ink-200 p-5 dark:border-white/10" : "border border-brand-600 bg-brand-50 p-5 dark:bg-brand-600/10"}>
-                <p className="eyebrow">{waitingOnFinance ? "Budget offered by the Finance Head" : `Budget proposed by the Finance Head · ${day(r.budgetSetAt)}`}</p>
-                <p className="mt-2 text-3xl font-bold tabular-nums text-ink-900 dark:text-white">{inr(r.budget)}</p>
-                {r.financeComment && <p className="mt-3 max-w-[80ch] whitespace-pre-wrap border-l-2 border-brand-500 pl-3 text-sm text-ink-700 dark:text-ink-200">{r.financeComment}</p>}
-                <p className="mt-3 text-xs text-ink-500">Department total expected {inr(r.totals.expected)} · targeted {inr(r.totals.target)}</p>
-            </div>
-            {waitingOnFinance ? (
-                <Banner>You asked the Finance Head to change this budget. It comes back to you here once they revise it.</Banner>
-            ) : mode == null ? (
-                <div className="flex flex-col gap-3">
-                    <p className="text-sm text-ink-600 dark:text-ink-300">Accept the budget to start splitting it, or negotiate it with the Finance Head. You split it only after you accept it.</p>
-                    <div className="flex flex-wrap gap-2">
-                        <Button color="success" startContent={<Handshake size={16} />} onPress={() => setMode("accept")}>Accept budget</Button>
-                        <Button variant="bordered" color="warning" startContent={<MessageSquareWarning size={16} />} onPress={() => setMode("negotiate")}>Negotiate budget</Button>
-                    </div>
+        <div className={mode === "negotiate" ? "flex flex-col gap-4 border-2 border-rose-500 p-5" : "flex flex-col gap-4 border-2 border-brand-600 p-5"}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <p className="text-base font-bold text-ink-900 dark:text-white">{mode === "accept" ? `Accept ${inr(r.budget)} for ${r.department}?` : mode === "negotiate" ? "Negotiate the budget" : `Your answer to ${inr(r.budget)}`}</p>
+                    {!mode && <p className="text-sm text-ink-500">Accept it to start splitting it, or negotiate it with the Finance Head. You split it only after you accept it.</p>}
                 </div>
-            ) : (
-                <div className="flex flex-col gap-3 border border-ink-200 p-4 dark:border-white/10">
-                    <p className="text-sm font-semibold text-ink-900 dark:text-white">{mode === "accept" ? `Accept ${inr(r.budget)} for ${r.department}?` : "Negotiate the budget"}</p>
-                    {mode === "negotiate" && (
-                        <label className="flex flex-col gap-1.5">
-                            <span className="eyebrow">Amount you ask for (optional)</span>
-                            <input inputMode="numeric" placeholder="₹ per year" value={ask} onChange={(e) => setAsk(showAmount(parseAmount(e.target.value)))} className="h-10 w-60 border border-ink-200 bg-transparent px-3 font-bold tabular-nums text-ink-900 outline-none focus:border-brand-500 dark:border-white/10 dark:text-white" />
-                        </label>
-                    )}
-                    <Textarea label={mode === "accept" ? "Comment (optional)" : "What would you like changed, and why (required)"} minRows={3} value={comment} onValueChange={setComment} description="The Finance Head sees it, and it stays in the budget discussion." />
+                {!mode && (
+                    <div className="flex flex-wrap gap-2">
+                        <Button variant="bordered" color="warning" startContent={<MessageSquareWarning size={16} />} onPress={() => setMode("negotiate")}>Negotiate budget</Button>
+                        <Button color="success" startContent={<Handshake size={16} />} onPress={() => setMode("accept")}>Accept budget</Button>
+                    </div>
+                )}
+            </div>
+            {mode && (
+                <>
+                    <div className={mode === "negotiate" ? "grid grid-cols-1 gap-4 lg:grid-cols-[300px_minmax(0,1fr)]" : ""}>
+                        {mode === "negotiate" && (
+                            <label className="flex flex-col gap-1.5">
+                                <span className="eyebrow">Amount you ask for (optional)</span>
+                                <input inputMode="numeric" placeholder="₹ per year" value={ask} onChange={(e) => setAsk(showAmount(parseAmount(e.target.value)))} className="h-12 border border-ink-200 bg-transparent px-3 text-xl font-bold tabular-nums text-ink-900 outline-none focus:border-brand-500 dark:border-white/10 dark:text-white" />
+                            </label>
+                        )}
+                        <Textarea label={mode === "accept" ? "Comment (optional)" : "What would you like changed, and why (required)"} minRows={3} value={comment} onValueChange={setComment} description="The Finance Head sees it, and it stays in this discussion." />
+                    </div>
                     <div className="flex justify-end gap-2">
                         <Button variant="light" isDisabled={busy} onPress={() => setMode(null)}>Back</Button>
-                        <Button color={mode === "accept" ? "success" : "warning"} isLoading={busy} isDisabled={mode === "negotiate" && !comment.trim()} onPress={send}>{mode === "accept" ? "Accept budget" : "Send to the Finance Head"}</Button>
+                        <Button color={mode === "accept" ? "success" : "danger"} isLoading={busy} isDisabled={mode === "negotiate" && !comment.trim()} onPress={send}>{mode === "accept" ? "Accept budget" : "Send to the Finance Head"}</Button>
                     </div>
-                </div>
+                </>
             )}
         </div>
     );
@@ -108,22 +105,12 @@ function BudgetAnswer({ r, onDone }: { r: Round; onDone: () => void }) {
 function BudgetTab({ r, onDone }: { r: Round; onDone: () => void }) {
     const noBudget = r.budget == null || r.status === "COLLECTING" || r.status === "READY_FOR_FINANCE";
     return (
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-            <div className="flex flex-col gap-4">
-                {noBudget ? (
-                    <Banner>{r.status === "READY_FOR_FINANCE" ? "Everyone has appealed. The Finance Head is reviewing your department and will propose its budget here." : `Waiting for everyone to appeal: ${r.totals.submitted} of ${r.totals.people} so far. The Finance Head proposes the budget once the department is complete.`}</Banner>
-                ) : r.status === "BUDGET_WITH_EL" || r.status === "BUDGET_NEGOTIATION" ? (
-                    <BudgetAnswer key={r.budgetLog.length} r={r} onDone={onDone} />
-                ) : (
-                    <div className="border border-emerald-500/50 bg-emerald-50 p-5 dark:bg-emerald-500/10">
-                        <p className="eyebrow !text-emerald-700 dark:!text-emerald-400">Agreed budget · you accepted it {day(r.elAcceptedAt)}</p>
-                        <p className="mt-2 text-3xl font-bold tabular-nums text-ink-900 dark:text-white">{inr(r.budget)}</p>
-                        {r.financeComment && <p className="mt-3 max-w-[80ch] whitespace-pre-wrap border-l-2 border-emerald-500 pl-3 text-sm text-ink-700 dark:text-ink-200">{r.financeComment}</p>}
-                        <p className="mt-3 text-xs text-ink-500">Department total expected {inr(r.totals.expected)} · targeted {inr(r.totals.target)}</p>
-                    </div>
-                )}
-            </div>
-            <Panel title="Budget discussion"><BudgetLog log={r.budgetLog} budget={r.budget} /></Panel>
+        <div className="flex flex-col gap-6">
+            <BudgetStrip r={r} />
+            {noBudget
+                ? <Banner>{r.status === "READY_FOR_FINANCE" ? "Everyone has appealed. The Finance Head is reviewing your department and will propose its budget here." : `Waiting for everyone to appeal: ${r.totals.submitted} of ${r.totals.people} so far. The Finance Head proposes the budget once the department is complete.`}</Banner>
+                : <BudgetThread log={r.budgetLog} viewer="EL" />}
+            {(r.status === "BUDGET_WITH_EL" || r.status === "BUDGET_NEGOTIATION") && <BudgetAnswer key={r.budgetLog.length} r={r} onDone={onDone} />}
         </div>
     );
 }

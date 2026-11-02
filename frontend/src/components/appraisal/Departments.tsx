@@ -8,7 +8,7 @@ import { Panel, SummaryBar } from "@/components/page";
 import { Button, Chip, Tab, Tabs, Textarea, addToast } from "@/components/ui";
 import { appraisalApi, errorText, type BoardRow, type Round, type RoundPerson } from "./api";
 import { LEVEL_LABEL, SHARE_COLOR, SHARE_LABEL, ctcRise, day, inr, parseAmount, periodLabel, showAmount } from "./format";
-import { Banner, BudgetLog, RoundChip, SplitTable } from "./parts";
+import { Banner, BudgetStrip, BudgetThread, RoundChip, SplitTable } from "./parts";
 
 const ORDER = { BUDGET_NEGOTIATION: 0, READY_FOR_FINANCE: 1, COLLECTING: 2, BUDGET_WITH_EL: 3, BUDGET_ACCEPTED: 4, SHARES_WITH_FLS: 5, FINALISED: 6 } as const;
 /** Rows the Finance Head has to act on: a complete department, or an EL negotiating */
@@ -127,7 +127,7 @@ export function DepartmentDetail() {
     // Budget discussion first; "View split" from the board opens straight on the split
     const [tab, setTab] = useState<DetailTab>(params.get("view") === "split" ? "split" : "budget");
     const load = useCallback(async () => {
-        try { const x = await appraisalApi.round(Number(departmentId), String(period)); setR(x); setAmount(showAmount(x.budget)); setComment(x.financeComment); }
+        try { const x = await appraisalApi.round(Number(departmentId), String(period)); setR(x); setAmount(showAmount(x.budget)); setComment(x.budgetLog.length ? "" : x.financeComment); }
         catch (e) { addToast({ title: "Could not open the department", description: errorText(e), color: "danger" }); }
     }, [departmentId, period]);
     useEffect(() => { load(); }, [load]);
@@ -167,40 +167,27 @@ export function DepartmentDetail() {
                 <div className="px-5 pt-3">
                     <Tabs aria-label="Department sections" selectedKey={tab} onSelectionChange={(k) => setTab(String(k) as DetailTab)}>
                         <Tab key="budget" title={<span className="flex items-center gap-2">Budget discussion{forMe(r.status) && <span className="h-2 w-2 bg-rose-600" aria-label="Waiting for you" />}</span>}>
-                            <div className="grid grid-cols-1 gap-6 pb-5 pt-3 xl:grid-cols-[minmax(0,1fr)_420px]">
-                                <div className="flex flex-col gap-4">
-                                    {lastAsk && (
-                                        <div role="status" className="flex flex-col gap-2 border-2 border-rose-500 bg-rose-50 p-4 dark:bg-rose-500/10">
-                                            <p className="flex items-center gap-2 text-sm font-bold text-rose-800 dark:text-rose-200"><MessageSquareWarning size={16} />{lastAsk.by?.name ?? r.el?.name ?? "The EL"} resubmitted for negotiation</p>
-                                            {lastAsk.amount != null && <p className="text-sm text-ink-800 dark:text-ink-100">Asks for <b className="tabular-nums">{inr(lastAsk.amount)}</b> instead of <b className="tabular-nums">{inr(r.budget)}</b></p>}
-                                            {lastAsk.comment && <p className="whitespace-pre-wrap border-l-2 border-rose-400 pl-3 text-sm text-ink-800 dark:text-ink-100">{lastAsk.comment}</p>}
-                                            <p className="text-xs text-ink-600 dark:text-ink-300">Revise the budget below with your answer and submit it again.</p>
+                            <div className="flex flex-col gap-6 pb-5 pt-3">
+                                <BudgetStrip r={r} />
+                                <BudgetThread log={r.budgetLog} viewer="FINANCE" />
+                                {editable && (
+                                    <div className={cn("flex flex-col gap-4 border-2 p-5", lastAsk ? "border-rose-500" : "border-brand-600")}>
+                                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                                            <p className="flex items-center gap-2 text-base font-bold text-ink-900 dark:text-white">{lastAsk && <MessageSquareWarning size={18} className="text-rose-600" />}{lastAsk ? `Reply to ${lastAsk.by?.name ?? r.el?.name ?? "the EL"}: revise the budget` : r.status === "BUDGET_WITH_EL" ? "Change the budget" : r.budgetLog.length ? "Revise the budget" : `Propose the budget for ${r.department}`}</p>
+                                            {r.status === "BUDGET_WITH_EL" && <p className="text-xs text-ink-500">Waiting for {r.el?.name} to accept or negotiate. You can still change it.</p>}
                                         </div>
-                                    )}
-                                    <div className="flex flex-col gap-4 border border-ink-200 p-5 dark:border-white/10">
-                                        <p className="text-base font-semibold text-ink-900 dark:text-white">Budget for {r.department}</p>
-                                        {editable ? (
-                                            <>
-                                                {!r.complete && <Banner tone="warn">{r.totals.people - r.totals.submitted} {r.totals.people - r.totals.submitted === 1 ? "person has" : "people have"} not appealed yet. You can still set the budget now.</Banner>}
-                                                {r.status === "BUDGET_WITH_EL" && <Banner>Submitted to {r.el?.name} on {day(r.budgetSetAt)}. Waiting for them to accept or negotiate; you can still change it.</Banner>}
-                                                <label className="flex flex-col gap-1.5">
-                                                    <span className="eyebrow">Amount per year</span>
-                                                    <input inputMode="numeric" placeholder="₹" value={amount} onChange={(e) => setAmount(showAmount(parseAmount(e.target.value)))} className="h-11 max-w-sm border border-ink-200 bg-transparent px-3 text-lg font-bold tabular-nums text-ink-900 outline-none focus:border-brand-500 dark:border-white/10 dark:text-white" />
-                                                    {amt != null && r.totals.expected > 0 && <span className="text-xs text-ink-500">{Math.round((amt / r.totals.expected) * 100)}% of what was expected, {Math.round((amt / Math.max(1, r.totals.target)) * 100)}% of the target</span>}
-                                                </label>
-                                                <Textarea label={r.status === "BUDGET_NEGOTIATION" ? "Your answer to the EL (required)" : "Why this budget (required)"} minRows={4} value={comment} onValueChange={setComment} description={`Goes to ${r.el?.name ?? "the EL"} with the amount, and stays in the budget discussion.`} />
-                                                <div><Button color="primary" isLoading={busy} isDisabled={!r.el || amt == null || !comment.trim()} onPress={send}>{r.budgetLog.length ? "Submit revised budget" : "Submit budget"}</Button></div>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <p className="text-3xl font-bold tabular-nums text-ink-900 dark:text-white">{inr(r.budget)}</p>
-                                                <p className="whitespace-pre-wrap border-l-2 border-brand-500 pl-3 text-sm text-ink-700 dark:text-ink-200">{r.financeComment}</p>
-                                                <p className="text-xs text-ink-500">Accepted by {r.el?.name} on {day(r.elAcceptedAt)}{r.elSentAt ? ` · split on ${day(r.elSentAt)} · ${inr(r.totals.allocated)} decided so far` : " · being split"}</p>
-                                            </>
-                                        )}
+                                        {!r.complete && <Banner tone="warn">{r.totals.people - r.totals.submitted} {r.totals.people - r.totals.submitted === 1 ? "person has" : "people have"} not appealed yet. You can still set the budget now.</Banner>}
+                                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
+                                            <label className="flex flex-col gap-1.5">
+                                                <span className="eyebrow">Amount per year</span>
+                                                <input inputMode="numeric" placeholder="₹" value={amount} onChange={(e) => setAmount(showAmount(parseAmount(e.target.value)))} className="h-12 border border-ink-200 bg-transparent px-3 text-xl font-bold tabular-nums text-ink-900 outline-none focus:border-brand-500 dark:border-white/10 dark:text-white" />
+                                                {amt != null && r.totals.expected > 0 && <span className="text-xs text-ink-500">{Math.round((amt / r.totals.expected) * 100)}% of expected · {Math.round((amt / Math.max(1, r.totals.target)) * 100)}% of target</span>}
+                                            </label>
+                                            <Textarea label={lastAsk ? "Your answer to the EL (required)" : "Why this budget (required)"} minRows={3} value={comment} onValueChange={setComment} description={`Goes to ${r.el?.name ?? "the EL"} with the amount and stays in this discussion.`} />
+                                        </div>
+                                        <div className="flex justify-end"><Button color={lastAsk ? "danger" : "primary"} isLoading={busy} isDisabled={!r.el || amt == null || !comment.trim()} onPress={send}>{r.budgetLog.length ? "Submit revised budget" : "Submit budget"}</Button></div>
                                     </div>
-                                </div>
-                                <Panel title="Budget discussion"><BudgetLog log={r.budgetLog} budget={r.budget} /></Panel>
+                                )}
                             </div>
                         </Tab>
                         <Tab key="appeals" title={`Appeals (${r.totals.submitted}/${r.totals.people})`}>

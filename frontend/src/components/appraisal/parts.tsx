@@ -3,7 +3,7 @@ import { Lock } from "lucide-react";
 import { cn } from "@heroui/theme";
 
 import { Checkbox, Chip, Input } from "@/components/ui";
-import type { BudgetAction, BudgetLogEntry, Level, Money, RoundPerson, RoundStatus, Stage, Status, VariableOverride } from "./api";
+import type { BudgetAction, BudgetLogEntry, Level, Money, Round, RoundPerson, RoundStatus, Stage, Status, VariableOverride } from "./api";
 import { ROUND_COLOR, ROUND_LABEL, STAGE_COLOR, STAGE_LABEL, STATUS_COLOR, STATUS_LABEL, ctcRise, inr, parseAmount, pctOf, showAmount, splitPreview, VARIABLE_PCT } from "./format";
 
 export const StatusChip = ({ status }: { status: Status }) => (
@@ -147,6 +147,89 @@ export function BudgetLog({ log }: { log: BudgetLogEntry[]; budget?: number | nu
     );
 }
 const when = (iso: string) => new Date(iso).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+
+const FROM_FINANCE: BudgetAction[] = ["PROPOSED", "REVISED"];
+const THREAD_LABEL: Record<BudgetAction, string> = { PROPOSED: "Proposed the budget", REVISED: "Revised the budget", NEGOTIATE: "Asked to negotiate", ACCEPTED: "Accepted the budget", RESET: "Reset the budget split" };
+const THREAD_TONE: Record<BudgetAction, string> = {
+    PROPOSED: "border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900",
+    REVISED: "border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900",
+    NEGOTIATE: "border-rose-400/60 bg-rose-50 dark:border-rose-500/40 dark:bg-rose-500/10",
+    ACCEPTED: "border-emerald-500/60 bg-emerald-50 dark:border-emerald-500/40 dark:bg-emerald-500/10",
+    RESET: "border-amber-500/60 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10",
+};
+const THREAD_TEXT: Record<BudgetAction, string> = {
+    PROPOSED: "text-brand-700 dark:text-brand-300", REVISED: "text-brand-700 dark:text-brand-300", NEGOTIATE: "text-rose-700 dark:text-rose-300",
+    ACCEPTED: "text-emerald-700 dark:text-emerald-300", RESET: "text-amber-800 dark:text-amber-300",
+};
+const initials = (name: string) => name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+
+/**
+ * The budget discussion between the Finance Head and the EL as a conversation, oldest first: the viewer's own messages on
+ * the right, the other side's on the left, each with what was done, the amount and the comment.
+ */
+export function BudgetThread({ log, viewer }: { log: BudgetLogEntry[]; viewer: "FINANCE" | "EL" }) {
+    if (!log.length) return (
+        <div className="flex flex-col items-center gap-2 border border-dashed border-ink-300 px-6 py-12 text-center dark:border-white/20">
+            <p className="text-base font-bold text-ink-900 dark:text-white">No budget yet</p>
+            <p className="max-w-[56ch] text-sm text-ink-500">The discussion starts when the Finance Head proposes the department's budget.</p>
+        </div>
+    );
+    let offer: number | null = null;
+    const offered = log.map((l) => { const before = offer; if (l.action === "PROPOSED" || l.action === "REVISED") offer = l.amount; return before; });
+    return (
+        <ol className="flex flex-col gap-5" aria-label="Budget discussion">
+            {log.map((l, i) => {
+                const finance = FROM_FINANCE.includes(l.action);
+                const mine = finance === (viewer === "FINANCE");
+                const name = l.by?.name ?? (finance ? "Finance Head" : "EL");
+                return (
+                    <li key={i} className={cn("flex items-start gap-3", mine && "flex-row-reverse")}>
+                        <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center text-xs font-bold text-white", finance ? "bg-brand-600" : "bg-ink-800 dark:bg-ink-600")} aria-hidden>{initials(name)}</span>
+                        <div className={cn("flex w-full max-w-[640px] flex-col gap-2 border p-4", THREAD_TONE[l.action])}>
+                            <div className={cn("flex flex-wrap items-baseline gap-x-3 gap-y-0.5", mine && "flex-row-reverse text-right")}>
+                                <p className="text-sm font-bold text-ink-900 dark:text-white">{name}<span className="ml-1.5 text-xs font-normal text-ink-500">{finance ? "Finance Head" : "Executive Leader"}</span></p>
+                                <span className="text-xs text-ink-500">{when(l.at)}</span>
+                            </div>
+                            <div className={cn("flex flex-col gap-1", mine && "items-end text-right")}>
+                                <p className={cn("eyebrow", THREAD_TEXT[l.action])}>{THREAD_LABEL[l.action]}</p>
+                                {l.amount != null && (l.action === "NEGOTIATE"
+                                    ? <p className="text-sm text-ink-700 dark:text-ink-200">Asks for <b className="text-2xl tabular-nums text-rose-700 dark:text-rose-300">{inr(l.amount)}</b>{offered[i] != null && <span className="ml-1.5 text-ink-500">instead of {inr(offered[i])}</span>}</p>
+                                    : <p className="text-2xl font-bold tabular-nums text-ink-900 dark:text-white">{inr(l.amount)}{l.action === "REVISED" && offered[i] != null && <span className="ml-2 text-sm font-normal text-ink-500">was {inr(offered[i])}</span>}</p>)}
+                                {l.action === "NEGOTIATE" && l.amount == null && <p className="text-sm text-ink-600 dark:text-ink-300">No amount named</p>}
+                                {l.action === "RESET" && <p className="text-sm text-ink-600 dark:text-ink-300">The split was cleared; the budget came back to the EL to accept again.</p>}
+                            </div>
+                            {l.comment && <p className={cn("whitespace-pre-wrap text-[15px] leading-relaxed text-ink-800 dark:text-ink-100", mine && "text-right")}>{l.comment}</p>}
+                        </div>
+                    </li>
+                );
+            })}
+        </ol>
+    );
+}
+
+/** The department's budget at a glance, above the discussion: where it stands and how it compares with the appeals */
+export function BudgetStrip({ r }: { r: Round }) {
+    const agreed = !!r.elAcceptedAt;
+    const state = r.budget == null ? "Not proposed yet" : agreed ? `Agreed · accepted by ${r.el?.name ?? "the EL"} ${dayShort(r.elAcceptedAt)}` : r.status === "BUDGET_NEGOTIATION" ? `${r.el?.name ?? "The EL"} is negotiating` : `Waiting for ${r.el?.name ?? "the EL"} to accept`;
+    const cells = [
+        { label: "Department budget", value: r.budget == null ? "—" : inr(r.budget), hint: state, strong: true },
+        { label: "Department Total Expected", value: inr(r.totals.expected), hint: r.budget != null ? `Budget is ${pctOf(r.budget, r.totals.expected)} of it` : `${r.totals.submitted} of ${r.totals.people} appeals in` },
+        { label: "Department Total Targeted", value: inr(r.totals.target), hint: r.budget != null ? `Budget is ${pctOf(r.budget, r.totals.target)} of it` : undefined },
+        { label: "Decided so far", value: r.elSentAt ? inr(r.totals.allocated) : "—", hint: r.elSentAt ? `Split sent ${dayShort(r.elSentAt)}` : "Not split yet" },
+    ];
+    return (
+        <div className="grid grid-cols-1 border border-ink-200 sm:grid-cols-2 xl:grid-cols-4 dark:border-white/10">
+            {cells.map((c, i) => (
+                <div key={c.label} className={cn("flex flex-col gap-1 border-ink-200 p-4 dark:border-white/10", i > 0 && "border-t sm:border-t-0 sm:border-l", c.strong && (agreed ? "bg-emerald-50 dark:bg-emerald-500/10" : "bg-brand-50 dark:bg-brand-600/10"))}>
+                    <p className="eyebrow">{c.label}</p>
+                    <p className="text-2xl font-bold tabular-nums text-ink-900 dark:text-white">{c.value}</p>
+                    {c.hint && <p className={cn("text-xs", c.strong && agreed ? "font-semibold text-emerald-700 dark:text-emerald-400" : "text-ink-500")}>{c.hint}</p>}
+                </div>
+            ))}
+        </div>
+    );
+}
+const dayShort = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }) : "");
 
 /**
  * The split, one row per person: what they expected and targeted, the hike (fixed and variable under it), and how it

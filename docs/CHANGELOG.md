@@ -46,6 +46,9 @@ Summary: the manager's second review. Associates and FLs only see "Your appeal i
 - The Finance Head is always the head (EL) of Strategic Financial Management; the "Finance Head" card in Appraisal Setup and `PUT /appraisal/finance-head` are gone, and the stored `financeHeadUserId` AppSetting is no longer read (deleted locally; on other environments run `DELETE FROM AppSetting WHERE SettingKey = 'financeHeadUserId'`).
 - Appraisal Setup: only HR (HR Operations department / HR roles) edits, downloads the template and bulk uploads. Admins, the Super Administrator and the Finance Head see the same page read only (availability `setup.edit`; `updatePerson` / `bulkUpdatePeople` need `isHrStaff`).
 
+### Follow-up: Budget discussion tab redesigned
+- The Budget discussion tab (Finance Head / Admin department page and the EL's Budget Split) is now the discussion itself, full width: a budget strip on top (department budget and where it stands, total expected / targeted with the budget's %, decided so far), the conversation as messages (Finance Head and EL on opposite sides, the viewer's own on the right; proposals, negotiations in red, acceptance in green, resets in amber, each with amount and comment), and the reply box under it (Finance: propose / revise with amount and answer; EL: Accept budget / Negotiate budget). New `BudgetThread` and `BudgetStrip` in parts.tsx.
+
 ### Notes
 - "Team Budget → Budget split, remove Team Allocation if not in use" was read as: Team Allocation is hidden for ELs (they split the department budget in Budget Split).
 - Reset budget keeps hikes people already accepted or rejected; everything else returns to the Finance Head's budget.

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { USER_ROLES } from '../access/userTypes';
 
 export const LoginSchema = z.object({
   username: z.string().min(1, 'username is required'),
@@ -32,6 +33,7 @@ export const CreateUserSchema = z.object({
   dateOfJoining: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD').optional().nullable(),
   appraisalCycle: z.string().optional().nullable(), // APRIL / OCTOBER (older clients may still send other values)
   variableCycle: z.enum(['QUARTERLY', 'HALF_YEARLY', 'ANNUAL']).optional().nullable(),
+  userRole: z.enum(USER_ROLES).optional().nullable(), // CEO / CBO / Finance Head / HR Manager, on top of the user type
   feedbackresolverteam: z.string().optional().nullable(),
   designation: z.string().trim().max(120).optional().nullable(),
   jobLevel: z.string().trim().max(20).optional().nullable(),
@@ -53,6 +55,7 @@ export const UpdateUserSchema = z.object({
   dateOfJoining: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD').optional().nullable(),
   appraisalCycle: z.string().optional().nullable(), // APRIL / OCTOBER (older clients may still send other values)
   variableCycle: z.enum(['QUARTERLY', 'HALF_YEARLY', 'ANNUAL']).optional().nullable(),
+  userRole: z.enum(USER_ROLES).optional().nullable(), // CEO / CBO / Finance Head / HR Manager, on top of the user type
   feedbackresolverteam: z.string().optional().nullable(),
   designation: z.string().trim().max(120).optional().nullable(),
   jobLevel: z.string().trim().max(20).optional().nullable(),

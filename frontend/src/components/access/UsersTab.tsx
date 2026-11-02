@@ -9,6 +9,7 @@ import {
 } from "@/components/ui";
 import { UserAccessMatrix } from "./PermissionMatrix";
 import { accessApi, errorText, type ModuleDef, type Privileges, type RoleRow, type UserExplain, type UserRow, type DepartmentRow } from "./api";
+import { USER_ROLES, USER_TYPES, userRoleLabel, userTypeLabel } from "./userTypes";
 
 const API = "/t2.0/authentificationUtilization";
 
@@ -102,12 +103,12 @@ function AccessCanvas({ user, catalog, onClose, onChanged }: { user: UserRow | n
 
 // ── Add / edit user ──────────────────────────────────────────────────────────────────────────────
 
-interface FullUser { userID: number; userName: string; userEmail: string; employeeID: string | null; roleID: number; secondaryRoleID: number | null; departments: { departmentID: number }[]; reportingManagerId: number | null; elManagerId: number | null; appraisalCycle: string | null; variableCycle?: string | null; dateOfJoining?: string | null; feedbackresolverteam: string | null; designation: string | null; jobLevel: string | null; band: string | null; isNewJoiner?: boolean; joiningCycle?: string | null }
+interface FullUser { userID: number; userName: string; userEmail: string; employeeID: string | null; roleID: number; secondaryRoleID: number | null; departments: { departmentID: number }[]; reportingManagerId: number | null; elManagerId: number | null; appraisalCycle: string | null; variableCycle?: string | null; dateOfJoining?: string | null; userRole?: string | null; feedbackresolverteam: string | null; designation: string | null; jobLevel: string | null; band: string | null; isNewJoiner?: boolean; joiningCycle?: string | null }
 // April–September joiners belong to the April intake, the rest to October
 const thisCycle = () => { const m = new Date().getMonth() + 1; return m >= 4 && m <= 9 ? "APRIL" : "OCTOBER"; };
 /** The appraisal cycle a joining date gives (same rule as the appraisal): December–May → April, June–November → October */
 const appraisalCycleOf = (joined: string) => { const m = Number(joined.slice(5, 7)); return m >= 6 && m <= 11 ? "OCTOBER" : "APRIL"; };
-const BLANK = { newJoiner: "yes", joiningCycle: thisCycle(), designation: "", jobLevel: "", band: "", employeeID: "", name: "", email: "", password: "", roleID: "", departmentID: "", reportingManagerId: "", elManagerId: "", dateOfJoining: "", appraisalCycle: "", variableCycle: "HALF_YEARLY" };
+const BLANK = { newJoiner: "yes", joiningCycle: thisCycle(), designation: "", jobLevel: "", band: "", employeeID: "", name: "", email: "", password: "", userType: "", roleID: "", userRole: "", departmentID: "", reportingManagerId: "", elManagerId: "", dateOfJoining: "", appraisalCycle: "", variableCycle: "HALF_YEARLY" };
 
 function UserCanvas({ open, editing, roles, departments, people, onClose, onSaved }: { open: boolean; editing: FullUser | null; roles: RoleRow[]; departments: DepartmentRow[]; people: UserRow[]; onClose: () => void; onSaved: () => void }) {
     const [f, setF] = useState(BLANK);
@@ -115,11 +116,18 @@ function UserCanvas({ open, editing, roles, departments, people, onClose, onSave
     const set = (k: keyof typeof BLANK) => (v: string) => setF((p) => ({ ...p, [k]: v }));
     // the joining date fills in the appraisal cycle; it can still be changed by hand
     const setJoined = (v: string) => setF((p) => ({ ...p, dateOfJoining: v, appraisalCycle: v ? appraisalCycleOf(v) : p.appraisalCycle }));
+    // the roles of a user type (the old roles stay, grouped under their type); "" holds roles that have no type yet
+    const rolesOf = (type: string) => roles.filter((r) => (r.active || String(r.roleId) === f.roleID) && (r.userType ?? "") === type).sort((a, b) => a.roleId - b.roleId);
+    const untyped = rolesOf("");
+    const typeRoles = rolesOf(f.userType);
+    // choosing a user type gives the person that type's main role; a type with several roles lets you pick one
+    const pickType = (type: string) => setF((p) => p.userType === type ? p : { ...p, userType: type, roleID: String(roles.filter((r) => r.active && (r.userType ?? "") === type).sort((a, b) => a.roleId - b.roleId)[0]?.roleId ?? "") });
 
     useEffect(() => {
         if (!open) return;
         setF(editing ? {
             employeeID: editing.employeeID ?? "", name: editing.userName, email: editing.userEmail, password: "", roleID: String(editing.roleID),
+            userType: roles.find((r) => r.roleId === editing.roleID)?.userType ?? "", userRole: editing.userRole ?? "",
             departmentID: editing.departments?.[0] ? String(editing.departments[0].departmentID) : "",
             reportingManagerId: editing.reportingManagerId ? String(editing.reportingManagerId) : "", elManagerId: editing.elManagerId ? String(editing.elManagerId) : "",
             dateOfJoining: editing.dateOfJoining ?? "", appraisalCycle: editing.appraisalCycle === "APRIL" || editing.appraisalCycle === "OCTOBER" ? editing.appraisalCycle : editing.dateOfJoining ? appraisalCycleOf(editing.dateOfJoining) : "",
@@ -127,14 +135,14 @@ function UserCanvas({ open, editing, roles, departments, people, onClose, onSave
             designation: editing.designation ?? "", jobLevel: editing.jobLevel ?? "", band: editing.band ?? "",
             newJoiner: editing.isNewJoiner ? "yes" : "no", joiningCycle: editing.joiningCycle || thisCycle(),
         } : { ...BLANK, joiningCycle: thisCycle() });
-    }, [open, editing]);
+    }, [open, editing, roles]);
 
     const valid = f.name.trim().length >= 2 && /\S+@\S+\.\S+/.test(f.email) && !!f.roleID && !!f.designation.trim() && !!f.jobLevel.trim() && !!f.band.trim() && (editing || f.password.length >= 6);
 
     const save = async () => {
         setSaving(true);
         const payload: Record<string, unknown> = {
-            employeeID: f.employeeID || null, userName: f.name.trim(), userEmail: f.email.trim(), roleID: Number(f.roleID),
+            employeeID: f.employeeID || null, userName: f.name.trim(), userEmail: f.email.trim(), roleID: Number(f.roleID), userRole: f.userRole || null,
             departmentID: f.departmentID ? Number(f.departmentID) : null,
             reportingManagerId: f.reportingManagerId ? Number(f.reportingManagerId) : null, elManagerId: f.elManagerId ? Number(f.elManagerId) : null,
             dateOfJoining: f.dateOfJoining || null, appraisalCycle: f.appraisalCycle || null, variableCycle: f.variableCycle || null,
@@ -177,13 +185,33 @@ function UserCanvas({ open, editing, roles, departments, people, onClose, onSave
                         {pick("New joiner", f.newJoiner, set("newJoiner"), [{ key: "yes", label: "Yes — show Onboarding Experience until they submit it" }, { key: "no", label: "No" }])}
                         {f.newJoiner === "yes" && pick("Joining cycle", f.joiningCycle, set("joiningCycle"), [{ key: "APRIL", label: "April cycle" }, { key: "OCTOBER", label: "October cycle" }])}
                     </div>
-                    <p className="eyebrow">Role and department</p>
-                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                        {pick("Role", f.roleID, set("roleID"), roles.filter((r) => r.active).map((r) => ({ key: String(r.roleId), label: r.roleName })))}
-                        {pick("Department", f.departmentID, set("departmentID"), departments.map((d) => ({ key: String(d.departmentId), label: d.name })), true)}
+                    <p className="eyebrow">User type</p>
+                    <div role="radiogroup" aria-label="User type" className="-mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        {[...USER_TYPES.map((t) => ({ key: t.key as string, label: t.label, hint: t.hint })), ...(untyped.length ? [{ key: "", label: "Other role", hint: "Roles without a user type" }] : [])].map((t) => {
+                            const on = f.userType === t.key && (t.key !== "" || !!f.roleID);
+                            const none = !rolesOf(t.key).length;
+                            return (
+                                <button key={t.key || "other"} type="button" role="radio" aria-checked={on} disabled={none} onClick={() => pickType(t.key)}
+                                    className={`flex flex-col items-start gap-0.5 border px-3 py-2.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${on ? "border-brand-500 bg-brand-50 shadow-[inset_3px_0_0_#ff6a1f] dark:bg-brand-500/10" : "border-ink-200 bg-white hover:border-ink-400 dark:border-white/10 dark:bg-ink-900 dark:hover:border-white/30"}`}>
+                                    <span className={`text-[13px] font-semibold ${on ? "text-brand-700 dark:text-brand-300" : "text-ink-900 dark:text-white"}`}>{t.label}</span>
+                                    <span className="text-[11px] text-ink-500 dark:text-ink-400">{t.hint}</span>
+                                </button>
+                            );
+                        })}
                     </div>
-                    <p className="eyebrow">Reporting</p>
-                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    {typeRoles.length > 1 && (
+                        <div className="flex flex-col gap-1.5">
+                            {pick("Access from role", f.roleID, set("roleID"), typeRoles.map((r) => ({ key: String(r.roleId), label: r.roleName })))}
+                            <p className="text-xs text-ink-500">{userTypeLabel(f.userType || null)} has more than one role. The role decides which modules they can open.</p>
+                        </div>
+                    )}
+                    <div className="flex flex-col gap-1.5">
+                        <span className="text-small font-medium text-foreground">User role <span className="font-normal text-ink-500">(optional)</span></span>
+                        <div><Segmented label="User role" size="sm" value={f.userRole} onChange={set("userRole")} options={[{ key: "", label: "None" }, ...USER_ROLES.map((r) => ({ key: r.key as string, label: r.label }))]} /></div>
+                    </div>
+                    <p className="eyebrow">Department and reporting</p>
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+                        {pick("Department", f.departmentID, set("departmentID"), departments.map((d) => ({ key: String(d.departmentId), label: d.name })), true)}
                         {pick("Reporting manager", f.reportingManagerId, set("reportingManagerId"), people.filter((p) => p.userId !== editing?.userID).map((p) => ({ key: String(p.userId), label: p.name })), true)}
                         {pick("Executive Leader", f.elManagerId, set("elManagerId"), people.filter((p) => p.userId !== editing?.userID).map((p) => ({ key: String(p.userId), label: p.name })), true)}
                     </div>
@@ -213,7 +241,7 @@ export default function UsersTab({ catalog, roles, departments, onChanged }: { c
     const newOf = (id: number) => { const f = full.find((x) => x.userID === id); return f?.isNewJoiner ? (f.joiningCycle === "APRIL" ? "Apr" : f.joiningCycle === "OCTOBER" ? "Oct" : "") || "New" : ""; };
     const [loading, setLoading] = useState(true);
     const [q, setQ] = useState("");
-    const [role, setRole] = useState("all");
+    const [type, setType] = useState("all");
     const [status, setStatus] = useState<"active" | "inactive" | "all">("active");
     const [accessFor, setAccessFor] = useState<UserRow | null>(null);
     const [form, setForm] = useState<{ open: boolean; editing: FullUser | null }>({ open: false, editing: null });
@@ -230,7 +258,7 @@ export default function UsersTab({ catalog, roles, departments, onChanged }: { c
 
     const shown = users.filter((u) =>
         (status === "all" || (status === "active") === u.active) &&
-        (role === "all" || String(u.roleId) === role || String(u.secondaryRoleId) === role) &&
+        (type === "all" || u.userType === type || roles.find((r) => r.roleId === u.secondaryRoleId)?.userType === type) &&
         (!q || `${u.name} ${u.email} ${u.employeeId ?? ""}`.toLowerCase().includes(q.toLowerCase())));
 
     const toggleStatus = async (u: UserRow) => {
@@ -242,14 +270,18 @@ export default function UsersTab({ catalog, roles, departments, onChanged }: { c
     };
 
     const refresh = () => { load(); onChanged(); };
+    // the role's own name, when it is not the main role of its user type (e.g. Finance and HR under Admin)
+    // a secondary role is shown only when it adds another user type
+    const secondType = (u: UserRow) => { const t = u.secondaryRoleName ? userTypeLabel(null, u.secondaryRoleName) : null; return t && t !== userTypeLabel(u.userType, u.roleName) ? t : null; };
+    const otherRole = (u: UserRow) => !!u.userType && roles.filter((r) => r.userType === u.userType).sort((a, b) => a.roleId - b.roleId)[0]?.roleId !== u.roleId;
 
     return (
         <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-end justify-between gap-3">
                 <div className="flex flex-wrap items-end gap-3">
                     <Input aria-label="Search users" className="w-64" placeholder="Search name, email, employee ID" startContent={<Search size={14} className="text-ink-400" />} value={q} onValueChange={setQ} isClearable />
-                    <Select aria-label="Role" className="w-48" selectedKeys={new Set([role])} onSelectionChange={(k) => setRole(String(Array.from(k)[0] ?? "all"))}>
-                        {[<SelectItem key="all">All roles</SelectItem>, ...roles.map((r) => <SelectItem key={String(r.roleId)}>{r.roleName}</SelectItem>)]}
+                    <Select aria-label="User type" className="w-48" selectedKeys={new Set([type])} onSelectionChange={(k) => setType(String(Array.from(k)[0] ?? "all"))}>
+                        {[<SelectItem key="all">All user types</SelectItem>, ...USER_TYPES.map((t) => <SelectItem key={t.key}>{t.label}</SelectItem>)]}
                     </Select>
                     <Segmented label="Status" size="sm" value={status} onChange={setStatus} options={[{ key: "active", label: "Active" }, { key: "inactive", label: "Inactive" }, { key: "all", label: "All" }]} />
                 </div>
@@ -259,13 +291,19 @@ export default function UsersTab({ catalog, roles, departments, onChanged }: { c
             <div className="overflow-x-auto border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900">
                 <table className="w-full text-sm">
                     <thead><tr className="border-b border-ink-200 bg-ink-50 dark:border-white/10 dark:bg-white/5">
-                        {["User", "Role", "Departments", "Access", "Two-factor", "Status", ""].map((h) => <th key={h} className="px-4 py-3 text-left">{h}</th>)}
+                        {["User", "User type", "Departments", "Access", "Two-factor", "Status", ""].map((h) => <th key={h} className="px-4 py-3 text-left">{h}</th>)}
                     </tr></thead>
                     <tbody>
                         {shown.map((u) => (
                             <tr key={u.userId} className="border-b border-ink-100 last:border-0 hover:bg-ink-50/60 dark:border-white/5 dark:hover:bg-white/5">
                                 <td className="px-4 py-3"><Link to={`/profile/${u.userId}`} className="font-semibold text-ink-900 hover:text-brand-600 hover:underline dark:text-white">{u.name}</Link>{newOf(u.userId) && <span className="ml-2 bg-brand-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-700 dark:bg-brand-500/15 dark:text-brand-300">New · {newOf(u.userId)}</span>}<p className="text-xs text-ink-500 dark:text-ink-400">{u.email}</p></td>
-                                <td className="px-4 py-3">{u.roleName}{u.secondaryRoleName && <span className="text-ink-500"> + {u.secondaryRoleName}</span>}</td>
+                                <td className="px-4 py-3">
+                                    <p className="flex flex-wrap items-center gap-1.5">
+                                        <span>{userTypeLabel(u.userType, u.roleName)}</span>
+                                        {u.userRole && <span className="bg-brand-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-700 dark:bg-brand-500/15 dark:text-brand-300">{userRoleLabel(u.userRole)}</span>}
+                                    </p>
+                                    {(otherRole(u) || secondType(u)) && <p className="text-xs text-ink-500 dark:text-ink-400">{[otherRole(u) && `${u.roleName} role`, secondType(u) && `+ ${secondType(u)}`].filter(Boolean).join(" ")}</p>}
+                                </td>
                                 <td className="px-4 py-3 text-ink-700 dark:text-ink-200">{u.departments.join(", ") || "—"}</td>
                                 <td className="px-4 py-3">{u.hasOverrides ? <Chip size="sm" color="warning" variant="flat">Custom</Chip> : <span className="text-xs text-ink-500">As role</span>}</td>
                                 <td className="px-4 py-3">

@@ -48,16 +48,16 @@ export async function listLog(limit = 30) {
 
 export async function listRoles() {
   const [rows] = await pool.query<Row[]>(
-    `SELECT r.RoleID, r.RoleName, r.RoleDescription, r.RolePrivileges, r.RoleStatus,
+    `SELECT r.RoleID, r.RoleName, r.RoleDescription, r.RolePrivileges, r.RoleStatus, r.UserType,
             (SELECT COUNT(*) FROM Users u WHERE (u.RoleID = r.RoleID OR u.SecondaryRoleID = r.RoleID) AND u.IsUserArchived = 0) AS userCount
      FROM AMRole r WHERE r.IsRoleArchived = 0 ORDER BY r.RoleID`);
   return rows.map((r) => ({
-    roleId: r['RoleID'], roleName: r['RoleName'], description: r['RoleDescription'] ?? '', active: r['RoleStatus'] === 1,
+    roleId: r['RoleID'], roleName: r['RoleName'], userType: r['UserType'] ?? null, description: r['RoleDescription'] ?? '', active: r['RoleStatus'] === 1,
     userCount: Number(r['userCount']), system: r['RoleID'] === 1, privileges: r['RoleID'] === 1 ? FULL_ACCESS : parse(r['RolePrivileges']),
   }));
 }
 
-export async function saveRole(actor: number, input: { roleId?: number; roleName: string; description?: string; active?: boolean; privileges: unknown }) {
+export async function saveRole(actor: number, input: { roleId?: number; roleName: string; userType?: string | null; description?: string; active?: boolean; privileges: unknown }) {
   const name = input.roleName.trim();
   if (name.length < 2) throw AppError.badRequest('Give the role a name');
   const privileges = JSON.stringify(normalize(input.privileges));
@@ -67,15 +67,15 @@ export async function saveRole(actor: number, input: { roleId?: number; roleName
   if (input.roleId) {
     if (input.roleId === 1) throw AppError.forbidden('Super Admin always has full access and cannot be changed');
     const [res] = await pool.execute<mysql.ResultSetHeader>(
-      'UPDATE AMRole SET RoleName = ?, RoleDescription = ?, RolePrivileges = ?, RoleStatus = ?, RoleModifyTime = NOW() WHERE RoleID = ? AND IsRoleArchived = 0',
-      [name, input.description ?? null, privileges, input.active === false ? 0 : 1, input.roleId]);
+      'UPDATE AMRole SET RoleName = ?, UserType = ?, RoleDescription = ?, RolePrivileges = ?, RoleStatus = ?, RoleModifyTime = NOW() WHERE RoleID = ? AND IsRoleArchived = 0',
+      [name, input.userType ?? null, input.description ?? null, privileges, input.active === false ? 0 : 1, input.roleId]);
     if (!res.affectedRows) throw AppError.notFound('Role not found');
     await logChange(actor, 'role', input.roleId, `Updated role "${name}"`);
     return input.roleId;
   }
   const [res] = await pool.execute<mysql.ResultSetHeader>(
-    'INSERT INTO AMRole (RoleName, RoleDescription, RolePrivileges, RoleStatus, IsRoleArchived, RoleCreateTime, RoleModifyTime) VALUES (?, ?, ?, 1, 0, NOW(), NOW())',
-    [name, input.description ?? null, privileges]);
+    'INSERT INTO AMRole (RoleName, UserType, RoleDescription, RolePrivileges, RoleStatus, IsRoleArchived, RoleCreateTime, RoleModifyTime) VALUES (?, ?, ?, ?, 1, 0, NOW(), NOW())',
+    [name, input.userType ?? null, input.description ?? null, privileges]);
   await logChange(actor, 'role', res.insertId, `Created role "${name}"`);
   return res.insertId;
 }
@@ -175,8 +175,8 @@ export async function can(userId: number, module: string, action: (typeof ACTION
 
 export async function listUsers() {
   const [rows] = await pool.query<Row[]>(
-    `SELECT u.UserID, u.UserName, u.UserEmail, u.EmployeeID, u.RoleID, u.SecondaryRoleID, u.UserStatus, u.TwoFactor,
-            r.RoleName, r2.RoleName AS SecondaryRoleName,
+    `SELECT u.UserID, u.UserName, u.UserEmail, u.EmployeeID, u.RoleID, u.SecondaryRoleID, u.UserStatus, u.TwoFactor, u.UserRole,
+            r.RoleName, r.UserType, r2.RoleName AS SecondaryRoleName,
             (SELECT GROUP_CONCAT(d.DepartmentName ORDER BY d.DepartmentName SEPARATOR '||') FROM DepartmentUser du JOIN Department d ON d.DepartmentID = du.DepartmentID WHERE du.UserID = u.UserID) AS departments,
             (a.UserID IS NOT NULL AND (a.Grants NOT IN ('{}', 'null') OR a.Denies NOT IN ('{}', 'null'))) AS hasOverrides
      FROM Users u LEFT JOIN AMRole r ON r.RoleID = u.RoleID LEFT JOIN AMRole r2 ON r2.RoleID = u.SecondaryRoleID LEFT JOIN UserAccess a ON a.UserID = u.UserID
@@ -184,6 +184,7 @@ export async function listUsers() {
   const def = await twoFactorDefault();
   return rows.map((r) => ({
     userId: r['UserID'], name: r['UserName'], email: r['UserEmail'], employeeId: r['EmployeeID'], roleId: r['RoleID'], roleName: r['RoleName'] ?? 'No role',
+    userType: r['UserType'] ?? null, userRole: r['UserRole'] ?? null,
     secondaryRoleId: r['SecondaryRoleID'] ?? null, secondaryRoleName: r['SecondaryRoleName'] ?? null, active: r['UserStatus'] === 1,
     departments: r['departments'] ? String(r['departments']).split('||') : [],
     twoFactor: r['TwoFactor'] === null ? 'default' : r['TwoFactor'] ? 'on' : 'off',

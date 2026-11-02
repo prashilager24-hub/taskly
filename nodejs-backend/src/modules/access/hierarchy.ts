@@ -27,17 +27,18 @@ export const LEVELS: { key: Level; label: string; description: string }[] = [
 ];
 
 // Role ids as used by the app: 1 Admin, 3 ExecutiveLeader, 4 FunctionalLeader, 7 Manager, 23 Lead, 2 normalUser, 6 Executive, 5 Intern
-const LEVEL_OF_ROLE: Record<number, Level> = { 1: 'admin', 3: 'el', 4: 'fl', 7: 'fl', 23: 'fl', 2: 'employee', 6: 'employee', 5: 'intern' };
+// (Executive is an Executive Leader by user type)
+const LEVEL_OF_ROLE: Record<number, Level> = { 1: 'admin', 3: 'el', 4: 'fl', 7: 'fl', 23: 'fl', 2: 'employee', 6: 'el', 5: 'intern' };
 export const levelOf = (roleId: number): Level => LEVEL_OF_ROLE[roleId] ?? 'employee';
 
-interface Person { userId: number; name: string; email: string; roleId: number; roleName: string; level: Level; active: boolean; reportingManagerId: number | null; elManagerId: number | null }
+interface Person { userId: number; name: string; email: string; roleId: number; roleName: string; userType: string | null; level: Level; active: boolean; reportingManagerId: number | null; elManagerId: number | null }
 interface Dept { id: number; name: string; el: number | null; fl: number | null }
 export interface Ref { userId: number; name: string; level: Level }
 export interface Assessors { accessor1: Ref | null; accessor2: Ref | null; accessor1Optional: boolean; accessor2Allowed: boolean }
 
 async function load() {
   const [users] = await pool.execute<Row[]>(
-    `SELECT u.UserID, u.UserName, u.UserEmail, u.RoleID, r.RoleName, u.UserStatus, u.ReportingManagerID, u.ELManagerID
+    `SELECT u.UserID, u.UserName, u.UserEmail, u.RoleID, r.RoleName, r.UserType, u.UserStatus, u.ReportingManagerID, u.ELManagerID
        FROM Users u LEFT JOIN AMRole r ON r.RoleID = u.RoleID WHERE u.IsUserArchived = 0`);
   const [depts] = await pool.execute<Row[]>(
     `SELECT DepartmentID, DepartmentName, ExecutiveLeaderID, FunctionalLeaderID FROM Department WHERE IsDepartmentArchived = 0 AND DepartmentStatus = 1`);
@@ -45,7 +46,7 @@ async function load() {
   const [[setting]] = await pool.execute<Row[]>("SELECT SettingValue FROM AppSetting WHERE SettingKey = 'ceoUserId'");
 
   const people = new Map<number, Person>(users.map((u) => [u['UserID'] as number, {
-    userId: u['UserID'], name: u['UserName'], email: u['UserEmail'], roleId: u['RoleID'], roleName: u['RoleName'] ?? '', level: levelOf(u['RoleID']),
+    userId: u['UserID'], name: u['UserName'], email: u['UserEmail'], roleId: u['RoleID'], roleName: u['RoleName'] ?? '', userType: u['UserType'] ?? null, level: levelOf(u['RoleID']),
     active: u['UserStatus'] === 1, reportingManagerId: u['ReportingManagerID'] ?? null, elManagerId: u['ELManagerID'] ?? null,
   }]));
   const departments = new Map<number, Dept>(depts.map((d) => [d['DepartmentID'] as number, { id: d['DepartmentID'], name: d['DepartmentName'], el: d['ExecutiveLeaderID'] ?? null, fl: d['FunctionalLeaderID'] ?? null }]));
@@ -109,7 +110,7 @@ export async function hierarchy() {
     const a = assessorsFor(c, p);
     const depts = (c.deptsOf.get(p.userId) ?? []).map((id) => c.departments.get(id)?.name).filter((n): n is string => !!n);
     const missing = p.level !== 'admin' && !a.accessor1;
-    return { userId: p.userId, name: p.name, email: p.email, roleName: p.roleName, level: p.level, departments: depts, accessor1: a.accessor1, accessor2: a.accessor2, accessor2Allowed: a.accessor2Allowed, missing };
+    return { userId: p.userId, name: p.name, email: p.email, roleName: p.roleName, userType: p.userType, level: p.level, departments: depts, accessor1: a.accessor1, accessor2: a.accessor2, accessor2Allowed: a.accessor2Allowed, missing };
   }).sort((a, b) => a.name.localeCompare(b.name));
   const levels = LEVELS.map((l) => ({ ...l, count: people.filter((p) => p.level === l.key).length }));
   return { levels, ceo: ref(c, c.ceoId), people, missing: people.filter((p) => p.missing).length };

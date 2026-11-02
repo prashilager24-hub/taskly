@@ -53,13 +53,14 @@ export const nextWeekly = (now: Date, day: number, time: string) => new Date(las
 /** 'YYYY-MM-DDTHH:MM' as India time → the moment */
 const fromIst = (s: string) => new Date(`${s.length === 16 ? `${s}:00` : s}+05:30`);
 
-/** What the signed-in person sees in the bell: meant for them, gone out, active, not expired, not closed by them */
+/** What the signed-in person sees in the bell: meant for them, gone out, active, not expired, not closed by them.
+ *  Appraisal notifications never show here: the appraisal's own screens (Budget Split's budget discussion) carry them. */
 export async function mine(userId: number) {
   const [rows] = await pool.execute<Row[]>(
     `SELECT n.*, s.ReadAt FROM Notification n
        JOIN Users u ON u.UserID = ?
        LEFT JOIN NotificationState s ON s.NotificationID = n.NotificationID AND s.UserID = u.UserID
-      WHERE n.IsActive = 1 AND n.DeliveredAt IS NOT NULL AND (n.ExpiresAt IS NULL OR n.ExpiresAt > ?) AND s.DismissedAt IS NULL AND ${AUDIENCE_SQL}
+      WHERE n.IsActive = 1 AND n.Source <> 'APPRAISAL' AND n.DeliveredAt IS NOT NULL AND (n.ExpiresAt IS NULL OR n.ExpiresAt > ?) AND s.DismissedAt IS NULL AND ${AUDIENCE_SQL}
       ORDER BY n.DeliveredAt DESC LIMIT 50`, [userId, new Date()]);
   return rows.map((r) => ({ ...shape(r), read: !!r['ReadAt'] }));
 }

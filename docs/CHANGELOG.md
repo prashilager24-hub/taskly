@@ -17,6 +17,34 @@ Summary: one or two lines on what and why.
 
 ---
 
+## 2026-11-02 — Modules audit (part 2): user types and user roles, appraisal notifications out of the bell  (branch modules-audit)
+
+Summary: people are shown by **user type** (Super Admin, Admin, Executive Leader, Functional Leader, Manager, Lead, Associate, Intern) and may hold a **user role** (CEO, CBO, Finance Head, HR Manager). The old roles keep their names and ids, so nothing wired to them changes; each is grouped under a user type. Appraisal notifications no longer show anywhere (the appraisal's own screens, Budget Split's budget discussion, carry them).
+
+### Frontend
+- New `components/access/userTypes.ts`: the 8 user types, the 4 user roles, labels.
+- Access Management → Users: column "User type" (a role that is not the type's main one is named underneath, e.g. "Finance role" under Admin; a user role shows as a tag); filter "All user types". Add / edit user: user type cards (Super Admin … Intern); when a type has several roles (Admin: Admin / Finance / HR; Executive Leader: ExecutiveLeader / Executive) an "Access from role" picker; "User role" None / CEO / CBO / Finance Head / HR Manager.
+- Roles tab: "User type" column; a role's user type is chosen in its editor (new roles too).
+- Hierarchy tab and Profile show the user type (Profile also the user role).
+
+### Backend
+- `access/userTypes.ts` (USER_TYPES, USER_ROLES). Roles list / save carry `userType`; users list carries `userType`, `userRole`; profile carries both; hierarchy people carry `userType`.
+- auth: create / update user accept `userRole` (CEO / CBO / FINANCE_HEAD / HR_MANAGER or null) and return it in the user list.
+- hierarchy: the Executive role (no users today) counts as an Executive Leader, as its user type says.
+- notifications: the bell leaves out Source APPRAISAL. Appraisal notifications are still recorded, shown nowhere.
+
+### Database
+- `020_user_types_and_roles.sql`: AMRole.UserType, filled for the existing roles (Super Administrator → SUPER_ADMIN; Admin, Finance, HR → ADMIN; ExecutiveLeader, Executive → EL; FunctionalLeader → FL; Manager; Lead; normalUser → ASSOCIATE; Intern). Users.UserRole; the EL of Strategic Financial Management (Mithilesh) is set as FINANCE_HEAD. Role names and ids are unchanged. Undo: `migrations/down/020_user_types_and_roles.down.sql`.
+- Run `npm run db:migrate`.
+
+### Env / config
+- none
+
+### Notes
+- Access is unchanged: what a person can open still comes from their role. The Admin role (id 1) keeps full access; the Super Administrator role keeps its appraisal overview access.
+- The appraisal still finds the Finance Head from the department (EL of Strategic Financial Management); the new user role does not drive it yet.
+- Checked: user type / user role API checks (old roles mapped, create / update / clear a user role, bad value refused, profile), no appraisal notification in the bell for an Associate, FL, EL and the Finance Head, notification checks, appraisal flow check, unit tests, pages opened in the browser.
+
 ## 2026-11-02 — Modules audit (part 1): user form, HR Experience / Support menus, scheduled and emailed notifications  (branch modules-audit)
 
 Summary: first batch of the modules audit. The new-user form loses the secondary role and gains joining date, appraisal cycle and variable cycle; HR Support becomes HR Experience and Support; notifications can go out now, at a set time or every week, and by email; appraisal messages leave the Notifications page; Admin down to Lead can use Notifications; the daily log report job is repaired. Department Management is only designed so far (blueprint artifact, waiting for approval).
@@ -29,7 +57,7 @@ Summary: first batch of the modules audit. The new-user form loses the secondary
 ### Backend
 - auth: create / update user accept `dateOfJoining`, `variableCycle`; return both in the user list.
 - notifications: `Source` (MANUAL / APPRAISAL / SYSTEM); the page lists MANUAL only. Scheduling (`sendAt`), weekly repeat (`repeat`, `repeatDay`, `repeatTime`), email (`sendEmail`, one mail per person with an Open in Taskly button to the link, `EmailedCount` counts only mails really sent). The bell shows a notification only once it has gone out, dated by when it last went out; a weekly one comes back as new each week. New job `jobs/notificationScheduler.ts` (every minute). `GET /notifications/system`, `PUT /notifications/system/:job { email }`.
-- appraisal: its notifications are stored with Source APPRAISAL (still in people's bells, not on the Notifications page).
+- appraisal: its notifications are stored with Source APPRAISAL (not on the Notifications page; part 2 takes them out of the bell too).
 - jobs/dailyTaskAudit.ts: it could never run (it selected `Department.IsActive`, `Users.DepartmentID`, `Users.IsActive`, none of which exist) and its schedule ran at 04:30, not 10:00 India time. Queries fixed (DepartmentUser, DepartmentStatus, UserStatus), schedule `0 10 * * *` India time, and its email now has a switch on Notifications → System, **off by default** because these emails never went out before.
 - mailer: `sendMail` returns whether it really sent (false when SMTP is not configured).
 - Access catalog: HR Support permission group renamed HR Experience & Support; "Query & HR" → "Query".
@@ -43,7 +71,7 @@ Summary: first batch of the modules audit. The new-user form loses the secondary
 - Emails need SMTP_HOST / SMTP_USER / SMTP_PASS (unchanged); email buttons use FRONTEND_URL.
 
 ### Notes
-- Waiting for approval, not built: Department Management (department / sub department IDs TM-D01 / TM-SD01, card and table views, people first, sub departments, tasks / targets / goals inside each sub department, hierarchy tab) and the new role list and user types; see the blueprint artifact.
+- Waiting for approval, not built: Department Management (department / sub department IDs TM-D01 / TM-SD01, card and table views, people first, sub departments, tasks / targets / goals inside each sub department, hierarchy tab); see the blueprint artifact. User types and user roles: done in part 2.
 - Checked: notification schedule checks (now, scheduled, weekly once per slot and again next week, closing, validation, email html, job switch), the repaired daily log report runs end to end without SMTP, appraisal flow check and unit tests still pass, pages opened in the browser.
 
 ## 2026-11-02 — Fix: Profile sign-in activity  (commit: see git log)

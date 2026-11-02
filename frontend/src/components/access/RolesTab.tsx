@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 
-import { Button, Chip, Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerHeader, Input, Switch, Textarea, addToast } from "@/components/ui";
+import { Button, Chip, Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerHeader, Input, Select, SelectItem, Switch, Textarea, addToast } from "@/components/ui";
 import PermissionMatrix from "./PermissionMatrix";
 import { accessApi, countModules, errorText, type DepartmentRow, type ModuleDef, type Privileges, type RoleRow } from "./api";
+import { USER_TYPES, userTypeLabel, type UserType } from "./userTypes";
 
 // ── Roles: a named set of module access that any number of people can hold ───────────────────────
 
 export function RolesTab({ catalog, roles, onChanged }: { catalog: ModuleDef[]; roles: RoleRow[]; onChanged: () => void }) {
     const [edit, setEdit] = useState<{ open: boolean; role: RoleRow | null }>({ open: false, role: null });
     const [name, setName] = useState("");
+    const [userType, setUserType] = useState<UserType | "">("");
     const [description, setDescription] = useState("");
     const [active, setActive] = useState(true);
     const [privileges, setPrivileges] = useState<Privileges>({});
@@ -18,13 +20,13 @@ export function RolesTab({ catalog, roles, onChanged }: { catalog: ModuleDef[]; 
     useEffect(() => {
         if (!edit.open) return;
         const r = edit.role;
-        setName(r?.roleName ?? ""); setDescription(r?.description ?? ""); setActive(r?.active ?? true); setPrivileges(r?.privileges ?? { dashboard: ["read"], hrfeedback: ["read", "create"] });
+        setName(r?.roleName ?? ""); setUserType(r?.userType ?? ""); setDescription(r?.description ?? ""); setActive(r?.active ?? true); setPrivileges(r?.privileges ?? { dashboard: ["read"], hrfeedback: ["read", "create"] });
     }, [edit]);
 
     const save = async () => {
         setSaving(true);
         try {
-            await accessApi.saveRole({ roleId: edit.role?.roleId, roleName: name, description, active, privileges });
+            await accessApi.saveRole({ roleId: edit.role?.roleId, roleName: name, userType: userType || null, description, active, privileges });
             addToast({ title: edit.role ? "Role updated" : "Role created", description: name, color: "success" });
             setEdit({ open: false, role: null }); onChanged();
         } catch (e) { addToast({ title: "Could not save role", description: errorText(e), color: "danger" }); } finally { setSaving(false); }
@@ -39,16 +41,17 @@ export function RolesTab({ catalog, roles, onChanged }: { catalog: ModuleDef[]; 
     return (
         <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="max-w-2xl text-sm text-ink-500 dark:text-ink-400">A role decides which modules people can open and what they can do there. Give someone a role in the Users tab; add exceptions for one person from their Access panel.</p>
+                <p className="max-w-2xl text-sm text-ink-500 dark:text-ink-400">A role decides which modules people can open and what they can do there. Each role belongs to a user type (Super Admin, Admin, EL, FL, Manager, Lead, Associate, Intern); people are shown by their user type. Add exceptions for one person from their Access panel.</p>
                 <Button color="primary" startContent={<Plus size={14} />} onPress={() => setEdit({ open: true, role: null })}>New role</Button>
             </div>
             <div className="overflow-x-auto border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900">
                 <table className="w-full text-sm">
-                    <thead><tr className="border-b border-ink-200 bg-ink-50 dark:border-white/10 dark:bg-white/5">{["Role", "Modules", "People", "Status", ""].map((h) => <th key={h} className="px-4 py-3 text-left">{h}</th>)}</tr></thead>
+                    <thead><tr className="border-b border-ink-200 bg-ink-50 dark:border-white/10 dark:bg-white/5">{["Role", "User type", "Modules", "People", "Status", ""].map((h) => <th key={h} className="px-4 py-3 text-left">{h}</th>)}</tr></thead>
                     <tbody>
                         {roles.map((r) => (
                             <tr key={r.roleId} className="border-b border-ink-100 last:border-0 dark:border-white/5">
                                 <td className="px-4 py-3"><p className="font-semibold text-ink-900 dark:text-white">{r.roleName}{r.system && <span className="ml-2 text-[10.5px] font-bold uppercase tracking-wide text-brand-600">System</span>}</p>{r.description && <p className="text-xs text-ink-500 dark:text-ink-400">{r.description}</p>}</td>
+                                <td className="px-4 py-3">{r.userType ? userTypeLabel(r.userType) : <span className="text-xs text-ink-400">Not set</span>}</td>
                                 <td className="px-4 py-3">{r.system ? "All" : `${countModules(r.privileges)} of ${catalog.reduce((n, m) => n + 1 + (m.children?.length ?? 0), 0)}`}</td>
                                 <td className="px-4 py-3">{r.userCount}</td>
                                 <td className="px-4 py-3"><Chip size="sm" variant="dot" color={r.active ? "success" : "default"}>{r.active ? "Active" : "Inactive"}</Chip></td>
@@ -66,9 +69,12 @@ export function RolesTab({ catalog, roles, onChanged }: { catalog: ModuleDef[]; 
                 <DrawerContent>
                     <DrawerHeader className="flex flex-col gap-1"><span className="eyebrow">Roles</span><span>{edit.role ? (edit.role.system ? edit.role.roleName : `Edit ${edit.role.roleName}`) : "New role"}</span></DrawerHeader>
                     <DrawerBody className="gap-5">
-                        {edit.role?.system && <p className="border border-ink-200 bg-ink-50 p-3 text-sm text-ink-600 dark:border-white/10 dark:bg-white/5 dark:text-ink-300">Super Admin always has full access and cannot be changed.</p>}
+                        {edit.role?.system && <p className="border border-ink-200 bg-ink-50 p-3 text-sm text-ink-600 dark:border-white/10 dark:bg-white/5 dark:text-ink-300">This role always has full access and cannot be changed.</p>}
                         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                             <Input label="Role name" labelPlacement="outside" placeholder="e.g. Team Lead" value={name} onValueChange={setName} isDisabled={edit.role?.system} isRequired />
+                            <Select label="User type" labelPlacement="outside" placeholder="Choose the user type" selectedKeys={userType ? new Set([userType]) : new Set()} onSelectionChange={(k) => setUserType((Array.from(k)[0] as UserType | undefined) ?? "")} isDisabled={edit.role?.system} description="People with this role are shown as this type.">
+                                {USER_TYPES.map((t) => <SelectItem key={t.key}>{t.label}</SelectItem>)}
+                            </Select>
                             <div className="flex items-end pb-1"><Switch isSelected={active} onValueChange={setActive} isDisabled={edit.role?.system}>Active</Switch></div>
                             <Textarea label="Description" labelPlacement="outside" placeholder="Who is this role for?" value={description} onValueChange={setDescription} isDisabled={edit.role?.system} className="sm:col-span-2" minRows={2} />
                         </div>

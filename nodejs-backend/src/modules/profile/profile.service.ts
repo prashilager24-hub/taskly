@@ -20,7 +20,7 @@ export async function assertCanView(requesterId: number, targetId: number) {
 
 export async function getProfile(userId: number) {
   const [[u]] = await pool.query<Row[]>(
-    `SELECT u.UserID, u.UserName, u.UserEmail, u.EmployeeID, u.Designation, u.JobLevel, u.Band, u.RoleID, r.RoleName,
+    `SELECT u.UserID, u.UserName, u.UserEmail, u.EmployeeID, u.Designation, u.JobLevel, u.Band, u.RoleID, r.RoleName, r.UserType, u.UserRole,
             u.SecondaryRoleID, r2.RoleName AS SecondaryRoleName, u.UserStatus, u.IsUserArchived, u.AppraisalCycle,
             ${STAMP('u.UserCreateTime')} AS AddedOn,
             u.ReportingManagerID, rm.UserName AS ReportingManagerName, rm.Designation AS ReportingManagerDesignation,
@@ -46,7 +46,7 @@ export async function getProfile(userId: number) {
   return {
     userId: u['UserID'], name: u['UserName'], email: u['UserEmail'], employeeId: u['EmployeeID'] ?? null,
     designation: u['Designation'] ?? null, jobLevel: u['JobLevel'] ?? null, band: u['Band'] ?? null,
-    role: { id: u['RoleID'], name: u['RoleName'] ?? null }, secondaryRole: u['SecondaryRoleID'] ? { id: u['SecondaryRoleID'], name: u['SecondaryRoleName'] ?? null } : null,
+    role: { id: u['RoleID'], name: u['RoleName'] ?? null }, userType: u['UserType'] ?? null, userRole: u['UserRole'] ?? null, secondaryRole: u['SecondaryRoleID'] ? { id: u['SecondaryRoleID'], name: u['SecondaryRoleName'] ?? null } : null,
     active: u['UserStatus'] === 1 && !u['IsUserArchived'], appraisalCycle: u['AppraisalCycle'] ?? null, addedOn: u['AddedOn'],
     reportingManager: person(u['ReportingManagerID'], u['ReportingManagerName'], u['ReportingManagerDesignation']),
     executiveLeader: person(u['ELManagerID'], u['ELName'], u['ELDesignation']),

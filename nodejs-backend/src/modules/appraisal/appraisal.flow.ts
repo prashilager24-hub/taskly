@@ -38,13 +38,13 @@ let deps: {
 };
 export function wire(d: typeof deps) { deps = d; }
 
-/** In-app notification in the bell for these people */
+/** Records an appraisal notification for these people. It is kept as a record only: no bell or page shows it */
 export async function notify(users: (number | null | undefined)[], title: string, body: string, link: string, actor: number | null, level: 'info' | 'success' | 'warning' = 'info') {
   const ids = [...new Set(users.filter((u): u is number => !!u))];
   if (!ids.length) return;
   const expires = new Date(Date.now() + 60 * 86_400_000);
   await pool.execute(
-    // Source APPRAISAL: it goes to the people's bells, but is not one of the Notifications page's own
+    // Source APPRAISAL: left out of the bell and the Notifications page
     "INSERT INTO Notification (Title, Body, Level, LinkUrl, Audience, ExpiresAt, IsActive, CreatedBy, CreatedAt, Source, DeliveredAt) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, 'APPRAISAL', ?)",
     [title, body, level, link, JSON.stringify({ all: false, departments: [], roles: [], users: ids }), expires, actor ?? 1, new Date(), new Date()]);
 }

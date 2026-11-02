@@ -303,8 +303,8 @@ export async function createUser(input: CreateUserInput, createdBy: number) {
        (UserEmail, UserName, UserPassword, RoleID, SecondaryRoleID,
         UserStatus, IsUserArchived, EmployeeID, ReportingManagerID,
         ELManagerID, AppraisalCycle, FeedbackResolverTeam, Designation, JobLevel, Band, IsNewJoiner, JoiningCycle,
-        DateOfJoining, VariableCycle)
-     VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        DateOfJoining, VariableCycle, UserRole)
+     VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       input.userEmail,
       input.userName,
@@ -323,6 +323,7 @@ export async function createUser(input: CreateUserInput, createdBy: number) {
       input.isNewJoiner === false ? null : (input.joiningCycle ?? joiningCycleFor(new Date())),
       input.dateOfJoining ?? null,
       input.variableCycle ?? null,
+      input.userRole ?? null,
     ],
   );
 
@@ -355,6 +356,7 @@ export async function updateUser(input: UpdateUserInput) {
   if (input.appraisalCycle !== undefined) { fields.push('AppraisalCycle = ?'); values.push(input.appraisalCycle); }
   if (input.dateOfJoining !== undefined) { fields.push('DateOfJoining = ?'); values.push(input.dateOfJoining); }
   if (input.variableCycle !== undefined) { fields.push('VariableCycle = ?'); values.push(input.variableCycle); }
+  if (input.userRole !== undefined) { fields.push('UserRole = ?'); values.push(input.userRole); }
   if (input.feedbackresolverteam !== undefined) { fields.push('FeedbackResolverTeam = ?'); values.push(input.feedbackresolverteam); }
   if (input.designation !== undefined) { fields.push('Designation = ?'); values.push(input.designation || null); }
   if (input.jobLevel !== undefined) { fields.push('JobLevel = ?'); values.push(input.jobLevel || null); }
@@ -428,7 +430,7 @@ export async function getUsers(input: UsersReadInput) {
             u.UserStatus, u.IsUserArchived, u.EmployeeID,
             u.ReportingManagerID, u.ELManagerID, u.AppraisalCycle, u.FeedbackResolverTeam,
             u.Designation, u.JobLevel, u.Band, u.IsNewJoiner, u.JoiningCycle,
-            DATE_FORMAT(u.DateOfJoining, '%Y-%m-%d') AS DateOfJoining, u.VariableCycle,
+            DATE_FORMAT(u.DateOfJoining, '%Y-%m-%d') AS DateOfJoining, u.VariableCycle, u.UserRole,
             u.UserCreateTime,
             rm.UserName AS ReportingManagerName, elm.UserName AS ELManagerName
      FROM Users u
@@ -483,6 +485,7 @@ export async function getUsers(input: UsersReadInput) {
     joiningCycle: u['JoiningCycle'] ?? null,
     dateOfJoining: u['DateOfJoining'] ?? null,
     variableCycle: u['VariableCycle'] ?? null,
+    userRole: u['UserRole'] ?? null,
     userCreateTime: u['UserCreateTime'] instanceof Date
       ? u['UserCreateTime'].toISOString().slice(0, 19).replace('T', ' ')
       : u['UserCreateTime'],

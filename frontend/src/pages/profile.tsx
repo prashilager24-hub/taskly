@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { PageHeader, Segmented } from "@/components/page";
 import { addToast } from "@/components/ui";
 import { errorText } from "@/components/access/api";
+import { userRoleLabel, userTypeLabel } from "@/components/access/userTypes";
 
 const API = "/t2.0/authentificationUtilization/profile";
 
@@ -13,7 +14,7 @@ interface Person { userId: number; name: string; designation: string | null }
 interface Profile {
     userId: number; name: string; email: string; employeeId: string | null;
     designation: string | null; jobLevel: string | null; band: string | null;
-    role: { id: number; name: string | null }; secondaryRole: { id: number; name: string | null } | null;
+    role: { id: number; name: string | null }; userType: string | null; userRole: string | null; secondaryRole: { id: number; name: string | null } | null;
     active: boolean; appraisalCycle: string | null; addedOn: string | null;
     reportingManager: Person | null; executiveLeader: Person | null;
     departments: { id: number; name: string; primaryDepartment: string | null }[];
@@ -105,7 +106,8 @@ export default function ProfilePage() {
                     <Field label="Employee ID">{profile.employeeId}</Field>
                     <Field label="Designation">{profile.designation}</Field>
                     <Field label="Level / Band">{profile.jobLevel || profile.band ? [profile.jobLevel && `Level ${profile.jobLevel}`, profile.band && `Band ${profile.band}`].filter(Boolean).join(" · ") : null}</Field>
-                    <Field label="Role">{profile.role.name}{profile.secondaryRole?.name && <span className="text-ink-500"> + {profile.secondaryRole.name}</span>}</Field>
+                    <Field label="User type">{userTypeLabel(profile.userType, profile.role.name)}{profile.secondaryRole?.name && <span className="text-ink-500"> + {userTypeLabel(null, profile.secondaryRole.name)}</span>}</Field>
+                    {profile.userRole && <Field label="User role">{userRoleLabel(profile.userRole)}</Field>}
                     <Field label="Department">{profile.departments.map((d) => d.name).join(", ")}</Field>
                     <Field label="Appraisal cycle">{profile.appraisalCycle?.replace(/_/g, " ").toLowerCase().replace(/^./, (c) => c.toUpperCase())}</Field>
                     <Field label="Reporting manager"><PersonLine p={profile.reportingManager} /></Field>

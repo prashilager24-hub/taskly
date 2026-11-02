@@ -5,6 +5,7 @@ import { cn } from "@heroui/theme";
 import { Segmented } from "@/components/page";
 import { addToast } from "@/components/ui";
 import { accessApi, errorText, type HierarchyData, type HierarchyPerson, type Level } from "./api";
+import { userTypeLabel } from "./userTypes";
 
 const LEVEL_NAME: Record<Level, string> = { admin: "Admin", el: "Executive Leader", fl: "FL / Manager / Lead", employee: "Employee", intern: "Intern" };
 
@@ -105,7 +106,7 @@ export default function HierarchyTab() {
                         <tbody>
                             {rows.map((p: HierarchyPerson) => (
                                 <tr key={p.userId} className="border-b border-ink-100 last:border-0 dark:border-white/5">
-                                    <td className="px-4 py-2.5"><p className="font-semibold text-ink-900 dark:text-white">{p.name}</p><p className="text-xs text-ink-500 dark:text-ink-400">{p.roleName}</p></td>
+                                    <td className="px-4 py-2.5"><p className="font-semibold text-ink-900 dark:text-white">{p.name}</p><p className="text-xs text-ink-500 dark:text-ink-400">{userTypeLabel(p.userType, p.roleName)}</p></td>
                                     <td className="px-4 py-2.5 text-xs text-ink-600 dark:text-ink-300">{LEVEL_NAME[p.level]}</td>
                                     <td className="max-w-[240px] truncate px-4 py-2.5 text-xs text-ink-600 dark:text-ink-300" title={p.departments.join(", ")}>{p.departments.join(", ") || "—"}</td>
                                     <td className="px-4 py-2.5">{p.level === "admin" ? <span className="text-xs text-ink-400">Not reviewed</span> : <Ref r={p.accessor1} none="Not set" />}</td>

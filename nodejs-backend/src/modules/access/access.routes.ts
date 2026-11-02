@@ -8,6 +8,7 @@ import { pool } from '../../config/db';
 import type mysql from 'mysql2/promise';
 import * as svc from './access.service';
 import * as hier from './hierarchy';
+import { USER_TYPES } from './userTypes';
 
 const router = Router();
 router.use(authenticate);
@@ -32,7 +33,7 @@ router.get('/catalog', (_req, res) => ok(res, svc.catalog()));
 // ── Roles
 router.get('/roles', read, async (_req, res, next) => { try { ok(res, await svc.listRoles()); } catch (e) { next(e); } });
 
-const RoleBody = z.object({ roleName: z.string().min(2), description: z.string().optional(), active: z.boolean().optional(), privileges: z.record(z.array(z.string())) });
+const RoleBody = z.object({ roleName: z.string().min(2), userType: z.enum(USER_TYPES).nullable().optional(), description: z.string().optional(), active: z.boolean().optional(), privileges: z.record(z.array(z.string())) });
 router.post('/roles', requireModule('accessmgmt', 'create'), validate(RoleBody), async (req, res, next) => {
   try { ok(res, { roleId: await svc.saveRole(actor(req), req.body) }); } catch (e) { next(e); }
 });

@@ -15,21 +15,22 @@ function target(req: { user?: { sub?: string }; params: Record<string, string | 
   return { me, id };
 }
 
+// GET /profile/activity?days=90  and  /profile/:userId/activity?days=90
+// (registered before /:userId, which would otherwise take "activity" as a user id)
+router.get(['/activity', '/:userId/activity'], async (req, res, next) => {
+  try {
+    const { me, id } = target(req);
+    await svc.assertCanView(me, id);
+    res.json(await svc.getActivity(id, Number(req.query['days'] ?? 90)));
+  } catch (e) { next(e); }
+});
+
 // GET /profile  and  /profile/:userId
 router.get(['/', '/:userId'], async (req, res, next) => {
   try {
     const { me, id } = target(req);
     await svc.assertCanView(me, id);
     res.json(await svc.getProfile(id));
-  } catch (e) { next(e); }
-});
-
-// GET /profile/activity?days=90  and  /profile/:userId/activity?days=90
-router.get(['/activity', '/:userId/activity'], async (req, res, next) => {
-  try {
-    const { me, id } = target(req);
-    await svc.assertCanView(me, id);
-    res.json(await svc.getActivity(id, Number(req.query['days'] ?? 90)));
   } catch (e) { next(e); }
 });
 

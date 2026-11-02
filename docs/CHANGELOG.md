@@ -17,6 +17,25 @@ Summary: one or two lines on what and why.
 
 ---
 
+## 2026-11-02 — Fix: Profile sign-in activity  (commit: see git log)
+
+Summary: the Activity Log on My Profile (and on someone's profile opened from Access Management) failed with "Invalid user".
+
+### Frontend
+- none
+
+### Backend
+- [profile.routes.ts](../nodejs-backend/src/modules/profile/profile.routes.ts): `GET /profile/activity` and `/profile/:userId/activity` are registered before `GET /profile/:userId`, which had been taking "activity" as a user id. No other change: own profile, another user's profile (Admin), and "You can only open your own profile" for everyone else behave as before.
+
+### Database
+- none
+
+### Env / config
+- none
+
+### Notes
+- Checked: own and another user's profile and activity (Admin), own profile and activity (Associate), another user's refused (403), invalid id (400); every page re-opened as Admin, Finance Head, EL, FL and Associate.
+
 ## 2026-11-02 — Merge: appraisal module and PMS / notifications work into main  (merge of appraisal-flow-v2 with main 16cf867, a57c6f9)
 
 Summary: brings the whole appraisal module (flow v2) and the earlier PMS section / notifications / hierarchy work from the branch onto main, together with the user profile, HR Support permissions, Goals, calculation and survey template work already on main. Every entry below from both sides is kept.
@@ -39,7 +58,7 @@ Summary: brings the whole appraisal module (flow v2) and the earlier PMS section
 ### Notes
 - docs/APPRAISAL_ARCHITECTURE.md is the first plan and is marked superseded; the CHANGELOG entries describe the module as built.
 - Checked after the merge: backend tsc clean, 21 unit tests, 90-check appraisal flow; frontend `vite build` passes and has the same type errors as main before the merge (all pre-existing, so `npm run build`, which runs `tsc` first, still fails as it did on main); every page opened as Admin, Finance Head, EL, FL and Associate.
-- Found on main, not from the merge: Profile → sign-in activity returns 400 "Invalid user", because `GET ['/', '/:userId']` is registered before `GET ['/activity', …]` in profile.routes.ts, so "activity" is taken as a user id.
+- Found on main, not from the merge: Profile → sign-in activity returned 400 "Invalid user". Fixed in the next entry.
 
 ## 2026-11-02 — Appraisal: reset / revise / approve, override on every hike, overview for a Super Administrator (branch appraisal-flow-v2)
 

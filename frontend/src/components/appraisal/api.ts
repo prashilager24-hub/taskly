@@ -93,7 +93,7 @@ export interface HrItem { cycle: CycleInfo; response: Response | null; can: { hr
 export interface Availability {
     my: { show: boolean; status: Status | null; cycleId: number | null };
     departments: { show: boolean; pending: number }; overview: { show: boolean }; split: { show: boolean; pending: number }; allocation: { show: boolean; pending: number };
-    requests: { show: boolean }; hr: { show: boolean; pending: number }; setup: { show: boolean }; any: boolean;
+    requests: { show: boolean }; hr: { show: boolean; pending: number }; setup: { show: boolean; edit: boolean }; any: boolean;
 }
 export type CycleMonth = "APRIL" | "OCTOBER";
 export interface PersonSetup {
@@ -104,7 +104,7 @@ export interface PersonSetup {
 export interface PersonBody { dateOfJoining: string | null; level: Level | null; currentAnnualCtc: number | null }
 
 /** Who acts as Finance: chosen in Appraisal Setup, or the head of the Strategic Financial Management department */
-export interface FinanceHead { userId: number | null; name: string | null; email: string | null; source: "setting" | "department" | "none"; department: string }
+export interface FinanceHead { userId: number | null; name: string | null; email: string | null; department: string }
 
 export interface AppealBody { answers: Record<string, string>; quarters: never[]; expectedHike: number | null; targetHike: number | null; expectedVariable?: VariableOverride | null; targetVariable?: VariableOverride | null; submit: boolean }
 export interface SplitBody {
@@ -160,5 +160,4 @@ export const appraisalApi = {
     savePerson: (userId: number, body: PersonBody) => unwrap<{ cycleStarted: number | null }>(axios.put(`${BASE}/people/${userId}`, body)),
     savePeople: (rows: ({ userId: number } & PersonBody)[]) => unwrap<{ saved: number; started: number; failed: { userId: number; message: string }[] }>(axios.post(`${BASE}/people/bulk`, { rows })),
     financeHead: () => unwrap<FinanceHead>(axios.get(`${BASE}/finance-head`)),
-    setFinanceHead: (userId: number) => unwrap<FinanceHead>(axios.put(`${BASE}/finance-head`, { userId })),
 };

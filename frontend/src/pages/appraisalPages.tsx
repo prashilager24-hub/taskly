@@ -29,4 +29,4 @@ export const AllocationPage = () => <Page title="Team allocation" subtitle="Turn
 export const RequestsPage = () => <Page title="Change requests" subtitle="Designation and team requests: FLs forward their team's with a recommendation, the EL decides."><Requests /></Page>;
 export const PersonPage = () => <Page title="Appraisal" subtitle="One person's appeal, PMS quarters, hike and requests."><PersonView /></Page>;
 export const HrPostponementsPage = () => <Page title="HR postponements" subtitle="Offers that employees rejected, with their reason and what they expect."><HrPostponements /></Page>;
-export const AppraisalSetupPage = () => <Page title="Appraisal setup" subtitle="Joining dates decide each person's April or October cycle. Level sets the fixed and variable split."><PeopleSetup /></Page>;
+export const AppraisalSetupPage = () => <Page title="Appraisal setup" subtitle="Joining dates decide each person's April or October cycle. Level sets the fixed and variable split. HR keeps these details."><PeopleSetup /></Page>;

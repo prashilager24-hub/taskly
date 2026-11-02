@@ -20,22 +20,16 @@ export const FINANCE_HEAD_ROLE = -1;
 export const isFinance = (role: number) => role === 1 || role === FINANCE_HEAD_ROLE || FINANCE_ROLES.has(role);
 
 // ── The Finance Head ────────────────────────────────────────────────────────────────────────────────
-// The person who gives each EL a budget, approves ELs' hikes and sees every appraisal. Chosen in Appraisal Setup
-// (AppSetting financeHeadUserId); until someone chooses, it is the head of the Strategic Financial Management department.
+// The person who gives each EL a budget and sees every appraisal: the head (EL) of the Strategic Financial Management department.
 const FINANCE_DEPT = 'Strategic Financial Management';
-let headCache: { at: number; id: number | null; source: 'setting' | 'department' | 'none' } | null = null;
+let headCache: { at: number; id: number | null } | null = null;
 
 async function loadFinanceHead() {
   if (headCache && Date.now() - headCache.at < 30_000) return headCache;
-  const [[set]] = await pool.execute<Row[]>("SELECT SettingValue FROM AppSetting WHERE SettingKey = 'financeHeadUserId'") as unknown as [Row[]];
-  let id = set ? Number(set['SettingValue']) || null : null;
-  let source: 'setting' | 'department' | 'none' = id ? 'setting' : 'none';
-  if (!id) {
-    const [d] = await pool.execute<Row[]>('SELECT ExecutiveLeaderID FROM Department WHERE DepartmentName = ? AND IsDepartmentArchived = 0 AND ExecutiveLeaderID IS NOT NULL LIMIT 1', [FINANCE_DEPT]);
-    id = (d[0]?.['ExecutiveLeaderID'] as number | undefined) ?? null;
-    if (id) source = 'department';
-  }
-  headCache = { at: Date.now(), id, source };
+  const [d] = await pool.execute<Row[]>(
+    `SELECT d.ExecutiveLeaderID FROM Department d JOIN Users u ON u.UserID = d.ExecutiveLeaderID AND u.UserStatus = 1 AND u.IsUserArchived = 0
+      WHERE d.DepartmentName = ? AND d.IsDepartmentArchived = 0 LIMIT 1`, [FINANCE_DEPT]);
+  headCache = { at: Date.now(), id: (d[0]?.['ExecutiveLeaderID'] as number | undefined) ?? null };
   return headCache;
 }
 
@@ -45,18 +39,9 @@ export async function isFinanceHead(userId: number) {
 
 export async function financeHead() {
   const h = await loadFinanceHead();
-  if (!h.id) return { userId: null, name: null, email: null, source: h.source, department: FINANCE_DEPT };
+  if (!h.id) return { userId: null, name: null, email: null, department: FINANCE_DEPT };
   const [u] = await pool.execute<Row[]>('SELECT UserName, UserEmail FROM Users WHERE UserID = ?', [h.id]);
-  return { userId: h.id, name: (u[0]?.['UserName'] as string) ?? null, email: (u[0]?.['UserEmail'] as string) ?? null, source: h.source, department: FINANCE_DEPT };
-}
-
-export async function setFinanceHead(appRole: number, userId: number) {
-  if (appRole !== 1) throw AppError.forbidden('Only an Admin chooses the Finance Head');
-  const [u] = await pool.execute<Row[]>('SELECT 1 FROM Users WHERE UserID = ? AND IsUserArchived = 0 AND UserStatus = 1', [userId]);
-  if (!u.length) throw AppError.notFound('User not found');
-  await pool.execute("INSERT INTO AppSetting (SettingKey, SettingValue) VALUES ('financeHeadUserId', ?) ON DUPLICATE KEY UPDATE SettingValue = VALUES(SettingValue)", [String(userId)]);
-  headCache = null;
-  return financeHead();
+  return { userId: h.id, name: (u[0]?.['UserName'] as string) ?? null, email: (u[0]?.['UserEmail'] as string) ?? null, department: FINANCE_DEPT };
 }
 /** Stands in for the signed-in user's role inside the appraisal module when that user has the Super Administrator role */
 export const OVERVIEW_ROLE = -3;
@@ -78,6 +63,8 @@ export const isOverview = (role: number) => role === OVERVIEW_ROLE || isFinance(
 /** Stands in for the signed-in user's role inside the appraisal module when that user works in the HR department */
 export const HR_MEMBER_ROLE = -2;
 export const isHr = (role: number) => role === 1 || role === HR_MEMBER_ROLE || HR_ROLES.has(role);
+/** Appraisal Setup is changed only by HR (the HR department and the HR roles); Admins, the Super Administrator and Finance only read it */
+export const isHrStaff = (role: number) => role === HR_MEMBER_ROLE || HR_ROLES.has(role);
 
 /** The HR team: the HR roles named in the env, and everyone in the HR Operations department */
 const HR_DEPT = 'HR Operations';
@@ -677,7 +664,7 @@ export async function ensureCycle(userId: number, actor: number | null, today: s
 // ── People setup (HR: joining date, level, CTC; the cycle follows from the joining date) ──────────
 
 export async function people(appRole: number) {
-  if (!isHr(appRole)) throw AppError.forbidden('Only HR can see this');
+  if (!isHr(appRole) && !isOverview(appRole)) throw AppError.forbidden('Only HR, Admins and Finance can see this');
   const [rows] = await pool.execute<Row[]>(
     `SELECT u.UserID, u.UserName, u.UserEmail, u.EmployeeID, r.RoleName, ${D('u.DateOfJoining', 'Joined')}, u.EmployeeLevel, u.CurrentAnnualCtc,
             (SELECT COUNT(*) FROM AppraisalCycle c WHERE c.UserID = u.UserID) AS Cycles,
@@ -714,13 +701,13 @@ async function savePerson(userId: number, input: PersonInput, actor: number) {
 }
 
 export async function updatePerson(actor: number, appRole: number, userId: number, input: PersonInput) {
-  if (!isHr(appRole)) throw AppError.forbidden('Only HR can change this');
+  if (!isHrStaff(appRole)) throw AppError.forbidden('Only HR can change this');
   return savePerson(userId, input, actor);
 }
 
 /** Bulk upload from the template: each row is saved on its own, so one bad row does not stop the others */
 export async function bulkUpdatePeople(actor: number, appRole: number, rows: ({ userId: number } & PersonInput)[]) {
-  if (!isHr(appRole)) throw AppError.forbidden('Only HR can change this');
+  if (!isHrStaff(appRole)) throw AppError.forbidden('Only HR can change this');
   let saved = 0, started = 0;
   const failed: { userId: number; message: string }[] = [];
   for (const r of rows) {
@@ -761,8 +748,8 @@ export async function availability(userId: number, appRole: number) {
   const allocation = { show: num(shares[0], 'n') > 0 || (lead.length > 0 && !leads.length), pending: num(shares[0], 'todo') };
   const requests = { show: split.show || allocation.show };
   const hrN = { show: hr && num(hrr[0], 'n') > 0, pending: num(hrr[0], 'pending') };
-  // HR keeps each person's joining date, level and CTC, before any cycle exists
-  const setup = { show: hr };
+  // HR keeps each person's joining date, level and CTC, before any cycle exists; Admins, the Super Administrator and Finance read it
+  const setup = { show: hr || over, edit: isHrStaff(appRole) };
   const overview = { show: over };
   return { my, departments, overview, split, allocation, requests, hr: hrN, setup, any: my.show || departments.show || overview.show || split.show || allocation.show || hrN.show || setup.show };
 }

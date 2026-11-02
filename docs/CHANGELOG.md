@@ -42,6 +42,10 @@ Summary: the manager's second review. Associates and FLs only see "Your appeal i
 ### Env / config
 - none
 
+### Follow-up (same day): Finance Head picker removed, Appraisal Setup read only except for HR
+- The Finance Head is always the head (EL) of Strategic Financial Management; the "Finance Head" card in Appraisal Setup and `PUT /appraisal/finance-head` are gone, and the stored `financeHeadUserId` AppSetting is no longer read (deleted locally; on other environments run `DELETE FROM AppSetting WHERE SettingKey = 'financeHeadUserId'`).
+- Appraisal Setup: only HR (HR Operations department / HR roles) edits, downloads the template and bulk uploads. Admins, the Super Administrator and the Finance Head see the same page read only (availability `setup.edit`; `updatePerson` / `bulkUpdatePeople` need `isHrStaff`).
+
 ### Notes
 - "Team Budget → Budget split, remove Team Allocation if not in use" was read as: Team Allocation is hidden for ELs (they split the department budget in Budget Split).
 - Reset budget keeps hikes people already accepted or rejected; everything else returns to the Finance Head's budget.

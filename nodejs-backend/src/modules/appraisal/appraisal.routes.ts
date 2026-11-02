@@ -94,7 +94,6 @@ const SYNCED = ['/availability', '/overview', '/departments', '/departments/:dep
 router.all(SYNCED, (req, _res, next) => { svc.syncOpenCycles(req.method !== 'GET').then(() => next(), next); });
 
 router.get('/finance-head', handler(async (_req, res) => { sendSuccess(res, await svc.financeHead()); }));
-router.put('/finance-head', validate(z.object({ userId: z.number().int().positive() })), handler(async (req, res) => { sendSuccess(res, await svc.setFinanceHead(roleOf(req), req.body.userId)); }));
 router.get('/availability', handler(async (req, res) => { sendSuccess(res, await svc.availability(me(req), roleOf(req))); }));
 router.get('/my', handler(async (req, res) => { sendSuccess(res, await svc.myCycle(me(req), roleOf(req))); }));
 router.get('/hr', handler(async (req, res) => {

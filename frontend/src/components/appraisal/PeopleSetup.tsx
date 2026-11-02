@@ -6,7 +6,7 @@ import * as XLSX from "xlsx";
 
 import { Panel, SummaryBar } from "@/components/page";
 import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, addToast } from "@/components/ui";
-import { appraisalApi, errorText, type CycleMonth, type FinanceHead, type Level, type PersonBody, type PersonSetup } from "./api";
+import { appraisalApi, errorText, type CycleMonth, type Level, type PersonBody, type PersonSetup } from "./api";
 import { LEVEL_LABEL, MAX_AMOUNT, day, inr, parseAmount, showAmount } from "./format";
 import { StatusChip } from "./parts";
 
@@ -41,7 +41,7 @@ function CycleState({ p, joined, level }: { p: PersonSetup; joined: string; leve
 interface Draft { dateOfJoining: string; level: Level | ""; ctc: string }
 const draftOf = (p: PersonSetup): Draft => ({ dateOfJoining: p.dateOfJoining ?? "", level: p.level ?? "", ctc: showAmount(p.currentAnnualCtc) });
 
-function Row({ p, onSaved }: { p: PersonSetup; onSaved: () => void }) {
+function Row({ p, onSaved, edit }: { p: PersonSetup; onSaved: () => void; edit: boolean }) {
     const [d, setD] = useState<Draft>(draftOf(p));
     const [busy, setBusy] = useState(false);
     useEffect(() => setD(draftOf(p)), [p]);
@@ -56,9 +56,21 @@ function Row({ p, onSaved }: { p: PersonSetup; onSaved: () => void }) {
         } catch (e) { addToast({ title: "Could not save", description: errorText(e), color: "danger" }); }
         finally { setBusy(false); }
     };
+    const who = <td className="px-4 py-2.5"><p className="font-semibold text-ink-900 dark:text-white">{p.name}</p><p className="text-xs text-ink-500">{[p.employeeId, p.roleName].filter(Boolean).join(" · ")}</p></td>;
+    // read only (Admin, Super Administrator, Finance): the details as text, nothing to change
+    if (!edit) return (
+        <tr className="border-b border-ink-100 last:border-0 dark:border-white/5">
+            {who}
+            <td className="px-4 py-2.5">{p.dateOfJoining ? day(p.dateOfJoining) : <span className="text-xs text-ink-400">Not set</span>}</td>
+            <td className="px-4 py-2.5">{p.level ? LEVEL_LABEL[p.level] : <span className="text-xs text-ink-400">Not set</span>}</td>
+            <td className="px-4 py-2.5 tabular-nums">{p.currentAnnualCtc != null ? inr(p.currentAnnualCtc) : <span className="text-xs text-ink-400">Not set</span>}</td>
+            <td className="px-4 py-2.5"><CycleTag month={p.cycleMonth} /></td>
+            <td className="px-4 py-2.5"><CycleState p={p} joined={p.dateOfJoining ?? ""} level={p.level ?? ""} /></td>
+        </tr>
+    );
     return (
         <tr className="border-b border-ink-100 last:border-0 dark:border-white/5">
-            <td className="px-4 py-2.5"><p className="font-semibold text-ink-900 dark:text-white">{p.name}</p><p className="text-xs text-ink-500">{[p.employeeId, p.roleName].filter(Boolean).join(" · ")}</p></td>
+            {who}
             <td className="w-44 px-4 py-2.5"><input type="date" max={today()} aria-label={`Joining date of ${p.name}`} className={inputCls} value={d.dateOfJoining} onChange={(e) => setD({ ...d, dateOfJoining: e.target.value })} /></td>
             <td className="w-44 px-4 py-2.5">
                 <select aria-label={`Level of ${p.name}`} className={inputCls} value={d.level} onChange={(e) => setD({ ...d, level: e.target.value as Level | "" })}>
@@ -241,53 +253,18 @@ function UploadPreview({ rows, onClose, onDone }: { rows: Checked[] | null; onCl
     );
 }
 
-// ── Finance Head (an Admin chooses it) ────────────────────────────────────────────────────────────
-
-const isAdmin = () => { try { return JSON.parse(localStorage.getItem("authUserLD") || "{}").userRole === 1; } catch { return false; } };
-
-/** The Finance Head: gives each EL a budget and sees every appraisal. Only an Admin can change who it is, so only an Admin sees this. */
-function FinanceHeadCard({ people }: { people: PersonSetup[] }) {
-    const [head, setHead] = useState<FinanceHead | null>(null);
-    const [pick, setPick] = useState("");
-    const [busy, setBusy] = useState(false);
-    useEffect(() => { appraisalApi.financeHead().then((h) => { setHead(h); setPick(h.userId ? String(h.userId) : ""); }).catch(() => setHead(null)); }, []);
-    const save = async () => {
-        setBusy(true);
-        try { const h = await appraisalApi.setFinanceHead(Number(pick)); setHead(h); addToast({ title: `${h.name} is now the Finance Head`, color: "success" }); }
-        catch (e) { addToast({ title: "Could not change the Finance Head", description: errorText(e), color: "danger" }); }
-        finally { setBusy(false); }
-    };
-    return (
-        <Panel title="Finance Head">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-                <div className="flex flex-col gap-1">
-                    <p className="text-lg font-bold text-ink-900 dark:text-white">{head?.name ?? "Not set"}</p>
-                    <p className="text-sm text-ink-500 dark:text-ink-400">
-                        {head?.source === "department" ? `Head of ${head.department}. ` : head?.source === "setting" ? "Chosen in this setup. " : `Nobody leads ${head?.department ?? "Strategic Financial Management"} yet. `}
-                        Gives each EL a budget and sees every appraisal.
-                    </p>
-                </div>
-                <div className="flex items-center gap-2">
-                    <select aria-label="Finance Head" className={inputCls + " w-64"} value={pick} onChange={(e) => setPick(e.target.value)}>
-                        <option value="">Choose a person</option>
-                        {people.map((p) => <option key={p.userId} value={p.userId}>{p.name}</option>)}
-                    </select>
-                    <Button color="primary" size="sm" isLoading={busy} isDisabled={!pick || Number(pick) === head?.userId} onPress={save}>Save</Button>
-                </div>
-            </div>
-        </Panel>
-    );
-}
-
-// Appraisal setup (HR): joining date, level and current CTC. The joining date decides the April / October cycle,
-// and the appraisal starts on its own when that cycle is due: saving is all it takes.
+// Appraisal setup: joining date, level and current CTC. The joining date decides the April / October cycle, and the
+// appraisal starts on its own when that cycle is due: saving is all it takes. Only HR edits and uploads; Admins, the
+// Super Administrator and Finance see the same details read only.
 export default function PeopleSetup() {
     const [people, setPeople] = useState<PersonSetup[]>([]);
     const [loading, setLoading] = useState(true);
     const [query, setQuery] = useState("");
     const [checked, setChecked] = useState<Checked[] | null>(null);
     const [reading, setReading] = useState(false);
+    const [edit, setEdit] = useState(false);
     const fileRef = useRef<HTMLInputElement>(null);
+    useEffect(() => { appraisalApi.availability().then((a) => setEdit(!!a.setup.edit)).catch(() => setEdit(false)); }, []);
     const load = useCallback(async () => {
         try { setPeople(await appraisalApi.people()); }
         catch (e) { addToast({ title: "Could not load people", description: errorText(e), color: "danger" }); }
@@ -307,7 +284,6 @@ export default function PeopleSetup() {
     if (loading) return <div className="flex justify-center py-20"><Spinner /></div>;
     return (
         <div className="flex flex-col gap-6">
-            {isAdmin() && <FinanceHeadCard people={people} />}
             <SummaryBar className="mb-0" items={[
                 { label: "People", value: people.length },
                 { label: "April cycle", value: people.filter((p) => p.cycleMonth === "APRIL").length, hint: "Joined December to May" },
@@ -321,15 +297,17 @@ export default function PeopleSetup() {
                         <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
                         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find a person" className="h-8 w-full border border-ink-200 bg-transparent pl-9 pr-3 text-[13px] text-ink-900 outline-none placeholder:text-ink-400 focus:border-brand-500 dark:border-white/10 dark:text-white" />
                     </label>
-                    <Button size="sm" variant="bordered" startContent={<Download size={14} />} onPress={() => downloadTemplate(people)}>Download template</Button>
-                    <Button size="sm" color="primary" startContent={<Upload size={14} />} isLoading={reading} onPress={() => fileRef.current?.click()}>Bulk upload</Button>
-                    <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
+                    {edit && <>
+                        <Button size="sm" variant="bordered" startContent={<Download size={14} />} onPress={() => downloadTemplate(people)}>Download template</Button>
+                        <Button size="sm" color="primary" startContent={<Upload size={14} />} isLoading={reading} onPress={() => fileRef.current?.click()}>Bulk upload</Button>
+                        <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
+                    </>}
                 </div>}>
-                <p className="border-b border-ink-200 px-5 py-3 text-xs text-ink-500 dark:border-white/10 dark:text-ink-400">Joined December to May: April cycle. Joined June to November: October cycle. The appraisal starts on its own when the cycle is due; just save the details.</p>
+                <p className="border-b border-ink-200 px-5 py-3 text-xs text-ink-500 dark:border-white/10 dark:text-ink-400">Joined December to May: April cycle. Joined June to November: October cycle. {edit ? "The appraisal starts on its own when the cycle is due; just save the details." : "Read only: HR keeps these details."}</p>
                 <div className="max-h-[640px] overflow-auto">
                     <table className="w-full min-w-[980px] text-sm">
-                        <thead className="sticky top-0 z-10"><tr className="border-b border-ink-200 bg-ink-50 dark:border-white/10 dark:bg-ink-800">{["Person", "Joining date", "Level", "Current CTC", "Appraisal cycle", "Appraisal", ""].map((h) => <th key={h} className="px-4 py-2.5 text-left">{h}</th>)}</tr></thead>
-                        <tbody>{rows.map((p) => <Row key={p.userId} p={p} onSaved={load} />)}{!rows.length && <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-ink-500">Nobody matches.</td></tr>}</tbody>
+                        <thead className="sticky top-0 z-10"><tr className="border-b border-ink-200 bg-ink-50 dark:border-white/10 dark:bg-ink-800">{["Person", "Joining date", "Level", "Current CTC", "Appraisal cycle", "Appraisal", ...(edit ? [""] : [])].map((h) => <th key={h} className="px-4 py-2.5 text-left">{h}</th>)}</tr></thead>
+                        <tbody>{rows.map((p) => <Row key={p.userId} p={p} onSaved={load} edit={edit} />)}{!rows.length && <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-ink-500">Nobody matches.</td></tr>}</tbody>
                     </table>
                 </div>
             </Panel>

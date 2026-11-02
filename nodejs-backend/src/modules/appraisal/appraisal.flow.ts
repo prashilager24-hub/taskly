@@ -284,6 +284,16 @@ export async function board(period: string) {
       WHERE d.IsDepartmentArchived = 0 AND NOT EXISTS (SELECT 1 FROM AppraisalCycle c WHERE c.UserID = u.UserID AND c.PeriodStart = ?)
       GROUP BY d.DepartmentID`, [period]) : [[]];
   const [rounds] = await pool.query<Row[]>('SELECT * FROM AppraisalRound WHERE PeriodStart = ?', [period]);
+  // the last thing that happened in each department: an appeal, a budget step, the split, an FL proposal, an answer
+  const [recent] = await pool.query<Row[]>(
+    `SELECT x.DepartmentID, MAX(x.t) AS t FROM (
+       SELECT c.DepartmentID, c.UpdatedAt AS t FROM AppraisalCycle c WHERE c.PeriodStart = ?
+       UNION ALL SELECT c.DepartmentID, rv.UpdatedAt FROM AppraisalReview rv JOIN AppraisalCycle c ON c.CycleID = rv.CycleID WHERE c.PeriodStart = ?
+       UNION ALL SELECT c.DepartmentID, a.UpdatedAt FROM AppraisalAllocation a JOIN AppraisalCycle c ON c.CycleID = a.CycleID WHERE c.PeriodStart = ?
+       UNION ALL SELECT r.DepartmentID, r.UpdatedAt FROM AppraisalRound r WHERE r.PeriodStart = ?
+       UNION ALL SELECT r.DepartmentID, s.UpdatedAt FROM AppraisalShare s JOIN AppraisalRound r ON r.RoundID = s.RoundID WHERE r.PeriodStart = ?
+       UNION ALL SELECT r.DepartmentID, l.CreatedAt FROM AppraisalBudgetLog l JOIN AppraisalRound r ON r.RoundID = l.RoundID WHERE r.PeriodStart = ?
+     ) x WHERE x.DepartmentID IS NOT NULL GROUP BY x.DepartmentID`, [period, period, period, period, period, period]);
   // what each EL asked for in their latest negotiation, for the rows waiting on the Finance Head
   const [asks] = await pool.query<Row[]>(
     `SELECT l.RoundID, l.Amount, l.Comment FROM AppraisalBudgetLog l JOIN AppraisalRound r ON r.RoundID = l.RoundID
@@ -299,6 +309,7 @@ export async function board(period: string) {
       departmentId: id, department: d['DepartmentName'] as string, el: d['ElID'] ? { userId: d['ElID'] as number, name: (d['ElName'] as string) ?? '' } : null,
       people, submitted, expected: Number(a?.['exp'] ?? 0), target: Number(a?.['tgt'] ?? 0), allocated: Number(a?.['alloc'] ?? 0),
       budget: n(r?.['Budget']), status: stored === 'COLLECTING' && people > 0 && submitted === people ? 'READY_FOR_FINANCE' as RoundStatus : stored,
+      lastActivity: iso(recent.find((x) => x['DepartmentID'] === id)?.['t']),
       ask: (() => { const a = asks.filter((x) => x['RoundID'] === r?.['RoundID']).at(-1); return a ? { amount: n(a['Amount']), comment: (a['Comment'] as string) ?? '' } : null; })(),
     };
   });

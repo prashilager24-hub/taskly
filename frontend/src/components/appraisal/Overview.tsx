@@ -34,7 +34,8 @@ export default function Overview() {
     const shown = useMemo(() => {
         const q = query.trim().toLowerCase();
         return rows.filter((r) => (all || r.people > 0) && (!status || r.status === status) && (!q || r.department.toLowerCase().includes(q) || (r.el?.name ?? "").toLowerCase().includes(q)))
-            .sort((a, b) => Number(b.people > 0) - Number(a.people > 0) || a.department.localeCompare(b.department));
+            // whatever happened last comes first, finalised or not; departments with nothing yet go last
+            .sort((a, b) => (b.lastActivity ?? "").localeCompare(a.lastActivity ?? "") || Number(b.people > 0) - Number(a.people > 0) || a.department.localeCompare(b.department));
     }, [rows, query, status, all]);
     const sum = (f: (r: (typeof rows)[number]) => number) => shown.reduce((t, r) => t + f(r), 0);
 
@@ -65,9 +66,9 @@ export default function Overview() {
                 </div>}>
                 {loading ? <div className="flex justify-center py-16"><Spinner /></div> : (
                     <div className="overflow-x-auto">
-                        <table className="w-full min-w-[1080px] text-sm">
+                        <table className="w-full min-w-[1180px] text-sm">
                             <thead><tr className="border-b border-ink-200 bg-ink-50 text-left dark:border-white/10 dark:bg-ink-800">
-                                {["", "Department", "Executive Leader", "Appeals in", "Department Total Expected", "Department Total Targeted", "Budget", "Decided", "Status"].map((h, i) => <th key={h + i} className={cn("px-3 py-2.5", i >= 4 && i <= 7 && "text-right", (i === 4 || i === 5) && "w-[120px] whitespace-normal leading-tight")}>{h}</th>)}
+                                {["", "Department", "Executive Leader", "Appeals in", "Department Total Expected", "Department Total Targeted", "Budget", "Decided", "Status", "Last activity"].map((h, i) => <th key={h + i} className={cn("px-3 py-2.5", i >= 4 && i <= 7 && "text-right", (i === 4 || i === 5) && "w-[120px] whitespace-normal leading-tight")}>{h}</th>)}
                             </tr></thead>
                             <tbody>
                                 {shown.map((r) => {
@@ -85,9 +86,10 @@ export default function Overview() {
                                                 <td className="px-3 py-3 text-right tabular-nums">{r.budget == null ? <span className="text-xs text-ink-400">Not set</span> : <>{inr(r.budget)}<p className="text-xs text-ink-500">{pctOf(r.budget, r.expected)} of expected</p></>}</td>
                                                 <td className="px-3 py-3 text-right tabular-nums">{r.allocated ? inr(r.allocated) : "—"}</td>
                                                 <td className="px-3 py-3"><RoundChip status={r.status} /></td>
+                                                <td className="whitespace-nowrap px-3 py-3 text-xs text-ink-500">{r.lastActivity ? new Date(r.lastActivity).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"}</td>
                                             </tr>
                                             {isOpen && round && (
-                                                <tr className="border-b border-ink-200 dark:border-white/10"><td colSpan={9} className="bg-ink-50/50 p-4 dark:bg-white/[0.02]">
+                                                <tr className="border-b border-ink-200 dark:border-white/10"><td colSpan={10} className="bg-ink-50/50 p-4 dark:bg-white/[0.02]">
                                                     <div className="flex flex-col gap-4">
                                                         <p className="eyebrow">{round.status === "FINALISED" ? "Final split" : "Split so far"} · {round.department}</p>
                                                         <div className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900"><SplitTable people={round.people} budget={round.budget} ctc /></div>
@@ -109,7 +111,7 @@ export default function Overview() {
                                         </Fragment>
                                     );
                                 })}
-                                {!shown.length && <tr><td colSpan={9} className="px-4 py-12 text-center text-sm text-ink-500">No department matches.</td></tr>}
+                                {!shown.length && <tr><td colSpan={10} className="px-4 py-12 text-center text-sm text-ink-500">No department matches.</td></tr>}
                             </tbody>
                         </table>
                     </div>

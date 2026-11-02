@@ -82,7 +82,9 @@ export interface Round {
 }
 /** One step between the Finance Head and the EL on a department's budget */
 export interface BudgetLogEntry { action: BudgetAction; amount: number | null; comment: string; at: string; by: Person | null }
-export interface BoardRow { departmentId: number; department: string; el: Person | null; people: number; submitted: number; expected: number; target: number; allocated: number; budget: number | null; status: RoundStatus; ask: { amount: number | null; comment: string } | null }
+export interface BoardRow { departmentId: number; department: string; el: Person | null; people: number; submitted: number; expected: number; target: number; allocated: number; budget: number | null; status: RoundStatus; ask: { amount: number | null; comment: string } | null;
+    /** When something last happened in the department this cycle (appeal, budget step, split, proposal, answer) */
+    lastActivity: string | null }
 export interface FlShare { roundId: number; departmentId: number; department: string; period: string; el: Person | null; share: Share; people: (RoundPerson & { own: boolean; stage: Stage })[] }
 export interface FlWaiting { department: string; period: string; status: RoundStatus; el: Person | null; team: number; submitted: number }
 export interface InboxItem { cycleId: number; name: string; level: Level; department: string | null; role: PersonView["role"]; source: Source | null; fl: Person | null; approved: Money | null; requests: ChangeRequest[]; can: { forward: boolean; decide: boolean } }

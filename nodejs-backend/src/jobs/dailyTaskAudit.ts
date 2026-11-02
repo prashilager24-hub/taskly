@@ -15,6 +15,7 @@ import cron from 'node-cron';
 import { pool } from '../config/db';
 import { sendMail } from '../utils/mailer';
 import { logger } from '../config/logger';
+import { jobEmailOn, jobRan } from '../modules/notifications/notifications.service';
 import type mysql from 'mysql2/promise';
 
 interface UserRow extends mysql.RowDataPacket {
@@ -82,15 +83,19 @@ Kindly review the entries for your respective teams and approve their tasks.</p>
 
 export async function runDailyAudit(): Promise<void> {
   logger.info('========== DAILY TASK AUDIT STARTED ==========');
+  // switched on or off on the Notifications page (System); off until someone switches it on
+  if (!(await jobEmailOn('dailyTaskAudit'))) {
+    logger.info('Daily task audit email is switched off (Notifications → System) — skipped');
+    await jobRan('dailyTaskAudit');
+    return;
+  }
 
-  // Yesterday's date in YYYY-MM-DD
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const workDate = yesterday.toISOString().slice(0, 10);
+  // Yesterday's date in YYYY-MM-DD, India time
+  const workDate = new Date(Date.now() + 330 * 60_000 - 86_400_000).toISOString().slice(0, 10);
 
   // Get all active departments
   const [departments] = await pool.query<DeptRow[]>(
-    `SELECT DepartmentID, DepartmentName FROM Department WHERE IsActive = 1 ORDER BY DepartmentName`,
+    `SELECT DepartmentID, DepartmentName FROM Department WHERE DepartmentStatus = 1 AND IsDepartmentArchived = 0 ORDER BY DepartmentName`,
   );
 
   logger.info({ count: departments.length }, 'Departments to audit');
@@ -109,11 +114,12 @@ export async function runDailyAudit(): Promise<void> {
            rm.UserName   AS ReportingManagerName,
            el.UserEmail  AS ElManagerEmail,
            el.UserName   AS ElManagerName
-         FROM Users u
+         FROM DepartmentUser du
+         JOIN Users u ON u.UserID = du.UserID
          LEFT JOIN Users rm ON rm.UserID = u.ReportingManagerID
-         LEFT JOIN Users el ON el.UserID = u.ElManagerID
-         WHERE u.DepartmentID = ?
-           AND u.IsActive = 1`,
+         LEFT JOIN Users el ON el.UserID = u.ELManagerID
+         WHERE du.DepartmentID = ?
+           AND u.UserStatus = 1 AND u.IsUserArchived = 0`,
         [dept.DepartmentID],
       );
 
@@ -165,6 +171,7 @@ export async function runDailyAudit(): Promise<void> {
     }
   }
 
+  await jobRan('dailyTaskAudit');
   logger.info('========== DAILY TASK AUDIT COMPLETED ==========');
 }
 
@@ -173,8 +180,8 @@ export async function runDailyAudit(): Promise<void> {
  * Called once from server.ts after DB pool is ready.
  */
 export function scheduleDailyAudit(): void {
-  // "0 0 10 * * ?" in Asia/Kolkata = "30 4 * * *" in UTC
-  cron.schedule('30 4 * * *', () => {
+  // Java's "0 0 10 * * ?": 10:00 India time (the timezone below makes the expression India time)
+  cron.schedule('0 10 * * *', () => {
     runDailyAudit().catch((err) =>
       logger.error({ err }, 'Daily audit job failed'),
     );

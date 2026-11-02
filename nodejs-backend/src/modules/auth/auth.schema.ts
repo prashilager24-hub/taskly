@@ -29,7 +29,9 @@ export const CreateUserSchema = z.object({
   departmentID: z.number().int().positive().optional().nullable(),
   reportingManagerId: z.number().int().positive().optional().nullable(),
   elManagerId: z.number().int().positive().optional().nullable(),
-  appraisalCycle: z.string().optional().nullable(),
+  dateOfJoining: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD').optional().nullable(),
+  appraisalCycle: z.string().optional().nullable(), // APRIL / OCTOBER (older clients may still send other values)
+  variableCycle: z.enum(['QUARTERLY', 'HALF_YEARLY', 'ANNUAL']).optional().nullable(),
   feedbackresolverteam: z.string().optional().nullable(),
   designation: z.string().trim().max(120).optional().nullable(),
   jobLevel: z.string().trim().max(20).optional().nullable(),
@@ -48,7 +50,9 @@ export const UpdateUserSchema = z.object({
   departmentID: z.number().int().positive().optional().nullable(),
   reportingManagerId: z.number().int().positive().optional().nullable(),
   elManagerId: z.number().int().positive().optional().nullable(),
-  appraisalCycle: z.string().optional().nullable(),
+  dateOfJoining: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD').optional().nullable(),
+  appraisalCycle: z.string().optional().nullable(), // APRIL / OCTOBER (older clients may still send other values)
+  variableCycle: z.enum(['QUARTERLY', 'HALF_YEARLY', 'ANNUAL']).optional().nullable(),
   feedbackresolverteam: z.string().optional().nullable(),
   designation: z.string().trim().max(120).optional().nullable(),
   jobLevel: z.string().trim().max(20).optional().nullable(),

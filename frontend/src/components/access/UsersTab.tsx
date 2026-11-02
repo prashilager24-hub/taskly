@@ -102,22 +102,28 @@ function AccessCanvas({ user, catalog, onClose, onChanged }: { user: UserRow | n
 
 // ── Add / edit user ──────────────────────────────────────────────────────────────────────────────
 
-interface FullUser { userID: number; userName: string; userEmail: string; employeeID: string | null; roleID: number; secondaryRoleID: number | null; departments: { departmentID: number }[]; reportingManagerId: number | null; elManagerId: number | null; appraisalCycle: string | null; feedbackresolverteam: string | null; designation: string | null; jobLevel: string | null; band: string | null; isNewJoiner?: boolean; joiningCycle?: string | null }
+interface FullUser { userID: number; userName: string; userEmail: string; employeeID: string | null; roleID: number; secondaryRoleID: number | null; departments: { departmentID: number }[]; reportingManagerId: number | null; elManagerId: number | null; appraisalCycle: string | null; variableCycle?: string | null; dateOfJoining?: string | null; feedbackresolverteam: string | null; designation: string | null; jobLevel: string | null; band: string | null; isNewJoiner?: boolean; joiningCycle?: string | null }
 // April–September joiners belong to the April intake, the rest to October
 const thisCycle = () => { const m = new Date().getMonth() + 1; return m >= 4 && m <= 9 ? "APRIL" : "OCTOBER"; };
-const BLANK = { newJoiner: "yes", joiningCycle: thisCycle(), designation: "", jobLevel: "", band: "", employeeID: "", name: "", email: "", password: "", roleID: "", secondaryRoleID: "", departmentID: "", reportingManagerId: "", elManagerId: "", appraisalCycle: "QUARTERLY" };
+/** The appraisal cycle a joining date gives (same rule as the appraisal): December–May → April, June–November → October */
+const appraisalCycleOf = (joined: string) => { const m = Number(joined.slice(5, 7)); return m >= 6 && m <= 11 ? "OCTOBER" : "APRIL"; };
+const BLANK = { newJoiner: "yes", joiningCycle: thisCycle(), designation: "", jobLevel: "", band: "", employeeID: "", name: "", email: "", password: "", roleID: "", departmentID: "", reportingManagerId: "", elManagerId: "", dateOfJoining: "", appraisalCycle: "", variableCycle: "HALF_YEARLY" };
 
 function UserCanvas({ open, editing, roles, departments, people, onClose, onSaved }: { open: boolean; editing: FullUser | null; roles: RoleRow[]; departments: DepartmentRow[]; people: UserRow[]; onClose: () => void; onSaved: () => void }) {
     const [f, setF] = useState(BLANK);
     const [saving, setSaving] = useState(false);
     const set = (k: keyof typeof BLANK) => (v: string) => setF((p) => ({ ...p, [k]: v }));
+    // the joining date fills in the appraisal cycle; it can still be changed by hand
+    const setJoined = (v: string) => setF((p) => ({ ...p, dateOfJoining: v, appraisalCycle: v ? appraisalCycleOf(v) : p.appraisalCycle }));
 
     useEffect(() => {
         if (!open) return;
         setF(editing ? {
             employeeID: editing.employeeID ?? "", name: editing.userName, email: editing.userEmail, password: "", roleID: String(editing.roleID),
-            secondaryRoleID: editing.secondaryRoleID ? String(editing.secondaryRoleID) : "", departmentID: editing.departments?.[0] ? String(editing.departments[0].departmentID) : "",
-            reportingManagerId: editing.reportingManagerId ? String(editing.reportingManagerId) : "", elManagerId: editing.elManagerId ? String(editing.elManagerId) : "", appraisalCycle: editing.appraisalCycle || "QUARTERLY",
+            departmentID: editing.departments?.[0] ? String(editing.departments[0].departmentID) : "",
+            reportingManagerId: editing.reportingManagerId ? String(editing.reportingManagerId) : "", elManagerId: editing.elManagerId ? String(editing.elManagerId) : "",
+            dateOfJoining: editing.dateOfJoining ?? "", appraisalCycle: editing.appraisalCycle === "APRIL" || editing.appraisalCycle === "OCTOBER" ? editing.appraisalCycle : editing.dateOfJoining ? appraisalCycleOf(editing.dateOfJoining) : "",
+            variableCycle: editing.variableCycle || "HALF_YEARLY",
             designation: editing.designation ?? "", jobLevel: editing.jobLevel ?? "", band: editing.band ?? "",
             newJoiner: editing.isNewJoiner ? "yes" : "no", joiningCycle: editing.joiningCycle || thisCycle(),
         } : { ...BLANK, joiningCycle: thisCycle() });
@@ -129,8 +135,9 @@ function UserCanvas({ open, editing, roles, departments, people, onClose, onSave
         setSaving(true);
         const payload: Record<string, unknown> = {
             employeeID: f.employeeID || null, userName: f.name.trim(), userEmail: f.email.trim(), roleID: Number(f.roleID),
-            secondaryRoleID: f.secondaryRoleID ? Number(f.secondaryRoleID) : null, departmentID: f.departmentID ? Number(f.departmentID) : null,
-            reportingManagerId: f.reportingManagerId ? Number(f.reportingManagerId) : null, elManagerId: f.elManagerId ? Number(f.elManagerId) : null, appraisalCycle: f.appraisalCycle,
+            departmentID: f.departmentID ? Number(f.departmentID) : null,
+            reportingManagerId: f.reportingManagerId ? Number(f.reportingManagerId) : null, elManagerId: f.elManagerId ? Number(f.elManagerId) : null,
+            dateOfJoining: f.dateOfJoining || null, appraisalCycle: f.appraisalCycle || null, variableCycle: f.variableCycle || null,
             designation: f.designation.trim(), jobLevel: f.jobLevel.trim(), band: f.band.trim(),
             isNewJoiner: f.newJoiner === "yes", ...(f.newJoiner === "yes" ? { joiningCycle: f.joiningCycle } : {}),
         };
@@ -173,15 +180,20 @@ function UserCanvas({ open, editing, roles, departments, people, onClose, onSave
                     <p className="eyebrow">Role and department</p>
                     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                         {pick("Role", f.roleID, set("roleID"), roles.filter((r) => r.active).map((r) => ({ key: String(r.roleId), label: r.roleName })))}
-                        {pick("Second role (optional)", f.secondaryRoleID, set("secondaryRoleID"), roles.filter((r) => r.active).map((r) => ({ key: String(r.roleId), label: r.roleName })), true)}
                         {pick("Department", f.departmentID, set("departmentID"), departments.map((d) => ({ key: String(d.departmentId), label: d.name })), true)}
                     </div>
                     <p className="eyebrow">Reporting</p>
                     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                         {pick("Reporting manager", f.reportingManagerId, set("reportingManagerId"), people.filter((p) => p.userId !== editing?.userID).map((p) => ({ key: String(p.userId), label: p.name })), true)}
                         {pick("Executive Leader", f.elManagerId, set("elManagerId"), people.filter((p) => p.userId !== editing?.userID).map((p) => ({ key: String(p.userId), label: p.name })), true)}
-                        {pick("Appraisal cycle", f.appraisalCycle, set("appraisalCycle"), [{ key: "QUARTERLY", label: "Quarterly" }, { key: "HALF_YEARLY", label: "Half yearly" }, { key: "ANNUAL", label: "Annual" }])}
                     </div>
+                    <p className="eyebrow">Joining and cycles</p>
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+                        <Input label="Joining date" labelPlacement="outside" type="date" value={f.dateOfJoining} onValueChange={setJoined} />
+                        {pick("Appraisal cycle", f.appraisalCycle, set("appraisalCycle"), [{ key: "APRIL", label: "April" }, { key: "OCTOBER", label: "October" }])}
+                        {pick("Variable cycle", f.variableCycle, set("variableCycle"), [{ key: "QUARTERLY", label: "Quarterly" }, { key: "HALF_YEARLY", label: "Half yearly" }, { key: "ANNUAL", label: "Annual" }])}
+                    </div>
+                    <p className="-mt-2 text-xs text-ink-500">The joining date fills in the appraisal cycle: joined December–May → April, June–November → October. Variable cycle is how often variable pay is paid out.</p>
                 </DrawerBody>
                 <DrawerFooter>
                     <Button variant="bordered" onPress={onClose}>Cancel</Button>

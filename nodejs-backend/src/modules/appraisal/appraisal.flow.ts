@@ -44,8 +44,9 @@ export async function notify(users: (number | null | undefined)[], title: string
   if (!ids.length) return;
   const expires = new Date(Date.now() + 60 * 86_400_000);
   await pool.execute(
-    'INSERT INTO Notification (Title, Body, Level, LinkUrl, Audience, ExpiresAt, IsActive, CreatedBy, CreatedAt) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)',
-    [title, body, level, link, JSON.stringify({ all: false, departments: [], roles: [], users: ids }), expires, actor ?? 1, new Date()]);
+    // Source APPRAISAL: it goes to the people's bells, but is not one of the Notifications page's own
+    "INSERT INTO Notification (Title, Body, Level, LinkUrl, Audience, ExpiresAt, IsActive, CreatedBy, CreatedAt, Source, DeliveredAt) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, 'APPRAISAL', ?)",
+    [title, body, level, link, JSON.stringify({ all: false, departments: [], roles: [], users: ids }), expires, actor ?? 1, new Date(), new Date()]);
 }
 
 const inr = (v: number) => `₹${Math.round(v).toLocaleString('en-IN')}`;

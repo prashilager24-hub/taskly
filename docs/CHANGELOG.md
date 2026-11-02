@@ -17,6 +17,35 @@ Summary: one or two lines on what and why.
 
 ---
 
+## 2026-11-02 — Modules audit (part 1): user form, HR Experience / Support menus, scheduled and emailed notifications  (branch modules-audit)
+
+Summary: first batch of the modules audit. The new-user form loses the secondary role and gains joining date, appraisal cycle and variable cycle; HR Support becomes HR Experience and Support; notifications can go out now, at a set time or every week, and by email; appraisal messages leave the Notifications page; Admin down to Lead can use Notifications; the daily log report job is repaired. Department Management is only designed so far (blueprint artifact, waiting for approval).
+
+### Frontend
+- Access Management → Add / edit user: no "Second role" field (two people who already have one keep it until edited by hand). New "Joining and cycles": Joining date; Appraisal cycle April / October, filled in from the joining date (December–May → April, June–November → October); Variable cycle Quarterly / Half yearly / Annual. The old "Appraisal cycle" select offered Quarterly / Half yearly / Annual and overwrote people's April / October on save; fixed.
+- Menu: HR Support is split into **HR Experience** (Onboarding Experience, Employee Engagement) and **Support** (Query). Page links (/support/…) are unchanged.
+- Notifications page: tabs Sent / Scheduled / Weekly / System; the composer has a When step (Send now, Schedule at a date and time, Every week on a day and time, India time) and "Also send by email"; the list shows when each goes out, its email status and emails sent. System lists the jobs that notify people on their own, with an email switch.
+
+### Backend
+- auth: create / update user accept `dateOfJoining`, `variableCycle`; return both in the user list.
+- notifications: `Source` (MANUAL / APPRAISAL / SYSTEM); the page lists MANUAL only. Scheduling (`sendAt`), weekly repeat (`repeat`, `repeatDay`, `repeatTime`), email (`sendEmail`, one mail per person with an Open in Taskly button to the link, `EmailedCount` counts only mails really sent). The bell shows a notification only once it has gone out, dated by when it last went out; a weekly one comes back as new each week. New job `jobs/notificationScheduler.ts` (every minute). `GET /notifications/system`, `PUT /notifications/system/:job { email }`.
+- appraisal: its notifications are stored with Source APPRAISAL (still in people's bells, not on the Notifications page).
+- jobs/dailyTaskAudit.ts: it could never run (it selected `Department.IsActive`, `Users.DepartmentID`, `Users.IsActive`, none of which exist) and its schedule ran at 04:30, not 10:00 India time. Queries fixed (DepartmentUser, DepartmentStatus, UserStatus), schedule `0 10 * * *` India time, and its email now has a switch on Notifications → System, **off by default** because these emails never went out before.
+- mailer: `sendMail` returns whether it really sent (false when SMTP is not configured).
+- Access catalog: HR Support permission group renamed HR Experience & Support; "Query & HR" → "Query".
+
+### Database
+- `018_user_joining_variable_cycle.sql`: Users.VariableCycle; values QUARTERLY / HALF_YEARLY / ANNUAL that the old form wrote into AppraisalCycle are moved there.
+- `019_notification_schedule.sql`: Notification.Source, SendAt, RepeatRule, RepeatDay, RepeatTime, SendEmail, DeliveredAt, EmailedCount (existing ones marked delivered; appraisal ones marked APPRAISAL); roles ExecutiveLeader, FunctionalLeader, Manager, Lead get the Notifications module.
+- Run `npm run db:migrate`.
+
+### Env / config
+- Emails need SMTP_HOST / SMTP_USER / SMTP_PASS (unchanged); email buttons use FRONTEND_URL.
+
+### Notes
+- Waiting for approval, not built: Department Management (department / sub department IDs TM-D01 / TM-SD01, card and table views, people first, sub departments, tasks / targets / goals inside each sub department, hierarchy tab) and the new role list and user types; see the blueprint artifact.
+- Checked: notification schedule checks (now, scheduled, weekly once per slot and again next week, closing, validation, email html, job switch), the repaired daily log report runs end to end without SMTP, appraisal flow check and unit tests still pass, pages opened in the browser.
+
 ## 2026-11-02 — Fix: Profile sign-in activity  (commit: see git log)
 
 Summary: the Activity Log on My Profile (and on someone's profile opened from Access Management) failed with "Invalid user".

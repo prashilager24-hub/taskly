@@ -14,11 +14,21 @@ export const LEVELS: { key: Level; label: string }[] = [
 
 export interface Audience { all: boolean; departments: number[]; roles: number[]; users: number[] }
 export interface MyNotification { id: number; title: string; body: string; level: Level; linkUrl: string | null; createdAt: string; read: boolean }
+export type Repeat = "NONE" | "WEEKLY";
+export type SendStatus = "SENT" | "SCHEDULED" | "WEEKLY" | "PAUSED" | "ENDED";
 export interface SentNotification {
     id: number; title: string; body: string; level: Level; linkUrl: string | null; createdAt: string; expiresAt: string | null;
     active: boolean; audience: Audience; createdBy: string; readCount: number; reach: number;
+    status: SendStatus; sendAt: string | null; deliveredAt: string | null; nextAt: string | null;
+    repeat: Repeat; repeatDay: number | null; repeatTime: string | null; sendEmail: boolean; emailedCount: number;
 }
-export interface NotificationDraft { title: string; body: string; level: Level; linkUrl: string; expiresAt: string | null; active: boolean; audience: Audience }
+/** sendAt: 'YYYY-MM-DDTHH:MM' India time; repeatDay 1 = Monday … 7 = Sunday; repeatTime 'HH:MM' */
+export interface NotificationDraft {
+    title: string; body: string; level: Level; linkUrl: string; expiresAt: string | null; active: boolean; audience: Audience;
+    sendAt?: string | null; repeat?: Repeat; repeatDay?: number | null; repeatTime?: string | null; sendEmail?: boolean;
+}
+/** A scheduled job that notifies people on its own */
+export interface SystemJob { key: string; name: string; when: string; what: string; channel: string; email: boolean; lastRun: string | null; canToggle: boolean }
 
 const unwrap = <T,>(p: Promise<{ data: { response: T } }>) => p.then((r) => r.data.response);
 
@@ -32,4 +42,6 @@ export const notificationsApi = {
     reach: (audience: Audience) => unwrap<{ reach: number }>(axios.post(`${BASE}/reach`, { audience })).then((r) => r.reach),
     save: (draft: NotificationDraft, id?: number) => (id ? axios.put(`${BASE}/${id}`, draft) : axios.post(BASE, draft)),
     remove: (id: number) => axios.delete(`${BASE}/${id}`),
+    system: () => unwrap<SystemJob[]>(axios.get(`${BASE}/system`)),
+    setJobEmail: (job: string, email: boolean) => axios.put(`${BASE}/system/${job}`, { email }),
 };

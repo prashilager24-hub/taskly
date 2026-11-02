@@ -44,9 +44,9 @@ export const CATALOG: ModuleDef[] = [
   { id: 'appraisal', label: 'Appraisal', description: 'Yearly appraisal; opens in each person\'s cycle window' },
   { id: 'pms_feedback', label: 'Manager Feedback Form', description: 'Write monthly feedback for a team member (its own menu item)' },
   {
-    id: 'hrfeedback', label: 'HR Support', description: 'The HR Support section of the menu; each page below is its own permission', children: [
+    id: 'hrfeedback', label: 'HR Experience & Support', description: 'The HR Experience (onboarding, engagement) and Support (queries) menus; each page below is its own permission', children: [
       { id: 'hr_onboarding', label: 'Onboarding Experience', description: 'The onboarding survey (new joiners), and for HR the console to send it' },
-      { id: 'hr_query', label: 'Query & HR', description: 'Raise queries to HR, and for HR answer them' },
+      { id: 'hr_query', label: 'Query', description: 'Raise queries to HR, and for HR answer them' },
       { id: 'hr_engagement', label: 'Employee Engagement', description: 'Engagement surveys' },
       { id: 'hr_onb_templates', label: 'Onboarding Survey Templates', description: 'Add and edit onboarding survey templates and their questions (HR team by default)' },
       { id: 'hr_eng_templates', label: 'Engagement Survey Templates', description: 'Add and edit employee engagement survey templates and their questions (HR team by default)' },

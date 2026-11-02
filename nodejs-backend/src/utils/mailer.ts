@@ -21,14 +21,15 @@ function createTransport() {
 
 const transport = createTransport();
 
+/** Sends the mail; false when SMTP is not configured and it was only logged */
 export async function sendMail(opts: {
   to: string[];
   subject: string;
   html: string;
-}) {
+}): Promise<boolean> {
   if (!transport) {
     logger.info({ to: opts.to, subject: opts.subject }, 'SMTP not configured — mail skipped');
-    return;
+    return false;
   }
   await transport.sendMail({
     from: env.SMTP_FROM,
@@ -37,4 +38,5 @@ export async function sendMail(opts: {
     html: opts.html,
   });
   logger.info({ to: opts.to, subject: opts.subject }, 'Mail sent');
+  return true;
 }

@@ -302,8 +302,9 @@ export async function createUser(input: CreateUserInput, createdBy: number) {
     `INSERT INTO Users
        (UserEmail, UserName, UserPassword, RoleID, SecondaryRoleID,
         UserStatus, IsUserArchived, EmployeeID, ReportingManagerID,
-        ELManagerID, AppraisalCycle, FeedbackResolverTeam, Designation, JobLevel, Band, IsNewJoiner, JoiningCycle)
-     VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ELManagerID, AppraisalCycle, FeedbackResolverTeam, Designation, JobLevel, Band, IsNewJoiner, JoiningCycle,
+        DateOfJoining, VariableCycle)
+     VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       input.userEmail,
       input.userName,
@@ -320,6 +321,8 @@ export async function createUser(input: CreateUserInput, createdBy: number) {
       input.band || null,
       input.isNewJoiner === false ? 0 : 1,
       input.isNewJoiner === false ? null : (input.joiningCycle ?? joiningCycleFor(new Date())),
+      input.dateOfJoining ?? null,
+      input.variableCycle ?? null,
     ],
   );
 
@@ -350,6 +353,8 @@ export async function updateUser(input: UpdateUserInput) {
   if (input.reportingManagerId !== undefined) { fields.push('ReportingManagerID = ?'); values.push(input.reportingManagerId); }
   if (input.elManagerId !== undefined) { fields.push('ELManagerID = ?'); values.push(input.elManagerId); }
   if (input.appraisalCycle !== undefined) { fields.push('AppraisalCycle = ?'); values.push(input.appraisalCycle); }
+  if (input.dateOfJoining !== undefined) { fields.push('DateOfJoining = ?'); values.push(input.dateOfJoining); }
+  if (input.variableCycle !== undefined) { fields.push('VariableCycle = ?'); values.push(input.variableCycle); }
   if (input.feedbackresolverteam !== undefined) { fields.push('FeedbackResolverTeam = ?'); values.push(input.feedbackresolverteam); }
   if (input.designation !== undefined) { fields.push('Designation = ?'); values.push(input.designation || null); }
   if (input.jobLevel !== undefined) { fields.push('JobLevel = ?'); values.push(input.jobLevel || null); }
@@ -423,6 +428,7 @@ export async function getUsers(input: UsersReadInput) {
             u.UserStatus, u.IsUserArchived, u.EmployeeID,
             u.ReportingManagerID, u.ELManagerID, u.AppraisalCycle, u.FeedbackResolverTeam,
             u.Designation, u.JobLevel, u.Band, u.IsNewJoiner, u.JoiningCycle,
+            DATE_FORMAT(u.DateOfJoining, '%Y-%m-%d') AS DateOfJoining, u.VariableCycle,
             u.UserCreateTime,
             rm.UserName AS ReportingManagerName, elm.UserName AS ELManagerName
      FROM Users u
@@ -475,6 +481,8 @@ export async function getUsers(input: UsersReadInput) {
     band: u['Band'] ?? null,
     isNewJoiner: !!u['IsNewJoiner'],
     joiningCycle: u['JoiningCycle'] ?? null,
+    dateOfJoining: u['DateOfJoining'] ?? null,
+    variableCycle: u['VariableCycle'] ?? null,
     userCreateTime: u['UserCreateTime'] instanceof Date
       ? u['UserCreateTime'].toISOString().slice(0, 19).replace('T', ' ')
       : u['UserCreateTime'],

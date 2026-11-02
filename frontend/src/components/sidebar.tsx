@@ -132,16 +132,24 @@ export const MENU: MenuItem[] = [
       { icon: Bell, label: "Notifications", href: "notifications", module: "notifications" },
     ],
   },
-  // Support (formerly HR Feedback); PMS lives on the Dashboard as a tab
+  // HR Experience: the onboarding and engagement surveys. Support: queries to HR. (The pages keep their /support/… links.)
   {
-    icon: LifeBuoy,
-    label: "HR Support",
-    href: "support",
+    icon: Sparkles,
+    label: "HR Experience",
+    href: "hr-experience",
     module: "hrfeedback",
     children: [
       { icon: Sparkles, label: "Onboarding Experience", href: "support/onboarding", module: "hr_onboarding", onlyNewJoiners: true },
-      { icon: MessageSquareText, label: "Query & HR", href: "support/query", module: "hr_query" },
       { icon: Smile, label: "Employee Engagement", href: "support/engagement", module: "hr_engagement" },
+    ],
+  },
+  {
+    icon: LifeBuoy,
+    label: "Support",
+    href: "support",
+    module: "hrfeedback",
+    children: [
+      { icon: MessageSquareText, label: "Query", href: "support/query", module: "hr_query" },
     ],
   },
 ];

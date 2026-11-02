@@ -11,6 +11,7 @@ import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 // Route imports
 import authRouter from './modules/auth/auth.routes';
 import accessRouter from './modules/access/access.routes';
+import deptMgmtRouter from './modules/deptmgmt/deptmgmt.routes';
 import notificationsRouter from './modules/notifications/notifications.routes';
 import appraisalRouter from './modules/appraisal/appraisal.routes';
 import { authenticate } from './middlewares/auth';
@@ -79,6 +80,7 @@ const BASE = '/t2.0/authentificationUtilization';
 
 // ── Auth (login, users, AMRole) ───────────────────────────────────────────────
 app.use(`${BASE}/access`, accessRouter);
+app.use(`${BASE}/dept-mgmt`, deptMgmtRouter);
 app.use(`${BASE}/notifications`, notificationsRouter);
 app.use(`${BASE}/appraisal`, appraisalRouter);
 app.use(`${BASE}/profile`, profileRouter);

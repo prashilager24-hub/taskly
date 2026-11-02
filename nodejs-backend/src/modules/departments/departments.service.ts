@@ -1,6 +1,7 @@
 import { pool } from '../../config/db';
 import type mysql from 'mysql2/promise';
 import { javaFail, javaOk, nowLocalDateTime, toBool, toLocalDateTime } from '../../utils/javaCompat';
+import { nextCode } from '../deptmgmt/deptmgmt.service';
 
 // ── Ported from Java DepartmentService + DepartmentController — response shapes match the original ──
 
@@ -123,12 +124,12 @@ export async function createDepartment(input: DepartmentInput) {
   const [r] = await pool.execute<mysql.ResultSetHeader>(
     `INSERT INTO Department
        (DepartmentName, DepartmentDescription, DepartmentCreateTime, DepartmentModifyTime,
-        ExecutiveLeaderID, FunctionalLeaderID, PrimaryDepartmentId)
-     VALUES (?, ?, NOW(), NOW(), ?, ?, ?)`,
+        ExecutiveLeaderID, FunctionalLeaderID, PrimaryDepartmentId, Code)
+     VALUES (?, ?, NOW(), NOW(), ?, ?, ?, ?)`,
     [
       input.departmentName ?? null, input.departmentDescription ?? null,
       input.executiveLeaderID ?? null, input.executiveLeaderID == null ? input.functionalLeaderID ?? null : null,
-      input.primaryDepartmentId ?? null,
+      input.primaryDepartmentId ?? null, await nextCode(pool, 'SD'),
     ],
   );
   return javaOk('Department created successfully', {
@@ -326,8 +327,8 @@ export async function createPrimaryDepartment(body: Record<string, unknown>) {
   }
 
   const [r] = await pool.execute<mysql.ResultSetHeader>(
-    'INSERT INTO PrimaryDepartment (PrimaryDepartmentName, Type, IsActive, GoalCriteria, TargetCriteria) VALUES (?, ?, 1, ?, ?)',
-    [name, typeof body['type'] === 'string' ? body['type'] : null, goal, target],
+    'INSERT INTO PrimaryDepartment (PrimaryDepartmentName, Type, IsActive, GoalCriteria, TargetCriteria, Code) VALUES (?, ?, 1, ?, ?, ?)',
+    [name, typeof body['type'] === 'string' ? body['type'] : null, goal, target, await nextCode(pool, 'D')],
   );
   return {
     status: true, statusCode: 200, message: 'Primary Department created successfully',

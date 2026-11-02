@@ -17,6 +17,37 @@ Summary: one or two lines on what and why.
 
 ---
 
+## 2026-11-02 — Modules audit (part 3): Department Management  (branch modules-audit)
+
+Summary: Department Management rebuilt as approved in the blueprint. Departments get IDs TM-D01 … and sub departments TM-SD01 …; departments show as cards or a table; a new department asks whether it has sub departments; a department page shows its people first, then its sub departments; a sub department page shows its leaders and people; tasks, targets and goals are managed inside each sub department, so the Data Management menu is gone. A Hierarchy tab shows departments, sub departments and reporting lines.
+
+### Frontend
+- `pages/departments.tsx` rewritten: `/departments` (tabs Departments, Hierarchy), `/departments/:id` (a department), `/departments/sub/:subId` (a sub department). New `components/deptmgmt/` (api, parts, forms, ListView, HierarchyView, DepartmentPages).
+- Departments tab: totals, a notice for the 15 older sub departments under no department with a "Place them" panel, search, type and status filters, Cards / Table (table rows open to their sub departments).
+- New department: ID shown, name, type (Business / Support), goal and target criteria, description, "Would you like sub departments?" Yes (first sub departments with EL / FL) or No (one team: people, tasks, targets and goals sit directly in the department).
+- Department page: People (with sub department, user type, reports to, status, Move), sub department cards with an Add card, and Tasks / Targets / Goals tabs that pick a sub department. A one-team department shows its people and data directly.
+- Sub department page: EL / FL (Choose when not set), people with joining date and appraisal cycle, Add people (each person belongs to one sub department), Move, Edit (name, leaders, description, department, active), Remove. Tasks / Targets / Goals tabs show Task, Target and Goal Management locked to the sub department.
+- Add sub department: ID shown, department fixed, EL / FL, description, people to move in (people of the department suggested), start with the tasks, targets and goals of another sub department.
+- `DepartmentSplit` takes `lockedDepartment`; Task, Target and Goal Management take `departmentId` (no page title, no department list). Their own pages (/tasks, /target, /Goal-management) still work.
+- Menu: Data Management removed; Admin → "Department Management".
+
+### Backend
+- New `modules/deptmgmt` at `/dept-mgmt` (module deptmgmt: read / create / update): `GET /` (departments and sub departments with counts), `GET /departments/:id`, `POST /departments`, `PUT /departments/:id`, `GET /sub-departments/:id`, `POST /sub-departments` (people, copyFrom), `PUT /sub-departments/:id`, `DELETE /sub-departments/:id` (archives; only with no active people), `POST /sub-departments/:id/people` (moves people in), `PUT /mapping` (places older sub departments).
+- IDs are given from the highest ever used (never reused). The old `/Department/create` and `/PrimaryDepartment/create` give IDs too.
+- Copied goals start not approved by the EL.
+
+### Database
+- `021_department_codes.sql`: PrimaryDepartment.Code (TM-D01 … in the order they were made), PrimaryDepartment.Description, Department.Code (TM-SD01 …: department by department, then by name; the 15 under no department last; deleted ones get none), Department.IsDepartmentTeam. Undo: `migrations/down/021_department_codes.down.sql`.
+- Run `npm run db:migrate`.
+
+### Env / config
+- none
+
+### Notes
+- With that numbering Technology's sub departments are TM-SD01 Appraisal Cycle Test, TM-SD02 Engineering, TM-SD03 technology (the blueprint drew Engineering as TM-SD01).
+- Only Admin has Department Management and Task / Target / Goal Management today; the tabs inside a sub department follow those module rights.
+- Checked: write checks on temporary data (IDs, one-team department, rename, copy, move, name clashes, deactivate / remove rules, ID never reused, mapping), the same calls over HTTP with the forms' payloads, an EL refused, all pages and drawers opened in the browser, Task Management page unchanged; appraisal flow check, notification checks and unit tests still pass.
+
 ## 2026-11-02 — Modules audit (part 2): user types and user roles, appraisal notifications out of the bell  (branch modules-audit)
 
 Summary: people are shown by **user type** (Super Admin, Admin, Executive Leader, Functional Leader, Manager, Lead, Associate, Intern) and may hold a **user role** (CEO, CBO, Finance Head, HR Manager). The old roles keep their names and ids, so nothing wired to them changes; each is grouped under a user type. Appraisal notifications no longer show anywhere (the appraisal's own screens, Budget Split's budget discussion, carry them).
@@ -71,7 +102,7 @@ Summary: first batch of the modules audit. The new-user form loses the secondary
 - Emails need SMTP_HOST / SMTP_USER / SMTP_PASS (unchanged); email buttons use FRONTEND_URL.
 
 ### Notes
-- Waiting for approval, not built: Department Management (department / sub department IDs TM-D01 / TM-SD01, card and table views, people first, sub departments, tasks / targets / goals inside each sub department, hierarchy tab); see the blueprint artifact. User types and user roles: done in part 2.
+- Waiting for approval, not built: Department Management (department / sub department IDs TM-D01 / TM-SD01, card and table views, people first, sub departments, tasks / targets / goals inside each sub department, hierarchy tab); see the blueprint artifact. User types and user roles: done in part 2; Department Management: part 3.
 - Checked: notification schedule checks (now, scheduled, weekly once per slot and again next week, closing, validation, email html, job switch), the repaired daily log report runs end to end without SMTP, appraisal flow check and unit tests still pass, pages opened in the browser.
 
 ## 2026-11-02 — Fix: Profile sign-in activity  (commit: see git log)

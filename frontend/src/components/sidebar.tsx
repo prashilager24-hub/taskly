@@ -6,7 +6,6 @@ import {
   Award,
   BarChart3,
   Bell,
-  Database,
   Building2,
   GitPullRequestArrow,
   LayoutGrid,
@@ -24,7 +23,6 @@ import {
   ShieldCheck,
   Smile,
   Sparkles,
-  Target,
   TrendingUp,
   UserCheck,
   UserCog,
@@ -110,17 +108,7 @@ export const MENU: MenuItem[] = [
       { icon: MessageSquareText, label: "Query Report", href: "query-report", module: "queryReport" },
     ],
   },
-  {
-    icon: Database,
-    label: "Data Management",
-    href: "data-management",
-    module: "datamgmt",
-    children: [
-      { icon: ClipboardList, label: "Task Management", href: "tasks", module: "taskmgmt" },
-      { icon: Target, label: "Target Management", href: "target", module: "targetmgmt" },
-      { icon: Goal, label: "Goal Management", href: "Goal-management", module: "goalmgmt" },
-    ],
-  },
+  // Tasks, targets and goals are managed inside each sub department (Department Management); the Data Management menu is gone
   {
     icon: Settings,
     label: "Admin",
@@ -128,7 +116,7 @@ export const MENU: MenuItem[] = [
     module: "admin",
     children: [
       { icon: ShieldCheck, label: "Access Management", href: "access-management", module: "accessmgmt" },
-      { icon: Building2, label: "Departments", href: "departments", module: "deptmgmt" },
+      { icon: Building2, label: "Department Management", href: "departments", module: "deptmgmt", prefix: true },
       { icon: Bell, label: "Notifications", href: "notifications", module: "notifications" },
     ],
   },

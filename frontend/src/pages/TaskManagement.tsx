@@ -30,7 +30,8 @@ interface Task {
 }
 
 
-const TaskManagement: React.FC = () => {
+/** departmentId: shown inside that sub department (Department Management), without the page title */
+const TaskManagement: React.FC<{ departmentId?: number }> = ({ departmentId }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [selectedDepartment, setSelectedDepartment] = useState("");
@@ -351,6 +352,7 @@ const TaskManagement: React.FC = () => {
     return (
         <div>
 
+            {departmentId == null && (
             <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
                 <PageTitle title="Task Management" subtitle="Manage and monitor all company Tasks" />
                 <div className="flex justify-end m-3 gap-3">
@@ -374,9 +376,11 @@ const TaskManagement: React.FC = () => {
                 </div>
 
             </div>
+            )}
 
 
             <DepartmentSplit<any>
+                lockedDepartment={departmentId}
                 noun="task"
                 items={tasks}
                 departments={splitDepartments}

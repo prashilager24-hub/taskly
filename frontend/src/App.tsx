@@ -52,6 +52,8 @@ function App() {
         <Route path="/dashboard" element={<ProtectedRoute module="dashboard"><DashboardHome /></ProtectedRoute>} />
         <Route path="/activity-log" element={<ActivityLogPage />} />
         <Route path="/departments" element={<ProtectedRoute module="deptmgmt"><DepartmentsPage /></ProtectedRoute>} />
+        <Route path="/departments/sub/:subId" element={<ProtectedRoute module="deptmgmt"><DepartmentsPage /></ProtectedRoute>} />
+        <Route path="/departments/:id" element={<ProtectedRoute module="deptmgmt"><DepartmentsPage /></ProtectedRoute>} />
         <Route path="/department" element={<Navigate to="/departments" replace />} />
         <Route path="/primaryDepartment" element={<Navigate to="/departments" replace />} />
         <Route path="/daily-activity" element={<ProtectedRoute module="dataentry"><FormPage /></ProtectedRoute>} />

@@ -33,7 +33,8 @@ interface Goal {
 }
 
 
-const GoalManagement: React.FC = () => {
+/** departmentId: shown inside that sub department (Department Management), without the page title */
+const GoalManagement: React.FC<{ departmentId?: number }> = ({ departmentId }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [selectedDepartment, setSelectedDepartment] = useState("");
 
@@ -390,6 +391,7 @@ const GoalManagement: React.FC = () => {
     return (
         <div>
 
+            {departmentId == null && (
             <div className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
                 <PageTitle title="Goal Management" subtitle="Manage and monitor all department goals" />
                 <div className="flex justify-end m-3 gap-3">
@@ -411,8 +413,10 @@ const GoalManagement: React.FC = () => {
                     </Button>
                 </div>
             </div>
+            )}
 
             <DepartmentSplit<any>
+                lockedDepartment={departmentId}
                 noun="goal"
                 items={visibleGoals}
                 departments={splitDepartments}

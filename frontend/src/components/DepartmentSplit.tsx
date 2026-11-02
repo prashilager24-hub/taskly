@@ -6,7 +6,7 @@ import { Button } from "@/components/ui";
 import { Segmented } from "@/components/page";
 
 // Department list on the left, the selected department's items on the right.
-// Used by Task, Target and Goal Management (Data Management).
+// Used by Task, Target and Goal Management, and inside a sub department (Department Management) locked to that one.
 
 export interface SplitColumn<T> { label: string; cell: (item: T) => ReactNode; className?: string }
 export interface SplitDepartment { id: number; name: string }
@@ -47,6 +47,8 @@ interface Props<T> {
     headerExtra?: (items: T[]) => ReactNode;
     /** extra buttons at the end of a row */
     rowExtra?: (item: T) => ReactNode;
+    /** only this department: no department list, and the panel grows with its rows (inside a sub department page) */
+    lockedDepartment?: number;
 }
 
 export default function DepartmentSplit<T>(p: Props<T>) {
@@ -64,7 +66,10 @@ export default function DepartmentSplit<T>(p: Props<T>) {
 
     const itemsOf = (id: number) => p.items.filter((i) => p.deptOf(i) === id);
     const shown = departments.filter((d) => !query.trim() || d.name.toLowerCase().includes(query.trim().toLowerCase()));
-    const dept = departments.find((d) => d.id === active) ?? departments.find((d) => itemsOf(d.id).length) ?? departments[0] ?? null;
+    const locked = p.lockedDepartment;
+    const dept = locked != null
+        ? departments.find((d) => d.id === locked) ?? { id: locked, name: "" }
+        : departments.find((d) => d.id === active) ?? departments.find((d) => itemsOf(d.id).length) ?? departments[0] ?? null;
     const all = dept ? itemsOf(dept.id) : [];
     const rows = all
         .filter((i) => status === "all" || (status === "active") === p.isActive(i))
@@ -73,12 +78,12 @@ export default function DepartmentSplit<T>(p: Props<T>) {
     const plural = (n: number) => `${n} ${n === 1 ? p.noun : `${p.noun}s`}`;
 
     if (p.loading) return <p className="py-16 text-center text-sm text-ink-500">Loading {p.noun}s…</p>;
-    if (!departments.length) return <p className="border border-dashed border-ink-300 py-16 text-center text-sm text-ink-500 dark:border-white/20">No departments found.</p>;
+    if (locked == null && !departments.length) return <p className="border border-dashed border-ink-300 py-16 text-center text-sm text-ink-500 dark:border-white/20">No departments found.</p>;
 
     return (
-        <div className="grid min-h-[480px] grid-cols-1 border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 lg:h-[calc(100vh-240px)] lg:min-h-[460px] lg:grid-cols-[270px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
+        <div className={cn("grid grid-cols-1 border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900", locked == null && "min-h-[480px] lg:h-[calc(100vh-240px)] lg:min-h-[460px] lg:grid-cols-[270px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]")}>
             {/* Departments */}
-            <aside className="flex max-h-[420px] min-h-0 flex-col border-b border-ink-200 dark:border-white/10 lg:border-b-0 lg:border-r">
+            {locked == null && <aside className="flex max-h-[420px] min-h-0 flex-col border-b border-ink-200 dark:border-white/10 lg:border-b-0 lg:border-r">
                 <div className="border-b border-ink-100 p-3 dark:border-white/5">
                     <label className="relative block">
                         <span className="sr-only">Find a department</span>
@@ -106,7 +111,7 @@ export default function DepartmentSplit<T>(p: Props<T>) {
                     })}
                     {!shown.length && <li className="px-4 py-6 text-center text-xs text-ink-500">No department matches.</li>}
                 </ul>
-            </aside>
+            </aside>}
 
             {/* Items of the department */}
             <section className="flex min-h-0 min-w-0 flex-col">
@@ -114,7 +119,7 @@ export default function DepartmentSplit<T>(p: Props<T>) {
                     <>
                         <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-ink-200 px-5 py-3.5 dark:border-white/10">
                             <div className="min-w-0">
-                                <h2 className="truncate text-sm font-bold uppercase tracking-wide text-ink-900 dark:text-white">{dept.name}</h2>
+                                <h2 className="truncate text-sm font-bold uppercase tracking-wide text-ink-900 dark:text-white">{locked != null ? `${p.noun}s` : dept.name}</h2>
                                 <p className="mt-0.5 text-xs text-ink-500 dark:text-ink-400">
                                     {plural(all.length)} · {activeCount} active · {all.length - activeCount} inactive{p.summaryExtra ? ` · ${p.summaryExtra(all)}` : ""}
                                 </p>
@@ -144,7 +149,7 @@ export default function DepartmentSplit<T>(p: Props<T>) {
                                 <Button className="mt-4" size="sm" color="primary" startContent={<Plus size={14} />} onPress={() => p.onAdd(dept.id)}>Add {p.noun}</Button>
                             </div>
                         ) : (
-                            <div className="min-h-0 flex-1 overflow-auto">
+                            <div className={cn("min-h-0 flex-1", locked == null ? "overflow-auto" : "overflow-x-auto")}>
                                 <table className="w-full text-sm">
                                     <thead className="sticky top-0 z-10 bg-ink-50 dark:bg-ink-800">
                                         <tr className="border-b border-ink-200 dark:border-white/10">

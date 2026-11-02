@@ -39,7 +39,8 @@ export function DepartmentBoard() {
     const shown = useMemo(() => {
         const q = query.trim().toLowerCase();
         return rows.filter((r) => !q || r.department.toLowerCase().includes(q) || (r.el?.name ?? "").toLowerCase().includes(q))
-            .sort((a, b) => ORDER[a.status] - ORDER[b.status] || Number(b.people > 0) - Number(a.people > 0) || a.department.localeCompare(b.department));
+            // whatever happened last comes first, finalised or not; departments with nothing yet go last
+            .sort((a, b) => (b.lastActivity ?? "").localeCompare(a.lastActivity ?? "") || ORDER[a.status] - ORDER[b.status] || a.department.localeCompare(b.department));
     }, [rows, query]);
     const ready = rows.filter((r) => r.status === "READY_FOR_FINANCE").length;
     const negotiating = rows.filter((r) => r.status === "BUDGET_NEGOTIATION").length;
@@ -63,9 +64,9 @@ export function DepartmentBoard() {
                 </label>}>
                 {loading ? <div className="flex justify-center py-16"><Spinner /></div> : (
                     <div className="max-h-[640px] overflow-auto">
-                        <table className="w-full min-w-[960px] text-sm">
+                        <table className="w-full min-w-[1060px] text-sm">
                             <thead className="sticky top-0 z-10"><tr className="border-b border-ink-200 bg-ink-50 text-left dark:border-white/10 dark:bg-ink-800">
-                                {["Department", "Executive Leader", "Appeals in", "Department Total Expected", "Department Total Targeted", "Budget", "Status", ""].map((h, i) => <th key={h + i} className={cn("px-3 py-2.5", i >= 3 && i <= 5 && "text-right", (i === 3 || i === 4) && "w-[120px] whitespace-normal leading-tight")}>{h}</th>)}
+                                {["Department", "Executive Leader", "Appeals in", "Department Total Expected", "Department Total Targeted", "Budget", "Status", "Last activity", ""].map((h, i) => <th key={h + i} className={cn("px-3 py-2.5", i >= 3 && i <= 5 && "text-right", (i === 3 || i === 4) && "w-[120px] whitespace-normal leading-tight")}>{h}</th>)}
                             </tr></thead>
                             <tbody>
                                 {shown.map((r) => (
@@ -80,10 +81,11 @@ export function DepartmentBoard() {
                                         <td className="px-3 py-3 text-right tabular-nums">{inr(r.target)}</td>
                                         <td className="px-3 py-3 text-right tabular-nums">{r.budget == null ? <span className="text-xs text-ink-400">Not set</span> : inr(r.budget)}</td>
                                         <td className="px-3 py-3"><RoundChip status={r.status} /></td>
+                                        <td className="whitespace-nowrap px-3 py-3 text-xs text-ink-500">{r.lastActivity ? new Date(r.lastActivity).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"}</td>
                                         <td className="px-3 py-3 text-right"><Button size="sm" color={r.status === "BUDGET_NEGOTIATION" ? "danger" : forMe(r.status) ? "primary" : "default"} variant={forMe(r.status) ? "solid" : "bordered"} isDisabled={!r.people} onPress={() => nav(`/appraisal/departments/${r.departmentId}/${period}${r.status === "FINALISED" ? "?view=split" : ""}`)}>{r.status === "BUDGET_NEGOTIATION" ? "Respond" : r.status === "READY_FOR_FINANCE" ? "Set budget" : r.status === "FINALISED" ? "View split" : "Open"}</Button></td>
                                     </tr>
                                 ))}
-                                {!shown.length && <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-ink-500">No department matches.</td></tr>}
+                                {!shown.length && <tr><td colSpan={9} className="px-4 py-12 text-center text-sm text-ink-500">No department matches.</td></tr>}
                             </tbody>
                         </table>
                     </div>

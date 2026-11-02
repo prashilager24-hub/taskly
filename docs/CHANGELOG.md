@@ -47,7 +47,7 @@ Summary: the manager's second review. Associates and FLs only see "Your appeal i
 - Appraisal Setup: only HR (HR Operations department / HR roles) edits, downloads the template and bulk uploads. Admins, the Super Administrator and the Finance Head see the same page read only (availability `setup.edit`; `updatePerson` / `bulkUpdatePeople` need `isHrStaff`).
 
 ### Follow-up: Overview shows the most recent first
-- Overview lists departments by their last activity this cycle (appeal, budget step, split, FL proposal, answer), newest first, whatever the status; departments with nothing yet come last. New "Last activity" column. Board rows carry `lastActivity`.
+- Overview lists departments by their last activity this cycle (appeal, budget step, split, FL proposal, answer), newest first, whatever the status; departments with nothing yet come last. New "Last activity" column. Board rows carry `lastActivity`. Department Budgets (Finance Head / Admin) is ordered the same way, with the same column; departments waiting for the Finance Head stay highlighted.
 
 ### Follow-up: split tables show who each person is; FL view without repeats
 - Every split table (EL, Finance / Admin, Overview, FL, the person's own) shows the person's role under the name (EL, FL, Associate, Intern, …) and the status in a new last column. The round now carries `roleName` per person.

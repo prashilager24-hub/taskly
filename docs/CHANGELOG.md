@@ -17,6 +17,21 @@ Summary: one or two lines on what and why.
 
 ---
 
+## 2026-11-03 — Push: modules audit (parts 1–3) into main  (commits: 0c1501f, fa0ad85, 43a969d and the layout fix below)
+
+Summary: the modules-audit branch goes into main: user form and notifications (part 1), user types and user roles (part 2), Department Management (part 3). The details are in the three entries below.
+
+### Frontend
+- Department page: the sub department cards now come first, the people table after them.
+### Backend
+- none beyond parts 1–3
+### Database
+- Migrations 018, 019, 020 and 021 come with this push. After pulling, run `npm run db:migrate` in `nodejs-backend`.
+### Env / config
+- none
+### Notes
+- Appraisal data was reset on my local database only (a backup was taken); nothing in this push touches appraisal data.
+
 ## 2026-11-02 — Modules audit (part 3): Department Management  (branch modules-audit)
 
 Summary: Department Management rebuilt as approved in the blueprint. Departments get IDs TM-D01 … and sub departments TM-SD01 …; departments show as cards or a table; a new department asks whether it has sub departments; a department page shows its people first, then its sub departments; a sub department page shows its leaders and people; tasks, targets and goals are managed inside each sub department, so the Data Management menu is gone. A Hierarchy tab shows departments, sub departments and reporting lines.
@@ -25,7 +40,7 @@ Summary: Department Management rebuilt as approved in the blueprint. Departments
 - `pages/departments.tsx` rewritten: `/departments` (tabs Departments, Hierarchy), `/departments/:id` (a department), `/departments/sub/:subId` (a sub department). New `components/deptmgmt/` (api, parts, forms, ListView, HierarchyView, DepartmentPages).
 - Departments tab: totals, a notice for the 15 older sub departments under no department with a "Place them" panel, search, type and status filters, Cards / Table (table rows open to their sub departments).
 - New department: ID shown, name, type (Business / Support), goal and target criteria, description, "Would you like sub departments?" Yes (first sub departments with EL / FL) or No (one team: people, tasks, targets and goals sit directly in the department).
-- Department page: People (with sub department, user type, reports to, status, Move), sub department cards with an Add card, and Tasks / Targets / Goals tabs that pick a sub department. A one-team department shows its people and data directly.
+- Department page: sub department cards with an Add card at the top, then People (with sub department, user type, reports to, status, Move), and Tasks / Targets / Goals tabs that pick a sub department. A one-team department shows its people and data directly.
 - Sub department page: EL / FL (Choose when not set), people with joining date and appraisal cycle, Add people (each person belongs to one sub department), Move, Edit (name, leaders, description, department, active), Remove. Tasks / Targets / Goals tabs show Task, Target and Goal Management locked to the sub department.
 - Add sub department: ID shown, department fixed, EL / FL, description, people to move in (people of the department suggested), start with the tasks, targets and goals of another sub department.
 - `DepartmentSplit` takes `lockedDepartment`; Task, Target and Goal Management take `departmentId` (no page title, no department list). Their own pages (/tasks, /target, /Goal-management) still work.

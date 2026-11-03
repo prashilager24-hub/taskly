@@ -170,17 +170,7 @@ export function DepartmentPage({ id }: { id: number }) {
                     </div>
                     {tab === "people" ? (
                         <>
-                            <div className="px-5 pt-4"><p className="text-sm font-bold text-ink-900 dark:text-white">People in {d.name} · {people.length}</p></div>
-                            <PeopleTable people={people} subs={subs} showSub onMove={canWrite ? setMoving : undefined}
-                                actions={canWrite && subs.length > 0 && (
-                                    <Dropdown placement="bottom-end">
-                                        <DropdownTrigger><Button size="sm" color="primary" startContent={<UserPlus size={14} />}>Add people</Button></DropdownTrigger>
-                                        <DropdownMenu aria-label="Add people to" onAction={(k) => setAddTo(subs.find((s) => String(s.id) === String(k)) ?? null)}>
-                                            {subs.filter((s) => s.active).map((s) => <DropdownItem key={String(s.id)} description={s.code ?? undefined}>{`Into ${s.name}`}</DropdownItem>)}
-                                        </DropdownMenu>
-                                    </Dropdown>
-                                )} />
-                            <div className="border-t border-ink-200 px-5 py-4 dark:border-white/10">
+                            <div className="border-b border-ink-200 px-5 py-4 dark:border-white/10">
                                 <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
                                     <p className="text-sm font-bold text-ink-900 dark:text-white">Sub departments · {subs.length}</p>
                                     <p className="text-xs text-ink-500">Open one to see its people, tasks, targets and goals.</p>
@@ -206,6 +196,16 @@ export function DepartmentPage({ id }: { id: number }) {
                                     )}
                                 </div>
                             </div>
+                            <div className="px-5 pt-4"><p className="text-sm font-bold text-ink-900 dark:text-white">People in {d.name} · {people.length}</p></div>
+                            <PeopleTable people={people} subs={subs} showSub onMove={canWrite ? setMoving : undefined}
+                                actions={canWrite && subs.length > 0 && (
+                                    <Dropdown placement="bottom-end">
+                                        <DropdownTrigger><Button size="sm" color="primary" startContent={<UserPlus size={14} />}>Add people</Button></DropdownTrigger>
+                                        <DropdownMenu aria-label="Add people to" onAction={(k) => setAddTo(subs.find((s) => String(s.id) === String(k)) ?? null)}>
+                                            {subs.filter((s) => s.active).map((s) => <DropdownItem key={String(s.id)} description={s.code ?? undefined}>{`Into ${s.name}`}</DropdownItem>)}
+                                        </DropdownMenu>
+                                    </Dropdown>
+                                )} />
                         </>
                     ) : (
                         <div>

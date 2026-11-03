@@ -120,20 +120,31 @@ const HR_TEAM_DEFAULTS: Privileges = {
   hr_onb_templates: [...ACTIONS], hr_eng_templates: [...ACTIONS],
 };
 
+// Appraisal duties that come from a department rather than a role; in the role layer too, so a personal removal takes them away.
+// The Finance Head is the EL of Strategic Financial Management; everyone in HR Operations works as HR in the appraisal.
+const FINANCE_HEAD_DEPT = 'Strategic Financial Management';
+const HR_DEPT = 'HR Operations';
+const FINANCE_HEAD_DEFAULTS: Privileges = { appraisal: ['read'], appr_overview: ['read'], appr_departments: [...ACTIONS] };
+const HR_DEPT_DEFAULTS: Privileges = { appraisal: ['read'], appr_hr: [...ACTIONS], appr_setup: ['read', 'update'] };
+
 async function layersOf(userId: number): Promise<Layers> {
   const [[u]] = await pool.execute<Row[]>('SELECT RoleID, SecondaryRoleID, FeedbackResolverTeam FROM Users WHERE UserID = ?', [userId]);
   if (!u) throw AppError.notFound('User not found');
   const roleIds = [u['RoleID'], u['SecondaryRoleID']].filter((x): x is number => !!x);
   const [roles] = await pool.query<Row[]>('SELECT RoleID, RoleName, RolePrivileges FROM AMRole WHERE RoleID IN (?) AND IsRoleArchived = 0 AND RoleStatus = 1', [roleIds.length ? roleIds : [0]]);
   const [depts] = await pool.query<Row[]>(
-    `SELECT DISTINCT d.DepartmentID, d.DepartmentName, a.Privileges FROM Department d
+    `SELECT DISTINCT d.DepartmentID, d.DepartmentName, d.ExecutiveLeaderID, a.Privileges,
+            d.DepartmentID IN (SELECT DepartmentID FROM DepartmentUser WHERE UserID = ?) AS isMember FROM Department d
      LEFT JOIN DepartmentAccess a ON a.DepartmentID = d.DepartmentID
      WHERE d.IsDepartmentArchived = 0 AND d.DepartmentStatus = 1
-       AND (d.DepartmentID IN (SELECT DepartmentID FROM DepartmentUser WHERE UserID = ?) OR d.ExecutiveLeaderID = ? OR d.FunctionalLeaderID = ?)`, [userId, userId, userId]);
+       AND (d.DepartmentID IN (SELECT DepartmentID FROM DepartmentUser WHERE UserID = ?) OR d.ExecutiveLeaderID = ? OR d.FunctionalLeaderID = ?)`, [userId, userId, userId, userId]);
   const [[o]] = await pool.execute<Row[]>('SELECT Grants, Denies FROM UserAccess WHERE UserID = ?', [userId]);
+  const financeHead = depts.some((d) => d['DepartmentName'] === FINANCE_HEAD_DEPT && d['ExecutiveLeaderID'] === userId);
+  const hrTeam = depts.some((d) => d['DepartmentName'] === HR_DEPT && Number(d['isMember']) === 1);
   return {
     roleIds, roleNames: roles.map((r) => r['RoleName']),
-    role: union(...roles.map((r) => parse(r['RolePrivileges'])), ...(['HR', 'L_D'].includes(String(u['FeedbackResolverTeam'] ?? '')) ? [HR_TEAM_DEFAULTS] : [])),
+    role: union(...roles.map((r) => parse(r['RolePrivileges'])), ...(['HR', 'L_D'].includes(String(u['FeedbackResolverTeam'] ?? '')) ? [HR_TEAM_DEFAULTS] : []),
+      ...(financeHead ? [FINANCE_HEAD_DEFAULTS] : []), ...(hrTeam ? [HR_DEPT_DEFAULTS] : [])),
     departments: depts.map((d) => ({ id: d['DepartmentID'], name: d['DepartmentName'] })), department: union(...depts.map((d) => parse(d['Privileges']))),
     grants: parse(o?.['Grants']), denies: parse(o?.['Denies'], false), isSuperAdmin: roleIds.includes(1),
   };
@@ -150,7 +161,7 @@ export async function explainUser(userId: number) {
   const l = await layersOf(userId);
   const effective = l.isSuperAdmin ? FULL_ACCESS : minus(union(l.role, l.department, l.grants), l.denies);
   const modules = MODULE_IDS.map((id) => ({
-    id, role: l.isSuperAdmin ? [...ACTIONS] : (l.role[id] ?? []), department: l.department[id] ?? [], grants: l.grants[id] ?? [], denies: l.denies[id] ?? [], effective: effective[id] ?? [],
+    id, role: l.isSuperAdmin ? (FULL_ACCESS[id] ?? []) : (l.role[id] ?? []), department: l.department[id] ?? [], grants: l.grants[id] ?? [], denies: l.denies[id] ?? [], effective: effective[id] ?? [],
   }));
   return { roleNames: l.roleNames, departments: l.departments, isSuperAdmin: l.isSuperAdmin, grants: l.grants, denies: l.denies, effective, modules };
 }

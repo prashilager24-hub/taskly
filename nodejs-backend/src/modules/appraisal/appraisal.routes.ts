@@ -11,6 +11,8 @@ import * as flow from './appraisal.flow';
 import { periodOf, todayIST } from './appraisal.calc';
 import { pool } from '../../config/db';
 import { AppError } from '../../utils/AppError';
+import { effectivePrivileges } from '../access/access.service';
+import type { Action, Privileges } from '../access/catalog';
 
 const router = Router();
 router.use(authenticate, requireModule('appraisal', 'read'));
@@ -26,6 +28,13 @@ router.use((req, _res, next) => {
     else if (await svc.inHrDepartment(uid)) r.appraisalRole = svc.HR_MEMBER_ROLE;
   })().then(() => next()).catch(next);
 });
+// Each Appraisal page is its own permission in Access Management (appr_my … appr_setup): load what this person holds once per request
+router.use((req, _res, next) => {
+  effectivePrivileges(Number(req.user?.sub)).then((p) => { (req as Request & { appraisalAccess?: Privileges }).appraisalAccess = p; next(); }, next);
+});
+const has = (req: Request, page: string, action: Action = 'read') => !!(req as Request & { appraisalAccess?: Privileges }).appraisalAccess?.[page]?.includes(action);
+const page = (key: string, action: Action = 'read') => (req: Request, _res: Response, next: NextFunction) =>
+  next(has(req, key, action) ? undefined : AppError.forbidden('You do not have access to this appraisal page. Ask an administrator to give it in Access Management.'));
 
 const me = (req: Request) => Number(req.user?.sub);
 const roleOf = (req: Request) => (req as Request & { appraisalRole?: number }).appraisalRole ?? Number(req.user?.role);
@@ -94,56 +103,53 @@ const SYNCED = ['/availability', '/overview', '/departments', '/departments/:dep
 router.all(SYNCED, (req, _res, next) => { svc.syncOpenCycles(req.method !== 'GET').then(() => next(), next); });
 
 router.get('/finance-head', handler(async (_req, res) => { sendSuccess(res, await svc.financeHead()); }));
-router.get('/availability', handler(async (req, res) => { sendSuccess(res, await svc.availability(me(req), roleOf(req))); }));
-router.get('/my', handler(async (req, res) => { sendSuccess(res, await svc.myCycle(me(req), roleOf(req))); }));
-router.get('/hr', handler(async (req, res) => {
-  if (!svc.isHr(roleOf(req))) { res.status(403).json({ success: false, message: 'Insufficient permissions' }); return; }
-  sendSuccess(res, await svc.hrList());
-}));
-router.get('/people', handler(async (req, res) => { sendSuccess(res, await svc.people(roleOf(req))); }));
+router.get('/availability', handler(async (req, res) => { sendSuccess(res, await svc.availability(me(req), roleOf(req), (p, a) => has(req, p, a))); }));
+router.get('/my', page('appr_my'), handler(async (req, res) => { sendSuccess(res, await svc.myCycle(me(req), roleOf(req))); }));
+router.get('/hr', page('appr_hr'), handler(async (_req, res) => { sendSuccess(res, await svc.hrList()); }));
+router.get('/people', page('appr_setup'), handler(async (req, res) => { sendSuccess(res, await svc.people(roleOf(req))); }));
 // HR: saving the details is all it takes; the appraisal starts on its own when the person's April / October cycle is due
-router.post('/people/bulk', validate(People), handler(async (req, res) => { sendSuccess(res, await svc.bulkUpdatePeople(me(req), roleOf(req), req.body.rows)); }));
-router.put('/people/:userId', validate(Person), handler(async (req, res) => { sendSuccess(res, await svc.updatePerson(me(req), roleOf(req), Number(req.params['userId']), req.body)); }));
+router.post('/people/bulk', page('appr_setup', 'update'), validate(People), handler(async (req, res) => { sendSuccess(res, await svc.bulkUpdatePeople(me(req), roleOf(req), req.body.rows)); }));
+router.put('/people/:userId', page('appr_setup', 'update'), validate(Person), handler(async (req, res) => { sendSuccess(res, await svc.updatePerson(me(req), roleOf(req), Number(req.params['userId']), req.body)); }));
 router.get('/cycles/:cycleId', handler(async (req, res) => { sendSuccess(res, await svc.cycleFor(cycleId(req), me(req), roleOf(req))); }));
 
-router.put('/cycles/:cycleId/self-review', validate(SelfReview), handler(async (req, res) => { await svc.saveSelfReview(cycleId(req), me(req), req.body); sendSuccess(res, true); }));
+router.put('/cycles/:cycleId/self-review', page('appr_my'), validate(SelfReview), handler(async (req, res) => { await svc.saveSelfReview(cycleId(req), me(req), req.body); sendSuccess(res, true); }));
 
 // Finance Head: every department of a period, one department's appeals, its budget with a reason
-const fin = (req: Request) => { if (!svc.isFinance(roleOf(req))) throw AppError.forbidden('Only the Finance Head can see this'); };
+const fin = (req: Request) => { if (!has(req, 'appr_departments')) throw AppError.forbidden('Only the Finance Head can see this'); };
 const deptPeriod = (req: Request) => ({ departmentId: Number(req.params['departmentId']), period: String(req.params['period']) });
 router.get('/periods', handler(async (_req, res) => { sendSuccess(res, await flow.periods()); }));
 router.get('/departments', validate(Period, 'query'), handler(async (req, res) => { fin(req); sendSuccess(res, await flow.board((req.query as { period?: string }).period ?? periodOf(todayIST()))); }));
 router.get('/departments/:departmentId/:period', handler(async (req, res) => {
   const { departmentId, period } = deptPeriod(req);
-  if (!svc.isOverview(roleOf(req)) && !(await flow.isElOf(me(req), departmentId))) throw AppError.forbidden('Only the Finance Head or this department\'s EL can see this');
+  if (!has(req, 'appr_departments') && !has(req, 'appr_overview') && !(has(req, 'appr_split') && await flow.isElOf(me(req), departmentId))) throw AppError.forbidden('Only the Finance Head or this department\'s EL can see this');
   sendSuccess(res, await flow.loadRound(pool, departmentId, period));
 }));
-router.put('/departments/:departmentId/:period/budget', validate(BudgetBody), handler(async (req, res) => { fin(req); const { departmentId, period } = deptPeriod(req); await flow.setBudget(me(req), departmentId, period, req.body.amount, req.body.comment); sendSuccess(res, true); }));
+router.put('/departments/:departmentId/:period/budget', validate(BudgetBody), handler(async (req, res) => { if (!has(req, 'appr_departments', 'update')) throw AppError.forbidden('Only the Finance Head can give a budget'); const { departmentId, period } = deptPeriod(req); await flow.setBudget(me(req), departmentId, period, req.body.amount, req.body.comment); sendSuccess(res, true); }));
 
 // Admins, the Super Administrator and the Finance Head: how the appraisal is going in every department
 router.get('/overview', validate(Period, 'query'), handler(async (req, res) => {
-  if (!svc.isOverview(roleOf(req))) throw AppError.forbidden('Only an administrator or the Finance Head can see this');
+  if (!has(req, 'appr_overview')) throw AppError.forbidden('Only an administrator or the Finance Head can see this');
   sendSuccess(res, await flow.overview((req.query as { period?: string }).period ?? periodOf(todayIST())));
 }));
 
 // EL: the budget from the Finance Head, the split, the FL proposals to approve
-router.get('/split', handler(async (req, res) => { sendSuccess(res, await flow.elRounds(me(req))); }));
-router.put('/split/:departmentId/:period', validate(SplitBody), handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.saveSplit(me(req), roleOf(req), departmentId, period, req.body); sendSuccess(res, true); }));
-router.put('/split/:departmentId/:period/budget-response', validate(BudgetResponse), handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.respondBudget(me(req), roleOf(req), departmentId, period, req.body); sendSuccess(res, true); }));
-router.put('/split/:departmentId/:period/shares/:flUserId/approve', handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.approveShare(me(req), roleOf(req), departmentId, period, Number(req.params['flUserId'])); sendSuccess(res, true); }));
-router.put('/split/:departmentId/:period/shares/:flUserId/revise', validate(Revise), handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.reviseShare(me(req), roleOf(req), departmentId, period, Number(req.params['flUserId']), req.body.comment ?? ''); sendSuccess(res, true); }));
-router.put('/split/:departmentId/:period/reset', validate(Reset), handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.resetSplit(me(req), roleOf(req), departmentId, period, req.body.comment); sendSuccess(res, true); }));
-router.put('/split/:departmentId/:period/direct/:cycleId', validate(DirectBody), handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.offerDirect(me(req), roleOf(req), departmentId, period, Number(req.params['cycleId']), req.body.amount, req.body.reason ?? '', req.body.variable); sendSuccess(res, true); }));
+router.get('/split', page('appr_split'), handler(async (req, res) => { sendSuccess(res, await flow.elRounds(me(req))); }));
+router.put('/split/:departmentId/:period', page('appr_split', 'update'), validate(SplitBody), handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.saveSplit(me(req), roleOf(req), departmentId, period, req.body); sendSuccess(res, true); }));
+router.put('/split/:departmentId/:period/budget-response', page('appr_split', 'update'), validate(BudgetResponse), handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.respondBudget(me(req), roleOf(req), departmentId, period, req.body); sendSuccess(res, true); }));
+router.put('/split/:departmentId/:period/shares/:flUserId/approve', page('appr_split', 'update'), handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.approveShare(me(req), roleOf(req), departmentId, period, Number(req.params['flUserId'])); sendSuccess(res, true); }));
+router.put('/split/:departmentId/:period/shares/:flUserId/revise', page('appr_split', 'update'), validate(Revise), handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.reviseShare(me(req), roleOf(req), departmentId, period, Number(req.params['flUserId']), req.body.comment ?? ''); sendSuccess(res, true); }));
+router.put('/split/:departmentId/:period/reset', page('appr_split', 'update'), validate(Reset), handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.resetSplit(me(req), roleOf(req), departmentId, period, req.body.comment); sendSuccess(res, true); }));
+router.put('/split/:departmentId/:period/direct/:cycleId', page('appr_split', 'update'), validate(DirectBody), handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.offerDirect(me(req), roleOf(req), departmentId, period, Number(req.params['cycleId']), req.body.amount, req.body.reason ?? '', req.body.variable); sendSuccess(res, true); }));
 
 // FL: the share from the EL, turned into hikes for the team and their own
-router.get('/allocation', handler(async (req, res) => { sendSuccess(res, { shares: await flow.flShares(me(req)), waiting: await flow.flWaiting(me(req)) }); }));
-router.put('/allocation/:departmentId/:period', validate(AllocationBody), handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.saveAllocation(me(req), departmentId, period, req.body); sendSuccess(res, true); }));
+router.get('/allocation', page('appr_allocation'), handler(async (req, res) => { sendSuccess(res, { shares: await flow.flShares(me(req)), waiting: await flow.flWaiting(me(req)) }); }));
+router.put('/allocation/:departmentId/:period', page('appr_allocation', 'update'), validate(AllocationBody), handler(async (req, res) => { const { departmentId, period } = deptPeriod(req); await flow.saveAllocation(me(req), departmentId, period, req.body); sendSuccess(res, true); }));
 
 // Designation / team requests: the FL forwards an Associate's / Intern's, the EL decides
-router.get('/requests', handler(async (req, res) => { sendSuccess(res, await svc.requestsInbox(me(req), roleOf(req))); }));
-router.put('/cycles/:cycleId/request-forward', validate(Forward), handler(async (req, res) => { await svc.forwardRequests(cycleId(req), me(req), roleOf(req), req.body); sendSuccess(res, true); }));
-router.post('/cycles/:cycleId/respond', validate(Respond), handler(async (req, res) => { sendSuccess(res, await svc.respond(cycleId(req), me(req), req.body)); }));
-router.put('/cycles/:cycleId/request-decision', validate(RequestDecision), handler(async (req, res) => { await svc.decideRequests(cycleId(req), me(req), roleOf(req), req.body); sendSuccess(res, true); }));
-router.put('/cycles/:cycleId/hr-decision', validate(HrDecision), handler(async (req, res) => { await svc.hrDecision(cycleId(req), me(req), roleOf(req), req.body); sendSuccess(res, true); }));
+router.get('/requests', page('appr_requests'), handler(async (req, res) => { sendSuccess(res, await svc.requestsInbox(me(req), roleOf(req))); }));
+router.put('/cycles/:cycleId/request-forward', page('appr_requests', 'update'), validate(Forward), handler(async (req, res) => { await svc.forwardRequests(cycleId(req), me(req), roleOf(req), req.body); sendSuccess(res, true); }));
+router.post('/cycles/:cycleId/respond', page('appr_my'), validate(Respond), handler(async (req, res) => { sendSuccess(res, await svc.respond(cycleId(req), me(req), req.body)); }));
+router.put('/cycles/:cycleId/request-decision', page('appr_requests', 'update'), validate(RequestDecision), handler(async (req, res) => { await svc.decideRequests(cycleId(req), me(req), roleOf(req), req.body); sendSuccess(res, true); }));
+router.put('/cycles/:cycleId/hr-decision', page('appr_hr', 'update'), validate(HrDecision), handler(async (req, res) => { await svc.hrDecision(cycleId(req), me(req), roleOf(req), req.body); sendSuccess(res, true); }));
 
 export default router;

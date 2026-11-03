@@ -558,8 +558,8 @@ export async function decideRequests(cycleId: number, userId: number, appRole: n
   if (q[0]) await flow.notify([q[0]['UserID'] as number], won.length ? `Congratulations, ${won.join(' and ')}!` : 'Your request has been decided', won.length ? 'Open My Appraisal to see it.' : 'Open My Appraisal to see the decision.', '/appraisal', userId, won.length ? 'success' : 'info');
 }
 
-export async function hrDecision(cycleId: number, userId: number, appRole: number, input: { status: 'APPROVED' | 'RETURNED'; comment?: string }) {
-  if (!isHr(appRole)) throw AppError.forbidden('Only HR decides on a postponement');
+export async function hrDecision(cycleId: number, userId: number, _appRole: number, input: { status: 'APPROVED' | 'RETURNED'; comment?: string }) {
+  // who may decide is checked by the route (Access Management: HR Postponements)
   await tx(async (c) => {
     const cy = await lock(c, cycleId);
     if (cy.userId === userId) throw AppError.forbidden('You cannot decide on your own appraisal');
@@ -670,8 +670,8 @@ export async function ensureCycle(userId: number, actor: number | null, today: s
 
 // ── People setup (HR: joining date, level, CTC; the cycle follows from the joining date) ──────────
 
-export async function people(appRole: number) {
-  if (!isHr(appRole) && !isOverview(appRole)) throw AppError.forbidden('Only HR, Admins and Finance can see this');
+/** Who may read or change it is checked by the route (Access Management: Appraisal Setup) */
+export async function people(_appRole: number) {
   const [rows] = await pool.execute<Row[]>(
     `SELECT u.UserID, u.UserName, u.UserEmail, u.EmployeeID, r.RoleName, ${D('u.DateOfJoining', 'Joined')}, u.EmployeeLevel, u.CurrentAnnualCtc,
             (SELECT COUNT(*) FROM AppraisalCycle c WHERE c.UserID = u.UserID) AS Cycles,
@@ -707,14 +707,12 @@ async function savePerson(userId: number, input: PersonInput, actor: number) {
   return { cycleStarted: await ensureCycle(userId, actor) };
 }
 
-export async function updatePerson(actor: number, appRole: number, userId: number, input: PersonInput) {
-  if (!isHrStaff(appRole)) throw AppError.forbidden('Only HR can change this');
+export async function updatePerson(actor: number, _appRole: number, userId: number, input: PersonInput) {
   return savePerson(userId, input, actor);
 }
 
 /** Bulk upload from the template: each row is saved on its own, so one bad row does not stop the others */
-export async function bulkUpdatePeople(actor: number, appRole: number, rows: ({ userId: number } & PersonInput)[]) {
-  if (!isHrStaff(appRole)) throw AppError.forbidden('Only HR can change this');
+export async function bulkUpdatePeople(actor: number, _appRole: number, rows: ({ userId: number } & PersonInput)[]) {
   let saved = 0, started = 0;
   const failed: { userId: number; message: string }[] = [];
   for (const r of rows) {
@@ -728,12 +726,11 @@ export async function bulkUpdatePeople(actor: number, appRole: number, rows: ({ 
 
 const ACTIVE = "(c.Status <> 'ACCEPTED' OR c.UpdatedAt >= DATE_SUB(NOW(), INTERVAL 30 DAY))";
 
-/** The Appraisal menu appears only while there is something for this person in a cycle that is running (or just finished) */
-export async function availability(userId: number, appRole: number) {
+/** The Appraisal menu: each page needs its permission in Access Management, and appears only while there is something for this person in it */
+export async function availability(userId: number, appRole: number, can: (page: string, action?: 'read' | 'update') => boolean = () => true) {
   const [mine] = await pool.execute<Row[]>(`SELECT c.CycleID, c.Status FROM AppraisalCycle c WHERE c.UserID = ? AND ${ACTIVE} ORDER BY c.CycleStartDate DESC LIMIT 1`, [userId]);
-  const fin = isFinance(appRole);
-  const hr = isHr(appRole);
-  const over = isOverview(appRole);
+  const fin = can('appr_departments');
+  const hr = can('appr_hr');
   const num = (r: Row | undefined, k: string) => Number(r?.[k] ?? 0);
   const [ready] = fin ? await pool.execute<Row[]>("SELECT COUNT(*) AS n FROM AppraisalRound WHERE Status IN ('READY_FOR_FINANCE', 'BUDGET_NEGOTIATION')") : [[]];
   const [leads] = await pool.execute<Row[]>('SELECT DepartmentID FROM Department WHERE ExecutiveLeaderID = ? AND IsDepartmentArchived = 0', [userId]);
@@ -748,15 +745,15 @@ export async function availability(userId: number, appRole: number) {
     !TIMED ? [userId, userId, userId, userId] : [userId, userId]);
   const [hrr] = hr ? await pool.execute<Row[]>("SELECT COUNT(*) AS n, SUM(r.HrStatus = 'PENDING') AS pending FROM AppraisalCycle c JOIN AppraisalResponse r ON r.CycleID = c.CycleID WHERE c.Status = 'POSTPONED' AND r.Decision = 'REJECT' AND c.UserID <> ?", [userId]) : [[]];
   // While testing (no date windows) everyone sees My Appraisal; with windows on, it follows each person's cycle
-  const my = { show: appRole !== OVERVIEW_ROLE && (mine.length > 0 || (!TIMED && appRole !== 1)), status: (mine[0]?.['Status'] as Status | undefined) ?? null, cycleId: (mine[0]?.['CycleID'] as number | undefined) ?? null };
+  const my = { show: can('appr_my') && appRole !== OVERVIEW_ROLE && (mine.length > 0 || (!TIMED && appRole !== 1)), status: (mine[0]?.['Status'] as Status | undefined) ?? null, cycleId: (mine[0]?.['CycleID'] as number | undefined) ?? null };
   const departments = { show: fin, pending: num(ready[0], 'n') };
-  const split = { show: leads.length > 0, pending: num(elTodo[0], 'n') };
+  const split = { show: can('appr_split') && leads.length > 0, pending: num(elTodo[0], 'n') };
   // an EL gets no team budget (they split the department's), so Team Allocation is not theirs unless they were given a share
-  const allocation = { show: num(shares[0], 'n') > 0 || (lead.length > 0 && !leads.length), pending: num(shares[0], 'todo') };
-  const requests = { show: split.show || allocation.show };
+  const allocation = { show: can('appr_allocation') && (num(shares[0], 'n') > 0 || (lead.length > 0 && !leads.length)), pending: num(shares[0], 'todo') };
+  const requests = { show: can('appr_requests') && (split.show || allocation.show) };
   const hrN = { show: hr && num(hrr[0], 'n') > 0, pending: num(hrr[0], 'pending') };
   // HR keeps each person's joining date, level and CTC, before any cycle exists; Admins, the Super Administrator and Finance read it
-  const setup = { show: hr || over, edit: isHrStaff(appRole) };
-  const overview = { show: over };
+  const setup = { show: can('appr_setup'), edit: can('appr_setup', 'update') };
+  const overview = { show: can('appr_overview') };
   return { my, departments, overview, split, allocation, requests, hr: hrN, setup, any: my.show || departments.show || overview.show || split.show || allocation.show || hrN.show || setup.show };
 }

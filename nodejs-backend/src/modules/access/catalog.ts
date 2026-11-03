@@ -42,7 +42,18 @@ export const CATALOG: ModuleDef[] = [
       { id: 'pms_my_quarter', label: 'Quarter Highlights', description: 'Write your own biggest achievement and biggest failure for each quarter; the quarterly review needs them' },
     ],
   },
-  { id: 'appraisal', label: 'Appraisal', description: 'Yearly appraisal; opens in each person\'s cycle window' },
+  {
+    id: 'appraisal', label: 'Appraisal', description: 'Yearly appraisal; each page below is its own permission and still shows only when there is something for the person to do', children: [
+      { id: 'appr_my', label: 'My Appraisal', description: 'Their own appraisal, while their cycle is open' },
+      { id: 'appr_overview', label: 'Appraisal Overview', description: 'How the appraisal is going in every department' },
+      { id: 'appr_departments', label: 'Department Budgets', description: 'Give each department its budget (Finance)' },
+      { id: 'appr_split', label: 'Budget Split', description: 'Split a department budget between FLs (when they are EL of a sub department)' },
+      { id: 'appr_allocation', label: 'Team Allocation', description: 'Give hikes to their own people (when someone reports to them or they got a share)' },
+      { id: 'appr_requests', label: 'Change Requests', description: 'Ask for or decide changes to a hike' },
+      { id: 'appr_hr', label: 'HR Postponements', description: 'Follow up postponed appraisals (HR)' },
+      { id: 'appr_setup', label: 'Appraisal Setup', description: 'Joining date, level and CTC; read to view, update to change' },
+    ],
+  },
   { id: 'pms_feedback', label: 'Manager Feedback Form', description: 'Write monthly feedback for a team member (its own menu item)' },
   {
     id: 'hrfeedback', label: 'HR Experience & Support', description: 'The HR Experience (onboarding, engagement) and Support (queries) menus; each page below is its own permission', children: [
@@ -71,4 +82,7 @@ export function normalize(input: unknown, implyRead = true): Privileges {
   return out;
 }
 
-export const FULL_ACCESS: Privileges = Object.fromEntries(MODULE_IDS.map((m) => [m, [...ACTIONS]])) as Privileges;
+/** Appraisal pages the Admin does not get: Admin has no appraisal of their own and does not split or allocate budgets */
+const NOT_FOR_ADMIN = new Set(['appr_my', 'appr_split', 'appr_allocation', 'appr_requests']);
+/** Admin: every module; in the appraisal only Overview, Department Budgets, HR Postponements and Appraisal Setup (view only) */
+export const FULL_ACCESS: Privileges = Object.fromEntries(MODULE_IDS.filter((m) => !NOT_FOR_ADMIN.has(m)).map((m) => [m, m === 'appr_setup' ? ['read'] : [...ACTIONS]])) as Privileges;

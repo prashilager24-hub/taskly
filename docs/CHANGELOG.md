@@ -17,6 +17,21 @@ Summary: one or two lines on what and why.
 
 ---
 
+## 2026-11-03 — Fix: Access Management role drawer cut off the View / Create / Edit / Delete boxes
+Summary: since the appraisal pages were added, their longer descriptions stayed on one line (the global "table cells do not wrap" rule), so the Module column filled the drawer and pushed the tick boxes off to the right behind a sideways scroll.
+
+### Frontend
+- `components/access/PermissionMatrix.tsx`: module names and descriptions wrap; the four action columns have a fixed width; the header row (Module, View, Create, Edit, Delete) stays at the top while scrolling. Same for a person's access panel.
+- `components/access/RolesTab.tsx`: "Role name" and "User type" labels sit on the same line.
+### Backend
+- none
+### Database
+- none
+### Env / config
+- none
+### Notes
+- "Full access", "View only" and "Clear" only change the ticks in the drawer; nothing is saved until Save role.
+
 ## 2026-11-03 — Appraisal: each page is its own permission in Access Management  (commit: 5f857e7)
 Summary: the Appraisal menu now follows one fixed list per user type, and nobody gets an appraisal page beyond it unless it is given in Access Management. The eight pages (My Appraisal, Overview, Department Budgets, Budget Split, Team Allocation, Change Requests, HR Postponements, Appraisal Setup) are separate permissions under Appraisal. A page still shows only when there is something in it for the person (an open cycle, a sub department they lead, someone reporting to them, a postponed case).
 

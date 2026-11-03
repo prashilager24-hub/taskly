@@ -70,11 +70,15 @@ export function RolesTab({ catalog, roles, onChanged }: { catalog: ModuleDef[]; 
                     <DrawerHeader className="flex flex-col gap-1"><span className="eyebrow">Roles</span><span>{edit.role ? (edit.role.system ? edit.role.roleName : `Edit ${edit.role.roleName}`) : "New role"}</span></DrawerHeader>
                     <DrawerBody className="gap-5">
                         {edit.role?.system && <p className="border border-ink-200 bg-ink-50 p-3 text-sm text-ink-600 dark:border-white/10 dark:bg-white/5 dark:text-ink-300">This role always has full access and cannot be changed.</p>}
-                        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                            <Input label="Role name" labelPlacement="outside" placeholder="e.g. Team Lead" value={name} onValueChange={setName} isDisabled={edit.role?.system} isRequired />
-                            <Select label="User type" labelPlacement="outside" placeholder="Choose the user type" selectedKeys={userType ? new Set([userType]) : new Set()} onSelectionChange={(k) => setUserType((Array.from(k)[0] as UserType | undefined) ?? "")} isDisabled={edit.role?.system} description="People with this role are shown as this type.">
+                        <div className="grid grid-cols-1 items-start gap-5 sm:grid-cols-2">
+                            <div className="flex flex-col gap-2"><span className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-ink-700 dark:text-ink-300">Role name <span className="text-brand-600">*</span></span>
+                                <Input aria-label="Role name" placeholder="e.g. Team Lead" value={name} onValueChange={setName} isDisabled={edit.role?.system} isRequired />
+                            </div>
+                            <div className="flex flex-col gap-2"><span className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-ink-700 dark:text-ink-300">User type</span>
+                            <Select aria-label="User type" placeholder="Choose the user type" selectedKeys={userType ? new Set([userType]) : new Set()} onSelectionChange={(k) => setUserType((Array.from(k)[0] as UserType | undefined) ?? "")} isDisabled={edit.role?.system} description="People with this role are shown as this type.">
                                 {USER_TYPES.map((t) => <SelectItem key={t.key}>{t.label}</SelectItem>)}
                             </Select>
+                            </div>
                             <div className="flex items-end pb-1"><Switch isSelected={active} onValueChange={setActive} isDisabled={edit.role?.system}>Active</Switch></div>
                             <Textarea label="Description" labelPlacement="outside" placeholder="Who is this role for?" value={description} onValueChange={setDescription} isDisabled={edit.role?.system} className="sm:col-span-2" minRows={2} />
                         </div>

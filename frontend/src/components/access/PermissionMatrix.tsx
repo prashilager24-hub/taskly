@@ -59,11 +59,11 @@ export default function PermissionMatrix({ catalog, value, onChange, readOnly }:
                     </div>
                 )}
             </div>
-            <table className="w-full text-sm">
+            <table className="w-full table-fixed text-sm">
                 <thead>
                     <tr className="border-b border-ink-200 dark:border-white/10">
-                        <th className="px-3 py-2 text-left">Module</th>
-                        {ACTIONS.map((a) => <th key={a} className="w-16 px-1 py-2 text-center">{LABEL[a]}</th>)}
+                        <th className="sticky top-0 z-10 bg-white px-3 py-2 text-left dark:bg-ink-900">Module</th>
+                        {ACTIONS.map((a) => <th key={a} className="sticky top-0 z-10 w-[68px] bg-white px-1 py-2 text-center dark:bg-ink-900">{LABEL[a]}</th>)}
                     </tr>
                 </thead>
                 <tbody>
@@ -71,7 +71,7 @@ export default function PermissionMatrix({ catalog, value, onChange, readOnly }:
                         const acts = value[mod.id] ?? [];
                         return (
                             <tr key={mod.id} className="border-b border-ink-100 last:border-0 dark:border-white/5">
-                                <td className={cn("px-3 py-2", child && "pl-8")}>
+                                <td className={cn("whitespace-normal px-3 py-2", child && "pl-8")}>
                                     <p className={cn("font-medium text-ink-900 dark:text-white", !child && "font-semibold")}>{mod.label}</p>
                                     <p className="text-xs text-ink-500 dark:text-ink-400">{mod.description}</p>
                                 </td>
@@ -142,17 +142,17 @@ export function UserAccessMatrix({ catalog, explain, grants, denies, onChange }:
                 <span className="flex items-center gap-1.5"><span className={cn("flex h-4 w-4 items-center justify-center border text-[10px] font-bold", style.granted)}>+</span> Added for this person</span>
                 <span className="flex items-center gap-1.5"><span className={cn("flex h-4 w-4 items-center justify-center border text-[10px] font-bold", style.denied)}>−</span> Taken away</span>
             </div>
-            <table className="w-full text-sm">
+            <table className="w-full table-fixed text-sm">
                 <thead>
                     <tr className="border-b border-ink-200 dark:border-white/10">
-                        <th className="px-3 py-2 text-left">Module</th>
-                        {ACTIONS.map((a) => <th key={a} className="w-16 px-1 py-2 text-center">{LABEL[a]}</th>)}
+                        <th className="sticky top-0 z-10 bg-white px-3 py-2 text-left dark:bg-ink-900">Module</th>
+                        {ACTIONS.map((a) => <th key={a} className="sticky top-0 z-10 w-[68px] bg-white px-1 py-2 text-center dark:bg-ink-900">{LABEL[a]}</th>)}
                     </tr>
                 </thead>
                 <tbody>
                     {rows(catalog).map(({ mod, child }) => (
                         <tr key={mod.id} className="border-b border-ink-100 last:border-0 dark:border-white/5">
-                            <td className={cn("px-3 py-2 font-medium text-ink-900 dark:text-white", child ? "pl-8" : "font-semibold")}>{mod.label}</td>
+                            <td className={cn("whitespace-normal px-3 py-2 font-medium text-ink-900 dark:text-white", child ? "pl-8" : "font-semibold")}>{mod.label}</td>
                             {ACTIONS.map((a) => {
                                 const s = stateOf(mod.id, a);
                                 return (

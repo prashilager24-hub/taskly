@@ -17,7 +17,7 @@ Summary: one or two lines on what and why.
 
 ---
 
-## 2026-11-03 — Query & HR: L&D queue fix and "Receives queries for" in Access Management  (commit: pending)
+## 2026-11-03 — Query & HR: L&D queue fix and "Receives queries for" in Access Management  (commit: 6dad4fe)
 Summary: an L&D person now sees the L&D queue (it always loaded the HR one), and Access Management can set who receives HR and L&D queries.
 ### Frontend
 - `HR - Modules Taskly/.../TasklyHRModules.jsx`: a resolver loads the queue of their own team (HR or L&D) instead of always HR. `lib/api.js`: the team is URL-encoded (`L&D` used to reach the server as `L` and was rejected).
@@ -31,7 +31,7 @@ Summary: an L&D person now sees the L&D queue (it always loaded the HR one), and
 ### Notes
 - The person has to sign in again to see the change; the team is read at sign-in.
 
-## 2026-11-03 — Dashboard user summary matches Java (leave days, departments first)  (commit: pending)
+## 2026-11-03 — Dashboard user summary matches Java (leave days, departments first)  (commit: 6dad4fe)
 Summary: the person's own dashboard (`/DashBoardAll` with a user) now averages like Java: full-day leave days are dropped, each department the person worked in is summarised on its own, then the departments are averaged. Before, every daily row was averaged together, leave days included.
 ### Frontend
 - none
@@ -50,7 +50,7 @@ Summary: the person's own dashboard (`/DashBoardAll` with a user) now averages l
 ### Performance Insights target (same entry)
 - `/efficiency-report` (`pages/efficiency.tsx`) now sends `targetByDepartment: true`; `list-efficiency-summary` then sets that person's summary Avg Target % the dashboard's way (each department on its own, then averaged, from the dashboard's day rows). Every other caller of the API is unchanged. Only the summary figure moves; the table rows, utilization, hours and goal stay as they were.
 
-## 2026-11-03 — Utilization and efficiency calculation in one place  (commit: pending)
+## 2026-11-03 — Utilization and efficiency calculation in one place  (commit: 6dad4fe)
 Summary: every utilization % and every efficiency level now comes from `calculateUtilization` and `calculateEfficiency` in `calculations/calculationLogic.ts`, next to the goal and target logic. No change in results.
 ### Frontend
 - none
@@ -66,7 +66,7 @@ Summary: every utilization % and every efficiency level now comes from `calculat
 - Checked against production with the same requests: 136 user and 100 department cases identical; the remaining differences are the known ones (production fails on very large ranges, Java's order of same-date rows, Java returns 500 for week/month grouping).
 - The `AVG(e.UtilizationPercent)` averages and the `CASE ... 'High' / 'At Par'` level rules written in SQL in `reports/reports.service.ts` still run in the database.
 
-## 2026-11-03 — Quarter notes: employee's biggest achievement and failure  (commit: pending)
+## 2026-11-03 — Quarter notes: employee's biggest achievement and failure  (commit: 6dad4fe)
 Summary: each employee writes their own biggest achievement and biggest failure per quarter (Quarter Highlights). The manager's PMS Quarterly Review cannot be submitted until both are in, and Appraisal reads them instead of guessing from feedback categories.
 ### Frontend
 - New page `/pms/my-quarter` ("Quarter Highlights", PMS menu): `components/QuarterNotes.tsx`, route in `App.tsx`, `PmsMyQuarterPage` in `pages/pmsPages.tsx`, sidebar item. One text box each per quarter, 1000 characters, only the signed-in person writes them; future quarters are closed and a quarter locks once its review is submitted.

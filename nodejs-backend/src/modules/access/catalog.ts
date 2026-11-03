@@ -39,6 +39,7 @@ export const CATALOG: ModuleDef[] = [
       { id: 'pms_dash_feedback', label: 'Manager Feedback Dashboard', description: 'The manager feedback view of the PMS dashboard' },
       { id: 'pms_quarterly', label: 'Quarterly Review Form', description: 'Write and read quarterly reviews' },
       { id: 'pms_report', label: 'PMS Report', description: 'The review report tab' },
+      { id: 'pms_my_quarter', label: 'Quarter Highlights', description: 'Write your own biggest achievement and biggest failure for each quarter; the quarterly review needs them' },
     ],
   },
   { id: 'appraisal', label: 'Appraisal', description: 'Yearly appraisal; opens in each person\'s cycle window' },

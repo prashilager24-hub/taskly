@@ -19,7 +19,7 @@
  */
 import type mysql from 'mysql2/promise';
 import { pool } from '../../config/db';
-import { EFFECTIVE_GOAL, calculateGoal, calculateTarget, loadGoalContexts, EMPTY_USER_GOAL_CONTEXT } from '../calculations/calculationLogic';
+import { EFFECTIVE_GOAL, calculateGoal, calculateTarget, calculateEfficiency, calculateUtilization, loadGoalContexts, EMPTY_USER_GOAL_CONTEXT } from '../calculations/calculationLogic';
 
 export { EFFECTIVE_GOAL };
 
@@ -34,21 +34,6 @@ export interface RollupFilter {
 
 export const num = (v: unknown) => (v == null || v === '' ? 0 : Number(v));
 export const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
-
-export function levelScore(level: unknown): number {
-  switch (String(level ?? '').trim().toLowerCase()) {
-    case 'high': return 3;
-    case 'at par': return 2;
-    case 'low': return 1;
-    default: return 0;
-  }
-}
-
-export function scoreToLevel(score: number): string {
-  if (score >= 2.5) return 'High';
-  if (score >= 1.5) return 'At Par';
-  return 'Low';
-}
 
 /** Mean of every item; a missing value counts as 0 (Java calculateAverageFromUsers / Departments) */
 function meanAll(items: Record<string, unknown>[], key: string): number {
@@ -111,20 +96,19 @@ export async function computeRollup(filter: RollupFilter, typeCond: (col: string
     if (!rows.length) {
       return { AvgTargetPercent: 0, AvgUtilizationPercent: 0, AvgAllocatedHrs: 0, AvgTotalWork: 0, EfficiencyLevel: 'Low' };
     }
-    let util = 0, allocated = 0, work = 0, score = 0;
+    let allocated = 0, work = 0, score = 0;
     for (const r of rows) {
-      util += num(r['UtilizationPercent']);
       allocated += num(r['AllocatedTimeHrs']);
       work += num(r['TotalTimeOfWork']);
-      score += levelScore(r['EfficiencyLevel']);
+      score += calculateEfficiency({ kind: 'levelScore', level: r['EfficiencyLevel'] });
     }
     const n = rows.length;
     return {
       AvgTargetPercent: calculateTarget({ kind: 'dayAverage', rows: rows.map((r) => ({ TargetAchievedPercent: r['TargetAchievedPercent'], DepartmentID: deptId })) }),
-      AvgUtilizationPercent: round2(util / n),
+      AvgUtilizationPercent: calculateUtilization({ kind: 'average', values: rows.map((r) => r['UtilizationPercent']) }),
       AvgAllocatedHrs: round2(allocated / n),
       AvgTotalWork: round2(work / n),
-      EfficiencyLevel: scoreToLevel(score / n),
+      EfficiencyLevel: calculateEfficiency({ kind: 'scoreLevel', score: score / n }),
     };
   }
 
@@ -154,15 +138,15 @@ export async function computeRollup(filter: RollupFilter, typeCond: (col: string
           DepartmentID: deptId,
           DepartmentName: deptById.get(deptId)?.['DepartmentName'] as string,
           AvgTargetPercent: calculateTarget({ kind: 'groupAverage', values: users.map((u) => u.AvgTargetPercent) }),
-          AvgUtilizationPercent: meanAll(users, 'AvgUtilizationPercent'),
+          AvgUtilizationPercent: calculateUtilization({ kind: 'average', values: users.map((u) => u['AvgUtilizationPercent']) }),
           AvgAllocatedHrs: meanAll(users, 'AvgAllocatedHrs'),
           AvgTotalWork: meanAll(users, 'AvgTotalWork'),
           AvgGoalEfficiency: meanAll(users, 'AvgGoalEfficiency'),
-          EfficiencyLevel: scoreToLevel(users.length ? users.reduce((n, u) => n + levelScore(u.EfficiencyLevel), 0) / users.length : 0),
+          EfficiencyLevel: calculateEfficiency({ kind: 'scoreLevel', score: users.length ? users.reduce((n, u) => n + calculateEfficiency({ kind: 'levelScore', level: u.EfficiencyLevel }), 0) / users.length : 0 }),
           users,
         };
         userCount += users.length;
-        score += levelScore(dept.EfficiencyLevel);
+        score += calculateEfficiency({ kind: 'levelScore', level: dept.EfficiencyLevel });
         return dept;
       });
 
@@ -170,11 +154,11 @@ export async function computeRollup(filter: RollupFilter, typeCond: (col: string
         id: leaderId,
         name: userById.get(leaderId)?.['UserName'] as string,
         AvgTargetPercent: userCount ? calculateTarget({ kind: 'groupAverage', values: departments.map((i) => i['AvgTargetPercent']) }) : 0,
-        AvgUtilizationPercent: userCount ? meanAll(departments, 'AvgUtilizationPercent') : 0,
+        AvgUtilizationPercent: userCount ? calculateUtilization({ kind: 'average', values: departments.map((d) => d['AvgUtilizationPercent']) }) : 0,
         AvgAllocatedHrs: userCount ? meanAll(departments, 'AvgAllocatedHrs') : 0,
         AvgTotalWork: userCount ? meanAll(departments, 'AvgTotalWork') : 0,
         AvgGoalEfficiency: meanAll(departments, 'AvgGoalEfficiency'),
-        EfficiencyLevel: scoreToLevel(departments.length ? score / departments.length : 0),
+        EfficiencyLevel: calculateEfficiency({ kind: 'scoreLevel', score: departments.length ? score / departments.length : 0 }),
         departments,
       };
     });
@@ -185,16 +169,16 @@ export async function computeRollup(filter: RollupFilter, typeCond: (col: string
 
   // Company level comes from the flat day rows (leave days excluded), like Java
   const flat = effRows.filter((r) => !isFullDay(leave.get(`${r['UserID']}|${r['WorkDate']}`)));
-  const flatScore = flat.length ? flat.reduce((n, r) => n + levelScore(r['EfficiencyLevel']), 0) / flat.length : 0;
+  const flatScore = flat.length ? flat.reduce((n, r) => n + calculateEfficiency({ kind: 'levelScore', level: r['EfficiencyLevel'] }), 0) / flat.length : 0;
 
   return {
     goalOf: userGoal,
     usersInDept,
     company: {
-      EfficiencyLevel: scoreToLevel(flatScore),
+      EfficiencyLevel: calculateEfficiency({ kind: 'scoreLevel', score: flatScore }),
       AvgGoalEfficiency: meanPresent(els, 'AvgGoalEfficiency'),
       AvgTargetPercent: calculateTarget({ kind: 'groupAverage', values: els.map((i) => i['AvgTargetPercent']) }),
-      AvgUtilizationPercent: meanPresent(els, 'AvgUtilizationPercent'),
+      AvgUtilizationPercent: calculateUtilization({ kind: 'average', values: els.map((e) => e['AvgUtilizationPercent']), skipMissing: true }),
       AvgAllocatedHrs: meanPresent(els, 'AvgAllocatedHrs'),
       AvgTotalWork: meanPresent(els, 'AvgTotalWork'),
     },

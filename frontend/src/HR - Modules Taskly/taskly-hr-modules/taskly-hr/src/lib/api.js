@@ -65,7 +65,7 @@ export const rateQuery = (queryId, ratings, comment) =>
   POST(`${BASE}/query/${queryId}/rate`, { ratings, comment }).then((r) => payload(r));
 
 export const fetchQueryQueue = (team = "HR") =>
-  GET(`${BASE}/query/queue?team=${team}`).then((r) => (payload(r).queries ?? []).map((q) => normalizeQuery(q, team)));
+  GET(`${BASE}/query/queue?team=${encodeURIComponent(team)}`).then((r) => (payload(r).queries ?? []).map((q) => normalizeQuery(q, team)));
 
 export const replyQuery = (queryId, text) =>
   POST(`${BASE}/query/${queryId}/reply`, { text }).then((r) => {

@@ -104,7 +104,8 @@ export default function TasklyHRModules({ section } = {}) {
         if (role === "employee") {
           setQueries(await api.fetchMyQueries());
         } else if (role === "hr") {
-          setQueries(await api.fetchQueryQueue("HR"));
+          // a resolver sees the queue of their own team
+          setQueries(await api.fetchQueryQueue(feedbackResolverTeam === "L_D" ? "L&D" : "HR"));
         }
         if (role === "admin") {
           try {

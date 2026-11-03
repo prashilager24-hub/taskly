@@ -108,7 +108,7 @@ interface FullUser { userID: number; userName: string; userEmail: string; employ
 const thisCycle = () => { const m = new Date().getMonth() + 1; return m >= 4 && m <= 9 ? "APRIL" : "OCTOBER"; };
 /** The appraisal cycle a joining date gives (same rule as the appraisal): December–May → April, June–November → October */
 const appraisalCycleOf = (joined: string) => { const m = Number(joined.slice(5, 7)); return m >= 6 && m <= 11 ? "OCTOBER" : "APRIL"; };
-const BLANK = { newJoiner: "yes", joiningCycle: thisCycle(), designation: "", jobLevel: "", band: "", employeeID: "", name: "", email: "", password: "", userType: "", roleID: "", userRole: "", departmentID: "", reportingManagerId: "", elManagerId: "", dateOfJoining: "", appraisalCycle: "", variableCycle: "HALF_YEARLY" };
+const BLANK = { queryTeam: "", newJoiner: "yes", joiningCycle: thisCycle(), designation: "", jobLevel: "", band: "", employeeID: "", name: "", email: "", password: "", userType: "", roleID: "", userRole: "", departmentID: "", reportingManagerId: "", elManagerId: "", dateOfJoining: "", appraisalCycle: "", variableCycle: "HALF_YEARLY" };
 
 function UserCanvas({ open, editing, roles, departments, people, onClose, onSaved }: { open: boolean; editing: FullUser | null; roles: RoleRow[]; departments: DepartmentRow[]; people: UserRow[]; onClose: () => void; onSaved: () => void }) {
     const [f, setF] = useState(BLANK);
@@ -134,6 +134,7 @@ function UserCanvas({ open, editing, roles, departments, people, onClose, onSave
             variableCycle: editing.variableCycle || "HALF_YEARLY",
             designation: editing.designation ?? "", jobLevel: editing.jobLevel ?? "", band: editing.band ?? "",
             newJoiner: editing.isNewJoiner ? "yes" : "no", joiningCycle: editing.joiningCycle || thisCycle(),
+            queryTeam: editing.feedbackresolverteam === "HR" || editing.feedbackresolverteam === "L_D" ? editing.feedbackresolverteam : "",
         } : { ...BLANK, joiningCycle: thisCycle() });
     }, [open, editing, roles]);
 
@@ -148,6 +149,7 @@ function UserCanvas({ open, editing, roles, departments, people, onClose, onSave
             dateOfJoining: f.dateOfJoining || null, appraisalCycle: f.appraisalCycle || null, variableCycle: f.variableCycle || null,
             designation: f.designation.trim(), jobLevel: f.jobLevel.trim(), band: f.band.trim(),
             isNewJoiner: f.newJoiner === "yes", ...(f.newJoiner === "yes" ? { joiningCycle: f.joiningCycle } : {}),
+            feedbackresolverteam: f.queryTeam || null,
         };
         try {
             if (editing) await axios.put(`${API}/User/update`, { ...payload, userID: editing.userID });
@@ -184,6 +186,12 @@ function UserCanvas({ open, editing, roles, departments, people, onClose, onSave
                     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                         {pick("New joiner", f.newJoiner, set("newJoiner"), [{ key: "yes", label: "Yes — show Onboarding Experience until they submit it" }, { key: "no", label: "No" }])}
                         {f.newJoiner === "yes" && pick("Joining cycle", f.joiningCycle, set("joiningCycle"), [{ key: "APRIL", label: "April cycle" }, { key: "OCTOBER", label: "October cycle" }])}
+                    </div>
+                    <p className="eyebrow">HR Support</p>
+                    <div className="flex flex-col gap-1.5">
+                        <span className="text-small font-medium text-foreground">Receives queries for</span>
+                        <div><Segmented label="Receives queries for" size="sm" value={f.queryTeam} onChange={set("queryTeam")} options={[{ key: "", label: "None" }, { key: "HR", label: "HR" }, { key: "L_D", label: "L&D" }]} /></div>
+                        <p className="text-xs text-ink-500">Employees raise queries to HR or L&D in Support. This person sees and answers the queue of the team picked here. They need to sign in again to see the change.</p>
                     </div>
                     <p className="eyebrow">User type</p>
                     <div role="radiogroup" aria-label="User type" className="-mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">

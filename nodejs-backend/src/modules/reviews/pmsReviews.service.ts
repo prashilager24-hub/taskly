@@ -6,6 +6,7 @@
 import type mysql from 'mysql2/promise';
 import { pool } from '../../config/db';
 import { AppError } from '../../utils/AppError';
+import { requireReflection } from './quarterReflection.service';
 
 type Row = mysql.RowDataPacket;
 
@@ -77,6 +78,7 @@ const QUARTERLY_COLS = `quarter = ?, quarter_year = ?, quarter_start_date = ?, q
 export async function createQuarterly(b: QuarterlyBody) {
   const [[emp]] = await pool.execute<Row[]>('SELECT UserID FROM Users WHERE UserID = ?', [b.empId ?? 0]);
   if (!emp) throw AppError.notFound('Employee not found');
+  await requireReflection(b.empId!, b.quarter, b.quarterYear);
   const [res] = await pool.execute<mysql.ResultSetHeader>(
     `INSERT INTO quarterlyreview SET emp_id = ?, ${QUARTERLY_COLS}, created_at = NOW(), updated_at = NOW()`,
     [b.empId, ...quarterlyValues(b)] as never[]);

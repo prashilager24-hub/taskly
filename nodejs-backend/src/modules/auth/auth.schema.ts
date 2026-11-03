@@ -34,7 +34,7 @@ export const CreateUserSchema = z.object({
   appraisalCycle: z.string().optional().nullable(), // APRIL / OCTOBER (older clients may still send other values)
   variableCycle: z.enum(['QUARTERLY', 'HALF_YEARLY', 'ANNUAL']).optional().nullable(),
   userRole: z.enum(USER_ROLES).optional().nullable(), // CEO / CBO / Finance Head / HR Manager, on top of the user type
-  feedbackresolverteam: z.string().optional().nullable(),
+  feedbackresolverteam: z.enum(['HR', 'L_D']).optional().nullable(), // who receives the Query & HR queue
   designation: z.string().trim().max(120).optional().nullable(),
   jobLevel: z.string().trim().max(20).optional().nullable(),
   band: z.string().trim().max(20).optional().nullable(),
@@ -56,7 +56,7 @@ export const UpdateUserSchema = z.object({
   appraisalCycle: z.string().optional().nullable(), // APRIL / OCTOBER (older clients may still send other values)
   variableCycle: z.enum(['QUARTERLY', 'HALF_YEARLY', 'ANNUAL']).optional().nullable(),
   userRole: z.enum(USER_ROLES).optional().nullable(), // CEO / CBO / Finance Head / HR Manager, on top of the user type
-  feedbackresolverteam: z.string().optional().nullable(),
+  feedbackresolverteam: z.enum(['HR', 'L_D']).optional().nullable(), // who receives the Query & HR queue
   designation: z.string().trim().max(120).optional().nullable(),
   jobLevel: z.string().trim().max(20).optional().nullable(),
   band: z.string().trim().max(20).optional().nullable(),

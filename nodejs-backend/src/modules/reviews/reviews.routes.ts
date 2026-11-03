@@ -11,6 +11,7 @@ import { authenticate } from '../../middlewares/auth';
 import { sendSuccess } from '../../utils/response';
 import * as svc from './reviews.service';
 import * as pms from './pmsReviews.service';
+import * as reflection from './quarterReflection.service';
 import { pmsOverview } from './pmsOverview.service';
 import { requireModule } from '../../middlewares/permission';
 
@@ -78,6 +79,30 @@ quarterlyAliasRouter.delete('/:id', async (req, res, next) => {
   try { await pms.deleteQuarterly(Number(req.params['id'])); res.json({ success: true, message: 'Quarterly review deleted' }); } catch (e) { next(e); }
 });
 
+// ── Quarter notes: the employee's own biggest achievement and failure ─────────
+const quarterReflectionRouter = Router();
+quarterReflectionRouter.use(authenticate);
+
+// GET /quarter-reflection/mine?year=  → the signed-in person's four quarters
+quarterReflectionRouter.get('/mine', requireModule('pms_my_quarter'), async (req, res, next) => {
+  try {
+    const year = Number(req.query['year']) || new Date().getFullYear();
+    res.json({ success: true, data: await reflection.listMine(Number(req.user!.sub), year) });
+  } catch (e) { next(e); }
+});
+
+// PUT /quarter-reflection/mine  { quarter, year, biggestAchievement, biggestFailure }  → always the signed-in person's own
+quarterReflectionRouter.put('/mine', requireModule('pms_my_quarter', 'update'), async (req, res, next) => {
+  try { res.json({ success: true, data: await reflection.saveMine(Number(req.user!.sub), req.body ?? {}) }); } catch (e) { next(e); }
+});
+
+// GET /quarter-reflection/employee/:empId?quarter=&year=  → what the reviewer sees (read only)
+quarterReflectionRouter.get('/employee/:empId', requireModule('pms_quarterly'), async (req, res, next) => {
+  try {
+    res.json({ success: true, data: await reflection.getFor(Number(req.params['empId']), String(req.query['quarter'] ?? ''), Number(req.query['year'])) });
+  } catch (e) { next(e); }
+});
+
 // ── Goal Efficiency ──────────────────────────────────────────────────────────
 const goalEfficiencyRouter = Router();
 goalEfficiencyRouter.use(authenticate);
@@ -101,7 +126,7 @@ pmsOverviewRouter.get('/', async (_req, res, next) => {
   try { res.json(await pmsOverview()); } catch (e) { next(e); }
 });
 
-export { monthlyRouter, quarterlyRouter, quarterlyAliasRouter, goalEfficiencyRouter, pmsOverviewRouter };
+export { monthlyRouter, quarterReflectionRouter, quarterlyRouter, quarterlyAliasRouter, goalEfficiencyRouter, pmsOverviewRouter };
 
 // Default export for backward-compat (not used when app.ts imports named)
 export default monthlyRouter;

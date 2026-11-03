@@ -7,9 +7,12 @@
  *   calculateGoal({ kind: 'user',  ... })  one user over a date range: the goal % behind every dashboard
  *                                          average (user, department, EL, FL and company are averages of these)
  * TARGET (see the section at the end)
- *   calculateTarget({ kind: 'day' | 'revision' | 'dayAverage' | 'groupAverage' | 'units' })
+ *   calculateTarget({ kind: 'day' | 'revision' | 'dayAverage' | 'groupAverage' | 'userAverage' | 'units' })
  * DAILY EFFICIENCY (the rows of EfficiencyUtilizationSummary)
- *   calculateEfficiency({ kind: 'day' | 'liveAccount' | 'positionClosed' })
+ *   calculateEfficiency({ kind: 'day' | 'liveAccount' | 'positionClosed' })   a day's row
+ *   calculateEfficiency({ kind: 'levelScore' | 'scoreLevel' | 'periodLevel' | 'reportLevel' })   the level of an average
+ * UTILIZATION (see the section at the end)
+ *   calculateUtilization({ kind: 'day' | 'average' })   a day's utilization %, and every average of it
  *
  * The department and user rules live here and nowhere else; the services only load data and call in.
  * Java sources: UserGoalDataService.mapToResponse, EfficiencyReportService.attachGoalPercent /
@@ -140,6 +143,8 @@ export interface GoalDayInput {
   goalRows: DayGoalRow[];
   /** units done that day in the department: all target units, and task 65's */
   units?: { all: number; t65: number };
+  /** 'report' (default): the efficiency report's department rules. 'dashboard': the dashboard user summary's, which only knows departments 7 and 19 and averages the day's goals for everyone else */
+  rules?: 'report' | 'dashboard';
 }
 
 function goalDay(d: GoalDayInput): number {
@@ -162,6 +167,7 @@ function goalDay(d: GoalDayInput): number {
     return Math.round((p67 + p68) * 10000) / 10000;
   }
   if (dept === 7) return 100;
+  if (d.rules === 'dashboard') return generic();
   if (dept === 37 || dept === 21) {
     const own = goalRows.filter((g) => g.DepartmentID === dept);
     const base = d.units ? (dept === 37 ? d.units.t65 : d.units.all) : 0;
@@ -441,6 +447,11 @@ function targetDayAverage(rows: { TargetAchievedPercent: unknown; DepartmentID: 
   return counted ? round2(total / counted) : 0;
 }
 
+/** A user across the departments they worked in: every department counts, a zero too (Java calculateAverageFromUsers) */
+function targetUserAverage(values: unknown[]): number {
+  return values.length ? round2(values.reduce<number>((n, v) => n + num(v), 0) / values.length) : 0;
+}
+
 /** A department, EL or company average of averages: items without a target are skipped */
 function targetGroupAverage(values: unknown[]): number {
   let total = 0;
@@ -458,12 +469,14 @@ export type TargetCalculation =
   | { kind: 'revision'; row: TargetRow; support: TargetSupport }
   | { kind: 'dayAverage'; rows: { TargetAchievedPercent: unknown; DepartmentID: unknown }[] }
   | { kind: 'groupAverage'; values: unknown[] }
+  | { kind: 'userAverage'; values: unknown[] }
   | { kind: 'units'; achieved: number; units: number };
 
 /** 'day' and 'revision' change the row in place, as Java does */
 export function calculateTarget(c: { kind: 'day' | 'revision'; row: TargetRow; support: TargetSupport }): void;
 export function calculateTarget(c: { kind: 'dayAverage'; rows: { TargetAchievedPercent: unknown; DepartmentID: unknown }[] }): number;
 export function calculateTarget(c: { kind: 'groupAverage'; values: unknown[] }): number;
+export function calculateTarget(c: { kind: 'userAverage'; values: unknown[] }): number;
 export function calculateTarget(c: { kind: 'units'; achieved: number; units: number }): number | null;
 export function calculateTarget(c: TargetCalculation): number | null | void {
   switch (c.kind) {
@@ -471,6 +484,7 @@ export function calculateTarget(c: TargetCalculation): number | null | void {
     case 'revision': return targetRevision(c.row, c.support);
     case 'dayAverage': return targetDayAverage(c.rows);
     case 'groupAverage': return targetGroupAverage(c.values);
+    case 'userAverage': return targetUserAverage(c.values);
     case 'units': return c.units > 0 ? Math.round((c.achieved / c.units) * 10000) / 100 : null;
   }
 }
@@ -545,8 +559,6 @@ const levelByTarget = (percent: number): EfficiencyLevel => (percent >= 90 ? 'Hi
 
 function efficiencyDay(i: DailyEfficiencyInput): EfficiencyResult {
   const dept = i.departmentId;
-  const special = SPECIAL_HOURS_DEPARTMENTS.includes(dept);
-  const standard = dept === 48 ? (i.halfDayLeave ? 20 : 40) : i.halfDayLeave ? (special ? 3.5 : 4) : special ? 7 : 8;
 
   // target: the hiring-style departments are scored on time taken vs planned in April to June, the rest on units
   const month = Number(i.date.slice(5, 7));
@@ -559,14 +571,12 @@ function efficiencyDay(i: DailyEfficiencyInput): EfficiencyResult {
     target = i.averageUnitPercent != null ? round2(i.averageUnitPercent) : 0;
   }
 
-  let utilization = standard > 0 ? round2(i.timeTakenHrs / standard) * 100 : 0;
   const goal = dailyGoalPercent(dept, i.goal);
   const level: EfficiencyLevel =
     target >= 100 && goal >= 80 && i.timeTakenHrs <= i.allocatedHrs ? 'High'
       : target >= 80 && goal >= 50 && i.timeTakenHrs <= i.allocatedHrs ? 'At Par' : 'Low';
-  if (level === 'Low' && utilization > 100) utilization = 100;
 
-  return { targetAchievedPercent: target, utilizationPercent: Math.round(utilization * 100) / 100, allocatedHrs: i.allocatedHrs, timeTakenHrs: i.timeTakenHrs, efficiencyLevel: level };
+  return { targetAchievedPercent: target, utilizationPercent: calculateUtilization({ kind: 'day', departmentId: dept, halfDayLeave: i.halfDayLeave, timeTakenHrs: i.timeTakenHrs, level }), allocatedHrs: i.allocatedHrs, timeTakenHrs: i.timeTakenHrs, efficiencyLevel: level };
 }
 
 export type EfficiencyCalculation =
@@ -574,8 +584,35 @@ export type EfficiencyCalculation =
   | { kind: 'liveAccount'; entryDate: string; liveDate: string }
   | { kind: 'positionClosed'; achievedGoal: number };
 
-export function calculateEfficiency(c: EfficiencyCalculation): EfficiencyResult {
+/** The level of an average rather than of a day: High 3 / At Par 2 / Low 1 scores averaged, or a period's average target and utilization */
+export type EfficiencyLevelCalculation =
+  | { kind: 'levelScore'; level: unknown }
+  | { kind: 'scoreLevel'; score: number }
+  | { kind: 'periodLevel'; target: number; utilization: number }
+  | { kind: 'reportLevel'; target: number; worked: number; allocated: number };
+
+export function calculateEfficiency(c: EfficiencyCalculation): EfficiencyResult;
+export function calculateEfficiency(c: { kind: 'levelScore'; level: unknown }): number;
+export function calculateEfficiency(c: { kind: 'scoreLevel'; score: number }): EfficiencyLevel;
+export function calculateEfficiency(c: { kind: 'periodLevel'; target: number; utilization: number }): EfficiencyLevel;
+export function calculateEfficiency(c: { kind: 'reportLevel'; target: number; worked: number; allocated: number }): EfficiencyLevel;
+export function calculateEfficiency(c: EfficiencyCalculation | EfficiencyLevelCalculation): EfficiencyResult | EfficiencyLevel | number {
   switch (c.kind) {
+    // a level as a score: the dashboards average these (a missing level counts 0)
+    case 'levelScore': {
+      switch (String(c.level ?? '').trim().toLowerCase()) {
+        case 'high': return 3;
+        case 'at par': return 2;
+        case 'low': return 1;
+        default: return 0;
+      }
+    }
+    // the average score back to a level
+    case 'scoreLevel': return c.score >= 2.5 ? 'High' : c.score >= 1.5 ? 'At Par' : 'Low';
+    // a month's or revised figure: average target % and average utilization %
+    case 'periodLevel': return c.target >= 100 && c.utilization >= 80 ? 'High' : c.target >= 80 && c.utilization >= 50 ? 'At Par' : 'Low';
+    // one person's summary over a range: average target % and whether the work fitted in the allocated hours
+    case 'reportLevel': return c.target >= 100 && c.worked <= c.allocated ? 'High' : c.target >= 80 && c.worked <= c.allocated ? 'At Par' : 'Low';
     case 'day': return efficiencyDay(c);
     case 'liveAccount': {
       // working days from entry to live; up to 7 is 100, then 5 points off per day
@@ -589,4 +626,36 @@ export function calculateEfficiency(c: EfficiencyCalculation): EfficiencyResult 
       return { targetAchievedPercent: target, utilizationPercent: target, allocatedHrs: 0, timeTakenHrs: 0, efficiencyLevel: levelByTarget(target) };
     }
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════════════════
+//  UTILIZATION
+//  Every utilization % in the app comes from here: the day's own figure, and the averages of it
+//  that the dashboards, summaries and reports show.
+//
+//   calculateUtilization({ kind: 'day' })      one user, department and day: time taken against the day's standard hours
+//   calculateUtilization({ kind: 'average' })  the mean of day / user / department / EL figures
+// ═══════════════════════════════════════════════════════════════════════════════════════════
+
+export type UtilizationCalculation =
+  | { kind: 'day'; departmentId: number; halfDayLeave: boolean; timeTakenHrs: number; level: EfficiencyLevel }
+  | { kind: 'average'; values: unknown[]; skipMissing?: boolean };
+
+/** Time taken ÷ the day's standard hours × 100; a Low-efficiency day is held at 100 */
+function utilizationDay(c: Extract<UtilizationCalculation, { kind: 'day' }>): number {
+  const special = SPECIAL_HOURS_DEPARTMENTS.includes(c.departmentId);
+  const standard = c.departmentId === 48 ? (c.halfDayLeave ? 20 : 40) : c.halfDayLeave ? (special ? 3.5 : 4) : special ? 7 : 8;
+  let utilization = standard > 0 ? round2(c.timeTakenHrs / standard) * 100 : 0;
+  if (c.level === 'Low' && utilization > 100) utilization = 100;
+  return Math.round(utilization * 100) / 100;
+}
+
+/** Mean to 2 places; nothing to average is 0. A missing value counts as 0, or is left out with skipMissing (Java calculateAverageFromELs) */
+function utilizationAverage(c: Extract<UtilizationCalculation, { kind: 'average' }>): number {
+  const values = c.skipMissing ? c.values.filter((v) => v != null) : c.values;
+  return values.length ? round2(values.reduce<number>((n, v) => n + num(v), 0) / values.length) : 0;
+}
+
+export function calculateUtilization(c: UtilizationCalculation): number {
+  return c.kind === 'day' ? utilizationDay(c) : utilizationAverage(c);
 }

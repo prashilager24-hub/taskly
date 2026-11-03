@@ -36,6 +36,7 @@ const EfficiencySummaryFilterSchema = z.object({
   groupBy: z.string().nullish(),
   efficiencyLevel: z.string().nullish(),
   isHeExecutiveLeader: z.boolean().nullish(),
+  targetByDepartment: z.boolean().nullish(),
   filters: z.array(z.object({ field: z.string(), operator: z.string(), value: z.coerce.string() })).nullish(),
 }).passthrough();
 

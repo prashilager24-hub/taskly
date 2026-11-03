@@ -108,13 +108,15 @@ async function pmsQuarters(db: Db, userId: number, start: string): Promise<PmsQu
     `SELECT quarter, quarter_year, ${D('quarter_start_date', 's')}, ${D('quarter_end_date', 'e')}, target_percent, goal_achievement, utilization_percent, efficiency_percent, efficiency_label,
             system_grade, manager_avg_rating, final_rating, grade, feedback
        FROM quarterlyreview WHERE emp_id = ? AND quarter_end_date <= ? AND quarter_end_date > DATE_SUB(?, INTERVAL 12 MONTH) ORDER BY quarter_end_date`, [userId, start, start]);
+  const [notes] = await db.execute<Row[]>('SELECT Quarter, QuarterYear, BiggestAchievement, BiggestFailure FROM QuarterReflection WHERE UserID = ?', [userId]);
   return rows.map((r) => {
+    const note = notes.find((n) => n['Quarter'] === r['quarter'] && Number(n['QuarterYear']) === Number(r['quarter_year']));
     const grade = parseJson<{ finalGradeLabel?: string }[]>(r['grade'], [])[0];
     const feedback = parseJson<{ feedbackCat?: string; feedback?: string }[]>(r['feedback'], []).filter((f) => f.feedback && f.feedback.trim()).map((f) => ({ category: f.feedbackCat ?? '', text: f.feedback!.trim() }));
     const by = (cats: string[]) => feedback.filter((f) => cats.includes(f.category)).map((f) => f.text).join('\n');
     return {
       quarter: r['quarter'], year: Number(r['quarter_year']), start: r['s'], end: r['e'],
-      comments: by(['Meets Expectations', '']), achievements: by(['Exceeds Expectations']), failures: by(['Needs Improvement']),
+      comments: by(['Meets Expectations', '']), achievements: (note?.['BiggestAchievement'] as string | undefined) ?? by(['Exceeds Expectations']), failures: (note?.['BiggestFailure'] as string | undefined) ?? by(['Needs Improvement']),
       targetPercent: numOrNull(r['target_percent']), goalAchievement: numOrNull(r['goal_achievement']), utilizationPercent: numOrNull(r['utilization_percent']), efficiencyPercent: numOrNull(r['efficiency_percent']),
       efficiencyLabel: r['efficiency_label'] ?? '', systemGrade: numOrNull(r['system_grade']), managerAvgRating: numOrNull(r['manager_avg_rating']), finalRating: numOrNull(r['final_rating']), gradeLabel: grade?.finalGradeLabel ?? '', feedback,
     };
@@ -149,6 +151,11 @@ export async function loadFull(cycleId: number, db: Db = pool): Promise<FullCycl
   const [rs] = await db.execute<Row[]>('SELECT * FROM AppraisalResponse WHERE CycleID = ?', [cycleId]);
   const [rr] = await db.execute<Row[]>('SELECT * FROM AppraisalRequestReview WHERE CycleID = ?', [cycleId]);
   const pms = await pmsQuarters(db, c['UserID'] as number, c['PmsRef'] as string);
+  const [notes] = await db.execute<Row[]>('SELECT Quarter, QuarterYear, BiggestAchievement, BiggestFailure FROM QuarterReflection WHERE UserID = ?', [c['UserID']]);
+  const slots = quarterSlots(c['PmsRef'] as string).map((sl) => {
+    const note = notes.find((x) => x['Quarter'] === sl.quarter && Number(x['QuarterYear']) === sl.year);
+    return { ...sl, achievement: (note?.['BiggestAchievement'] as string | undefined) ?? '', failure: (note?.['BiggestFailure'] as string | undefined) ?? '' };
+  });
 
   const status = c['Status'] as Status;
   const review = (role: string) => rv.find((r) => r['ReviewerRole'] === role);
@@ -173,7 +180,7 @@ export async function loadFull(cycleId: number, db: Db = pool): Promise<FullCycl
       return { quarter: n, goals: q?.['Goals'] ?? '', targets: q?.['Targets'] ?? '', comments: q?.['Comments'] ?? '', biggestAchievements: q?.['BiggestAchievements'] ?? '', biggestFailures: q?.['BiggestFailures'] ?? '', ratings: { A1: rating(n, 'A1'), A2: rating(n, 'A2') } };
     }),
     pms,
-    slots: quarterSlots(c['PmsRef'] as string),
+    slots,
     requestReviews: {
       DESIGNATION: requestReviewsOf(rr, 'DESIGNATION'),
       TEAM: requestReviewsOf(rr, 'TEAM'),

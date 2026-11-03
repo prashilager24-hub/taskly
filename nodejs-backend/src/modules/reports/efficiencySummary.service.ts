@@ -18,8 +18,8 @@
 import type mysql from 'mysql2/promise';
 import { pool } from '../../config/db';
 import { toLocalDateTime, toNum } from '../../utils/javaCompat';
-import { EFFECTIVE_GOAL, isFullDay, levelScore, num, scoreToLevel } from './dashboardRollup';
-import { calculateGoal, calculateTarget, loadGoalContexts, EMPTY_USER_GOAL_CONTEXT, type DayGoalRow } from '../calculations/calculationLogic';
+import { EFFECTIVE_GOAL, isFullDay, num } from './dashboardRollup';
+import { calculateEfficiency, calculateGoal, calculateTarget, calculateUtilization, loadGoalContexts, EMPTY_USER_GOAL_CONTEXT, type DayGoalRow } from '../calculations/calculationLogic';
 
 // BigDecimal.setScale(2, HALF_UP): exact halves round up, so drop float noise before rounding
 const round2 = (n: number) => Math.round(Number((n * 100).toPrecision(12))) / 100;
@@ -35,6 +35,8 @@ export interface EfficiencySummaryRequest {
   isQuarterly?: boolean | null;
   history?: boolean | null;
   isHeExecutiveLeader?: boolean | null;
+  /** Performance Insights page only: a person's average target is worked out department by department, like the dashboard, instead of over all their days at once */
+  targetByDepartment?: boolean | null;
   filters?: { field: string; operator: string; value: string }[] | null;
 }
 
@@ -50,45 +52,50 @@ const ratio4 = (a: number, b: number) => Math.round(Number(((a / b) * 10000).toP
 // ── Averaging ─────────────────────────────────────────────────────────────────
 
 /** USER level: average of raw daily rows. Target counts only days with a target (always in department 54). */
-function computeRowAverages(rows: Row[]) {
+export function computeRowAverages(rows: Row[]) {
   if (!rows.length) return { AvgTargetPercent: 0, AvgUtilizationPercent: 0, AvgAllocatedHrs: 0, AvgTotalWork: 0, EfficiencyLevel: 'Low', _score: 0 };
-  let util = 0, allocated = 0, work = 0, score = 0;
+  let allocated = 0, work = 0, score = 0;
   for (const r of rows) {
-    util += num(r['UtilizationPercent']);
     allocated += num(r['AllocatedTimeHrs']);
     work += num(r['TotalTimeOfWork']);
-    score += levelScore(r['EfficiencyLevel']);
+    score += calculateEfficiency({ kind: 'levelScore', level: r['EfficiencyLevel'] });
   }
   const n = rows.length;
   const avgScore = Math.round((score / n) * 10000) / 10000;
   return {
     AvgTargetPercent: calculateTarget({ kind: 'dayAverage', rows: rows as { TargetAchievedPercent: unknown; DepartmentID: unknown }[] }),
-    AvgUtilizationPercent: round2(util / n),
+    AvgUtilizationPercent: calculateUtilization({ kind: 'average', values: rows.map((r) => r['UtilizationPercent']) }),
     AvgAllocatedHrs: round2(allocated / n),
     AvgTotalWork: round2(work / n),
-    EfficiencyLevel: scoreToLevel(avgScore),
+    EfficiencyLevel: calculateEfficiency({ kind: 'scoreLevel', score: avgScore }),
     _score: avgScore,
   };
+}
+
+/** A person's average target the dashboard's way: each department on its own, then the departments averaged (one department gives the same figure as computeRowAverages) */
+function targetByDepartment(rows: Row[]): number {
+  const byDept = groupBy(rows.filter((r) => !isFullDay(r['LeaveType'])), (r) => r['DepartmentID']);
+  const perDept = [...byDept.values()].map((d) => computeRowAverages(d).AvgTargetPercent);
+  return perDept.length < 2 ? (perDept[0] ?? 0) : calculateTarget({ kind: 'userAverage', values: perDept });
 }
 
 /** DEPARTMENT / EL / COMPANY level: average of already-averaged items. Target skips zero items. */
 function averageOfMaps(items: Row[]) {
   if (!items.length) return { AvgTargetPercent: 0, AvgUtilizationPercent: 0, AvgAllocatedHrs: 0, AvgTotalWork: 0, EfficiencyLevel: 'Low', _score: 0 };
-  let util = 0, allocated = 0, work = 0, score = 0;
+  let allocated = 0, work = 0, score = 0;
   for (const i of items) {
-    util += num(i['AvgUtilizationPercent']);
     allocated += num(i['AvgAllocatedHrs']);
     work += num(i['AvgTotalWork']);
-    score += i['_score'] != null ? num(i['_score']) : levelScore(i['EfficiencyLevel']);
+    score += i['_score'] != null ? num(i['_score']) : calculateEfficiency({ kind: 'levelScore', level: i['EfficiencyLevel'] });
   }
   const n = items.length;
   const avgScore = Math.round((score / n) * 10000) / 10000;
   return {
     AvgTargetPercent: calculateTarget({ kind: 'groupAverage', values: items.map((i) => i['AvgTargetPercent']) }),
-    AvgUtilizationPercent: round2(util / n),
+    AvgUtilizationPercent: calculateUtilization({ kind: 'average', values: items.map((i) => i['AvgUtilizationPercent']) }),
     AvgAllocatedHrs: round2(allocated / n),
     AvgTotalWork: round2(work / n),
-    EfficiencyLevel: scoreToLevel(avgScore),
+    EfficiencyLevel: calculateEfficiency({ kind: 'scoreLevel', score: avgScore }),
     _score: avgScore,
   };
 }
@@ -148,7 +155,7 @@ function periodResult(result: DbRow[]) {
     TotalTimeOfWork: toNum(r['TotalTimeOfWork']), GoalPercent: 0, LeaveType: null,
   }));
   const mean = (k: string) => (data.length ? round2(data.reduce((n, r) => n + num(r[k]), 0) / data.length) : 0);
-  const summary = { AvgTargetPercent: mean('TargetAchievedPercent'), AvgUtilizationPercent: mean('UtilizationPercent'), AvgAllocatedHrs: mean('AllocatedTimeHrs'), AvgTotalWork: mean('TotalTimeOfWork'), AvgGoalPercent: 0, EfficiencyLevel: data.length ? 'Low' : null };
+  const summary = { AvgTargetPercent: mean('TargetAchievedPercent'), AvgUtilizationPercent: calculateUtilization({ kind: 'average', values: data.map((r) => r['UtilizationPercent']) }), AvgAllocatedHrs: mean('AllocatedTimeHrs'), AvgTotalWork: mean('TotalTimeOfWork'), AvgGoalPercent: 0, EfficiencyLevel: data.length ? 'Low' : null };
   return { data, summary };
 }
 
@@ -235,10 +242,10 @@ async function loadSupport(base: Row[], f: EfficiencySummaryRequest): Promise<Su
 }
 
 /** Java attachGoalPercent: the goal % of one user's day; the rules are in the calculation logic */
-function goalPercentOf(row: Row, s: Support): number {
+function goalPercentOf(row: Row, s: Support, rules: 'report' | 'dashboard' = 'report'): number {
   const { UserID: userId, DepartmentID: departmentId, WorkDate: date } = row as { UserID: number; DepartmentID: number; WorkDate: string };
   return calculateGoal({
-    kind: 'day', userId, departmentId, date, targetAchievedPercent: row['TargetAchievedPercent'],
+    kind: 'day', rules, userId, departmentId, date, targetAchievedPercent: row['TargetAchievedPercent'],
     goalRows: (s.goals.get(`${userId}|${date}`) ?? []) as unknown as DayGoalRow[], units: s.units.get(`${userId}|${date}|${departmentId}`),
   });
 }
@@ -303,24 +310,23 @@ async function monthlyBreakdown(list: Row[], f: EfficiencySummaryRequest, summar
   for (const r of list) push(byMonth, String(r['WorkDate']).slice(0, 7), r);
 
   const months: Row[] = [...byMonth.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([key, rows]) => {
-    let target = 0, util = 0, allocated = 0, work = 0, goal = 0, targetCount = 0, goalCount = 0;
+    let target = 0, allocated = 0, work = 0, goal = 0, targetCount = 0, goalCount = 0;
     for (const r of rows) {
       const t = num(r['TargetAchievedPercent']);
       target += t; if (t > 0) targetCount++;
-      util += num(r['UtilizationPercent']); allocated += num(r['AllocatedTimeHrs']); work += num(r['TotalTimeOfWork']);
+      allocated += num(r['AllocatedTimeHrs']); work += num(r['TotalTimeOfWork']);
       const g = num(r['GoalPercent']);
       goal += g; if (g > 0) goalCount++;
     }
-    const avgTarget = targetCount ? round2(target / targetCount) : 0, avgUtil = round2(util / rows.length);
+    const avgTarget = targetCount ? round2(target / targetCount) : 0, avgUtil = calculateUtilization({ kind: 'average', values: rows.map((r) => r['UtilizationPercent']) });
     return {
       Year: Number(key.slice(0, 4)), MonthNumber: Number(key.slice(5, 7)),
       AvgTargetPercent: avgTarget, AvgUtilizationPercent: avgUtil, AvgAllocatedHrs: round2(allocated / rows.length), AvgTotalWork: round2(work / rows.length),
-      EfficiencyLevel: avgTarget >= 100 && avgUtil >= 80 ? 'High' : avgTarget >= 80 && avgUtil >= 50 ? 'At Par' : 'Low',
+      EfficiencyLevel: calculateEfficiency({ kind: 'periodLevel', target: avgTarget, utilization: avgUtil }),
       AvgGoalPercent: goalCount ? round2(goal / goalCount) : 0,
     };
   });
   const keyOf = (m: Row) => `${m['Year']}-${m['MonthNumber']}`;
-  const level = (t: number, u: number) => (t >= 100 && u >= 80 ? 'High' : t >= 80 && u >= 50 ? 'At Par' : 'Low');
   const uid = f.userID || null;
   const range: [string, string] = [f.startDate!, f.endDate!];
 
@@ -391,7 +397,7 @@ async function monthlyBreakdown(list: Row[], f: EfficiencySummaryRequest, summar
         m[`revised${label}`] = parseJson(rev['raw']);
         m[`revised${label}Value`] = value;
         if (String(rev['elApproved']).toLowerCase() !== 'true') continue;
-        if (label === 'Target') { m['AvgTargetPercent'] = value; m['EfficiencyLevel'] = level(value, num(m['AvgUtilizationPercent'])); }
+        if (label === 'Target') { m['AvgTargetPercent'] = value; m['EfficiencyLevel'] = calculateEfficiency({ kind: 'periodLevel', target: value, utilization: num(m['AvgUtilizationPercent']) }); }
         else m['AvgGoalPercent'] = value;
       }
     };
@@ -435,6 +441,18 @@ async function dayRows(f: EfficiencySummaryRequest): Promise<Row[]> {
   }));
 }
 
+/** The day rows the dashboard's user summary starts from (Java DashBoardService.getUserEfficiencySummary): the leave type attached and the department 19 / 23 / 22 target rules applied. Full-day leave days are still in; the caller drops them. */
+export async function dashboardUserRows(f: { startDate: string; endDate: string; userID?: number | null; departmentID?: number | null; elID?: number | null }): Promise<Row[]> {
+  const req: EfficiencySummaryRequest = { startDate: f.startDate, endDate: f.endDate, userID: f.userID, departmentID: f.departmentID, eLID: f.elID, groupBy: 'day' };
+  const base = await dayRows(req);
+  if (!base.length) return base;
+  const s = await loadSupport(base, req);
+  for (const r of base) r['LeaveType'] = s.leave.get(`${r['UserID']}|${r['WorkDate']}`) ?? null;
+  for (const r of base) r['GoalPercent'] = goalPercentOf(r, s, 'dashboard');
+  for (const r of base) calculateTarget({ kind: 'day', row: r, support: s });
+  return base;
+}
+
 export async function listEfficiencySummary(f: EfficiencySummaryRequest) {
   const elWithoutDept = f.isHeExecutiveLeader === true && !f.departmentID;
   if (elWithoutDept) return listEfficiencySummaryEl(f);
@@ -459,6 +477,7 @@ export async function listEfficiencySummary(f: EfficiencySummaryRequest) {
     const byUser = groupBy(filtered, (r) => r['UserID']);
     let users: Row[] = javaIntegerKeyOrder([...byUser.keys()]).map((id) => byUser.get(id)!).map((rows) => {
       const avg = computeRowAverages(rows);
+      if (f.targetByDepartment) avg.AvgTargetPercent = targetByDepartment(rows);
       const avgGoal = round2(rows.reduce((n, r) => n + num(r['GoalPercent']), 0) / rows.length);
       return {
         UserID: rows[0]!['UserID'], UserName: rows[0]!['UserName'], DepartmentID: rows[0]!['DepartmentID'], DepartmentName: rows[0]!['DepartmentName'],
@@ -481,7 +500,7 @@ export async function listEfficiencySummary(f: EfficiencySummaryRequest) {
     summaryRow = computeRowAverages(filtered);
   } else {
     const byUser = groupBy(filtered.filter((r) => r['UserID'] != null), (r) => r['UserID']);
-    const userAvg = [...byUser.entries()].map(([uid, rows]) => ({ uid, dept: rows[0]!['DepartmentID'] as number | null, avg: computeRowAverages(rows) }));
+    const userAvg = [...byUser.entries()].map(([uid, rows]) => ({ uid, dept: rows[0]!['DepartmentID'] as number | null, avg: (() => { const a = computeRowAverages(rows); if (f.targetByDepartment) a.AvgTargetPercent = targetByDepartment(rows); return a; })() }));
     if (f.departmentID) {
       summaryRow = averageOfMaps(userAvg.map((u) => u.avg));
     } else {
@@ -530,6 +549,11 @@ export async function listEfficiencySummary(f: EfficiencySummaryRequest) {
   if (hasDates) {
     const months = await monthlyBreakdown(filtered, f, summaryRow);
     if (f.isQuarterly) summaryRow['monthlyBreakdown'] = months;
+  }
+  // the month by month figures above set the summary target; the Performance Insights page wants the department by department one instead
+  // (from the dashboard's own rows for that person, so the figure is the dashboard's)
+  if (f.targetByDepartment && f.userID && f.startDate && f.endDate) {
+    summaryRow['AvgTargetPercent'] = targetByDepartment(await dashboardUserRows({ startDate: f.startDate, endDate: f.endDate, userID: f.userID, departmentID: f.departmentID, elID: f.eLID }));
   }
   return { data: filtered, summary: summaryRow };
 }

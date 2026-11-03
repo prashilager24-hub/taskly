@@ -4,6 +4,7 @@ import { showOnboarding } from "@/lib/onboarding";
 import { appraisalApi, type Availability } from "@/components/appraisal/api";
 import {
   Award,
+  PenLine,
   BarChart3,
   Bell,
   Building2,
@@ -63,7 +64,7 @@ export const MENU: MenuItem[] = [
     module: "dashboard",
     children: [
       { icon: LayoutDashboard, label: "Taskly", href: "dashboard", module: "dashboard" },
-      { icon: TrendingUp, label: "PMS", href: "pms/dashboard", module: "pms_dashboard" },
+      { icon: TrendingUp, label: "Performance Management System", href: "pms/dashboard", module: "pms_dashboard" },
     ],
   },
   {
@@ -73,6 +74,7 @@ export const MENU: MenuItem[] = [
     module: "pms",
     children: [
       { icon: ClipboardList, label: "Quarterly Review", href: "pms/quarterly-review", module: "pms_quarterly" },
+      { icon: PenLine, label: "Quarter Highlights", href: "pms/my-quarter", module: "pms_my_quarter" },
       { icon: FileText, label: "Report", href: "pms/report", module: "pms_report" },
     ],
   },

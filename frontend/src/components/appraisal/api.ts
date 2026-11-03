@@ -47,7 +47,7 @@ export interface Route { source: Source | null; fl: Person | null; el: Person | 
 interface ViewBase {
     cycle: CycleInfo; stage: Stage; department: string | null; route: Route; timed: boolean; today: string;
     self: { answers: Record<string, string>; submittedAt: string | null } | null;
-    expected: Money | null; target: Money | null; pms: PmsQuarter[]; slots: { n: number; quarter: string; year: number }[];
+    expected: Money | null; target: Money | null; pms: PmsQuarter[]; slots: { n: number; quarter: string; year: number; achievement?: string; failure?: string }[];
     approved: Money | null; requests: ChangeRequest[]; response: Response | null;
 }
 /** My Appraisal */

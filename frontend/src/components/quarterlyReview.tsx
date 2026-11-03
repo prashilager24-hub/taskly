@@ -939,6 +939,25 @@ export default function QuarterlyReview() {
 
     const [filterStatus, setFilterStatus] = useState("");
     const [selectedFilterUser, setSelectedFilterUser] = useState("");
+
+    // The employee's own biggest achievement / failure for this quarter. The review cannot be submitted without them.
+    const [empNotes, setEmpNotes] = useState<{ biggestAchievement: string; biggestFailure: string } | null>(null);
+    const [notesLoaded, setNotesLoaded] = useState(false);
+    const notesEmpId = selectedFilterUser || form.empId;
+    useEffect(() => {
+        setEmpNotes(null);
+        setNotesLoaded(false);
+        if (!notesEmpId || !form.quarter || !form.year) return;
+        let current = true;
+        axios
+            .get(`/t2.0/authentificationUtilization/quarter-reflection/employee/${notesEmpId}`, {
+                params: { quarter: form.quarter, year: form.year },
+                headers: { Authorization: `Bearer ${authUser?.token ?? ""}` },
+            })
+            .then((r) => { if (current) { setEmpNotes(r.data?.data ?? null); setNotesLoaded(true); } })
+            .catch(() => { if (current) setNotesLoaded(true); });
+        return () => { current = false; };
+    }, [notesEmpId, form.quarter, form.year]);
     const [userSearch, setUserSearch] = useState("");
     const [efficiencyFilter, setEfficiencyFilter] = useState("");
 
@@ -2634,7 +2653,26 @@ export default function QuarterlyReview() {
                                 </div>
                             </div>
                             <Divider />
-                            <p className="eyebrow">4 · Manager qualitative assessment</p>
+                            <p className="eyebrow">4 · Employee's own notes for this quarter</p>
+                            {empNotes ? (
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <div className="rounded-lg border border-default-200 bg-default-50 p-3">
+                                        <p className="text-xs font-semibold text-default-500 mb-1">Biggest achievement</p>
+                                        <p className="text-sm whitespace-pre-wrap">{empNotes.biggestAchievement}</p>
+                                    </div>
+                                    <div className="rounded-lg border border-default-200 bg-default-50 p-3">
+                                        <p className="text-xs font-semibold text-default-500 mb-1">Biggest failure</p>
+                                        <p className="text-sm whitespace-pre-wrap">{empNotes.biggestFailure}</p>
+                                    </div>
+                                </div>
+                            ) : notesEmpId && notesLoaded ? (
+                                <p className="rounded-lg border border-warning-300 bg-warning-50 p-3 text-sm text-warning-800">
+                                    {selectedUser?.userName ?? "The employee"} has not entered their biggest achievement and biggest failure for {form.quarter} {form.year} yet.
+                                    {existingQuarterReview?.id ? "" : " The review can be submitted once they have (Quarter Highlights, under PMS)."}
+                                </p>
+                            ) : null}
+                            <Divider />
+                            <p className="eyebrow">5 · Manager qualitative assessment</p>
 
                             {/* Row 3 — Feedback Cat + Type */}
                             <div className="flex flex-col gap-4">
@@ -2980,6 +3018,7 @@ export default function QuarterlyReview() {
                                 size="md"
                                 className="w-full font-bold tracking-wide shadow-sm"
                                 onPress={handleSave}
+                                isDisabled={!existingQuarterReview?.id && (!notesLoaded || !empNotes)}
                             >
                                 Save Quarterly Review
                             </Button>

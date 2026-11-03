@@ -1,7 +1,9 @@
 import { pool } from '../../config/db';
 import type mysql from 'mysql2/promise';
 import ExcelJS from 'exceljs';
-import { computeRollup } from './dashboardRollup';
+import { computeRollup, isFullDay } from './dashboardRollup';
+import { computeRowAverages, dashboardUserRows } from './efficiencySummary.service';
+import { calculateEfficiency, calculateTarget, calculateUtilization, round2 } from '../calculations/calculationLogic';
 
 // ── Dashboard filter shape (mirrors Java DashBoardFilter) ─────────────────────
 export interface DashBoardFilter {
@@ -112,8 +114,8 @@ export async function listEfficiencySummaryNewData(filter: DashBoardFilter) {
   const isFL   = !!filter.flID;
 
   if (isUser) {
-    const summary = await getUserSummary(filter);
-    return { userSummary: summary };
+    // a person's own dashboard (role 2) also carries the day-by-day rows for the calendar
+    return { userSummary: await getUserSummaries(filter, filter.roleID === 2) };
   }
 
   if (isDept) {
@@ -276,32 +278,58 @@ async function getCompanySummary(filter: DashBoardFilter) {
   return rows[0] ?? {};
 }
 
-// One person for the range: the averages the dashboard cards show, plus the day-by-day rows (DailyData) for the chart
-async function getUserSummary(filter: DashBoardFilter) {
-  const [rows] = await pool.query<mysql.RowDataPacket[]>(
-    `SELECT e.*, u.UserName, d.DepartmentName
-     FROM EfficiencyUtilizationSummary e
-     JOIN Users u ON u.UserID = e.UserID
-     JOIN Department d ON d.DepartmentID = e.DepartmentID
-     WHERE e.DayType = 'Working'
-       AND e.WorkDate BETWEEN ? AND ?
-       AND e.UserID = ?
-     ORDER BY e.WorkDate ASC`,
-    [filter.startDate, filter.endDate, filter.userID],
-  );
-  if (!rows.length) return [];
-  const mean = (key: string) => Math.round((rows.reduce((n, r) => n + (Number(r[key]) || 0), 0) / rows.length) * 100) / 100;
-  const target = mean('TargetAchievedPercent');
-  const util = mean('UtilizationPercent');
-  const allocated = mean('AllocatedTimeHrs');
-  const worked = mean('TotalTimeOfWork');
-  const level = target >= 100 && worked <= allocated ? 'High' : target >= 80 && worked <= allocated ? 'At Par' : 'Low';
-  const first = rows[0] as mysql.RowDataPacket;
-  return [{
-    UserID: first['UserID'], UserName: first['UserName'], DepartmentID: first['DepartmentID'], DepartmentName: first['DepartmentName'],
-    EfficiencyLevel: level, AvgTargetPercent: target, AvgUtilizationPercent: util, AvgAllocatedHrs: allocated, AvgTotalWork: worked,
-    DailyData: rows,
-  }];
+// One person (or the people in the filter) for the range: the averages the dashboard cards show.
+// Java DashBoardService.getUserSummary / getUserSummaryForUsers: each department a person worked in is summarised on
+// its own (full-day leave days dropped, a target counted only on days that have one), then the departments are averaged.
+// A person's own dashboard (withDailyData) also gets their day rows, again without the leave days.
+async function getUserSummaries(filter: DashBoardFilter, withDailyData: boolean) {
+  let rows = await dashboardUserRows({ startDate: filter.startDate, endDate: filter.endDate, userID: filter.userID, departmentID: filter.departmentID, elID: filter.elID });
+  if (!withDailyData && deptTypeCond(filter, 'd.DepartmentID')) {
+    const [allowed] = await pool.query<mysql.RowDataPacket[]>(`SELECT d.DepartmentID FROM Department d WHERE 1=1${deptTypeCond(filter, 'd.DepartmentID')}`);
+    const ids = new Set(allowed.map((d) => d['DepartmentID']));
+    rows = rows.filter((r) => ids.has(r['DepartmentID']));
+  }
+
+  const users = new Map<number, { name: string; depts: Map<number, Record<string, any>[]> }>();
+  for (const r of rows) {
+    const u = users.get(r['UserID']) ?? users.set(r['UserID'], { name: r['UserName'], depts: new Map() }).get(r['UserID'])!;
+    (u.depts.get(r['DepartmentID']) ?? u.depts.set(r['DepartmentID'], []).get(r['DepartmentID'])!).push(r);
+  }
+
+  const mean = (values: unknown[]) => (values.length ? round2(values.reduce<number>((n, v) => n + (Number(v) || 0), 0) / values.length) : 0);
+  const result: Record<string, any>[] = [];
+  for (const [userID, u] of users) {
+    const perDept = [...u.depts.values()].map((deptRows) => {
+      const kept = deptRows.filter((r) => !isFullDay(r['LeaveType']));
+      if (!kept.length) return { AvgTargetPercent: 0, AvgUtilizationPercent: 0, AvgAllocatedHrs: 0, AvgTotalWork: 0, EfficiencyLevel: 'Low' };
+      const a = computeRowAverages(kept);
+      return { AvgTargetPercent: a.AvgTargetPercent, AvgUtilizationPercent: a.AvgUtilizationPercent, AvgAllocatedHrs: a.AvgAllocatedHrs, AvgTotalWork: a.AvgTotalWork, EfficiencyLevel: a.EfficiencyLevel };
+    });
+    const summary = perDept.length === 1 ? perDept[0]! : {
+      AvgTargetPercent: calculateTarget({ kind: 'userAverage', values: perDept.map((d) => d.AvgTargetPercent) }),
+      AvgUtilizationPercent: calculateUtilization({ kind: 'average', values: perDept.map((d) => d.AvgUtilizationPercent) }),
+      AvgAllocatedHrs: mean(perDept.map((d) => d.AvgAllocatedHrs)),
+      AvgTotalWork: mean(perDept.map((d) => d.AvgTotalWork)),
+      EfficiencyLevel: calculateEfficiency({ kind: 'scoreLevel', score: perDept.reduce((n, d) => n + calculateEfficiency({ kind: 'levelScore', level: d.EfficiencyLevel }), 0) / perDept.length }),
+    };
+    const user: Record<string, any> = { UserID: userID, UserName: u.name, ...summary };
+
+    if (withDailyData) {
+      const [daily] = await pool.query<mysql.RowDataPacket[]>(
+        `SELECT DATE_FORMAT(e.WorkDate, '%Y-%m-%d') AS WorkDate, e.TargetAchievedPercent, e.UtilizationPercent, e.AllocatedTimeHrs, e.TotalTimeOfWork, e.EfficiencyLevel
+         FROM EfficiencyUtilizationSummary e
+         WHERE e.DayType = 'Working' AND e.UserID = ? AND e.WorkDate BETWEEN ? AND ?
+           AND NOT EXISTS (SELECT 1 FROM UserWorkData uw WHERE uw.UserID = e.UserID AND uw.WorkDate = e.WorkDate AND UPPER(TRIM(uw.LeaveType)) = 'FULL_DAY')
+         ORDER BY e.WorkDate ASC`,
+        [userID, filter.startDate, filter.endDate]);
+      user['DailyData'] = daily.map((d) => ({
+        WorkDate: d['WorkDate'], TargetAchievedPercent: Number(d['TargetAchievedPercent']), UtilizationPercent: Number(d['UtilizationPercent']),
+        AllocatedTimeHrs: Number(d['AllocatedTimeHrs']), TotalTimeOfWork: Number(d['TotalTimeOfWork']), EfficiencyLevel: d['EfficiencyLevel'], UserID: userID,
+      }));
+    }
+    result.push(user);
+  }
+  return result.sort((x, y) => (x['UserName'] < y['UserName'] ? -1 : x['UserName'] > y['UserName'] ? 1 : 0));
 }
 
 async function getDepartmentSummary(filter: DashBoardFilter) {

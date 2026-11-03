@@ -38,7 +38,7 @@ export interface FullCycle {
   request: { newDesignation: string; designationComment: string; newTeam: string; teamComment: string } | null;
   pms: PmsQuarter[];
   /** The four quarters of the year the appraisal looks back on, oldest first; quarter n of `quarters` is slot n */
-  slots: { n: number; quarter: string; year: number }[];
+  slots: { n: number; quarter: string; year: number; achievement?: string; failure?: string }[];
   requestReviews: Record<RequestField, RequestReviews>;
   expected: Money | null;
   target: Money | null;

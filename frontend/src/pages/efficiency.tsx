@@ -404,7 +404,8 @@ export default function Efficiency() {
                     userID: selectedUser,
                     groupBy: "day",
                     isHeExecutiveLeader: user.isHeExecutiveLeader || false,
-                    efficiencyLevel: efficiencyFilter
+                    efficiencyLevel: efficiencyFilter,
+                    targetByDepartment: true // this page averages a person's target department by department, like the dashboard
 
                 }
 

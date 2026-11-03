@@ -306,7 +306,7 @@ export default function MyAppraisal() {
                             <Tabs aria-label="Appraisal sections" selectedKey={tab} onSelectionChange={(k) => setTab(String(k) as TabKey)}>
                                 <Tab key="goals" title="Goals and targets by quarter">
                                     <div className="flex flex-col gap-6 pb-5 pt-3">
-                                        <p className="max-w-[72ch] text-sm text-ink-500 dark:text-ink-400">Everything here comes from your PMS Quarterly Reviews. There is nothing to fill in.</p>
+                                        <p className="max-w-[72ch] text-sm text-ink-500 dark:text-ink-400">Everything here comes from your PMS Quarterly Reviews and your Quarter Highlights (PMS menu). There is nothing to fill in here.</p>
                                         <PmsTable quarters={view.pms ?? []} />
                                         <QuarterGrid slots={view.slots ?? []} pms={view.pms ?? []} />
                                     </div>

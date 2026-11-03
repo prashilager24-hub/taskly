@@ -17,6 +17,74 @@ Summary: one or two lines on what and why.
 
 ---
 
+## 2026-11-03 — Query & HR: L&D queue fix and "Receives queries for" in Access Management  (commit: pending)
+Summary: an L&D person now sees the L&D queue (it always loaded the HR one), and Access Management can set who receives HR and L&D queries.
+### Frontend
+- `HR - Modules Taskly/.../TasklyHRModules.jsx`: a resolver loads the queue of their own team (HR or L&D) instead of always HR. `lib/api.js`: the team is URL-encoded (`L&D` used to reach the server as `L` and was rejected).
+- `components/access/UsersTab.tsx`: new **HR Support → Receives queries for** (None / HR / L&D) when adding or editing a user. It saves the user's existing feedback resolver team.
+### Backend
+- `auth/auth.schema.ts`: `feedbackresolverteam` on create and update is now `HR` or `L_D` (or null to clear); anything else is rejected.
+### Database
+- none
+### Env / config
+- none
+### Notes
+- The person has to sign in again to see the change; the team is read at sign-in.
+
+## 2026-11-03 — Dashboard user summary matches Java (leave days, departments first)  (commit: pending)
+Summary: the person's own dashboard (`/DashBoardAll` with a user) now averages like Java: full-day leave days are dropped, each department the person worked in is summarised on its own, then the departments are averaged. Before, every daily row was averaged together, leave days included.
+### Frontend
+- none
+### Backend
+- `reports/reports.service.ts`: `getUserSummary` replaced by `getUserSummaries(filter, withDailyData)` (Java `getUserSummary` / `getUserSummaryForUsers`). A role 2 request also returns `DailyData` (leave days left out); other roles get the averages only. The business / support split applies to the non-role-2 path, as in Java.
+- `reports/efficiencySummary.service.ts`: new `dashboardUserRows` (the person's day rows with the leave type attached and the department 19 / 23 / 22 target rules applied, using the dashboard's own goal rule); `computeRowAverages` exported.
+- `calculations/calculationLogic.ts`: `calculateTarget({ kind: 'userAverage' })` (a person across departments, zeros counted); `calculateGoal({ kind: 'day', rules: 'dashboard' })` (the dashboard's goal rule: department 7 is 100, department 19 its own rule, everyone else the average of the day's goals).
+### Database
+- none
+### Env / config
+- none
+### Notes
+- Checked against production for every user, three date ranges, role 1 and role 2: 402 of 408 identical. The rest are local test entries added for one user, and two rows of the same day that Java returns in a different order.
+- Still not ported: `userGoalSummary` that Java returns next to `userSummary` for a role 2 request.
+
+### Performance Insights target (same entry)
+- `/efficiency-report` (`pages/efficiency.tsx`) now sends `targetByDepartment: true`; `list-efficiency-summary` then sets that person's summary Avg Target % the dashboard's way (each department on its own, then averaged, from the dashboard's day rows). Every other caller of the API is unchanged. Only the summary figure moves; the table rows, utilization, hours and goal stay as they were.
+
+## 2026-11-03 — Utilization and efficiency calculation in one place  (commit: pending)
+Summary: every utilization % and every efficiency level now comes from `calculateUtilization` and `calculateEfficiency` in `calculations/calculationLogic.ts`, next to the goal and target logic. No change in results.
+### Frontend
+- none
+### Backend
+- `calculationLogic.ts`: new `calculateUtilization({ kind: 'day' | 'average' })`. 'day' is the day's time taken ÷ standard hours (moved out of the daily efficiency calculation); 'average' is the 2-place mean used for user, department, EL and company figures (`skipMissing` for the EL average).
+- `calculateEfficiency` gained `kind: 'levelScore' | 'scoreLevel' | 'periodLevel' | 'reportLevel'` for the level of an average (High 3 / At Par 2 / Low 1 scores, a period's average target and utilization, a person's summary against allocated hours). The day, live account and closed position kinds are unchanged.
+- `reports/dashboardRollup.ts`, `reports/efficiencySummary.service.ts` and `reports/reports.service.ts` call these instead of their own sums, means and level rules (`levelScore` / `scoreToLevel` removed from `dashboardRollup.ts`). New unit tests: `calculations/utilization.test.ts`, `calculations/efficiency.test.ts`.
+### Database
+- none
+### Env / config
+- none
+### Notes
+- Checked against production with the same requests: 136 user and 100 department cases identical; the remaining differences are the known ones (production fails on very large ranges, Java's order of same-date rows, Java returns 500 for week/month grouping).
+- The `AVG(e.UtilizationPercent)` averages and the `CASE ... 'High' / 'At Par'` level rules written in SQL in `reports/reports.service.ts` still run in the database.
+
+## 2026-11-03 — Quarter notes: employee's biggest achievement and failure  (commit: pending)
+Summary: each employee writes their own biggest achievement and biggest failure per quarter (Quarter Highlights). The manager's PMS Quarterly Review cannot be submitted until both are in, and Appraisal reads them instead of guessing from feedback categories.
+### Frontend
+- New page `/pms/my-quarter` ("Quarter Highlights", PMS menu): `components/QuarterNotes.tsx`, route in `App.tsx`, `PmsMyQuarterPage` in `pages/pmsPages.tsx`, sidebar item. One text box each per quarter, 1000 characters, only the signed-in person writes them; future quarters are closed and a quarter locks once its review is submitted.
+- `components/quarterlyReview.tsx`: the review form shows the employee's notes read only (section 4) and disables "Save Quarterly Review" for a new review until the employee has written them.
+- Appraisal quarter grid / My Appraisal wording updated (`QuarterGrid.tsx`, `MyAppraisal.tsx`).
+### Backend
+- New `modules/reviews/quarterReflection.service.ts`; routes in `reviews.routes.ts`, mounted at `/quarter-reflection` in `app.ts`: `GET /mine?year=`, `PUT /mine` (always the token's user), `GET /employee/:empId?quarter=&year=` (reviewers, needs `pms_quarterly`).
+- `createQuarterly` now rejects with 400 when the employee has no notes for that quarter. Updating an already submitted review is not blocked.
+- `appraisal.service.ts`: achievements / failures come from the notes; older quarters without notes fall back to the previous feedback-category text.
+- New permission `pms_my_quarter` (Quarter Highlights) in `access/catalog.ts`.
+### Database
+- Migration `022_quarter_reflection.sql`: table `QuarterReflection` (unique per user, quarter, year) and `pms_my_quarter` granted to every role. Down script in `migrations/down/`. After pulling run `npm run db:migrate`.
+### Env / config
+- none
+### Notes
+- Reviews submitted before this change are not affected; only new reviews need the notes.
+- Per-user and per-department access overrides do not get `pms_my_quarter` automatically; roles do.
+
 ## 2026-11-03 — Push: modules audit (parts 1–3) into main  (commits: 0c1501f, fa0ad85, 43a969d and the layout fix below)
 
 Summary: the modules-audit branch goes into main: user form and notifications (part 1), user types and user roles (part 2), Department Management (part 3). The details are in the three entries below.

@@ -12,7 +12,7 @@ import History from "@/pages/History";
 import AccessManagementPage from "@/pages/access-management";
 import ProfilePage from "@/pages/profile";
 import NotificationsPage from "@/pages/notifications";
-import { PmsIndex, PmsDashboardPage, PmsFeedbackPage, PmsQuarterlyPage, PmsReportPage } from "@/pages/pmsPages";
+import { PmsIndex, PmsDashboardPage, PmsFeedbackPage, PmsQuarterlyPage, PmsMyQuarterPage, PmsReportPage } from "@/pages/pmsPages";
 import { MyAppraisalPage, AppraisalOverviewPage, AppraisalDepartmentsPage, DepartmentDetailPage, SplitPage, AllocationPage, RequestsPage, PersonPage, HrPostponementsPage, AppraisalSetupPage } from "@/pages/appraisalPages";
 import Efficiency from "./pages/efficiency";
 import ResetPasswordPage from "./pages/forgotPassword";
@@ -72,6 +72,7 @@ function App() {
         <Route path="/manager-feedback" element={<ProtectedRoute module="pms_feedback"><PmsFeedbackPage /></ProtectedRoute>} />
         <Route path="/pms/manager-feedback" element={<Navigate to="/manager-feedback" replace />} />
         <Route path="/pms/quarterly-review" element={<ProtectedRoute module="pms_quarterly"><PmsQuarterlyPage /></ProtectedRoute>} />
+        <Route path="/pms/my-quarter" element={<ProtectedRoute module="pms_my_quarter"><PmsMyQuarterPage /></ProtectedRoute>} />
         <Route path="/pms/report" element={<ProtectedRoute module="pms_report"><PmsReportPage /></ProtectedRoute>} />
         <Route path="/appraisal" element={<ProtectedRoute module="appraisal"><MyAppraisalPage /></ProtectedRoute>} />
         <Route path="/appraisal/departments" element={<ProtectedRoute module="appraisal"><AppraisalDepartmentsPage /></ProtectedRoute>} />

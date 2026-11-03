@@ -21,7 +21,7 @@ import tasksRouter from './modules/tasks/tasks.routes';
 import goalsRouter from './modules/goals/goals.routes';
 import targetsRouter from './modules/targets/targets.routes';
 import profileRouter from './modules/profile/profile.routes';
-import { monthlyRouter, quarterlyRouter, quarterlyAliasRouter, goalEfficiencyRouter, pmsOverviewRouter } from './modules/reviews/reviews.routes';
+import { monthlyRouter, quarterReflectionRouter, quarterlyRouter, quarterlyAliasRouter, goalEfficiencyRouter, pmsOverviewRouter } from './modules/reviews/reviews.routes';
 import hrRouter, { queryRouter, engagementRouter, onboardingRouter } from './modules/hr/hr.routes';
 import surveyTemplatesRouter from './modules/hr/surveyTemplates.routes';
 import { salesCallsRouter, taCallsRouter, tamRouter } from './modules/sales/sales.routes';
@@ -127,6 +127,7 @@ app.use(`${BASE}/tech`, techRouter);
 app.use(`${BASE}/monthly-reviews`, monthlyRouter);
 app.use(`${BASE}/quarterly-reviews`, quarterlyAliasRouter);
 app.use(`${BASE}/quarterly-review`, quarterlyRouter);
+app.use(`${BASE}/quarter-reflection`, quarterReflectionRouter);
 app.use(`${BASE}/goal-efficiency`, goalEfficiencyRouter);
 app.use(`${BASE}/pms-overview`, pmsOverviewRouter);
 

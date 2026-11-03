@@ -17,6 +17,34 @@ Summary: one or two lines on what and why.
 
 ---
 
+## 2026-11-03 — Appraisal: each page is its own permission in Access Management  (commit: 5f857e7)
+Summary: the Appraisal menu now follows one fixed list per user type, and nobody gets an appraisal page beyond it unless it is given in Access Management. The eight pages (My Appraisal, Overview, Department Budgets, Budget Split, Team Allocation, Change Requests, HR Postponements, Appraisal Setup) are separate permissions under Appraisal. A page still shows only when there is something in it for the person (an open cycle, a sub department they lead, someone reporting to them, a postponed case).
+
+| User type | Appraisal pages |
+|---|---|
+| Super Admin | Overview, Appraisal Setup (view) |
+| Admin (Admin, Finance, HR roles) | Overview, Department Budgets, HR Postponements, Appraisal Setup (view; the HR role can change it) |
+| Executive Leader | My Appraisal, Budget Split, Change Requests |
+| Functional Leader | My Appraisal, Team Allocation, Change Requests |
+| Manager, Lead | My Appraisal, Team Allocation |
+| Associate, Intern | My Appraisal |
+| Finance Head (EL of Strategic Financial Management) | their own pages plus Overview and Department Budgets |
+| Anyone in HR Operations | their own pages plus HR Postponements and Appraisal Setup (can change) |
+
+### Frontend
+- none (Access Management reads the module list from the server, so the eight pages appear under Appraisal in the role, department and person access screens)
+### Backend
+- `access/catalog.ts`: Appraisal gets eight child permissions `appr_my`, `appr_overview`, `appr_departments`, `appr_split`, `appr_allocation`, `appr_requests`, `appr_hr`, `appr_setup` (read = view, update = change). The Admin role's full access leaves out My Appraisal, Budget Split, Team Allocation and Change Requests, and has Appraisal Setup as view only.
+- `access/access.service.ts`: the Finance Head and members of HR Operations get their appraisal pages in the role layer (a personal removal in Access Management still takes them away).
+- `appraisal/appraisal.routes.ts`: every appraisal endpoint checks its page permission (403 with a clear message otherwise); Overview, Department Budgets, HR Postponements and Appraisal Setup are decided by the permission instead of the role. `/availability` shows a page only with its permission.
+### Database
+- `023_appraisal_page_access.sql`: gives each role its pages by user type (table above). Undo: `migrations/down/023_appraisal_page_access.down.sql`. Run `npm run db:migrate`.
+### Env / config
+- none
+### Notes
+- Changes from before: Admin-type roles (Finance, HR) no longer have My Appraisal; Managers and Leads no longer see Change Requests; an EL never gets Team Allocation unless it is given.
+- Checked: the menu for one or two real people of every user type, 19 HTTP checks (allowed pages open, others 403), backend unit tests (36 passed).
+
 ## 2026-11-03 — Query & HR: L&D queue fix and "Receives queries for" in Access Management  (commit: 6dad4fe)
 Summary: an L&D person now sees the L&D queue (it always loaded the HR one), and Access Management can set who receives HR and L&D queries.
 ### Frontend

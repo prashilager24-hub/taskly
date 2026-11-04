@@ -21,7 +21,14 @@ const TaskSchema = z.object({
   targetNumber: z.coerce.number().int().nullish(),
   isForTarget: z.boolean().nullish(),
   timingType: z.string().nullish(),
-  roleID: z.coerce.number().int().nullish(),
+  // the forms send 0 when no role is picked; there is no role 0
+  roleID: z.coerce.number().int().nullish().transform((v) => (v ? v : null)),
+});
+
+/** A new task needs a name and a department */
+const TaskSchemaCreate = TaskSchema.extend({
+  departmentID: z.coerce.number().int().positive({ message: 'Choose a department' }),
+  taskName: z.string().trim().min(1, 'Enter a task name').max(255),
 });
 
 const TaskListSchema = z.object({
@@ -61,7 +68,7 @@ const LogLeaveSchema = z.object({
 // These return the Java response bodies unwrapped — the frontend reads them directly.
 
 // POST /departmentTasks/create
-router.post('/create', validate(TaskSchema), async (req, res, next) => {
+router.post('/create', validate(TaskSchemaCreate), async (req, res, next) => {
   try { sendJava(res, await svc.createDepartmentTask(req.body)); } catch (e) { next(e); }
 });
 

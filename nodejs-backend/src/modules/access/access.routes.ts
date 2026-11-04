@@ -7,6 +7,7 @@ import { validate } from '../../middlewares/validate';
 import { pool } from '../../config/db';
 import type mysql from 'mysql2/promise';
 import * as svc from './access.service';
+import { teamOf } from './team';
 import * as hier from './hierarchy';
 import { USER_TYPES } from './userTypes';
 
@@ -17,6 +18,14 @@ const actor = (req: { user?: { sub: string } }) => Number(req.user?.sub);
 const read = requireModule('accessmgmt', 'read');
 const write = requireModule('accessmgmt', 'update');
 const ok = (res: { json: (b: unknown) => unknown }, data: unknown) => res.json({ status: true, statusCode: 200, response: data });
+
+// The signed-in person's team (reporting line below them, sub departments they lead); everyone for Admin / Super Admin
+router.get('/team', async (req, res, next) => {
+  try {
+    const team = await teamOf(actor(req), Number((req as { user?: { role?: number } }).user?.role));
+    ok(res, team === 'all' ? { all: true, userIds: [] } : { all: false, userIds: [...team] });
+  } catch (e) { next(e); }
+});
 
 // What the signed-in person can open. The frontend stores this and builds the menu and route guards from it.
 router.get('/me', async (req, res, next) => {

@@ -23,8 +23,15 @@ const GoalSchema = z.object({
   isDynamic: z.boolean().nullish(),
   description: z.string().nullish(),
   isActive: z.boolean().nullish(),
-  roleID: z.coerce.number().int().nullish(),
+  // the forms send 0 when no role is picked; there is no role 0
+  roleID: z.coerce.number().int().nullish().transform((v) => (v ? v : null)),
 });
+
+/** A new goal needs a name and a department */
+const GoalSchemaCreate = GoalSchema.extend({
+  departmentID: z.coerce.number().int().positive({ message: 'Choose a department' }),
+  goalName: z.string().trim().min(1, 'Enter a goal name').max(255),
+}).refine((g) => !!g.roleID, { message: 'Choose a role: only people with that role see the goal', path: ['roleID'] });
 
 const DeptItemListSchema = z.object({
   searchText: z.string().nullish(),
@@ -67,7 +74,7 @@ const GoalDataQuerySchema = z.object({
 const sendDto = (res: Response, body: { statusCode: number }) => sendJava(res, body, body.statusCode);
 
 // POST /departmentGoals/create
-router.post('/create', validate(GoalSchema), async (req, res, next) => {
+router.post('/create', validate(GoalSchemaCreate), async (req, res, next) => {
   try { sendDto(res, await dg.createDepartmentGoal(req.body)); } catch (e) { next(e); }
 });
 

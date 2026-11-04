@@ -59,6 +59,10 @@ const TaskManagement: React.FC<{ departmentId?: number }> = ({ departmentId }) =
         roleID: '',
     });
     const handleAddTask = async () => {
+        if (!newTask.taskName.trim() || !newTask.type || !selectedDepartment) {
+            addToast({ title: "Missing Required Fields", description: "Enter a task name and choose the task type.", color: "warning" });
+            return;
+        }
         try {
             const payload = {
                 taskName: newTask.taskName,
@@ -113,7 +117,6 @@ const TaskManagement: React.FC<{ departmentId?: number }> = ({ departmentId }) =
                 description: error?.response?.data?.message || "Failed to create task",
                 color: "danger",
             });
-            setIsModalOpen(false);
         }
     };
 

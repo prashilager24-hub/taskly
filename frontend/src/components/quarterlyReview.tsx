@@ -1476,9 +1476,14 @@ export default function QuarterlyReview() {
                     }
                 );
 
-                const usersData = res.data.response.users || [];
+                let usersData = res.data.response.users || [];
+                // only the person's team can be picked (Admin / Super Admin: everyone); the server refuses anyone else
+                try {
+                    const t = await axios.get("/t2.0/authentificationUtilization/access/team");
+                    const team = t.data?.response;
+                    if (team && !team.all) usersData = usersData.filter((u: any) => team.userIds.includes(u.userID));
+                } catch { /* keep the full list; the server still checks */ }
                 setUsersAll(usersData);
-                console.log("Users:", usersData);
             } catch (err) {
                 console.error("Error fetching users:", err);
             }

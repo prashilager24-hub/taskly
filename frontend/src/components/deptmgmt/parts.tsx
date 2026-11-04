@@ -211,8 +211,9 @@ export function PeoplePicker({ open, title, note, candidates, suggested, subName
 export function MoveModal({ person, subs, onClose, onMove }: { person: Person | null; subs: { id: number; label: string }[]; onClose: () => void; onMove: (subId: number) => Promise<void> }) {
     const [to, setTo] = useState("");
     const [busy, setBusy] = useState(false);
+    // not closed by outside clicks: picking from the list (drawn outside the dialog) counted as one and closed it
     return (
-        <Modal isOpen={!!person} onOpenChange={(o) => { if (!o) { setTo(""); onClose(); } }} size="md">
+        <Modal isOpen={!!person} onOpenChange={(o) => { if (!o) { setTo(""); onClose(); } }} size="md" isDismissable={false}>
             <ModalContent>
                 <ModalHeader className="flex flex-col gap-1"><span className="eyebrow">Move person</span><span>{person?.name}</span></ModalHeader>
                 <ModalBody>

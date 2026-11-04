@@ -14,24 +14,42 @@ import * as pms from './pmsReviews.service';
 import * as reflection from './quarterReflection.service';
 import { pmsOverview } from './pmsOverview.service';
 import { requireModule } from '../../middlewares/permission';
+import { assertCanRead, assertTeam, readablePeople } from '../access/team';
+import { pool } from '../../config/db';
+import type mysql from 'mysql2/promise';
+
+// who is asking; reviews are written for and read by the person's own team leaders (Admin / Super Admin: anyone)
+const viewer = (req: { user?: { sub?: string | number; role?: number } }) => ({ id: Number(req.user?.sub), role: Number(req.user?.role) });
+const ownerOf = async (table: 'monthlyreview' | 'quarterlyreview', id: number) =>
+  Number((await pool.query<mysql.RowDataPacket[]>(`SELECT emp_id FROM ${table} WHERE id = ?`, [id]))[0][0]?.['emp_id'] ?? 0);
 
 // ── Monthly Reviews (Java contract: camelCase DTOs, plain arrays) ────────────
 const monthlyRouter = Router();
 monthlyRouter.use(authenticate);
 
 // POST  /monthly-reviews
-monthlyRouter.post('/', async (req, res, next) => {
-  try { res.status(201).json(await pms.createMonthly(req.body)); } catch (e) { next(e); }
+monthlyRouter.post('/', requireModule('pms_feedback', 'create'), async (req, res, next) => {
+  try {
+    const v = viewer(req);
+    await assertTeam(v.id, v.role, [Number(req.body?.empId)], 'You can give feedback only to people in your team');
+    res.status(201).json(await pms.createMonthly(req.body));
+  } catch (e) { next(e); }
 });
 
 // GET   /monthly-reviews/:empId/:year   (year may be ALL)
 monthlyRouter.get('/:empId/:year', async (req, res, next) => {
-  try { res.json(await pms.listMonthly(Number(req.params['empId']), String(req.params['year']))); } catch (e) { next(e); }
+  try {
+    const v = viewer(req);
+    await assertCanRead(v.id, v.role, Number(req.params['empId']));
+    res.json(await pms.listMonthly(Number(req.params['empId']), String(req.params['year'])));
+  } catch (e) { next(e); }
 });
 
 // DELETE /monthly-reviews/:id
-monthlyRouter.delete('/:id', async (req, res, next) => {
+monthlyRouter.delete('/:id', requireModule('pms_feedback', 'update'), async (req, res, next) => {
   try {
+    const v = viewer(req);
+    await assertTeam(v.id, v.role, [await ownerOf('monthlyreview', Number(req.params['id']))], 'You can delete feedback only for people in your team');
     await pms.deleteMonthly(Number(req.params['id']));
     res.type('text/plain').send('Monthly review deleted successfully');
   } catch (e) { next(e); }
@@ -42,28 +60,40 @@ const quarterlyRouter = Router();
 quarterlyRouter.use(authenticate);
 
 // POST  /quarterly-review/create
-quarterlyRouter.post('/create', async (req, res, next) => {
+quarterlyRouter.post('/create', requireModule('pms_quarterly', 'create'), async (req, res, next) => {
   try {
+    const v = viewer(req);
+    await assertTeam(v.id, v.role, [Number(req.body?.empId)], 'You can review only people in your team');
     const id = await pms.createQuarterly(req.body);
     res.json({ success: true, message: 'Quarterly review saved successfully', id });
   } catch (e) { next(e); }
 });
 
 // GET   /quarterly-review/all
-quarterlyRouter.get('/all', async (_req, res, next) => {
-  try { res.json(await pms.listQuarterly()); } catch (e) { next(e); }
+quarterlyRouter.get('/all', async (req, res, next) => {
+  try {
+    // everyone for Admin / Super Admin / PMS Report (HR); otherwise only the viewer's own and their team's reviews
+    const v = viewer(req);
+    const people = await readablePeople(v.id, v.role);
+    const all = (await pms.listQuarterly()) as { empId?: number }[];
+    res.json(people ? all.filter((r) => people.has(Number(r.empId))) : all);
+  } catch (e) { next(e); }
 });
 
 // GET   /quarterly-review/employee/:empId?quarter=&year=
 quarterlyRouter.get('/employee/:empId', async (req, res, next) => {
   try {
+    const v = viewer(req);
+    await assertCanRead(v.id, v.role, Number(req.params['empId']));
     res.json(await pms.listQuarterly(Number(req.params['empId']), req.query['quarter'] as string | undefined, req.query['year'] as string | undefined));
   } catch (e) { next(e); }
 });
 
 // PUT   /quarterly-review/update/:id
-quarterlyRouter.put('/update/:id', async (req, res, next) => {
+quarterlyRouter.put('/update/:id', requireModule('pms_quarterly', 'update'), async (req, res, next) => {
   try {
+    const v = viewer(req);
+    await assertTeam(v.id, v.role, [await ownerOf('quarterlyreview', Number(req.params['id']))], 'You can change reviews only for people in your team');
     const id = await pms.updateQuarterly(Number(req.params['id']), req.body);
     res.json({ success: true, message: 'Quarterly review updated successfully', id });
   } catch (e) { next(e); }
@@ -73,10 +103,17 @@ quarterlyRouter.put('/update/:id', async (req, res, next) => {
 const quarterlyAliasRouter = Router();
 quarterlyAliasRouter.use(authenticate);
 quarterlyAliasRouter.get('/:empId', async (req, res, next) => {
-  try { res.json(await pms.listQuarterly(Number(req.params['empId']))); } catch (e) { next(e); }
+  try {
+    const v = viewer(req);
+    await assertCanRead(v.id, v.role, Number(req.params['empId']));
+    res.json(await pms.listQuarterly(Number(req.params['empId'])));
+  } catch (e) { next(e); }
 });
-quarterlyAliasRouter.delete('/:id', async (req, res, next) => {
-  try { await pms.deleteQuarterly(Number(req.params['id'])); res.json({ success: true, message: 'Quarterly review deleted' }); } catch (e) { next(e); }
+quarterlyAliasRouter.delete('/:id', requireModule('pms_quarterly', 'update'), async (req, res, next) => {
+  try {
+    const v = viewer(req);
+    await assertTeam(v.id, v.role, [await ownerOf('quarterlyreview', Number(req.params['id']))], 'You can delete reviews only for people in your team');
+    await pms.deleteQuarterly(Number(req.params['id'])); res.json({ success: true, message: 'Quarterly review deleted' }); } catch (e) { next(e); }
 });
 
 // ── Quarter notes: the employee's own biggest achievement and failure ─────────

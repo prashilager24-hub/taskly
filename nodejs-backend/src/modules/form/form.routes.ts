@@ -31,7 +31,8 @@ const WorkEntrySchema = z.object({
   units: num.nullish(),
   departmentID: num.int().nullish(),
   achivedUnits: num.int().nullish(),
-  totalUnitValues: z.string().nullish(),
+  // the Daily Activity form sends the achieved percentage as a number
+  totalUnitValues: z.union([z.string(), z.number()]).transform(String).nullish(),
   targetID: num.int().nullish(),
   totalTimePerSetup: num.nullish(),
   isHalfDayLeave: z.boolean().nullish(),

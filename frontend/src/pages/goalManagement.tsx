@@ -94,7 +94,8 @@ const GoalManagement: React.FC<{ departmentId?: number }> = ({ departmentId }) =
             !newGoal.goalMetric ||
             !newGoal.metricValue ||
             !newGoal.unit ||
-            !newGoal.frequency
+            !newGoal.frequency ||
+            !newGoal.roleID
         ) {
             addToast({
                 title: "Missing Required Fields",

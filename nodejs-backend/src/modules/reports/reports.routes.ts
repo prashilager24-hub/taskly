@@ -57,10 +57,12 @@ const BulkApprovalSchema = z.object({
 });
 
 const RejectEntrySchema = z.object({
-  id: z.coerce.number().int().nullish(),
+  id: z.coerce.number().int(),
   type: z.string().nullish(),
-  comment: z.string().nullish(),
+  comment: z.string().trim().min(1, 'Enter a reason for rejecting'),
 });
+
+const viewer = (req: { user?: { sub?: string | number; role?: number } }) => ({ id: Number(req.user?.sub), role: Number(req.user?.role) });
 
 // ── Dashboard routes (same path as Java: /t2.0/authentificationUtilization/) ─
 // Mounted under /t2.0/reports so React proxy can reach them
@@ -106,7 +108,12 @@ router.post('/combined/list', validate(CombinedWorkFilterSchema), async (req, re
   try {
     const page = Number(req.query['page'] ?? 1);
     const size = Number(req.query['size'] ?? 10);
-    sendJava(res, await combined.getCombinedData(req.body, page, size));
+    // only the viewer's own entries and their team's (everyone for Admin / Super Admin)
+    const v = viewer(req);
+    const team = await combined.teamOf(v.id, v.role);
+    const allowed = team === 'all' ? null : [v.id, ...team];
+    if (allowed && req.body.userID != null && !allowed.includes(Number(req.body.userID))) req.body.userID = -1;
+    sendJava(res, await combined.getCombinedData({ ...req.body, onlyUsers: allowed }, page, size));
   } catch (e) {
     // Java caught everything here and answered 200 with statusCode 900
     if (e instanceof Error) sendJava(res, { status: false, statusCode: 900, message: `Error: ${e.message}`, pagination: null, data: null });
@@ -116,6 +123,8 @@ router.post('/combined/list', validate(CombinedWorkFilterSchema), async (req, re
 
 router.post('/combined/approve', validate(BulkApprovalSchema), async (req, res, next) => {
   try {
+    const v = viewer(req);
+    await combined.assertCanDecide(v.id, v.role, req.body.taskEntryIDs ?? [], req.body.goalEntryIDs ?? []);
     await combined.approveEntries(req.body);
     sendJava(res, { status: true, message: 'Entries approved successfully' });
   } catch (e) { next(e); }
@@ -123,6 +132,9 @@ router.post('/combined/approve', validate(BulkApprovalSchema), async (req, res, 
 
 router.post('/combined/reject', validate(RejectEntrySchema), async (req, res, next) => {
   try {
+    const v = viewer(req);
+    const goal = String(req.body.type ?? '').toLowerCase() === 'goal';
+    await combined.assertCanDecide(v.id, v.role, goal ? [] : [req.body.id], goal ? [req.body.id] : []);
     await combined.rejectEntry(req.body);
     sendJava(res, { status: true, message: 'Entry rejected successfully' });
   } catch (e) { next(e); }

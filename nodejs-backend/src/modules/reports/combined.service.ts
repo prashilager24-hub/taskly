@@ -1,6 +1,7 @@
 import { pool } from '../../config/db';
 import { calculateTarget } from '../calculations/calculationLogic';
 import type mysql from 'mysql2/promise';
+import { AppError } from '../../utils/AppError';
 import { toBool, toLocalDateTime, toNum } from '../../utils/javaCompat';
 
 // ── Ported from Java CombinedWorkDataService (/combined) — Entry Approval ──
@@ -13,6 +14,21 @@ export interface CombinedFilter {
   startDate?: string | null;
   endDate?: string | null;
   entryType?: string | null; // TASK | TARGET | GOAL; anything else = all
+  /** set by the route: only these people's entries (the viewer and their team) */
+  onlyUsers?: number[] | null;
+}
+
+export { teamOf } from '../access/team';
+import { teamOf } from '../access/team';
+
+/** Refuses when any of the entries belongs to someone outside the viewer's team (or to the viewer) */
+export async function assertCanDecide(viewerId: number, role: number, taskIds: number[], goalIds: number[]) {
+  const team = await teamOf(viewerId, role);
+  if (team === 'all') return;
+  const owners: number[] = [];
+  if (taskIds.length) owners.push(...(await pool.query<mysql.RowDataPacket[]>('SELECT UserID FROM UserWorkData WHERE DailyTaskLogID IN (?)', [taskIds]))[0].map((r) => Number(r['UserID'])));
+  if (goalIds.length) owners.push(...(await pool.query<mysql.RowDataPacket[]>('SELECT UserID FROM UserGoalData WHERE UserGoalDataID IN (?)', [goalIds]))[0].map((r) => Number(r['UserID'])));
+  if (owners.some((u) => !team.has(u))) throw AppError.forbidden('You can approve or reject only your team members’ entries, not your own');
 }
 
 const localDate = (v: unknown) => toLocalDateTime(v)?.slice(0, 10) ?? null;
@@ -26,6 +42,7 @@ function baseFilter(alias: string, f: CombinedFilter, isForTarget: boolean | nul
   if (isForTarget != null) { conds.push(`${alias}.IsForTarget = ?`); params.push(isForTarget ? 1 : 0); }
   if (f.startDate) { conds.push(`${alias}.WorkDate >= ?`); params.push(f.startDate); }
   if (f.endDate) { conds.push(`${alias}.WorkDate <= ?`); params.push(f.endDate); }
+  if (f.onlyUsers) { conds.push(f.onlyUsers.length ? `${alias}.UserID IN (?)` : 'FALSE'); if (f.onlyUsers.length) params.push(f.onlyUsers as unknown as number); }
   return { conds, params };
 }
 
@@ -95,12 +112,13 @@ export async function getCombinedData(f: CombinedFilter, page: number, size: num
     names.set(`d${r['DepartmentID']}`, r['_DepartmentName']);
   }
 
-  const data = dates.map((date) => buildDailySummary(
-    date, f,
-    work.filter((w) => localDate(w['WorkDate']) === date),
-    goals.filter((g) => localDate(g['WorkDate']) === date),
-    names,
-  ));
+  // one summary per person per date (grouping by date alone put everyone's entries under the first person's name)
+  const data = dates.flatMap((date) => {
+    const w = work.filter((x) => localDate(x['WorkDate']) === date);
+    const g = goals.filter((x) => localDate(x['WorkDate']) === date);
+    const people = [...new Set([...w, ...g].map((x) => Number(x['UserID'])))];
+    return people.map((u) => buildDailySummary(date, f, w.filter((x) => Number(x['UserID']) === u), g.filter((x) => Number(x['UserID']) === u), names));
+  });
   return { status: true, statusCode: 200, message: 'Data retrieved successfully', pagination, data };
 }
 
@@ -115,8 +133,9 @@ function buildDailySummary(
   const tasks = work.filter(isTask);
   const targets = work.filter(isTarget);
   const totalUnits = sum(targets, 'Units');
-  const userID = work.length ? work[0]!['UserID'] : f.userID ?? null;
-  const departmentID = work.length ? work[0]!['DepartmentID'] : f.departmentID ?? null;
+  const first = work[0] ?? goals[0];
+  const userID = first ? first['UserID'] : f.userID ?? null;
+  const departmentID = first ? first['DepartmentID'] : f.departmentID ?? null;
 
   const entries: Record<string, unknown>[] = [];
   for (const w of work) {

@@ -17,6 +17,32 @@ Summary: one or two lines on what and why.
 
 ---
 
+## 2026-11-04 — Form testing with test users: daily activity submit fixed, approvals and reviews limited to the team, form checks
+Summary: every form was run with test users (Appraisal Test EL / FL / Associates / Finance / HR, and new QA Test Manager / Lead / Intern). The bugs found are fixed below. The most serious: nobody could submit Daily Activity, and any signed-in person could read everyone's quarterly reviews, the HR query queue and pending entries, and approve any entry (including their own).
+
+### Frontend
+- `TaskManagement.tsx`: a task needs a name and a task type before saving; the form stays open (with what was typed) when saving fails.
+- `targetManagement.tsx`, `goalManagement.tsx`: a role is required (it was marked required but not checked; a target / goal without a role is shown to nobody); the target form keeps its input when saving fails.
+- `deptmgmt/parts.tsx`: the Move person dialog no longer closes when a sub department is picked from the list.
+- `EntryApproval.tsx` (Logs Approval): leaders open on their whole team (Associates / Interns on their own entries); the Task / Goal and Worked columns show their values; Interns no longer see Approve / Reject; a failed reject shows the reason.
+- `monthlyReview.tsx`, `quarterlyReview.tsx`: the person list offers only the reviewer's team.
+### Backend
+- `form/form.routes.ts`: Daily Activity submit accepts the achieved % as a number (every submission failed with "Failed to submit activity log").
+- `tasks`, `targets`, `goals` routes: creating needs a name and a department, and for targets / goals a role; role 0 (nothing picked) is treated as none; a target's unit may be a number (it failed "Validation failed"); a goal without a role no longer crashes (500).
+- New `access/team.ts` and `GET /access/team`: a person's team = everyone below them in the reporting line plus everyone in the sub departments they lead as EL or FL, never themselves or people above them; Admin / Super Admin: everyone.
+- `reports` (Logs Approval, `/combined/*`): list only the viewer's own and their team's entries; approve / reject only team members' entries (not your own); reject needs a reason; entries are grouped per person per day (different people were shown under one name).
+- `reviews` (monthly feedback, quarterly reviews): reading needs to be the person, their team leader, Admin / Super Admin or PMS Report (HR); writing needs the module right and the person in your team; deleting the same.
+- `hr` (Support queries): the queue, reply, resolve and reassign are for the team the query was sent to ("Receives queries for") and Admin / Super Admin; the query summary for the HR / L&D teams.
+- `appraisal` routes: an impossible date (e.g. 2024-13-45) is refused ("That date does not exist") instead of a 500.
+- `access.service.ts` (roles): creating a role with the name of a removed role brings that role back instead of failing with a 500; renaming onto a removed role's name is refused with a message.
+### Database
+- none (no migration). Local test data only: QA Test Manager / Lead / Intern users (`qa.manager|lead|intern@tapmind.test`, password `Test@12345`) and a QA task / target / goal in TM-SD01 Appraisal Cycle Test.
+### Env / config
+- none
+### Notes
+- `docs/test-cases/Release_Test_Cases_2026-11-04_v2.xlsx` updated: Pending is now only what still needs a hand test (Excel file reading in bulk upload, onboarding / engagement survey filling, earlier-date entries, goal entry, editing an entry).
+- Checked after the fixes: 117 API access checks, the browser sweep of every menu page for six user types, backend unit tests, the full appraisal flow (29 steps) with the test people (appraisal test data restored afterwards).
+
 ## 2026-11-04 — Super Admin gets full access; appraisal pages show "No access"; release test cases
 Summary: a Super Admin (any role with user type Super Admin) now has every module and sees everyone's data, exactly like Admin. Opening an appraisal page someone may not use now shows the "No access" screen instead of an empty page with an error. The release test case workbook is added with the results of today's automated run.
 

@@ -64,14 +64,26 @@ export async function saveRole(actor: number, input: { roleId?: number; roleName
   const [dupe] = await pool.execute<Row[]>('SELECT RoleID FROM AMRole WHERE RoleName = ? AND IsRoleArchived = 0 AND RoleID <> ?', [name, input.roleId ?? 0]);
   if (dupe.length) throw AppError.conflict('A role with this name already exists');
 
+  // a removed role keeps its name (names are unique): a new role with that name brings it back; renaming onto it is refused
+  const [removed] = await pool.execute<Row[]>('SELECT RoleID FROM AMRole WHERE RoleName = ? AND IsRoleArchived = 1 AND RoleID <> ?', [name, input.roleId ?? 0]);
+
   if (input.roleId) {
     if (input.roleId === 1) throw AppError.forbidden('Super Admin always has full access and cannot be changed');
+    if (removed.length) throw AppError.conflict('A removed role still uses this name; pick another name');
     const [res] = await pool.execute<mysql.ResultSetHeader>(
       'UPDATE AMRole SET RoleName = ?, UserType = ?, RoleDescription = ?, RolePrivileges = ?, RoleStatus = ?, RoleModifyTime = NOW() WHERE RoleID = ? AND IsRoleArchived = 0',
       [name, input.userType ?? null, input.description ?? null, privileges, input.active === false ? 0 : 1, input.roleId]);
     if (!res.affectedRows) throw AppError.notFound('Role not found');
     await logChange(actor, 'role', input.roleId, `Updated role "${name}"`);
     return input.roleId;
+  }
+  if (removed.length) {
+    const roleId = removed[0]!['RoleID'] as number;
+    await pool.execute(
+      'UPDATE AMRole SET IsRoleArchived = 0, UserType = ?, RoleDescription = ?, RolePrivileges = ?, RoleStatus = 1, RoleModifyTime = NOW() WHERE RoleID = ?',
+      [input.userType ?? null, input.description ?? null, privileges, roleId]);
+    await logChange(actor, 'role', roleId, `Created role "${name}" (brought back the removed role with this name)`);
+    return roleId;
   }
   const [res] = await pool.execute<mysql.ResultSetHeader>(
     'INSERT INTO AMRole (RoleName, UserType, RoleDescription, RolePrivileges, RoleStatus, IsRoleArchived, RoleCreateTime, RoleModifyTime) VALUES (?, ?, ?, ?, 1, 0, NOW(), NOW())',

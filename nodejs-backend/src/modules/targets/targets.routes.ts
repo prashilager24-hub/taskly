@@ -16,15 +16,22 @@ const TargetSchema = z.object({
   targetName: z.string().nullish(),
   targetMetric: z.string().nullish(),
   metricValue: z.union([z.string(), z.number()]).transform(String).nullish(),
-  unit: z.string().nullish(),
+  unit: z.union([z.string(), z.number()]).transform(String).nullish(),
   frequency: z.enum(['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Dynamic', 'Not Daily']).nullish(),
   timingType: z.string().nullish(),
   isDynamic: z.boolean().nullish(),
   description: z.string().nullish(),
   isActive: z.boolean().nullish(),
-  roleID: z.coerce.number().int().nullish(),
+  // the forms send 0 when no role is picked; there is no role 0
+  roleID: z.coerce.number().int().nullish().transform((v) => (v ? v : null)),
   roleIds: z.array(z.coerce.number().int()).nullish(),
 }).passthrough();
+
+/** A new target needs a name and a department */
+const TargetSchemaCreate = TargetSchema.extend({
+  departmentID: z.coerce.number().int().positive({ message: 'Choose a department' }),
+  targetName: z.string().trim().min(1, 'Enter a target name').max(255),
+}).refine((t) => !!t.roleID || !!t.roleIds?.length, { message: 'Choose a role: only people with that role see the target', path: ['roleID'] });
 
 const DeptItemListSchema = z.object({
   searchText: z.string().nullish(),
@@ -47,7 +54,7 @@ const EfficiencyQuerySchema = z.object({
 const sendDto = (res: Response, body: { statusCode: number }) => sendJava(res, body, body.statusCode);
 
 // POST /departmentTargets/create
-router.post('/create', validate(TargetSchema), async (req, res, next) => {
+router.post('/create', validate(TargetSchemaCreate), async (req, res, next) => {
   try { sendDto(res, await dt.createDepartmentTarget(req.body)); } catch (e) { next(e); }
 });
 

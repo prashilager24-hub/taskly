@@ -192,15 +192,16 @@ export default function EntryApproval() {
     // safely parse stored user
     const user = authUserLD ? JSON.parse(authUserLD) : null;
     const token = user?.token;
-    const isELORUSER = [2, 3, 4, 5, 6, 7, 23].includes(user?.userRole);    // initial state values
+    // initial state values
     const [taskOptionsForUpdate, setTaskOptionsForUpdate] = useState([]);
 
 
     const [filterStatus, setFilterStatus] = useState(
         user?.userRole != 1 && user?.departmentID ? String(user.departmentID) : "" // admins start on all departments
     );
+    // Associates and Interns start on their own entries; leaders start on their whole team (the server only returns their team)
     const [selectedUser, setSelectedUser] = useState(
-        isELORUSER ? String(user?.userID) : ""
+        [2, 5].includes(user?.userRole) ? String(user?.userID) : ""
     );
     const [entryTypeFilter, setEntryTypeFilter] = useState("");
     const [userSearch, setUserSearch] = useState("");
@@ -268,7 +269,9 @@ export default function EntryApproval() {
             key: "taskName",
             label: "Task / Goal",
             sortable: true,
+            // rows carry the task / target / goal name as Name
             renderCell: (item) => (
+                item.Name ||
                 item.goalName ||
                 item.targetName ||
                 item.taskName ||
@@ -309,8 +312,8 @@ export default function EntryApproval() {
                     return item.achievedGoal ?? "-";
                 }
 
-                // TASK / TARGET
-                return item.timeTakenToWork ?? "-";
+                // TASK / TARGET (rows carry the minutes worked as workedTime)
+                return item.workedTime ?? item.timeTakenToWork ?? "-";
             },
         },
 
@@ -890,12 +893,12 @@ export default function EntryApproval() {
                                                     dateRange?.endDate || null,
                                                 entryType: entryTypeFilter || null,
                                             });
-                                        } catch (err) {
+                                        } catch (err: any) {
                                             console.error(err);
 
                                             addToast({
-                                                title: "Error",
-                                                description: "Reject failed",
+                                                title: "Could not reject",
+                                                description: err?.response?.data?.errors?.comment?.[0] || err?.response?.data?.message || "Reject failed",
                                                 color: "danger",
                                             });
                                         }
@@ -1010,7 +1013,7 @@ export default function EntryApproval() {
                 </div>
             </div>
             <div className="border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900 overflow-hidden p-6">
-                {selectedRows.length > 0 && user.userRole !== 2 && (
+                {selectedRows.length > 0 && ![2, 5].includes(user.userRole) && (
                     <div className="flex justify-between items-center bg-ink-100 dark:bg-ink-800 p-3 rounded mb-3 shadow">
                         <span className="font-semibold">
                             {selectedRows.length} item(s) selected

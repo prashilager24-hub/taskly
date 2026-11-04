@@ -70,6 +70,7 @@ const TargetManagement: React.FC<{ departmentId?: number }> = ({ departmentId })
             !newTarget.timingType ||
             newTarget.isDynamic === null ||
             !newTarget.description ||
+            !newTarget.roleID ||
             !filterStatus
         ) {
             addToast({
@@ -132,23 +133,9 @@ const TargetManagement: React.FC<{ departmentId?: number }> = ({ departmentId })
             console.error("Error creating target:", error);
             addToast({
                 title: "Failed",
-                description: error?.response?.data?.message,
+                description: error?.response?.data?.message || "Failed to create target",
                 color: "danger",
             });
-            setNewTarget({
-                targetId: -1,
-                targetName: '',
-                targetMetric: '',
-                metricValue: '',
-                unit: '',
-                frequency: 'Monthly',
-                timingType: 'Ongoing',
-                isDynamic: false,
-                description: '',
-                isActive: true,
-                roleID: '',
-            })
-            setIsModalOpen(false);
         }
     };
 

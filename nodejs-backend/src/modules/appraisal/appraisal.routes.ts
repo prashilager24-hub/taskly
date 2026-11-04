@@ -46,7 +46,8 @@ const cycleId = (req: Request) => Number(req.params['cycleId']);
 const amount = z.number().min(0).max(MAX_AMOUNT);
 const text = z.string().max(4000);
 const quarterNo = z.number().int().min(1).max(4);
-const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
+const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
+  .refine((v) => !Number.isNaN(Date.parse(v)) && new Date(v).toISOString().slice(0, 10) === v, 'That date does not exist');
 
 const ANSWER_KEYS = ['goalsAchieved', 'goalsNotAchievedWhy', 'howRatingAchieved', 'difficultiesAndWhy', 'howUpdatingGoalsTargets', 'whoApprovesGoalsTargets', 'whyDeserveSalary', 'whyExpectThisSalary', 'biggestMilestone', 'biggestAchievement'] as const;
 const answers = z.object(Object.fromEntries(ANSWER_KEYS.map((k) => [k, text.optional()])) as Record<(typeof ANSWER_KEYS)[number], z.ZodOptional<z.ZodString>>).strict();

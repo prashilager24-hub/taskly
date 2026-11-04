@@ -17,6 +17,22 @@ Summary: one or two lines on what and why.
 
 ---
 
+## 2026-11-04 — Super Admin gets full access; appraisal pages show "No access"; release test cases
+Summary: a Super Admin (any role with user type Super Admin) now has every module and sees everyone's data, exactly like Admin. Opening an appraisal page someone may not use now shows the "No access" screen instead of an empty page with an error. The release test case workbook is added with the results of today's automated run.
+
+### Frontend
+- `App.tsx`: each appraisal page checks its own permission (My Appraisal, Overview, Department Budgets, Budget Split, Team Allocation, Change Requests, HR Postponements, Appraisal Setup).
+### Backend
+- `auth/auth.service.ts`: at sign-in (and Switch user) a Super Admin works with the Admin's rights (role 1 in the session); their own role stays Super Administrator in the database and in Access Management.
+- `access/access.service.ts`: the Super Admin user type has full access, and the Super Administrator role shows as a full-access role.
+### Database
+- none
+### Env / config
+- Sign-in codes are not emailed yet: `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` are empty in `nodejs-backend/.env`, so the code is shown on screen (development only). Once they are filled and the email arrives, the on-screen code stops by itself.
+### Notes
+- `docs/test-cases/Release_Test_Cases_2026-11-04_v2.xlsx`: one sheet per user type. "Tested - Working" = checked today against the running app (every menu, every page in it, blocked pages, Access / Department / Notification create-edit-delete over the API); "Pending" = to be tested by hand.
+- A Super Admin who is signed in must sign in again to get full access.
+
 ## 2026-11-03 — Fix: Access Management role drawer cut off the View / Create / Edit / Delete boxes
 Summary: since the appraisal pages were added, their longer descriptions stayed on one line (the global "table cells do not wrap" rule), so the Module column filled the drawer and pushed the tick boxes off to the right behind a sideways scroll.
 

@@ -47,7 +47,11 @@ interface UserRow {
   IsNewJoiner?: number | boolean | null;
   JoiningCycle?: string | null;
   UserCreateTime?: Date | string | null;
+  RoleUserType?: string | null;
 }
+
+/** A Super Admin works with the Admin's rights everywhere (role 1); their own role stays in the database and in Access Management */
+const authRole = (user: UserRow) => (user.RoleUserType === 'SUPER_ADMIN' ? 1 : user.RoleID);
 
 // ─────────────────────────────────────────────────────────────
 // Helper: sign a JWT for a user row, bound to a server-side session (sid).
@@ -59,7 +63,7 @@ function signToken(user: UserRow, sessionId: string, expiresInSeconds: number): 
       sub: String(user.UserID),
       email: user.UserEmail,
       username: user.UserName,
-      role: user.RoleID,
+      role: authRole(user),
       sid: sessionId,
     },
     env.JWT_SECRET,
@@ -77,7 +81,8 @@ const USER_SELECT = `
   SELECT UserID, UserEmail, UserName, UserPassword, RoleID, SecondaryRoleID,
          UserStatus, IsUserArchived, EmployeeID, ReportingManagerID,
          ELManagerID, AppraisalCycle, FeedbackResolverTeam, ThemePreference, TwoFactor, UserCreateTime,
-         Designation, JobLevel, Band, IsNewJoiner, JoiningCycle
+         Designation, JobLevel, Band, IsNewJoiner, JoiningCycle,
+         (SELECT r.UserType FROM AMRole r WHERE r.RoleID = Users.RoleID) AS RoleUserType
   FROM Users`;
 
 interface SessionDepartment {
@@ -121,7 +126,7 @@ async function buildSessionPayload(user: SessionUser, token: string) {
     name: user.UserName,
     token,
     userID: user.UserID,
-    userRole: user.RoleID,
+    userRole: authRole(user),
     secondaryRoleID: user.SecondaryRoleID ?? null,
     reportingManagerID: user.ReportingManagerID ?? null,
     elManagerID: user.ELManagerID ?? null,

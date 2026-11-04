@@ -53,7 +53,7 @@ export async function listRoles() {
      FROM AMRole r WHERE r.IsRoleArchived = 0 ORDER BY r.RoleID`);
   return rows.map((r) => ({
     roleId: r['RoleID'], roleName: r['RoleName'], userType: r['UserType'] ?? null, description: r['RoleDescription'] ?? '', active: r['RoleStatus'] === 1,
-    userCount: Number(r['userCount']), system: r['RoleID'] === 1, privileges: r['RoleID'] === 1 ? FULL_ACCESS : parse(r['RolePrivileges']),
+    userCount: Number(r['userCount']), system: r['RoleID'] === 1 || r['UserType'] === 'SUPER_ADMIN', privileges: r['RoleID'] === 1 || r['UserType'] === 'SUPER_ADMIN' ? FULL_ACCESS : parse(r['RolePrivileges']),
   }));
 }
 
@@ -131,7 +131,7 @@ async function layersOf(userId: number): Promise<Layers> {
   const [[u]] = await pool.execute<Row[]>('SELECT RoleID, SecondaryRoleID, FeedbackResolverTeam FROM Users WHERE UserID = ?', [userId]);
   if (!u) throw AppError.notFound('User not found');
   const roleIds = [u['RoleID'], u['SecondaryRoleID']].filter((x): x is number => !!x);
-  const [roles] = await pool.query<Row[]>('SELECT RoleID, RoleName, RolePrivileges FROM AMRole WHERE RoleID IN (?) AND IsRoleArchived = 0 AND RoleStatus = 1', [roleIds.length ? roleIds : [0]]);
+  const [roles] = await pool.query<Row[]>('SELECT RoleID, RoleName, RolePrivileges, UserType FROM AMRole WHERE RoleID IN (?) AND IsRoleArchived = 0 AND RoleStatus = 1', [roleIds.length ? roleIds : [0]]);
   const [depts] = await pool.query<Row[]>(
     `SELECT DISTINCT d.DepartmentID, d.DepartmentName, d.ExecutiveLeaderID, a.Privileges,
             d.DepartmentID IN (SELECT DepartmentID FROM DepartmentUser WHERE UserID = ?) AS isMember FROM Department d
@@ -146,7 +146,7 @@ async function layersOf(userId: number): Promise<Layers> {
     role: union(...roles.map((r) => parse(r['RolePrivileges'])), ...(['HR', 'L_D'].includes(String(u['FeedbackResolverTeam'] ?? '')) ? [HR_TEAM_DEFAULTS] : []),
       ...(financeHead ? [FINANCE_HEAD_DEFAULTS] : []), ...(hrTeam ? [HR_DEPT_DEFAULTS] : [])),
     departments: depts.map((d) => ({ id: d['DepartmentID'], name: d['DepartmentName'] })), department: union(...depts.map((d) => parse(d['Privileges']))),
-    grants: parse(o?.['Grants']), denies: parse(o?.['Denies'], false), isSuperAdmin: roleIds.includes(1),
+    grants: parse(o?.['Grants']), denies: parse(o?.['Denies'], false), isSuperAdmin: roleIds.includes(1) || roles.some((r) => r['UserType'] === 'SUPER_ADMIN'),
   };
 }
 

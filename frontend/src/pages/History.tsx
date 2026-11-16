@@ -440,6 +440,7 @@ const [goals, setGoals] = useState([]);
                                 DepartmentName: item.DepartmentName,
 
                                 targetSum: 0,
+                                targetCount: 0,
                                 allocatedSum: 0,
                                 utilizationSum: 0,
                                 totalWorkSum: 0,
@@ -450,7 +451,12 @@ const [goals, setGoals] = useState([]);
                             };
                         }
 
-                        acc[deptId].targetSum += Number(item.TargetAchievedPercent || 0);
+                        const targetAchieved = Number(item.TargetAchievedPercent || 0);
+                        acc[deptId].targetSum += targetAchieved;
+                        // Same rule as the backend's targetDayAverage (Performance Insights): a day with
+                        // 0% target achieved is skipped from the average, except department 54 where every
+                        // day counts. Keeps this page's Target % consistent with Performance Insights.
+                        if (item.DepartmentID === 54 || targetAchieved > 0) acc[deptId].targetCount += 1;
                         acc[deptId].allocatedSum += Number(item.AllocatedTimeHrs || 0);
                         acc[deptId].utilizationSum += Number(item.UtilizationPercent || 0);
                         acc[deptId].totalWorkSum += Number(item.TotalTimeOfWork || 0);
@@ -462,7 +468,7 @@ const [goals, setGoals] = useState([]);
                         return acc;
                     }, {})
                 ).map((dept: any) => {
-                    const AvgTargetPercent = +(dept.targetSum / dept.count).toFixed(2);
+                    const AvgTargetPercent = dept.targetCount ? +(dept.targetSum / dept.targetCount).toFixed(2) : 0;
                     const AvgAllocatedHrs = +(dept.allocatedSum / dept.count).toFixed(2);
                     const AvgUtilizationPercent = +(dept.utilizationSum / dept.count).toFixed(2);
                     const AvgTotalWork = +(dept.totalWorkSum / dept.count).toFixed(2);

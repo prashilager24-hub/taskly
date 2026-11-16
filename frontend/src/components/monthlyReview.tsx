@@ -429,7 +429,7 @@ export default function MonthlyReview() {
   const [usersAll, setUsersAll] = useState([]);
   const filteredUsers = usersAll.filter((u) => {
     if (!filterStatus) return true;
-    return String(u.departmentID) === String(filterStatus);
+    return Array.isArray(u.departments) && u.departments.some((d) => String(d.departmentID) === String(filterStatus));
   });
 
 
@@ -779,7 +779,7 @@ export default function MonthlyReview() {
     const fetchUsers = async () => {
       try {
         const body = {
-          filter: "",
+          filter: "Active",
           searchText: "",
           departmentID: filterStatus ? Number(filterStatus) : 0
         };

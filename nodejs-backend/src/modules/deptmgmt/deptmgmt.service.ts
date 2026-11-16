@@ -41,7 +41,7 @@ const SUB_SQL = `
          (SELECT COUNT(*) FROM DepartmentUser du JOIN Users u ON u.UserID = du.UserID WHERE du.DepartmentID = d.DepartmentID AND u.IsUserArchived = 0 AND u.UserStatus = 1) AS ActivePeople,
          (SELECT COUNT(*) FROM DepartmentTask t WHERE t.DepartmentID = d.DepartmentID AND t.IsActive = 1) AS Tasks,
          (SELECT COUNT(*) FROM DepartmentTarget t WHERE t.DepartmentID = d.DepartmentID AND t.IsActive = 1) AS Targets,
-         (SELECT COUNT(*) FROM departmentgoal g WHERE g.DepartmentID = d.DepartmentID AND g.IsActive = 1) AS Goals
+         (SELECT COUNT(*) FROM DepartmentGoal g WHERE g.DepartmentID = d.DepartmentID AND g.IsActive = 1) AS Goals
     FROM Department d
     LEFT JOIN Users el ON el.UserID = d.ExecutiveLeaderID
     LEFT JOIN Users fl ON fl.UserID = d.FunctionalLeaderID
@@ -227,7 +227,7 @@ async function movePeople(db: Db, subId: number, userIds: number[]) {
 /** Copies the active tasks, targets and goals of one sub department into another (goals wait for the EL again) */
 async function copyData(db: Db, from: number, to: number) {
   const copied = { tasks: 0, targets: 0, goals: 0 };
-  for (const [table, key] of [['DepartmentTask', 'tasks'], ['DepartmentTarget', 'targets'], ['departmentgoal', 'goals']] as const) {
+  for (const [table, key] of [['DepartmentTask', 'tasks'], ['DepartmentTarget', 'targets'], ['DepartmentGoal', 'goals']] as const) {
     const [cols] = await db.query<Row[]>(`SHOW COLUMNS FROM ${table}`);
     const names = cols.filter((c) => c['Key'] !== 'PRI').map((c) => c['Field'] as string);
     const pick = names.map((n) => (n === 'DepartmentID' ? '?' : /^(CreatedAt|ModifiedAt)$/.test(n) ? 'NOW()' : n === 'approvedByEL' ? '0' : n));

@@ -104,7 +104,7 @@ export default function FormPage() {
         const fetchUsers = async () => {
             try {
                 const body = {
-                    filter: "",
+                    filter: "Active",
                     searchText: "",
                     departmentID: filterStatus ? Number(filterStatus) : 0,
                 };
@@ -131,17 +131,21 @@ export default function FormPage() {
 
                 setUsers(mappedUsers);
 
-                setSelectedUserId((prev) => {
-                    const exists = mappedUsers.find((u) => u.userID === prev);
+                // Only Admin / Super Admin (userRole 1) may log for someone else; everyone
+                // else always logs for themselves, so selectedUserId stays put.
+                if (user.userRole === 1) {
+                    setSelectedUserId((prev) => {
+                        const exists = mappedUsers.find((u) => u.userID === prev);
 
-                    if (exists) {
-                        return prev;
-                    }
+                        if (exists) {
+                            return prev;
+                        }
 
-                    return mappedUsers.length
-                        ? mappedUsers[0].userID
-                        : user.userID;
-                });
+                        return mappedUsers.length
+                            ? mappedUsers[0].userID
+                            : user.userID;
+                    });
+                }
             } catch (err) {
                 console.error(err);
             }
@@ -281,53 +285,68 @@ export default function FormPage() {
                 <section aria-label="Whose activity" className="mb-6 border border-ink-200 bg-white p-5 dark:border-white/10 dark:bg-ink-900">
                     <p className="eyebrow mb-3">Logging for</p>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:max-w-3xl">
-                        <Autocomplete
-                                        label="Department"
-                                labelPlacement="outside"
-                                        placeholder="Select department"
-                                        className="w-full"
-                                        selectedKey={filterStatus}
-                                        inputValue={departmentInput}
-                                        onInputChange={setDepartmentInput}
-                                        onSelectionChange={(key) => {
-                                            if (!key) return;
+                        {user.userRole === 1 ? (
+                            <>
+                                <Autocomplete
+                                                label="Department"
+                                        labelPlacement="outside"
+                                                placeholder="Select department"
+                                                className="w-full"
+                                                selectedKey={filterStatus}
+                                                inputValue={departmentInput}
+                                                onInputChange={setDepartmentInput}
+                                                onSelectionChange={(key) => {
+                                                    if (!key) return;
 
-                                            const selectedDept = departmentList.find(
-                                                (d) => d.key === Number(key)
-                                            );
+                                                    const selectedDept = departmentList.find(
+                                                        (d) => d.key === Number(key)
+                                                    );
 
-                                            if (selectedDept) {
-                                                // setSelectedUserId(0);
-                                                setFilterStatus(selectedDept.key);
-                                                setDepartmentInput(selectedDept.name);
-                                            }
-                                        }}
-                                    >
-                                        {departmentList.sort((a, b) => a.name.localeCompare(b.name))
-                                            .filter((ele) => ele.status === "Active")
-                                            .map((ele) => (
-                                                <AutocompleteItem key={ele.key}>
-                                                    {ele.name}
-                                                </AutocompleteItem>
-                                            ))}
-                                    </Autocomplete>
-                        {(user.userRole === 3 || user.userRole === 4 || user.userRole === 7 || user.userRole === 23 || user.userRole === 1) && (
-                            <Autocomplete
-                                            label="Person"
-                                labelPlacement="outside"
-                                            placeholder="Select person"
-                                            className="w-full"
-                                            selectedKey={String(selectedUserId)}
-                                            onSelectionChange={(key) =>
-                                                setSelectedUserId(Number(key))
-                                            }
-                                        >
-                                            {users.sort((a, b) => a.userName.localeCompare(b.userName)).map((u) => (
-                                                <AutocompleteItem key={u.userID}>
-                                                    {u.userName}
-                                                </AutocompleteItem>
-                                            ))}
-                                        </Autocomplete>
+                                                    if (selectedDept) {
+                                                        // setSelectedUserId(0);
+                                                        setFilterStatus(selectedDept.key);
+                                                        setDepartmentInput(selectedDept.name);
+                                                    }
+                                                }}
+                                            >
+                                                {departmentList.sort((a, b) => a.name.localeCompare(b.name))
+                                                    .filter((ele) => ele.status === "Active")
+                                                    .map((ele) => (
+                                                        <AutocompleteItem key={ele.key}>
+                                                            {ele.name}
+                                                        </AutocompleteItem>
+                                                    ))}
+                                            </Autocomplete>
+                                <Autocomplete
+                                                label="Person"
+                                        labelPlacement="outside"
+                                                placeholder="Select person"
+                                                className="w-full"
+                                                selectedKey={String(selectedUserId)}
+                                                onSelectionChange={(key) =>
+                                                    setSelectedUserId(Number(key))
+                                                }
+                                            >
+                                                {users.sort((a, b) => a.userName.localeCompare(b.userName)).map((u) => (
+                                                    <AutocompleteItem key={u.userID}>
+                                                        {u.userName}
+                                                    </AutocompleteItem>
+                                                ))}
+                                            </Autocomplete>
+                            </>
+                        ) : (
+                            // Only Admin / Super Admin (userRole 1) may log activity for someone
+                            // else, so everyone else just sees their own department and name here.
+                            <>
+                                <div className="flex flex-col gap-1.5">
+                                    <span className="font-secondary text-[10.5px] font-medium uppercase tracking-label text-ink-500 dark:text-ink-400">Department</span>
+                                    <span className="flex h-10 items-center border border-ink-200 bg-ink-50 px-3 text-sm text-ink-600 dark:border-white/10 dark:bg-white/5 dark:text-ink-300">{departmentInput || "—"}</span>
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                    <span className="font-secondary text-[10.5px] font-medium uppercase tracking-label text-ink-500 dark:text-ink-400">Person</span>
+                                    <span className="flex h-10 items-center border border-ink-200 bg-ink-50 px-3 text-sm text-ink-600 dark:border-white/10 dark:bg-white/5 dark:text-ink-300">{user.userName}</span>
+                                </div>
+                            </>
                         )}
                     </div>
                 </section>

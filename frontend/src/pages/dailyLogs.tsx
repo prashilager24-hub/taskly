@@ -327,7 +327,7 @@ export default function DailyLogs() {
         const fetchUsers = async () => {
             try {
                 const body = {
-                    filter: "",
+                    filter: "Active",
                     searchText: "",
                     departmentID: filterStatus ? Number(filterStatus) : 0,
                 };

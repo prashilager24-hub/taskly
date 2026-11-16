@@ -2,6 +2,7 @@ import { pool } from '../../config/db';
 import type mysql from 'mysql2/promise';
 import { javaFail, javaOk, nowLocalDateTime, toBool, toLocalDateTime } from '../../utils/javaCompat';
 import { nextCode } from '../deptmgmt/deptmgmt.service';
+import { teamOf } from '../access/team';
 
 // ── Ported from Java DepartmentService + DepartmentController — response shapes match the original ──
 
@@ -33,7 +34,13 @@ const toLocalDate = (v: unknown) => toLocalDateTime(v)?.slice(0, 10) ?? null;
 
 // ── Department ───────────────────────────────────────────────────────────────
 
-/** POST /Department/list — roleID 3 narrows to the user's EL departments, 4 to their FL departments */
+/**
+ * POST /Department/list — role 1 (Admin / Super Admin) sees every department. Everyone else sees the
+ * union of every way they can be tied to a department: formally leading it (EL/FL on the Department row),
+ * being a DepartmentUser member of it themselves, a report of theirs being a member, or the person they
+ * report to being a member. These are OR'd together — e.g. an EL role doesn't only see departments where
+ * they're the registered ExecutiveLeaderID; they also see their own department and their team's.
+ */
 export async function getAllDepartments(f: DepartmentListFilter, page: number, size: number) {
   const conds: string[] = [];
   const params: (string | number)[] = [];
@@ -51,9 +58,22 @@ export async function getAllDepartments(f: DepartmentListFilter, page: number, s
   }
   if (f.startDate) { conds.push('d.DepartmentCreateTime >= ?'); params.push(f.startDate); }
   if (f.endDate) { conds.push('d.DepartmentCreateTime <= ?'); params.push(f.endDate); }
-  if (f.userID) {
-    if (f.roleID === 3) { conds.push('d.ExecutiveLeaderID = ?'); params.push(f.userID); }
-    if (f.roleID === 4) { conds.push('d.FunctionalLeaderID = ?'); params.push(f.userID); }
+  if (f.userID && f.roleID !== 1) {
+    const orConds: string[] = [];
+    const orParams: (string | number)[] = [];
+
+    if (f.roleID === 3) { orConds.push('d.ExecutiveLeaderID = ?'); orParams.push(f.userID); }
+    if (f.roleID === 4) { orConds.push('d.FunctionalLeaderID = ?'); orParams.push(f.userID); }
+
+    const team = await teamOf(f.userID, f.roleID ?? 0);
+    const ids = [f.userID, ...(team === 'all' ? [] : team)];
+    const [[row]] = await pool.query<mysql.RowDataPacket[]>('SELECT ReportingManagerID FROM Users WHERE UserID = ?', [f.userID]);
+    if (row?.['ReportingManagerID']) ids.push(row['ReportingManagerID'] as number);
+    orConds.push(`d.DepartmentID IN (SELECT DISTINCT DepartmentID FROM DepartmentUser WHERE UserID IN (${ids.map(() => '?').join(',')}))`);
+    orParams.push(...ids);
+
+    conds.push(`(${orConds.join(' OR ')})`);
+    params.push(...orParams);
   }
 
   const from = `FROM Department d

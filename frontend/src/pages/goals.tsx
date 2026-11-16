@@ -294,7 +294,7 @@ export default function Goals() {
         const fetchUsers = async () => {
             try {
                 const body = {
-                    filter: "",
+                    filter: "Active",
                     searchText: "",
                     departmentID: filterStatus ? Number(filterStatus) : 0,
                     ...(filterStatus ? {} : null)  // only add roleID if no department
@@ -312,7 +312,14 @@ export default function Goals() {
                     }
                 );
 
-                const usersData = res.data.response.users || [];
+                let usersData = res.data.response.users || [];
+
+                // only the person's team can be picked (Admin / Super Admin: everyone); the server refuses anyone else
+                try {
+                    const t = await axios.get("/t2.0/authentificationUtilization/access/team");
+                    const team = t.data?.response;
+                    if (team && !team.all) usersData = usersData.filter((u: any) => u.userID === user.userID || team.userIds.includes(u.userID));
+                } catch { /* keep the full list; the server still checks */ }
 
                 const formatted: User[] = usersData.map((u: any) => ({
                     userID: u.userID,
@@ -674,7 +681,6 @@ export default function Goals() {
                         user.userRole !== 2 &&
                             user.userRole !== 5 &&
                             user.userRole !== 6 &&
-                            user.userRole !== 7 &&
                             user.userRole !== 23 ? (<Dropdown isOpen={isFilterOpen} onOpenChange={setIsFilterOpen} style={{ width: "400px" }}>
                                 <DropdownTrigger>
                                     <Button

@@ -65,6 +65,7 @@ export const MENU: MenuItem[] = [
     children: [
       { icon: LayoutDashboard, label: "Taskly", href: "dashboard", module: "dashboard" },
       { icon: TrendingUp, label: "Performance Management System", href: "pms/dashboard", module: "pms_dashboard" },
+      { icon: BarChart3, label: "Performance Report", href: "dashboard/performance-report", module: "perf_report" },
     ],
   },
   {

@@ -6,7 +6,11 @@ export type Privileges = Record<string, Action[]>;
 export interface ModuleDef { id: string; label: string; description: string; children?: ModuleDef[] }
 
 export const CATALOG: ModuleDef[] = [
-  { id: 'dashboard', label: 'Dashboard', description: 'Overview dashboard and the attention cards' },
+  {
+    id: 'dashboard', label: 'Dashboard', description: 'Overview dashboard and the attention cards', children: [
+      { id: 'perf_report', label: 'Performance Report', description: '% of target and goal achieved and working hours; the whole company for Admin, otherwise their own and their team\'s data' },
+    ],
+  },
   { id: 'dataentry', label: 'Daily Activity', description: 'Log and review daily task, target and goal entries' },
   {
     id: 'reports', label: 'Reports', description: 'The Reports section of the menu', children: [

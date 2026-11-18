@@ -8,6 +8,9 @@ import * as svc from './reports.service';
 import * as combined from './combined.service';
 import * as effSummary from './efficiencySummary.service';
 import { sendJava } from '../../utils/javaCompat';
+import * as perfReport from './performanceReport.service';
+import { requireModule } from '../../middlewares/permission';
+import { AppError } from '../../utils/AppError';
 
 const router = Router();
 router.use(authenticate);
@@ -63,6 +66,36 @@ const RejectEntrySchema = z.object({
 });
 
 const viewer = (req: { user?: { sub?: string | number; role?: number } }) => ({ id: Number(req.user?.sub), role: Number(req.user?.role) });
+
+// ── Dashboard → Performance Report ──
+const ymd = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use a date like 2026-01-31');
+const PerformanceReportSchema = z.object({
+  from: ymd, to: ymd,
+  departmentId: z.coerce.number().int().min(0).nullish(),
+  subDepartmentId: z.coerce.number().int().positive().nullish(),
+  userId: z.coerce.number().int().positive().nullish(),
+  grain: z.enum(['day', 'month', 'quarter', 'year']).default('month'),
+  excludeZero: z.boolean().default(false),
+  quarters: z.array(z.coerce.number().int().min(1).max(4)).nullish(),
+}).refine((f) => f.from <= f.to, { message: 'The start date must be on or before the end date', path: ['to'] });
+
+router.post('/performance-report', requireModule('perf_report', 'read'), validate(PerformanceReportSchema), async (req, res, next) => {
+  try {
+    const v = viewer(req);
+    const scope = await perfReport.scopeOf(v.id, v.role);
+    if (scope && req.body.userId && !scope.has(req.body.userId)) throw AppError.forbidden('You can see only your own and your team’s performance');
+    sendSuccess(res, await perfReport.performanceReport(req.body, scope));
+  } catch (e) { next(e); }
+});
+
+router.get('/performance-report/options', requireModule('perf_report', 'read'), async (req, res, next) => {
+  try {
+    const from = String(req.query['from'] ?? ''), to = String(req.query['to'] ?? '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) throw AppError.badRequest('from and to must be dates like 2026-01-31');
+    const v = viewer(req);
+    sendSuccess(res, await perfReport.performanceReportOptions(from, to, await perfReport.scopeOf(v.id, v.role)));
+  } catch (e) { next(e); }
+});
 
 // ── Dashboard routes (same path as Java: /t2.0/authentificationUtilization/) ─
 // Mounted under /t2.0/reports so React proxy can reach them

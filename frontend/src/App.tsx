@@ -15,6 +15,7 @@ import NotificationsPage from "@/pages/notifications";
 import { PmsIndex, PmsDashboardPage, PmsFeedbackPage, PmsQuarterlyPage, PmsMyQuarterPage, PmsReportPage } from "@/pages/pmsPages";
 import { MyAppraisalPage, AppraisalOverviewPage, AppraisalDepartmentsPage, DepartmentDetailPage, SplitPage, AllocationPage, RequestsPage, PersonPage, HrPostponementsPage, AppraisalSetupPage } from "@/pages/appraisalPages";
 import Efficiency from "./pages/efficiency";
+import PerformanceReport from "./pages/performanceReport";
 import ResetPasswordPage from "./pages/forgotPassword";
 import TargetManagement from "./pages/targetManagement";
 import DailyLogs from "./pages/dailyLogs";
@@ -66,6 +67,7 @@ function App() {
         <Route path="/profile/:userId" element={<ProfilePage />} />
         <Route path="/access-management" element={<ProtectedRoute module="accessmgmt"><AccessManagementPage /></ProtectedRoute>} />
         <Route path="/efficiency-report" element={<ProtectedRoute module="perf"><Efficiency /></ProtectedRoute>} />
+        <Route path="/dashboard/performance-report" element={<ProtectedRoute module="perf_report"><PerformanceReport /></ProtectedRoute>} />
         <Route path="/Goal-management" element={<ProtectedRoute module="goalmgmt"><GoalManagement /></ProtectedRoute>} />
         <Route path="/pms" element={<ProtectedRoute module="pms"><PmsIndex /></ProtectedRoute>} />
         <Route path="/pms/dashboard" element={<ProtectedRoute module="pms_dashboard"><PmsDashboardPage /></ProtectedRoute>} />

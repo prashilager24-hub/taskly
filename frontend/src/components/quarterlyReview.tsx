@@ -2907,7 +2907,6 @@ export default function QuarterlyReview() {
                                                                 min={1}
                                                                 max={10}
                                                                 step={0.5}
-                                                                onWheel={(e) => e.target.blur()}
                                                                 placeholder="1 - 10"
                                                                 value={assessor1 || ""}
                                                                 onWheel={(e) => e.currentTarget.blur()}
@@ -2951,7 +2950,6 @@ export default function QuarterlyReview() {
                                                                 min={1}
                                                                 max={10}
                                                                 step={0.5}
-                                                                onWheel={(e) => e.target.blur()}
                                                                 placeholder="1 - 10"
                                                                 value={assessor2 || ""}
                                                                 onWheel={(e) => e.currentTarget.blur()}

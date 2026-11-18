@@ -554,6 +554,21 @@ function dailyGoalPercent(dept: number, g: DailyGoalData): number {
   return 0;
 }
 
+/**
+ * Whether a department rule, not the day's target entries, sets this day's target % (the rules in efficiencyDay and
+ * targetDay); the name of the rule, or null when the day's target is the average of its target entries.
+ */
+export function dayTargetRule(dept: number, date: string, allocatedHrs: number, goalPercent: unknown): string | null {
+  const month = Number(date.slice(5, 7));
+  if (dept === 23) return 'Department rule: TAM accounts (tasks 92, 93 and live accounts)';
+  if (dept === 19 && inWindow(date, '2026-05-22', '2026-06-30')) return 'Department rule: tasks 68 and 78 (196 and 197)';
+  if (dept === 22 && goalPercent != null && inWindow(date, Q2.from, Q2.to)) return 'Department rule: target = goal % (Q2)';
+  if (TAT_DEPARTMENTS.includes(dept) && month >= 4 && month <= 6 && allocatedHrs > 0) return 'Time taken vs planned (Apr – Jun rule)';
+  return null;
+}
+/** Departments whose target % loses 10 points when more than the target is achieved */
+export const OVER_TARGET_MINUS_10 = [59, 60, 61];
+
 const tamPercent = (workingDays: number) => (workingDays <= 7 ? 100 : Math.max(100 - (workingDays - 7) * 5, 0));
 const levelByTarget = (percent: number): EfficiencyLevel => (percent >= 90 ? 'High' : percent >= 75 ? 'At Par' : 'Low');
 

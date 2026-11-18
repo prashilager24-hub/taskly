@@ -305,7 +305,7 @@ const groupBy = <T>(items: T[], key: (t: T) => number) => {
 
 // ── Monthly breakdown (Java: summary target / goal become the mean of the months) ─────────────
 
-async function monthlyBreakdown(list: Row[], f: EfficiencySummaryRequest, summary: Row) {
+export async function monthlyBreakdown(list: Row[], f: EfficiencySummaryRequest, summary: Row) {
   const byMonth = new Map<string, Row[]>();
   for (const r of list) push(byMonth, String(r['WorkDate']).slice(0, 7), r);
 
@@ -451,6 +451,18 @@ export async function dashboardUserRows(f: { startDate: string; endDate: string;
   for (const r of base) r['GoalPercent'] = goalPercentOf(r, s, 'dashboard');
   for (const r of base) calculateTarget({ kind: 'day', row: r, support: s });
   return base;
+}
+
+/** The day rows Performance Insights works on: leave type, goal %, the department target rules and EL-approved revisions applied, full-day leave dropped (the same steps as listEfficiencySummary) */
+export async function enrichedDayRows(f: EfficiencySummaryRequest): Promise<Row[]> {
+  const base = await dayRows({ ...f, groupBy: 'day' });
+  if (!base.length) return base;
+  const s = await loadSupport(base, f);
+  for (const r of base) r['LeaveType'] = s.leave.get(`${r['UserID']}|${r['WorkDate']}`) ?? null;
+  for (const r of base) r['GoalPercent'] = goalPercentOf(r, s);
+  for (const r of base) calculateTarget({ kind: 'day', row: r, support: s });
+  for (const r of base) calculateTarget({ kind: 'revision', row: r, support: s });
+  return base.filter((r) => !isFullDay(r['LeaveType']));
 }
 
 export async function listEfficiencySummary(f: EfficiencySummaryRequest) {

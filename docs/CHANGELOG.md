@@ -17,6 +17,18 @@ Summary: one or two lines on what and why.
 
 ---
 
+## 2026-11-20 — Performance Report: Goal + Target in one Excel file  (main)
+Summary: a "Download Goal + Target Excel" button above the two tables downloads one .xlsx with two sheets, for the current filters.
+
+### Frontend
+- `pages/performanceReport.tsx`: sheet "Goal Performance" (Period, Date, Department, Sub Department, Associate, Goal Name, Goal Expected, Goal Achieved, % Achieved, Frequency, Remarks) and sheet "Target Performance" (the Target table's columns). Every row, not just the page on screen; each sheet sorted by date, then associate; header row frozen, columns sized to fit. Uses the `xlsx` package already in the project (loaded only when the button is clicked).
+### Backend
+- none
+### Database
+- none
+### Env / config
+- none
+
 ## 2026-11-18 — Dashboard → Performance Report  (branch GoalsandTargetAchievement)
 Summary: a new Performance Report under Dashboard: % of target and goal achieved, average working and allocated hours (h:mm), a chart for each by day / month / quarter / year (bar labels to 2 decimals, e.g. 87.07, so they add up to the card), and the target and goal entries behind them. Opens on the whole company; a department, sub department or person narrows it. Runs on the real Taskly tables, no copy of data. Every database entry counts once (never merged by name, goal or month). Brijesh HN (User 86), 2026: target 90.37%, goal 108.11%.
 

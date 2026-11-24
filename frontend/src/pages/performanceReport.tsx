@@ -257,6 +257,36 @@ export default function PerformanceReport() {
         { key: "frequency", label: "Target Frequency" },
         { key: "remarks", label: "Remarks", render: (r) => r.remarks ? <span className="line-clamp-2" title={r.remarks}>{r.remarks}</span> : <span className="text-ink-400">—</span> },
     ];
+    // Goal + Target in one Excel file: a "Goal Performance" sheet and a "Target Performance" sheet, every entry for the
+    // current filters (not just the page on screen), each sorted by date then associate
+    // (a CSV file cannot hold more than one sheet, so this is an .xlsx)
+    const downloadCombined = async () => {
+        if (!report) return;
+        const XLSX = await import("xlsx");
+        const byDate = <R extends { date: string; associate: string }>(rows: R[]) => [...rows].sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.associate).localeCompare(String(b.associate)));
+        const goalSheet = [
+            ["Period", "Date", "Department", "Sub Department", "Associate", "Goal Name", "Goal Expected", "Goal Achieved", "% Achieved", "Frequency", "Remarks"],
+            ...byDate(report.goalTable).map((r) => [periodLabel(r.period, grain), r.date, r.department, r.subDepartment, r.associate, r.goalName, r.expected ?? "", r.achieved ?? "", r.pct ?? "", r.frequency ?? "", r.remarks]),
+        ];
+        const targetSheet = [
+            ["Period", "Date", "Department", "Sub Department", "Associate", "Target Name", "Days", "Target Expected Unit", "Target Achieved Unit", "% Achieved", "Allocated Time", "Time Taken", "Target Frequency", "Remarks"],
+            ...byDate(report.targetTable).map((r) => [periodLabel(r.period, grain), r.date, r.department, r.subDepartment, r.associate, r.targetName, r.days, r.expected ?? "", r.achieved ?? "", r.pct ?? "", hm(r.allocatedHrs), hm(r.takenHrs), r.frequency ?? "", r.remarks]),
+        ];
+        const sheet = (rows: unknown[][]) => {
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+            // column widths from the longest value (capped), header row frozen
+            ws["!cols"] = rows[0]!.map((_, i) => ({ wch: Math.min(50, Math.max(10, ...rows.map((r) => String(r[i] ?? "").length + 2))) }));
+            ws["!freeze"] = { xSplit: 0, ySplit: 1 };
+            return ws;
+        };
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, sheet(goalSheet), "Goal Performance");
+        XLSX.utils.book_append_sheet(wb, sheet(targetSheet), "Target Performance");
+        const who = person ? people.find((p) => String(p.id) === person)?.name : sub ? subs.find((s) => String(s.id) === sub)?.name : dept !== "" ? options?.departments.find((d) => String(d.id) === dept)?.name : "all";
+        const slug = String(who ?? "all").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+        XLSX.writeFile(wb, `goal-target-performance-${slug}-${from}-to-${to}.xlsx`);
+    };
+
     const gCols: Col<GoalRow>[] = [
         { key: "period", label: "Period", render: (r) => periodLabel(r.period, grain), csv: (r) => periodLabel(r.period, grain) },
         { key: "date", label: "Date", render: (r) => periodLabel(r.date, "day"), csv: (r) => r.date },
@@ -482,6 +512,11 @@ export default function PerformanceReport() {
                 </Card>
             </div>
 
+            {/* one CSV with both tables for the current filters: a Type column, then the columns of both tables */}
+            <div className="flex flex-wrap items-center gap-3">
+                <Button size="sm" variant="bordered" onPress={downloadCombined} isDisabled={!report || (!report.targetTable.length && !report.goalTable.length)}>Download Goal + Target Excel</Button>
+                <span className="text-xs text-ink-500">{report ? `${report.targetTable.length.toLocaleString("en-IN")} target + ${report.goalTable.length.toLocaleString("en-IN")} goal rows, for the filters above (Goal and Target on separate sheets)` : ""}</span>
+            </div>
             <DataTable title="Target performance" note={`${report?.targetTable.length ?? 0} rows · by ${grain}`} cols={tCols} rows={report?.targetTable ?? []} csvName={`target-performance-${from}-to-${to}.csv`} empty="No target entries match these filters." />
             <DataTable title="Goal performance" note={`${report?.goalTable.length ?? 0} rows · by ${grain}`} cols={gCols} rows={report?.goalTable ?? []} csvName={`goal-performance-${from}-to-${to}.csv`} empty="No goals match these filters." />
         </section>

@@ -10,6 +10,7 @@ import * as svc from './access.service';
 import { teamOf } from './team';
 import * as hier from './hierarchy';
 import { USER_TYPES } from './userTypes';
+import { sendInvitations } from './invite.service';
 
 const router = Router();
 router.use(authenticate);
@@ -27,13 +28,21 @@ router.get('/team', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// People Hub: the signed-in person's team by the Hierarchy (who they assess, and below them); everyone for Admin
+router.get('/hierarchy-team', async (req, res, next) => {
+  try {
+    const team = await hier.hierarchyTeamOf(actor(req), Number((req as { user?: { role?: number } }).user?.role));
+    ok(res, team === 'all' ? { all: true, userIds: [] } : { all: false, userIds: [...team] });
+  } catch (e) { next(e); }
+});
+
 // What the signed-in person can open. The frontend stores this and builds the menu and route guards from it.
 router.get('/me', async (req, res, next) => {
   try {
     const userId = actor(req);
     const privileges = await svc.effectivePrivileges(userId);
-    const [[u]] = await pool.execute<mysql.RowDataPacket[]>('SELECT r.RoleName, u.UserCreateTime, u.IsNewJoiner FROM Users u LEFT JOIN AMRole r ON r.RoleID = u.RoleID WHERE u.UserID = ?', [userId]);
-    ok(res, { roleName: u?.['RoleName'] ?? null, joinedAt: u?.['UserCreateTime'] ?? null, isNewJoiner: !!u?.['IsNewJoiner'], rolePrivileges: JSON.stringify(privileges), privileges });
+    const [[u]] = await pool.execute<mysql.RowDataPacket[]>('SELECT r.RoleName, u.UserCreateTime, u.IsNewJoiner, u.MustChangePassword FROM Users u LEFT JOIN AMRole r ON r.RoleID = u.RoleID WHERE u.UserID = ?', [userId]);
+    ok(res, { roleName: u?.['RoleName'] ?? null, joinedAt: u?.['UserCreateTime'] ?? null, isNewJoiner: !!u?.['IsNewJoiner'], mustChangePassword: Number(u?.['MustChangePassword']) === 1, rolePrivileges: JSON.stringify(privileges), privileges });
   } catch (e) { next(e); }
 });
 
@@ -61,6 +70,10 @@ router.put('/departments/:id', write, validate(z.object({ privileges: z.record(z
 
 // ── Users
 router.get('/users', read, async (_req, res, next) => { try { ok(res, await svc.listUsers()); } catch (e) { next(e); } });
+// People Hub invitations: a new temporary password by email for each chosen person (never the sender themselves)
+router.post('/users/invite', write, validate(z.object({ userIds: z.array(z.number().int().positive()).min(1).max(500) })), async (req, res, next) => {
+  try { ok(res, await sendInvitations(actor(req), req.body.userIds)); } catch (e) { next(e); }
+});
 router.put('/users/two-factor', write, validate(z.object({ userIds: z.array(z.number().int()).min(1), value: z.enum(['default', 'on', 'off']) })), async (req, res, next) => {
   try { await svc.setUserTwoFactor(actor(req), req.body.userIds, req.body.value); ok(res, { saved: true }); } catch (e) { next(e); }
 });

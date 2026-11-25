@@ -17,6 +17,7 @@ import {
   VerifyOtpSchema,
   ResendOtpSchema,
   ThemeSchema,
+  ChangePasswordSchema,
 } from './auth.schema';
 import * as ctrl from './auth.controller';
 import * as svc from './auth.service';
@@ -37,6 +38,7 @@ router.post('/usersArchive', authenticate, requireModule('accessmgmt', 'delete')
 router.post('/user/switch', authenticate, validate(SwitchUserSchema), ctrl.switchUserHandler);
 router.post('/logout', authenticate, ctrl.logoutHandler);
 router.put('/user/theme', authenticate, validate(ThemeSchema), ctrl.saveThemeHandler);
+router.post('/user/change-password', authenticate, authLimiter, validate(ChangePasswordSchema), ctrl.changePasswordHandler);
 
 router.post('/User/create', authenticate, requireModule('accessmgmt', 'create'), validate(CreateUserSchema), ctrl.createUserHandler);
 router.put('/User/update', authenticate, requireModule('accessmgmt', 'update'), validate(UpdateUserSchema), ctrl.updateUserHandler);

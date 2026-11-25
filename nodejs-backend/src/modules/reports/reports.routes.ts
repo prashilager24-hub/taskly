@@ -82,6 +82,7 @@ const PerformanceReportSchema = z.object({
 router.post('/performance-report', requireModule('perf_report', 'read'), validate(PerformanceReportSchema), async (req, res, next) => {
   try {
     const v = viewer(req);
+    if (v.role !== 1) throw AppError.forbidden('Performance Overview is for Admins only');
     const scope = await perfReport.scopeOf(v.id, v.role);
     if (scope && req.body.userId && !scope.has(req.body.userId)) throw AppError.forbidden('You can see only your own and your team’s performance');
     sendSuccess(res, await perfReport.performanceReport(req.body, scope));
@@ -93,6 +94,7 @@ router.get('/performance-report/options', requireModule('perf_report', 'read'), 
     const from = String(req.query['from'] ?? ''), to = String(req.query['to'] ?? '');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) throw AppError.badRequest('from and to must be dates like 2026-01-31');
     const v = viewer(req);
+    if (v.role !== 1) throw AppError.forbidden('Performance Overview is for Admins only');
     sendSuccess(res, await perfReport.performanceReportOptions(from, to, await perfReport.scopeOf(v.id, v.role)));
   } catch (e) { next(e); }
 });

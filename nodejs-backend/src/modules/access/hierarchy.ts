@@ -123,3 +123,28 @@ export async function setCeo(actor: number, userId: number) {
   await pool.execute("INSERT INTO AppSetting (SettingKey, SettingValue) VALUES ('ceoUserId', ?) ON DUPLICATE KEY UPDATE SettingValue = VALUES(SettingValue)", [String(userId)]);
   await logChange(actor, 'user', userId, `Set ${u['UserName']} as CEO / CBO`);
 }
+
+/**
+ * A person's team by the Hierarchy (People Hub uses this for every "team" view): everyone who has them as accessor 1
+ * or accessor 2, then everyone below those people, and so on down the ladder. Admin / Super Admin: everyone.
+ */
+export async function hierarchyTeamOf(viewerId: number, role: number): Promise<'all' | Set<number>> {
+  if (role === 1) return 'all';
+  const c = await load();
+  const me = c.people.get(viewerId);
+  if (!me) return new Set();
+  if (me.level === 'admin') return 'all';
+  const below = new Map<number, number[]>();
+  for (const p of c.people.values()) {
+    if (!p.active || p.userId === viewerId) continue;
+    const a = assessorsFor(c, p);
+    for (const r of [a.accessor1, a.accessor2]) if (r) below.set(r.userId, [...(below.get(r.userId) ?? []), p.userId]);
+  }
+  const out = new Set<number>();
+  const stack = [viewerId];
+  while (stack.length) {
+    const x = stack.pop()!;
+    for (const y of below.get(x) ?? []) if (y !== viewerId && !out.has(y)) { out.add(y); stack.push(y); }
+  }
+  return out;
+}

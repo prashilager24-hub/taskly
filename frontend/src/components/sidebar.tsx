@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import { showOnboarding } from "@/lib/onboarding";
+import { homePath, isAdminUser } from "@/lib/permissions";
 import { appraisalApi, type Availability } from "@/components/appraisal/api";
+import { NAV as HUB_NAV, FLAT_NAV as HUB_FLAT, hubGroupAccess, hubPageAccess } from "@/peoplehub/nav";
 import {
   Award,
   PenLine,
@@ -54,6 +57,8 @@ interface MenuItem {
   avail?: keyof Omit<Availability, "any">;
   /** Stays highlighted on its sub-pages, e.g. appraisal/team/12 */
   prefix?: boolean;
+  /** People Hub: feature parked by the business (shown greyed out with a "Hold" tag) */
+  hold?: boolean;
 }
 
 export const MENU: MenuItem[] = [
@@ -65,7 +70,7 @@ export const MENU: MenuItem[] = [
     children: [
       { icon: LayoutDashboard, label: "Taskly", href: "dashboard", module: "dashboard" },
       { icon: TrendingUp, label: "Performance Management System", href: "pms/dashboard", module: "pms_dashboard" },
-      { icon: BarChart3, label: "Performance Report", href: "dashboard/performance-report", module: "perf_report" },
+      { icon: BarChart3, label: "Performance Overview", href: "dashboard/performance-report", module: "perf_report" },
     ],
   },
   {
@@ -147,6 +152,15 @@ export const MENU: MenuItem[] = [
 
 const norm = (path: string) => path.replace(/^\/+|\/+$/g, "").toLowerCase();
 
+/** People Hub modules beside Taskly (screens under /hub), in the menu's shape; each page is its own Access Management module */
+export const HUB_MENU: MenuItem[] = HUB_NAV.map((m) => ({
+  icon: m.icon,
+  label: m.title,
+  href: m.children ? `hub:${m.title}` : norm(m.href!),
+  module: m.children ? hubGroupAccess(m.title) : hubPageAccess(m.href!),
+  children: m.children?.map((c) => ({ icon: m.icon, label: c.title, href: norm(c.href), module: hubPageAccess(c.href), hold: c.hold })),
+}));
+
 // Pages reached from inside other pages, not from the menu
 const EXTRA_PAGES: Record<string, { section: string; label: string }> = {
   "activity-log": { section: "Workspace", label: "Activity Log" },
@@ -162,6 +176,8 @@ export function pageMeta(pathname: string): { section: string; label: string } {
     const child = item.children?.find((c) => norm(c.href) === path || (c.prefix && path.startsWith(`${norm(c.href)}/`)));
     if (child) return { section: item.label, label: child.label };
   }
+  const hub = HUB_FLAT.find((i) => norm(i.href) === path);
+  if (hub) return { section: hub.module === hub.title ? "People Hub" : hub.module, label: hub.title };
   return EXTRA_PAGES[path] ?? { section: "Taskly", label: "" };
 }
 
@@ -204,6 +220,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, current
     return () => { live = false; };
   }, [currentPage, canAppraisal]);
 
+  // People Hub pages that only make sense for someone with a team by the Hierarchy (people they assess, and below
+  // them): shown only when the server says they have one, whatever their role allows
+  const TEAM_ONLY = ["hub_variable_pay_team"];
+  const [hasTeam, setHasTeam] = useState<boolean | null>(null);
+  const canTeamPages = TEAM_ONLY.some((m) => rolePermissions?.[m]?.includes("read"));
+  useEffect(() => {
+    if (!canTeamPages) return;
+    let live = true;
+    axios.get("/t2.0/authentificationUtilization/access/hierarchy-team")
+      .then((r) => { const t = r.data?.response; if (live) setHasTeam(!!t && (t.all || (t.userIds?.length ?? 0) > 0)); })
+      .catch(() => { if (live) setHasTeam(false); });
+    return () => { live = false; };
+  }, [canTeamPages]);
+
   // The menu shows only what this person's access allows (role + department + their own access)
   const menu = useMemo(() => MENU
     .map((item) => item.children
@@ -218,10 +248,102 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, current
   const [expanded, setExpanded] = useState<string | null>(null);
   useEffect(() => {
     // A page can be listed in two groups (PMS dashboard): keep the group the person opened it from
-    const owner = MENU.find((item) => item.label === expanded && item.children?.some((c) => isActive(c.href)));
-    const group = owner ?? MENU.find((item) => item.children?.some((c) => isActive(c.href)));
-    if (group) setExpanded(group.label);
+    const shown = [...mainMenu, ...tasklyMenu];
+    const owner = shown.find((item) => item.href === expanded && item.children?.some((c) => isActive(c.href)));
+    const group = owner ?? shown.find((item) => item.children?.some((c) => isActive(c.href)));
+    if (group) setExpanded(group.href);
   }, [currentPage]);
+
+  // Taskly parent: open by default, the viewer's choice remembered on this browser
+  const [tasklyOpen, setTasklyOpenState] = useState<boolean>(() => {
+    try { return localStorage.getItem("sidebar.tasklyOpen") !== "0"; } catch { return true; }
+  });
+  const setTasklyOpen = (f: (v: boolean) => boolean) => setTasklyOpenState((v) => {
+    const next = f(v);
+    try { localStorage.setItem("sidebar.tasklyOpen", next ? "1" : "0"); } catch { /* ignore */ }
+    return next;
+  });
+  // Parts of the existing app shown in the main menu instead of under Taskly (same pages, same access rules):
+  //  - Appraisal, below People Hub's Growth & Rewards
+  //  - Performance Overview (from Taskly → Dashboard), inside People Hub's PMS, for Admins only
+  //  - Admin, HR Experience and Support, at the end of the main menu
+  const APPRAISAL = "appraisal-group";
+  const PERF_REPORT = "dashboard/performance-report";
+  const AT_END = ["admin", "hr-experience", "support"];
+  const MOVED = [APPRAISAL, ...AT_END];
+  const perfReport = isAdminUser() ? menu.flatMap((m) => m.children ?? []).find((c) => c.href === PERF_REPORT) : undefined;
+  const tasklyMenu = menu
+    .filter((item) => !MOVED.includes(item.href))
+    .map((item) => (item.children ? { ...item, children: item.children.filter((c) => c.href !== PERF_REPORT) } : item))
+    .filter((item) => !item.children || item.children.length > 0);
+  const hubMenu = HUB_MENU
+    .map((item) => (item.children ? { ...item, children: item.children.filter((c) => hasAccess(c.module) && (!TEAM_ONLY.includes(c.module) || hasTeam === true)) } : item))
+    .filter((item) => (item.children ? item.children.length > 0 : hasAccess(item.module)));
+  // Appraisal (Taskly's own) takes Growth & Rewards' place + 1, so it sits above Variable Pay even when this person
+  // cannot see Growth & Rewards
+  const appraisal = menu.find((m) => m.href === APPRAISAL);
+  const afterGrowth = HUB_MENU.findIndex((m) => m.href === "hub:Growth & Rewards") + 1;
+  const hubItems = hubMenu.map((item) => (item.href === "hub:PMS" && perfReport ? { ...item, children: [...(item.children ?? []), perfReport] } : item));
+  const at = hubItems.findIndex((item) => HUB_MENU.findIndex((m) => m.href === item.href) >= afterGrowth);
+  const mainMenu = [
+    ...(appraisal ? [...hubItems.slice(0, at < 0 ? hubItems.length : at), appraisal, ...(at < 0 ? [] : hubItems.slice(at))] : hubItems),
+    ...AT_END.map((href) => menu.find((m) => m.href === href)).filter((m): m is MenuItem => !!m),
+  ];
+  const tasklyActive = tasklyMenu.some((item) => isActive(item.href) || item.children?.some((c) => isActive(c.href)));
+
+  // One menu entry: a link, or a group that opens to show its pages
+  const renderItem = (item: MenuItem, list: MenuItem[]) => {
+          const groupActive = (item.children?.some((c) => isActive(c.href)) ?? false) && (expanded === null || expanded === item.href || !list.some((m) => m.href === expanded && m.children?.some((c) => isActive(c.href))));
+          const open = expanded === item.href;
+
+          if (!item.children) {
+            const on = isActive(item.href);
+            return (
+              <li key={item.href}>
+                <Link to={`/${item.href}`} onClick={() => { setExpanded(null); if (isOpen) toggleSidebar(); }}
+                  className={itemClass(on)} aria-current={on ? "page" : undefined}>
+                  {bar(on)}
+                  <item.icon size={17} strokeWidth={1.75} className={on ? "text-brand-500" : ""} />
+                  {item.label}
+                </Link>
+              </li>
+            );
+          }
+
+          return (
+            <li key={item.href}>
+              <button type="button" onClick={() => setExpanded(open ? null : item.href)} aria-expanded={open}
+                className={itemClass(groupActive && !open)}>
+                {bar(groupActive && !open)}
+                <item.icon size={17} strokeWidth={1.75} className={groupActive ? "text-brand-500" : ""} />
+                <span className="flex-1 text-left">{item.label}</span>
+                <ChevronDown size={14} className={`text-ink-500 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+              </button>
+              <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+                <ul className="overflow-hidden">
+                  <li className="ml-[22px] mt-0.5 border-l border-white/10 pb-1">
+                    <ul>
+                      {item.children.map((child) => {
+                        const on = isActive(child.href) && open;
+                        return (
+                          <li key={child.label}>
+                            <Link to={`/${child.href}`} onClick={() => { setExpanded(item.href); if (isOpen) toggleSidebar(); }} tabIndex={open ? 0 : -1}
+                              aria-current={on ? "page" : undefined}
+                              className={`relative -ml-px flex items-center border-l py-2 pl-4 pr-2 text-[12.5px] transition-colors focus-ring ${on ? "border-brand-600 font-medium text-white" : "border-transparent text-ink-400 hover:border-white/30 hover:text-white"
+                                }`}>
+                              <span className={child.hold ? "opacity-50" : ""}>{child.label}</span>
+                              {child.hold && <span className="ml-auto bg-white/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-ink-400">Hold</span>}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </li>
+                </ul>
+              </div>
+            </li>
+          );
+  };
 
   const initials = (authUserLD?.name ?? "")
     .split(" ")
@@ -248,9 +370,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, current
       >
         {/* Brand */}
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-5">
-          <button type="button" className="flex items-center gap-2.5 focus-ring" onClick={() => navigate("/dashboard")}>
-            <img src="/Tapmind.ico" alt="" className="h-7 w-7" />
-            <span className="text-base font-black uppercase tracking-btn">Taskly</span>
+          <button type="button" className="flex items-center gap-2.5 focus-ring" onClick={() => navigate(homePath())}>
+            <img src="/peoplehub-logo.svg" alt="People Hub by TapMind" className="h-9 w-auto max-w-[190px]" />
           </button>
           <button type="button" onClick={toggleSidebar} aria-label="Close menu" className="p-1.5 text-ink-400 hover:text-white focus-ring lg:hidden">
             <X size={18} />
@@ -259,59 +380,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, current
 
         <nav className="flex-1 overflow-y-auto px-3 py-5" aria-label="Main">
           <p className="mb-2 px-3 font-secondary text-[10px] font-medium uppercase tracking-eyebrow text-ink-500">Menu</p>
+          {/* People Hub modules (sample data for now) */}
           <ul className="space-y-0.5">
-            {menu.map((item) => {
-              const groupActive = (item.children?.some((c) => isActive(c.href)) ?? false) && (expanded === null || expanded === item.label || !menu.some((m) => m.label === expanded && m.children?.some((c) => isActive(c.href))));
-              const open = expanded === item.label;
-
-              if (!item.children) {
-                const on = isActive(item.href);
-                return (
-                  <li key={item.label}>
-                    <Link to={`/${item.href}`} onClick={() => { setExpanded(null); if (isOpen) toggleSidebar(); }}
-                      className={itemClass(on)} aria-current={on ? "page" : undefined}>
-                      {bar(on)}
-                      <item.icon size={17} strokeWidth={1.75} className={on ? "text-brand-500" : ""} />
-                      {item.label}
-                    </Link>
-                  </li>
-                );
-              }
-
-              return (
-                <li key={item.label}>
-                  <button type="button" onClick={() => setExpanded(open ? null : item.label)} aria-expanded={open}
-                    className={itemClass(groupActive && !open)}>
-                    {bar(groupActive && !open)}
-                    <item.icon size={17} strokeWidth={1.75} className={groupActive ? "text-brand-500" : ""} />
-                    <span className="flex-1 text-left">{item.label}</span>
-                    <ChevronDown size={14} className={`text-ink-500 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
-                  </button>
-                  <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
-                    <ul className="overflow-hidden">
-                      <li className="ml-[22px] mt-0.5 border-l border-white/10 pb-1">
-                        <ul>
-                          {item.children.map((child) => {
-                            const on = isActive(child.href) && open;
-                            return (
-                              <li key={child.label}>
-                                <Link to={`/${child.href}`} onClick={() => { setExpanded(item.label); if (isOpen) toggleSidebar(); }} tabIndex={open ? 0 : -1}
-                                  aria-current={on ? "page" : undefined}
-                                  className={`relative -ml-px flex items-center border-l py-2 pl-4 pr-2 text-[12.5px] transition-colors focus-ring ${on ? "border-brand-600 font-medium text-white" : "border-transparent text-ink-400 hover:border-white/30 hover:text-white"
-                                    }`}>
-                                  {child.label}
-                                </Link>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </li>
-                    </ul>
-                  </div>
-                </li>
-              );
-            })}
+            {mainMenu.map((item) => renderItem(item, mainMenu))}
           </ul>
+          <div className="mt-0.5">
+          {/* Taskly (every existing menu group) sits last, below the People Hub modules */}
+          <button type="button" onClick={() => setTasklyOpen((v) => !v)} aria-expanded={tasklyOpen}
+            className={itemClass(!tasklyOpen && tasklyActive)}>
+            {bar(!tasklyOpen && tasklyActive)}
+            <LayoutGrid size={17} strokeWidth={1.75} className={tasklyActive ? "text-brand-500" : ""} />
+            <span className="flex-1 text-left font-semibold">Taskly</span>
+            <ChevronDown size={14} className={`text-ink-500 transition-transform duration-200 ${tasklyOpen ? "rotate-180" : ""}`} />
+          </button>
+          <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${tasklyOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+          <ul className={`ml-3 mt-0.5 space-y-0.5 overflow-hidden border-l border-white/10 pl-1.5 ${tasklyOpen ? "" : "invisible"}`}>
+            {tasklyMenu.map((item) => renderItem(item, tasklyMenu))}
+          </ul>
+          </div>
+          </div>
         </nav>
 
         {/* Signed-in user */}

@@ -5,50 +5,52 @@ import { PageTitle } from "@/components/page";
 import { Autocomplete, AutocompleteItem, Button, Card, Checkbox, Pagination, Select, SelectItem, Spinner } from "@/components/ui";
 import { ChevronDown } from "lucide-react";
 import DateRangeField from "@/components/DateRangeField";
+import AccessDenied from "@/components/AccessDenied";
+import { isAdminUser } from "@/lib/permissions";
 
 /**
- * Dashboard → Performance Report. Whole company first; picking a department, sub department or person narrows it.
+ * Performance Overview (was Dashboard → Performance Report), Admins only. Whole company first; picking a department, sub department or person narrows it.
  * All figures come from the server (/performance-report), worked out the way old Taskly does for one person and
  * averaged person → sub department → department → company above that.
  */
 const BASE = "/t2.0/authentificationUtilization/performance-report";
 
-type Grain = "day" | "month" | "quarter" | "year";
+export type Grain = "day" | "month" | "quarter" | "year";
 interface Options { departments: { id: number; name: string }[]; subDepartments: { id: number; name: string; departmentId: number }[]; people: { id: number; name: string; subDepartmentId: number }[]; allCompany: boolean }
 interface Cards { avgTargetPct: number | null; avgGoalPct: number | null; avgWorkingHrs: number | null; avgAllocatedHrs: number | null; dayRows: number; dayRowsBeforeExclude: number; targetEntries: number; daysWithTarget: number; goalEntries: number; weightedTarget: Weighted; weightedGoal: Weighted; people: number }
-interface TargetRow { id: number; date: string; period: string; userId: number; associate: string; subDepartment: string; department: string; targetName: string; frequency: string | null; expected: number | null; achieved: number | null; pct: number | null; days: number; allocatedHrs: number | null; takenHrs: number | null; remarks: string }
-interface GoalRow { id: number; date: string; period: string; userId: number; associate: string; subDepartment: string; department: string; goalName: string; frequency: string | null; expected: number | null; achieved: number | null; pct: number | null; entries: number; remarks: string }
+export interface TargetRow { id: number; date: string; period: string; userId: number; associate: string; subDepartment: string; department: string; targetName: string; frequency: string | null; expected: number | null; achieved: number | null; pct: number | null; days: number; allocatedHrs: number | null; takenHrs: number | null; remarks: string }
+export interface GoalRow { id: number; date: string; period: string; userId: number; associate: string; subDepartment: string; department: string; goalName: string; frequency: string | null; expected: number | null; achieved: number | null; pct: number | null; entries: number; remarks: string }
 interface GoalBreakdown { value: number | null; quarters: { quarter: string; value: number; months: { month: string; value: number; goals: { name: string; pct: number; entries: number }[] }[] }[] }
-interface QuarterRow { quarter: string; partial: boolean; target: number | null; goal: number | null; targetEntries: number; goalEntries: number }
-interface Weighted { pct: number | null; sum: number | null; entries: number }
+export interface QuarterRow { quarter: string; partial: boolean; target: number | null; goal: number | null; targetEntries: number; goalEntries: number }
+export interface Weighted { pct: number | null; sum: number | null; entries: number }
 interface Report { level: "person" | "sub" | "dept" | "company"; goalBreakdown: GoalBreakdown | null; quarters: QuarterRow[]; cards: Cards; charts: { target: { period: string; value: number }[]; goal: { period: string; value: number }[] }; targetTable: TargetRow[]; goalTable: GoalRow[] }
 
-const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const pad = (n: number) => String(n).padStart(2, "0");
+export const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+export const pad = (n: number) => String(n).padStart(2, "0");
 const lastDay = (y: number, m: number) => new Date(y, m, 0).getDate();
-const FIRST_YEAR = 2025;
-const PERIODS = [["all", "All quarters"], ["Q1", "Q1 (Jan – Mar)"], ["Q2", "Q2 (Apr – Jun)"], ["Q3", "Q3 (Jul – Sep)"], ["Q4", "Q4 (Oct – Dec)"], ["custom", "Custom"]] as const;
-const ALL_Q = [1, 2, 3, 4];
+export const FIRST_YEAR = 2025;
+export const PERIODS = [["all", "All quarters"], ["Q1", "Q1 (Jan – Mar)"], ["Q2", "Q2 (Apr – Jun)"], ["Q3", "Q3 (Jul – Sep)"], ["Q4", "Q4 (Oct – Dec)"], ["custom", "Custom"]] as const;
+export const ALL_Q = [1, 2, 3, 4];
 
 /** The dates from the first to the last chosen quarter (quarters in between that are not chosen are left out by the report) */
-function rangeOfQuarters(qs: number[], y: number): [string, string] {
+export function rangeOfQuarters(qs: number[], y: number): [string, string] {
     const m1 = (Math.min(...qs) - 1) * 3 + 1, m3 = Math.max(...qs) * 3;
     return [`${y}-${pad(m1)}-01`, `${y}-${pad(m3)}-${lastDay(y, m3)}`];
 }
-const periodLabel = (k: string, g: Grain) => (g === "day" ? `${k.slice(8)} ${MON[Number(k.slice(5, 7)) - 1]} ${k.slice(0, 4)}` : g === "year" ? k : g === "month" ? `${MON[Number(k.slice(5, 7)) - 1]} ${k.slice(0, 4)}` : `${k.slice(5)} ${k.slice(0, 4)}`);
-const hm = (v: number | null) => { if (v == null) return "—"; const m = Math.round(v * 60); return `${Math.floor(m / 60)}:${pad(m % 60)}`; };
-const pct = (v: number | null) => (v == null ? "—" : `${v.toFixed(2)}%`);
-const num = (v: number | null) => (v == null ? "—" : Math.abs(v) >= 1000 ? v.toLocaleString("en-IN", { maximumFractionDigits: 2 }) : String(Number(v.toFixed(2))));
-const fmtDate = (d: string) => `${d.slice(8)} ${MON[Number(d.slice(5, 7)) - 1]} ${d.slice(0, 4)}`;
+export const periodLabel = (k: string, g: Grain) => (g === "day" ? `${k.slice(8)} ${MON[Number(k.slice(5, 7)) - 1]} ${k.slice(0, 4)}` : g === "year" ? k : g === "month" ? `${MON[Number(k.slice(5, 7)) - 1]} ${k.slice(0, 4)}` : `${k.slice(5)} ${k.slice(0, 4)}`);
+export const hm = (v: number | null) => { if (v == null) return "—"; const m = Math.round(v * 60); return `${Math.floor(m / 60)}:${pad(m % 60)}`; };
+export const pct = (v: number | null) => (v == null ? "—" : `${v.toFixed(2)}%`);
+export const num = (v: number | null) => (v == null ? "—" : Math.abs(v) >= 1000 ? v.toLocaleString("en-IN", { maximumFractionDigits: 2 }) : String(Number(v.toFixed(2))));
+export const fmtDate = (d: string) => `${d.slice(8)} ${MON[Number(d.slice(5, 7)) - 1]} ${d.slice(0, 4)}`;
 
-function PctChip({ v }: { v: number | null }) {
+export function PctChip({ v }: { v: number | null }) {
     if (v == null) return <span className="text-ink-400">—</span>;
     const tone = v >= 100 ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" : v >= 75 ? "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" : v > 0 ? "bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300" : "bg-ink-100 text-ink-500 dark:bg-white/5 dark:text-ink-400";
     return <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${tone}`}>{v.toFixed(2)}%</span>;
 }
 
 /** Bars per period on a 0 – max scale with a dashed 100% line; hover a bar for its value */
-function BarChart({ points, grain, empty }: { points: { period: string; value: number }[]; grain: Grain; empty: string }) {
+export function BarChart({ points, grain, empty }: { points: { period: string; value: number }[]; grain: Grain; empty: string }) {
     if (!points.length) return <p className="py-10 text-center text-sm text-ink-400">{empty}</p>;
     const W = 640, H = 240, L = 40, R = 12, T = 14, B = 34, iw = W - L - R, ih = H - T - B;
     const max = Math.max(120, ...points.map((p) => p.value)); const stepY = max > 200 ? 50 : 25;
@@ -72,10 +74,10 @@ function BarChart({ points, grain, empty }: { points: { period: string; value: n
 }
 
 /** Combined score goal weight the page opens with (management's 70 % goal / 30 % target) */
-const DEFAULT_GOAL_W = 70;
+export const DEFAULT_GOAL_W = 70;
 
 /** The % against 100%: fills to 100, then shows how far over it is */
-function Meter({ v, weighted }: { v: number | null; weighted: boolean }) {
+export function Meter({ v, weighted }: { v: number | null; weighted: boolean }) {
     const w = v == null ? 0 : Math.max(0, Math.min(v, 100));
     return (
         <div className="mt-3 flex items-center gap-2" aria-hidden="true">
@@ -88,7 +90,7 @@ function Meter({ v, weighted }: { v: number | null; weighted: boolean }) {
 }
 
 /** A card's calculation: hidden until "View calculation" is clicked */
-function CalcToggle({ id, open, onToggle, children }: { id: string; open: Set<string>; onToggle: (id: string) => void; children: React.ReactNode }) {
+export function CalcToggle({ id, open, onToggle, children }: { id: string; open: Set<string>; onToggle: (id: string) => void; children: React.ReactNode }) {
     const shown = open.has(id);
     return (
         <div className="mt-1">
@@ -102,9 +104,9 @@ function CalcToggle({ id, open, onToggle, children }: { id: string; open: Set<st
     );
 }
 
-type Col<T> ={ key: keyof T & string; label: string; num?: boolean; render?: (r: T) => React.ReactNode; csv?: (r: T) => string | number };
-function DataTable<T extends object>({ title, note, cols, rows, csvName, empty }: { title: string; note: string; cols: Col<T>[]; rows: T[]; csvName: string; empty: string }) {
-    const [sort, setSort] = useState<{ k: string; d: 1 | -1 }>({ k: "period", d: 1 });
+export type Col<T> ={ key: keyof T & string; label: string; num?: boolean; render?: (r: T) => React.ReactNode; csv?: (r: T) => string | number };
+export function DataTable<T extends object>({ title, note, cols, rows, csvName, empty, defaultSort }: { title: string; note: string; cols: Col<T>[]; rows: T[]; csvName: string; empty: string; defaultSort?: { k: string; d: 1 | -1 } }) {
+    const [sort, setSort] = useState<{ k: string; d: 1 | -1 }>(defaultSort ?? { k: "period", d: 1 });
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState<string>("25"); // 25 / 50 / 100 / all
     useEffect(() => setPage(1), [rows, perPage]);
@@ -160,7 +162,7 @@ function DataTable<T extends object>({ title, note, cols, rows, csvName, empty }
     );
 }
 
-export default function PerformanceReport() {
+function PerformanceReportView() {
     const now = new Date();
     const [year, setYear] = useState(now.getFullYear());
     const [qs, setQs] = useState<number[]>(ALL_Q);   // chosen quarters of the year
@@ -366,7 +368,7 @@ export default function PerformanceReport() {
 
     return (
         <section className="flex flex-col gap-5">
-            <PageTitle title="Performance Report" subtitle={`${scopeName ?? "All company"} · ${custom || qs.length === 4 ? "" : `${periodText} ${year} · `}${fmtDate(from)} – ${fmtDate(to)}${c && c.people > 1 ? ` · ${c.people} people` : ""}`} />
+            <PageTitle title="Performance Overview" subtitle={`${scopeName ?? "All company"} · ${custom || qs.length === 4 ? "" : `${periodText} ${year} · `}${fmtDate(from)} – ${fmtDate(to)}${c && c.people > 1 ? ` · ${c.people} people` : ""}`} />
 
             <Card className="p-5">
                 <div className="mb-3 flex items-center gap-3">
@@ -521,4 +523,10 @@ export default function PerformanceReport() {
             <DataTable title="Goal performance" note={`${report?.goalTable.length ?? 0} rows · by ${grain}`} cols={gCols} rows={report?.goalTable ?? []} csvName={`goal-performance-${from}-to-${to}.csv`} empty="No goals match these filters." />
         </section>
     );
+}
+
+/** Performance Overview is for Admins / Super Admins (role 1) only; the server checks the same */
+export default function PerformanceReport() {
+    if (!isAdminUser()) return <AccessDenied module="perf_report" />;
+    return <PerformanceReportView />;
 }

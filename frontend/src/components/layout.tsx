@@ -2,6 +2,7 @@
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import SwitchedUserBanner from "@/components/SwitchedUserBanner";
+import ForcePasswordChange from "@/components/ForcePasswordChange";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useLocation } from "react-router-dom";
@@ -65,6 +66,8 @@ export default function Layout({ children }) {
                     {/* "Viewing as … — Return" while an admin is switched into another user, on every page */}
                     <SwitchedUserBanner onSwitchBack={() => window.location.reload()} />
                     {children}
+                    {/* signed in with a temporary password: must set their own before anything else */}
+                    <ForcePasswordChange />
                     </div>
                 </main>
 

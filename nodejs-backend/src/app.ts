@@ -28,6 +28,8 @@ import { salesCallsRouter, taCallsRouter, tamRouter } from './modules/sales/sale
 import pushRouter from './modules/push/push.routes';
 import adminRouter, { adminTicketsRouter, positionsRouter } from './modules/admin/admin.routes';
 import reportsRouter from './modules/reports/reports.routes';
+import targetGoalsRouter from './modules/reports/targetGoals.routes';
+import variablePayRouter from './modules/variablePay/variablePay.routes';
 import metaRouter from './modules/users/users.routes';
 import usersRouter from './modules/users/users.api.routes';
 import monthlyTargetsRouter from './modules/targets/monthlyTargets.routes';
@@ -164,6 +166,10 @@ app.use(`${BASE}`, adminRouter);
 
 // ── Dashboard + efficiency reports + combined work data ───────────────────────
 // Java: /t2.0/authentificationUtilization/{various report endpoints}
+// People Hub → PMS → Target & Goals and the PMS Dashboard (every signed-in user; scoped to self / team / company)
+app.use(`${BASE}/target-goals`, targetGoalsRouter);
+// People Hub → Variable Pay (requests up the A1 / A2 / Finance Head chain, based on the PMS score)
+app.use(`${BASE}/variable-pay`, variablePayRouter);
 app.use(BASE, reportsRouter);
 
 // ── Meta/reference data ───────────────────────────────────────────────────────

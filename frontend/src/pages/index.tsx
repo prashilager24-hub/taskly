@@ -8,6 +8,7 @@ import OtpInput from "@/components/OtpInput";
 import { subscribeToPush } from "../lib/pushClient";
 import { SIGN_OUT_MESSAGES, saveSession } from "../lib/session";
 import { getTheme, setTheme, type Theme } from "../lib/theme";
+import { homePath } from "@/lib/permissions";
 
 // Sign-in (requirements AUTH-01 – AUTH-11): password → emailed code → (first time) theme → app.
 // Split screen in the TapMind CRM style: editorial hero on the left, the form on the right.
@@ -57,9 +58,7 @@ function Hero() {
       <div aria-hidden className="pointer-events-none absolute -bottom-40 -left-40 h-[520px] w-[520px] rounded-full bg-brand-600 blur-[160px] animate-glow-pulse" />
 
       <div className="relative flex items-center gap-3 px-12 pt-10">
-        <img src="/Tapmind.ico" alt="" className="h-8 w-8" />
-        <span className="text-sm font-bold uppercase tracking-btn text-white">Taskly</span>
-        <span className="text-sm text-ink-500">/ TapMind</span>
+        <img src="/peoplehub-logo.svg" alt="People Hub by TapMind" className="h-10 w-auto" />
       </div>
 
       <div className="relative my-auto px-12">
@@ -118,7 +117,7 @@ export default function LoginPage() {
   const [pendingUser, setPendingUser] = useState<any>(null);
 
   useEffect(() => {
-    if (localStorage.getItem("authUserLD")) navigate("/dashboard");
+    if (localStorage.getItem("authUserLD")) navigate(homePath());
   }, []);
 
   // Resend countdown
@@ -221,7 +220,7 @@ export default function LoginPage() {
   const finish = (user: any) => {
     addToast({ title: "Signed in", description: `Welcome back, ${user?.name ?? ""}.`, color: "success" });
     subscribeToPush().catch(() => undefined);
-    navigate("/dashboard");
+    navigate(homePath());
   };
 
   // ── Forgot password ───────────────────────────────────────────────────────
@@ -269,8 +268,7 @@ export default function LoginPage() {
       <main className="relative flex flex-1 flex-col bg-ink-900">
         {/* Logo for small screens, where the hero is hidden */}
         <div className="flex items-center gap-3 px-6 pt-8 sm:px-12 lg:hidden">
-          <img src="/Tapmind.ico" alt="" className="h-7 w-7" />
-          <span className="text-sm font-bold uppercase tracking-btn">Taskly</span>
+          <img src="/peoplehub-logo.svg" alt="People Hub by TapMind" className="h-9 w-auto max-w-[220px]" />
         </div>
 
         <div className="mx-auto flex w-full max-w-[420px] flex-1 flex-col justify-center px-6 py-12 animate-fade-in-up" key={step}>

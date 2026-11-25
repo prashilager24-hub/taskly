@@ -30,6 +30,10 @@ export async function saveThemeHandler(req: Request, res: Response, next: NextFu
   try { res.status(200).json(await authService.saveTheme(Number(req.user!.sub), req.body.theme)); } catch (err) { next(err); }
 }
 
+export async function changePasswordHandler(req: Request, res: Response, next: NextFunction) {
+  try { res.status(200).json(await authService.changeOwnPassword(Number(req.user!.sub), req.body)); } catch (err) { next(err); }
+}
+
 export async function getRoleHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const roleId = Number(req.params['roleId']);

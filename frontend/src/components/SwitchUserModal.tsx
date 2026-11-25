@@ -15,6 +15,7 @@ import {
     useDisclosure,
 } from "@/components/ui";
 import { getCurrentUser, getOriginalUser, switchToUser } from "./userSwitch";
+import { homePath } from "@/lib/permissions";
 
 // Topbar "Switch User" (requirements ADM-01–ADM-03): pick a department, then a user in it,
 // and open the app as that user. The "Viewing as … / Return" banner comes from SwitchedUserBanner.
@@ -100,7 +101,7 @@ export default function SwitchUserModal() {
             addToast({ title: "Switched user", description: `You are now viewing Taskly as ${name}.`, color: "success" });
             reset();
             onClose();
-            navigate("/dashboard");
+            navigate(homePath());
             // Every page reads the active user from storage on mount — reload so they all pick it up
             window.location.reload();
         } catch (err: any) {

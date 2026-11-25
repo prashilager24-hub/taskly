@@ -17,7 +17,10 @@ export interface UserRow {
     userType: UserType | null; userRole: UserRole | null;
     secondaryRoleId: number | null; secondaryRoleName: string | null; active: boolean; departments: string[];
     twoFactor: "default" | "on" | "off"; twoFactorEffective: boolean; hasOverrides: boolean;
+    /** People Hub invitation: last sent, and whether they still have to set their own password */
+    invitedAt: string | null; mustChangePassword: boolean;
 }
+export interface InviteResult { userId: number; name: string; email: string; sent: boolean; reason?: string }
 export interface ModuleExplain { id: string; role: Action[]; department: Action[]; grants: Action[]; denies: Action[]; effective: Action[] }
 export interface UserExplain {
     roleNames: string[]; departments: { id: number; name: string }[]; isSuperAdmin: boolean;
@@ -46,6 +49,7 @@ export const accessApi = {
     explain: (userId: number) => unwrap<UserExplain>(axios.get(`${BASE}/access/users/${userId}`)),
     saveUserAccess: (userId: number, grants: Privileges, denies: Privileges) => unwrap<UserExplain>(axios.put(`${BASE}/access/users/${userId}`, { grants, denies })),
     setTwoFactor: (userIds: number[], value: "default" | "on" | "off") => axios.put(`${BASE}/access/users/two-factor`, { userIds, value }),
+    invite: (userIds: number[]) => unwrap<{ results: InviteResult[]; sent: number; failed: number }>(axios.post(`${BASE}/access/users/invite`, { userIds })),
     security: () => unwrap<{ twoFactorDefault: "on" | "off"; totals: { users: number; withTwoFactor: number; withoutTwoFactor: number } }>(axios.get(`${BASE}/access/security`)),
     setDefaultTwoFactor: (value: "on" | "off") => axios.put(`${BASE}/access/security`, { twoFactorDefault: value }),
     hierarchy: () => unwrap<HierarchyData>(axios.get(`${BASE}/access/hierarchy`)),

@@ -29,6 +29,7 @@ import GoalManagement from "./pages/goalManagement";
 import Goals from "./pages/goals";
 import QueryReport from "./pages/QueryReport";
 import HRFeedback from "./pages/hrFeedback";
+import { peopleHubRoutes } from "@/peoplehub/routes";
 
 const ProtectedLayout = () => (
   <ProtectedRoute>
@@ -96,6 +97,8 @@ function App() {
         <Route path="/support/:section" element={<ProtectedRoute><HRFeedback /></ProtectedRoute>} />
         <Route path="/support" element={<Navigate to="/support/query" replace />} />
         <Route path="/hr-feedback" element={<Navigate to="/support/query" replace />} />
+        {/* People Hub modules (sample data for now): /hub/... */}
+        {peopleHubRoutes}
 
 
 

@@ -81,7 +81,7 @@ const USER_SELECT = `
   SELECT UserID, UserEmail, UserName, UserPassword, RoleID, SecondaryRoleID,
          UserStatus, IsUserArchived, EmployeeID, ReportingManagerID,
          ELManagerID, AppraisalCycle, FeedbackResolverTeam, ThemePreference, TwoFactor, UserCreateTime,
-         Designation, JobLevel, Band, IsNewJoiner, JoiningCycle,
+         Designation, JobLevel, Band, IsNewJoiner, JoiningCycle, MustChangePassword,
          (SELECT r.UserType FROM AMRole r WHERE r.RoleID = Users.RoleID) AS RoleUserType
   FROM Users`;
 
@@ -118,7 +118,7 @@ async function departmentsOfMember(userId: number) {
   return rows.map((r) => ({ departmentID: r['DepartmentID'] as number, departmentName: r['DepartmentName'] as string }));
 }
 
-type SessionUser = UserRow & { FeedbackResolverTeam?: string | null; ThemePreference?: string | null; TwoFactor?: number | null };
+type SessionUser = UserRow & { FeedbackResolverTeam?: string | null; ThemePreference?: string | null; TwoFactor?: number | null; MustChangePassword?: number | null };
 
 async function buildSessionPayload(user: SessionUser, token: string) {
   const session: Record<string, unknown> = {
@@ -127,6 +127,8 @@ async function buildSessionPayload(user: SessionUser, token: string) {
     token,
     userID: user.UserID,
     userRole: authRole(user),
+    // signed in with a temporary password: the app makes them set a new one before anything else
+    mustChangePassword: Number(user.MustChangePassword) === 1,
     secondaryRoleID: user.SecondaryRoleID ?? null,
     reportingManagerID: user.ReportingManagerID ?? null,
     elManagerID: user.ELManagerID ?? null,
@@ -213,8 +215,10 @@ export async function login(input: LoginInput, client: ClientInfo) {
 
   await logAuthEvent('PASSWORD_OK', { userId: user.UserID, email: user.UserEmail }, client);
 
-  // Two-factor can be off for everyone or for this person (Access Management → Security)
-  if (!(await twoFactorRequired(user))) {
+  // Two-factor can be off for everyone or for this person (Access Management → Security).
+  // First sign-in with a temporary password (new user / invitation) skips the code: the app makes them set a new
+  // password straight away, and from then on two-factor works as usual.
+  if (Number((user as SessionUser).MustChangePassword) === 1 || !(await twoFactorRequired(user))) {
     const keepSignedIn = input.keepSignedIn === true;
     const { sessionId, expiresInSeconds } = await startSession(user.UserID, keepSignedIn, client);
     const session = await buildSessionPayload(user, signToken(user, sessionId, expiresInSeconds));
@@ -308,8 +312,8 @@ export async function createUser(input: CreateUserInput, createdBy: number) {
        (UserEmail, UserName, UserPassword, RoleID, SecondaryRoleID,
         UserStatus, IsUserArchived, EmployeeID, ReportingManagerID,
         ELManagerID, AppraisalCycle, FeedbackResolverTeam, Designation, JobLevel, Band, IsNewJoiner, JoiningCycle,
-        DateOfJoining, VariableCycle, UserRole)
-     VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        DateOfJoining, VariableCycle, UserRole, MustChangePassword)
+     VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
     [
       input.userEmail,
       input.userName,
@@ -500,6 +504,26 @@ export async function getUsers(input: UsersReadInput) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// POST /user/change-password — the signed-in person sets a new password. Right after signing in with a temporary
+// password (MustChangePassword) no current password is asked for; otherwise it must be given and correct.
+// ─────────────────────────────────────────────────────────────
+export async function changeOwnPassword(userId: number, input: { currentPassword?: string | null; newPassword: string }) {
+  const [rows] = await pool.execute<mysql.RowDataPacket[]>('SELECT UserPassword, MustChangePassword FROM Users WHERE UserID = ? AND IsUserArchived = 0 LIMIT 1', [userId]);
+  const u = rows[0];
+  if (!u) throw AppError.notFound('User not found');
+  const forced = Number(u['MustChangePassword']) === 1;
+  if (!forced && !(input.currentPassword && (await bcrypt.compare(input.currentPassword, String(u['UserPassword']))))) {
+    throw AppError.badRequest('Your current password is not correct');
+  }
+  if (await bcrypt.compare(input.newPassword, String(u['UserPassword']))) {
+    throw AppError.badRequest(forced ? 'Choose a new password, not the temporary one' : 'The new password must be different from the current one');
+  }
+  const hashed = await bcrypt.hash(input.newPassword, 12);
+  await pool.execute('UPDATE Users SET UserPassword = ?, MustChangePassword = 0, UserModifyTime = NOW() WHERE UserID = ?', [hashed, userId]);
+  return { status: true, statusCode: 200, message: 'Password changed' };
+}
+
+// ─────────────────────────────────────────────────────────────
 // POST /forgotPassword
 // ─────────────────────────────────────────────────────────────
 export async function forgotPassword(input: ForgotPasswordInput) {
@@ -562,7 +586,7 @@ export async function resetPassword(input: ResetPasswordInput) {
 
   const hashed = await bcrypt.hash(input.newPassword, 12);
 
-  await pool.execute('UPDATE Users SET UserPassword = ? WHERE UserID = ?', [hashed, record.user_id]);
+  await pool.execute('UPDATE Users SET UserPassword = ?, MustChangePassword = 0 WHERE UserID = ?', [hashed, record.user_id]);
   await pool.execute("UPDATE ForgotPassword SET status = 'USED' WHERE token = ?", [input.token]);
 
   return { message: 'Password reset successfully' };

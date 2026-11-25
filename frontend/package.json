@@ -40,6 +40,7 @@
     "lucide-react": "^1.14.0",
     "moment": "^2.30.1",
     "ogl": "^1.0.11",
+    "qrcode.react": "^4.2.0",
     "query-string": "^9.3.1",
     "react": "18.3.1",
     "react-apexcharts": "^1.8.0",

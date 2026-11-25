@@ -136,8 +136,10 @@ const HR_TEAM_DEFAULTS: Privileges = {
 // The Finance Head is the EL of Strategic Financial Management; everyone in HR Operations works as HR in the appraisal.
 const FINANCE_HEAD_DEPT = 'Strategic Financial Management';
 const HR_DEPT = 'HR Operations';
-const FINANCE_HEAD_DEFAULTS: Privileges = { appraisal: ['read'], appr_overview: ['read'], appr_departments: [...ACTIONS] };
-const HR_DEPT_DEFAULTS: Privileges = { appraisal: ['read'], appr_hr: [...ACTIONS], appr_setup: ['read', 'update'] };
+const FINANCE_HEAD_DEFAULTS: Privileges = { appraisal: ['read'], appr_overview: ['read'], appr_departments: [...ACTIONS],
+  hubg_variable_pay: ['read'], hub_variable_pay_finance: [...ACTIONS], hub_variable_pay_eligibility: ['read'] };
+const HR_DEPT_DEFAULTS: Privileges = { appraisal: ['read'], appr_hr: [...ACTIONS], appr_setup: ['read', 'update'],
+  hubg_variable_pay: ['read'], hub_variable_pay_eligibility: ['read', 'update'] };
 
 async function layersOf(userId: number): Promise<Layers> {
   const [[u]] = await pool.execute<Row[]>('SELECT RoleID, SecondaryRoleID, FeedbackResolverTeam FROM Users WHERE UserID = ?', [userId]);
@@ -198,7 +200,7 @@ export async function can(userId: number, module: string, action: (typeof ACTION
 
 export async function listUsers() {
   const [rows] = await pool.query<Row[]>(
-    `SELECT u.UserID, u.UserName, u.UserEmail, u.EmployeeID, u.RoleID, u.SecondaryRoleID, u.UserStatus, u.TwoFactor, u.UserRole,
+    `SELECT u.UserID, u.UserName, u.UserEmail, u.EmployeeID, u.RoleID, u.SecondaryRoleID, u.UserStatus, u.TwoFactor, u.UserRole, u.MustChangePassword, u.InvitedAt,
             r.RoleName, r.UserType, r2.RoleName AS SecondaryRoleName,
             (SELECT GROUP_CONCAT(d.DepartmentName ORDER BY d.DepartmentName SEPARATOR '||') FROM DepartmentUser du JOIN Department d ON d.DepartmentID = du.DepartmentID WHERE du.UserID = u.UserID) AS departments,
             (a.UserID IS NOT NULL AND (a.Grants NOT IN ('{}', 'null') OR a.Denies NOT IN ('{}', 'null'))) AS hasOverrides
@@ -213,6 +215,8 @@ export async function listUsers() {
     twoFactor: r['TwoFactor'] === null ? 'default' : r['TwoFactor'] ? 'on' : 'off',
     twoFactorEffective: r['TwoFactor'] === null ? def : !!r['TwoFactor'],
     hasOverrides: !!Number(r['hasOverrides']),
+    // People Hub invitation: when it was last sent, and whether they still have to set their own password
+    invitedAt: r['InvitedAt'] ?? null, mustChangePassword: Number(r['MustChangePassword']) === 1,
   }));
 }
 

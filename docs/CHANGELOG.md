@@ -17,6 +17,38 @@ Summary: one or two lines on what and why.
 
 ---
 
+## 2026-11-25 — People Hub: new shell, real PMS Dashboard / Target & Goals / Variable Pay, access, invitations  (branch PeopleHub-Update → main)
+Summary: the app is now **People Hub**. Existing Taskly pages are unchanged and sit under a "Taskly" parent in the sidebar. The People Hub blueprint modules are ported under `/hub` (sample data), and three of them run on real data: PMS Dashboard, PMS → Target & Goals and Variable Pay. The PMS score is the user's Model X engine. Every People Hub page is an Access Management permission; Admins can bulk-invite users by email, and the first sign-in forces a new password. The app opens on PMS Dashboard.
+
+### Frontend
+- **Shell:** sidebar header = People Hub logo (`public/peoplehub-logo.svg`); login page and `index.html` title rebranded; existing menu under a collapsible **Taskly** parent (last); main menu = People Hub groups + Taskly's Appraisal (below Growth & Rewards), Admin, HR Experience, Support. Menu items follow access (`hub_*` / `hubg_*` modules); Team-only pages appear only for people with a team by the Hierarchy. Landing page after sign-in / logo = PMS Dashboard (`lib/permissions.ts` `homePath()`; Taskly dashboard for anyone without it).
+- **`src/peoplehub/`** (new): blueprint modules ported from Next.js (config-driven `ModulePage`, blocks on `@/components/ui`, ApexCharts), routes `/hub/...`, `nav.ts` (with `hubPageAccess` / `hubGroupAccess` ids), `HubShell` (sample-data bar only on sample pages; page access guard). New sample modules Ideabox and Brand Kit; Marketing & Events (no ROI); PIP / Admin / Support sample items removed.
+- **PMS Dashboard** (`views/TargetGoals.tsx`): Admin = "PMS Overview" (company); EL / FL / Manager / Lead with a team = "My PMS Dashboard" + "Team PMS Overview"; others = My only. Cards: Avg Goal %, Avg Target %, PMS Score (with "View calculation"); All / Goals / Targets tabs; department breakdown; team scores with the manager's ±5% yearly weighting (justification required); "Why your score is what it is" (went well / held back / next step / trend + What would raise it most); charts; entries tables; Excel. "How your score is calculated" popup (`views/ScoreGuide.tsx`: explainer video `public/videos/pms-score-explained.mp4` + the "Your PMS score, simply explained" note).
+- **Target & Goals:** "My Target & Goals" + team / company tab; entries list with All / Goals / Targets; Add target (everyone, own); Add goal (Admin only).
+- **Variable Pay** (`views/VariablePay.tsx`): My Variable Pay (PMS score, slab, amount, eligibility with reasons + encouragement, appeal), Team Variable Pay (status only), Variable Pay Overview (Finance Head / Admin: years + quarters multi-select, appealed vs approved vs paid, all employees with calculated payout, approve / send back / mark paid), Policy & Slabs, Eligibility (HR).
+- **Performance Report** renamed **Performance Overview**, Admins only (`pages/performanceReport.tsx` exports its chart / table pieces for reuse; figures unchanged).
+- **Access Management → Users:** bulk select + "Send invitation" with results; "Invited …" / "Has not set own password yet".
+- **First sign-in:** `components/ForcePasswordChange.tsx` (in `layout.tsx`): can't-close popup to set a new password.
+- New dependency: `qrcode.react` (ID card). Print CSS hides the sidebar.
+### Backend
+- `modules/pms/pmsScore.ts` (+ test): Model X engine X-1.1 (user's file; shift wording "for this year").
+- `modules/reports/performanceReport.service.ts`: adds Model X figures (`pms`, `people[].pms`: metric-equal Goal % / Target %, score, reason, human reason, per-period series) — existing figures untouched. `reports.routes.ts`: Performance Overview = role 1 only.
+- `modules/reports/targetGoals.routes.ts` (new, `/target-goals`): context, report, add-options, add target (UserWorkData + efficiency recalculation), add goal (Admin only), manager shift `PUT /shift/:userId`. Team = Hierarchy (`access/hierarchy.ts` `hierarchyTeamOf`; `GET /access/hierarchy-team`).
+- `modules/variablePay/*` (new, `/variable-pay`): periods by each person's Variable Cycle, CTC × level % target (HR override), slabs, eligibility, appeal → Finance Head (Admin for the Finance Head's own) → approved → paid; team status; overview by year / quarter.
+- Access: People Hub modules in `access/catalog.ts`; Finance Head / HR department defaults for Variable Pay. Invitations `POST /access/users/invite` (`access/invite.service.ts`: new temp password emailed only if the mail is sent). Auth: `MustChangePassword` skips the emailed code on that sign-in; `POST /user/change-password`; new users created with the flag.
+### Database — run `npm run db:migrate` in nodejs-backend (or apply these files in order)
+- `026_pms_weightage.sql`: `PmsWeightage` (manager's ±5% shift per person per year).
+- `027_people_hub_access.sql`: People Hub defaults for every non-admin role (PMS Dashboard, Target & Goals, My Variable Pay, Policy & Slabs; Team Variable Pay for leader roles; Finance / HR roles their Variable Pay pages).
+- `028_first_login_password.sql`: `Users.MustChangePassword`, `InvitedAt`, `InvitedBy`.
+- `029_variable_pay.sql`: `VariablePayRequest`, `VariablePayReview`, `VariablePayTarget`, default slabs in `AppSetting`.
+- Down scripts in `migrations/down/`.
+### Env / config
+- Invitations need working SMTP (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`); without it the invite reports "Email is not set up" and no password changes. Email logo loads from `FRONTEND_URL/peoplehub-logo-email.png`, so `FRONTEND_URL` must be the public address.
+### Notes
+- Most People Hub modules are still sample data (UI only). Variable Pay needs CTCs in Appraisal Setup (or amounts in Eligibility) before people are eligible.
+- Old Taskly pages keep their own team rule (`access/team.ts`); only People Hub uses the Hierarchy.
+- Locally the Appraisal module data was reset on 2026-11-25 (backup outside the repo); nothing is reset by these migrations.
+
 ## 2026-11-20 — Performance Report: Goal + Target in one Excel file  (main)
 Summary: a "Download Goal + Target Excel" button above the two tables downloads one .xlsx with two sheets, for the current filters.
 

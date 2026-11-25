@@ -107,3 +107,8 @@
 html.dark .react-flow__minimap { background: #141414; }
 html.dark .react-flow__minimap-mask { fill: rgba(0, 0, 0, 0.6); }
 html.dark .react-flow__controls-button { background: #141414; border-color: rgba(255, 255, 255, 0.1); color: #fff; fill: #fff; }
+
+/* People Hub: offer letter / ID card print only the document */
+@media print {
+  aside, .no-print { display: none !important; }
+}

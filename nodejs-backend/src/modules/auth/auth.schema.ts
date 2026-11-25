@@ -80,6 +80,15 @@ export const ResetPasswordSchema = z.object({
   newPassword: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
+/** A password a person chooses: 8+ characters with a letter and a number */
+export const NewPassword = z.string().min(8, 'Use at least 8 characters').max(128)
+  .regex(/[A-Za-z]/, 'Use at least one letter').regex(/[0-9]/, 'Use at least one number');
+
+export const ChangePasswordSchema = z.object({
+  currentPassword: z.string().max(128).nullish(),
+  newPassword: NewPassword,
+});
+
 export const UpdateUserStatusSchema = z.object({
   userIdList: z.array(z.number().int().positive()).min(1),
   userStatus: z.union([z.literal(0), z.literal(1)]),

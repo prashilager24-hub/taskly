@@ -25,6 +25,7 @@ import { pool } from '../../config/db';
 import { EFFECTIVE_GOAL, OVER_TARGET_MINUS_10, dayTargetRule } from '../calculations/calculationLogic';
 import { teamOf } from '../access/team';
 import { enrichedDayRows } from './efficiencySummary.service';
+import { computePms, renderHumanReason, renderReason, type HumanReason, type MetricDetail, type PmsResult } from '../pms/pmsScore';
 
 type DbRow = mysql.RowDataPacket;
 type Row = Record<string, any>;
@@ -38,6 +39,8 @@ export interface PerformanceReportRequest {
   grain: Grain;
   excludeZero?: boolean;
   quarters?: number[] | null; // only these quarters (1–4) of the dates; empty / missing = every date in the range
+  /** internal: leave out last period's score (used when working that score out) */
+  skipTrend?: boolean;
 }
 
 export const NO_DEPARTMENT = 0;
@@ -85,6 +88,12 @@ function rollup<T extends Unit>(units: T[], value: (u: T) => number | null, leve
   return mean([...byDept.values()].map((vs) => mean(vs)!));
 }
 
+/** The PMS score (in %) of another period, for the trend line (typed apart so the report can call itself) */
+async function previousScoreOf(f: PerformanceReportRequest, scope: Set<number> | null): Promise<number | null> {
+  const r: { pms: { score: number | null } } = await performanceReport(f, scope);
+  return r.pms.score;
+}
+
 export async function performanceReport(f: PerformanceReportRequest, scope: Set<number> | null) {
   const org = await loadOrg();
   const subDept = (id: number) => org.sub.get(id) ?? { name: `Sub department ${id}`, dept: NO_DEPARTMENT };
@@ -116,7 +125,7 @@ export async function performanceReport(f: PerformanceReportRequest, scope: Set<
   if (f.subDepartmentId) { gConds.push('ug.DepartmentID = ?'); gParams.push(f.subDepartmentId); }
   const [goalRows] = await pool.query<DbRow[]>(
     `SELECT ug.UserGoalDataID, ug.UserID, u.UserName, ug.DepartmentID, ug.GoalID, DATE_FORMAT(ug.WorkDate,'%Y-%m-%d') AS WorkDate,
-            ${EFFECTIVE_GOAL} AS Goal, ug.AchievedGoal, ug.Comment, g.GoalName, g.Frequency
+            ${EFFECTIVE_GOAL} AS Goal, ug.AchievedGoal, ug.Comment, g.GoalName, g.GoalMetric, g.Frequency
      FROM UserGoalData ug JOIN Users u ON u.UserID = ug.UserID LEFT JOIN DepartmentGoal g ON g.GoalID = ug.GoalID
      WHERE ${gConds.join(' AND ')} ORDER BY ug.WorkDate, ug.UserGoalDataID`, gParams);
   const goals = goalRows
@@ -136,7 +145,7 @@ export async function performanceReport(f: PerformanceReportRequest, scope: Set<
   if (f.subDepartmentId) { tConds.push('w.DepartmentID = ?'); tParams.push(f.subDepartmentId); }
   const [targetRows] = await pool.query<DbRow[]>(
     `SELECT w.DailyTaskLogID, w.UserID, u.UserName, w.DepartmentID, w.TaskID, DATE_FORMAT(w.WorkDate,'%Y-%m-%d') AS WorkDate,
-            w.Units, w.AchivedUnits, w.Remarks, tg.TargetName, tg.Frequency
+            w.Units, w.AchivedUnits, w.Remarks, tg.TargetName, tg.TargetMetric, tg.Frequency
      FROM UserWorkData w JOIN Users u ON u.UserID = w.UserID LEFT JOIN DepartmentTarget tg ON tg.TargetID = w.TaskID
      WHERE ${tConds.join(' AND ')} ORDER BY w.WorkDate, w.DailyTaskLogID`, tParams);
   // Days whose target a department rule sets (time taken vs planned in Apr – Jun, TAM, …) or an EL-approved revised
@@ -160,6 +169,56 @@ export async function performanceReport(f: PerformanceReportRequest, scope: Set<
   const U2 = [...units.values()] as FullUnit[];
   const targetsOf = (u: FullUnit) => tUnits.get(u.key) ?? [];
   const goalsOf = (u: FullUnit) => u.goals as E[];
+
+  // ── Model X (People Hub PMS score, modules/pms/pmsScore.ts) ──
+  // Goal % / Target % for a period: average each metric's entries (each goal / target is one metric), then average the
+  // metrics, so every metric counts the same. Entries with nothing expected (0) are left out; the same entry twice
+  // (same metric, date and figures) counts once. Score = Goal^w × Target^(1−w), w = 0.70 when Goal % > Target %,
+  // else 0.50, plus the person's manager shift for the year the dates end in (±5%, PmsWeightage).
+  type MX = { date: string; metric: string; key: string; pct: number; name: string; unit: string; expected: number | null; achieved: number | null };
+  /** The unit to talk in: the metric field when it names something ("No_Of_Meetings_Scheduled" → "meetings scheduled"),
+   *  otherwise "units" (many metric fields hold "100%", "100" or "Time") */
+  const unitOf = (metric: unknown, _name?: unknown) => {
+    const t = String(metric ?? '').replace(/[_]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase().replace(/^(no|number) of /, '');
+    return /^[a-z][a-z ]{3,40}$/.test(t) && !['time', 'n a', 'na', 'none', 'percentage', 'percent'].includes(t) ? t : 'units';
+  };
+  const mxT = new Map<string, MX[]>(), mxG = new Map<string, MX[]>();
+  const push = (m: Map<string, MX[]>, k: string, e: MX) => m.set(k, [...(m.get(k) ?? []), e]);
+  for (const w of targets) {
+    const p = entryPct(w); if (p == null) continue;
+    const metric = `t${w['TaskID'] ?? 'x'}`, date = String(w['WorkDate']);
+    push(mxT, unitFor(n(w['UserID']), String(w['UserName']), n(w['DepartmentID'])).key, { date, metric, key: `${metric}|${date}|${n(w['Units'])}|${n(w['AchivedUnits'])}`, pct: p,
+      name: String(w['TargetName'] ?? 'Target'), unit: unitOf(w['TargetMetric'], w['TargetName']), expected: n(w['Units']), achieved: n(w['AchivedUnits']) });
+  }
+  for (const { row: r, rule } of ruleDays.values()) {
+    const metric = `rule:${rule}`, date = String(r['WorkDate']);
+    push(mxT, unitFor(n(r['UserID']), String(r['UserName']), n(r['DepartmentID'])).key, { date, metric, key: `${metric}|${date}|${n(r['DepartmentID'])}`, pct: n(r['TargetAchievedPercent']),
+      name: rule, unit: 'units', expected: null, achieved: null });
+  }
+  for (const g of goals) {
+    if (!(n(g['Goal']) > 0)) continue;
+    const metric = `g${g['GoalID']}`, date = String(g['WorkDate']);
+    push(mxG, unitFor(n(g['UserID']), String(g['UserName']), n(g['DepartmentID'])).key, { date, metric, key: `${metric}|${date}|${n(g['Goal'])}|${n(g['AchievedGoal'])}`, pct: n(g['pct']),
+      name: String(g['GoalName'] ?? 'Goal'), unit: unitOf(g['GoalMetric'], g['GoalName']), expected: n(g['Goal']), achieved: n(g['AchievedGoal']) });
+  }
+  const mxAvg = (list: MX[], keep: (e: MX) => boolean = () => true) => {
+    const seen = new Set<string>(); const by = new Map<string, number[]>();
+    for (const e of list) { if (!keep(e) || seen.has(e.key)) continue; seen.add(e.key); by.set(e.metric, [...(by.get(e.metric) ?? []), e.pct]); }
+    const ms = [...by.values()].map((v) => mean(v)!);
+    return { pct: mean(ms), metrics: ms.length, entries: seen.size };
+  };
+  const shiftYear = Number(f.to.slice(0, 4));
+  const mxUserIds = [...new Set([...units.values()].map((u) => u.userId))];
+  const [shiftRows] = mxUserIds.length
+    ? await pool.query<DbRow[]>('SELECT UserID, GoalShift FROM PmsWeightage WHERE PeriodYear = ? AND UserID IN (?)', [shiftYear, mxUserIds])
+    : [[] as DbRow[]];
+  const shiftOf = new Map(shiftRows.map((r) => [n(r['UserID']), n(r['GoalShift'])]));
+  const mxScore = (gList: MX[], tList: MX[], uid: number, keep?: (e: MX) => boolean) => {
+    const g = mxAvg(gList, keep), t = mxAvg(tList, keep);
+    return { goal: g, target: t, result: computePms({ goalPct: g.pct == null ? null : g.pct / 100, targetPct: t.pct == null ? null : t.pct / 100, managerShift: shiftOf.get(uid) ?? 0 }) };
+  };
+  const unitMx = (u: FullUnit, keep?: (e: MX) => boolean) => mxScore(mxG.get(u.key) ?? [], mxT.get(u.key) ?? [], u.userId, keep);
+  const pctOf = (x: number | null) => (x == null ? null : r2(x * 100));
 
   // A period's % is the plain average of every entry in it (10 entries → divided by 10), worked out per person and
   // then person → sub department → department → company. A year or the whole range is the average of its quarters.
@@ -228,9 +287,89 @@ export async function performanceReport(f: PerformanceReportRequest, scope: Set<
   });
   const goalBreakdown = null;
 
+  // ── each person's own scores, worked out as if only that person were picked (People Hub → Target & Goals) ──
+  // quarter % = plain average of the person's entries in it; weighted = Σ (quarter % × entries) ÷ entries; average = mean of quarters
+  const subsOf = new Map<number, Set<number>>();
+  for (const r of [...days, ...goals]) { const uid = n(r['UserID']); subsOf.set(uid, (subsOf.get(uid) ?? new Set()).add(n(r['DepartmentID']))); }
+  const byUser = new Map<number, { name: string; t: E[]; g: E[] }>();
+  for (const u of U2) {
+    const p = byUser.get(u.userId) ?? { name: u.userName, t: [], g: [] };
+    p.t.push(...targetsOf(u)); p.g.push(...goalsOf(u)); byUser.set(u.userId, p);
+  }
+  const scoreOf = (list: E[]) => {
+    const perQ = new Map<string, number[]>();
+    for (const e of list) { const q = periodOf(e.date, 'quarter'); perQ.set(q, [...(perQ.get(q) ?? []), e.pct]); }
+    const qv = [...perQ.values()].map((v) => ({ pct: r2(mean(v))!, n: v.length }));
+    const entries = qv.reduce((a, q) => a + q.n, 0);
+    return { weighted: entries ? r2(qv.reduce((a, q) => a + q.pct * q.n, 0) / entries) : null, avg: r2(mean(qv.map((q) => q.pct))), entries };
+  };
+  const personScores = [...byUser.entries()].map(([userId, p]) => {
+    const subs = [...(subsOf.get(userId) ?? [])];
+    const myUnits = U2.filter((u) => u.userId === userId);
+    const m = mxScore(myUnits.flatMap((u) => mxG.get(u.key) ?? []), myUnits.flatMap((u) => mxT.get(u.key) ?? []), userId);
+    return {
+      userId, name: p.name,
+      subDepartment: subs.map((s) => subDept(s).name).join(', '),
+      department: [...new Set(subs.map((s) => org.dept.get(subDept(s).dept) ?? ''))].join(', '),
+      target: scoreOf(p.t), goal: scoreOf(p.g),
+      pms: {
+        goalPct: pctOf(m.result.goalPct), targetPct: pctOf(m.result.targetPct), score: pctOf(m.result.score), goalWeight: m.result.goalWeight, shift: m.result.managerShift,
+        reasonCode: m.result.reasonCode, goalMetrics: m.goal.metrics, targetMetrics: m.target.metrics,
+      },
+    };
+  }).sort((a, b) => a.name.localeCompare(b.name));
+
+  // ── Model X for the whole selection: one person's own figures, or person → sub department → department → company ──
+  const cardMx = (keep?: (e: MX) => boolean) => ({
+    goalPct: r2(rollup(U2, (u) => { const v = unitMx(u, keep).result.goalPct; return v == null ? null : v * 100; }, level)),
+    targetPct: r2(rollup(U2, (u) => { const v = unitMx(u, keep).result.targetPct; return v == null ? null : v * 100; }, level)),
+    score: r2(rollup(U2, (u) => { const v = unitMx(u, keep).result.score; return v == null ? null : v * 100; }, level)),
+  });
+  const allMx = U2.map((u) => unitMx(u));
+  /** The side's main metric: the one logged most often, with its planned and achieved totals for the period */
+  const mainMetric = (list: MX[]): MetricDetail | undefined => {
+    const seen = new Set<string>(); const by = new Map<string, MX[]>();
+    for (const e of list) { if (seen.has(e.key) || e.expected == null) continue; seen.add(e.key); by.set(e.metric, [...(by.get(e.metric) ?? []), e]); }
+    const top = [...by.values()].sort((a, b) => b.length - a.length)[0];
+    if (!top) return undefined;
+    const planned = top.reduce((a, e) => a + (e.expected ?? 0), 0), achieved = top.reduce((a, e) => a + (e.achieved ?? 0), 0);
+    return planned > 0 ? { name: top[0]!.name, unit: top[0]!.unit, planned, achieved } : undefined;
+  };
+  let onePerson: { result: PmsResult; reason: ReturnType<typeof renderReason>; human: HumanReason; goalMetrics: number; targetMetrics: number; goalEntries: number; targetEntries: number } | null = null;
+  if (level === 'person' && allMx[0] && U2[0]) {
+    const u0 = U2[0];
+    // last period: the same number of days just before these dates (for "Up 6 points since last period")
+    let previousScore: number | null = null;
+    if (!f.skipTrend) {
+      const day = 86_400_000, start = Date.parse(`${f.from}T00:00:00Z`), end = Date.parse(`${f.to}T00:00:00Z`);
+      const len = Math.round((end - start) / day) + 1;
+      const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
+      const prev = await previousScoreOf({ ...f, from: iso(start - len * day), to: iso(start - day), quarters: null, grain: 'quarter', skipTrend: true }, scope);
+      previousScore = prev == null ? null : prev / 100;
+    }
+    const input = {
+      goalPct: allMx[0].result.goalPct, targetPct: allMx[0].result.targetPct, managerShift: allMx[0].result.managerShift,
+      goalMetric: mainMetric(mxG.get(u0.key) ?? []), targetMetric: mainMetric(mxT.get(u0.key) ?? []),
+      previousScore, workingDays: new Set(u0.rows.map((r) => String(r['WorkDate']))).size || undefined,
+    };
+    onePerson = {
+      result: allMx[0].result, reason: renderReason(allMx[0].result), human: renderHumanReason(allMx[0].result, input),
+      goalMetrics: allMx[0].goal.metrics, targetMetrics: allMx[0].target.metrics, goalEntries: allMx[0].goal.entries, targetEntries: allMx[0].target.entries,
+    };
+  }
+  const pms = {
+    ...cardMx(), shiftYear, people: new Set(U2.map((u) => u.userId)).size,
+    goalMetrics: allMx.reduce((a, m) => a + m.goal.metrics, 0), targetMetrics: allMx.reduce((a, m) => a + m.target.metrics, 0),
+    goalEntries: allMx.reduce((a, m) => a + m.goal.entries, 0), targetEntries: allMx.reduce((a, m) => a + m.target.entries, 0),
+    person: onePerson,
+    charts: periods.map((pk) => ({ period: pk, ...cardMx((e) => periodOf(e.date, f.grain) === pk) })),
+  };
+
   return {
     level,
     goalBreakdown,
+    people: personScores,
+    pms,
     cards: {
       avgTargetPct: avgOfQuarters('target'), avgGoalPct: avgOfQuarters('goal'), weightedTarget: weighted('target', 'targetEntries'), weightedGoal: weighted('goal', 'goalEntries'), targetEntries: targetTable.filter((t) => t.pct != null).length,
       avgWorkingHrs: r2(hours('TotalTimeOfWork')), avgAllocatedHrs: r2(hours('AllocatedTimeHrs')),

@@ -20,3 +20,17 @@ export function hasModuleAccess(module: string, action: Action = "read"): boolea
 export function hasModuleKey(module: string): boolean {
     return module in privileges();
 }
+
+/** Admin / Super Admin (role 1), from the signed-in user saved at login */
+export function isAdminUser(): boolean {
+    try {
+        return Number(JSON.parse(localStorage.getItem("authUserLD") || "{}").userRole) === 1;
+    } catch {
+        return false;
+    }
+}
+
+/** Where the app opens after sign-in (and the logo goes): People Hub's PMS Dashboard, or the Taskly dashboard for anyone without it */
+export function homePath(): string {
+    return hasModuleAccess("hub_dashboard_pms") ? "/hub/dashboard/pms" : "/dashboard";
+}

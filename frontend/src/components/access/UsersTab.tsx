@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
-import { KeyRound, Pencil, Plus, Power, Search } from "lucide-react";
+import { KeyRound, Mail, Pencil, Plus, Power, Search, Send } from "lucide-react";
 
 import { Segmented } from "@/components/page";
 import {
-    Button, Chip, Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerHeader, Input, Select, SelectItem, addToast,
+    Button, Checkbox, Chip, Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerHeader, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem, addToast,
 } from "@/components/ui";
 import { UserAccessMatrix } from "./PermissionMatrix";
-import { accessApi, errorText, type ModuleDef, type Privileges, type RoleRow, type UserExplain, type UserRow, type DepartmentRow } from "./api";
+import { accessApi, errorText, type InviteResult, type ModuleDef, type Privileges, type RoleRow, type UserExplain, type UserRow, type DepartmentRow } from "./api";
 import { USER_ROLES, USER_TYPES, userRoleLabel, userTypeLabel } from "./userTypes";
 
 const API = "/t2.0/authentificationUtilization";
@@ -253,6 +253,12 @@ export default function UsersTab({ catalog, roles, departments, onChanged }: { c
     const [status, setStatus] = useState<"active" | "inactive" | "all">("active");
     const [accessFor, setAccessFor] = useState<UserRow | null>(null);
     const [form, setForm] = useState<{ open: boolean; editing: FullUser | null }>({ open: false, editing: null });
+    // People Hub invitations: pick people (active only, never yourself), confirm, then see who got the email
+    const [picked, setPicked] = useState<Set<number>>(new Set());
+    const [inviteOpen, setInviteOpen] = useState(false);
+    const [inviting, setInviting] = useState(false);
+    const [inviteResults, setInviteResults] = useState<InviteResult[] | null>(null);
+    const me = useMemo(() => { try { return Number(JSON.parse(localStorage.getItem("authUserLD") || "{}").userID); } catch { return 0; } }, []);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -268,6 +274,24 @@ export default function UsersTab({ catalog, roles, departments, onChanged }: { c
         (status === "all" || (status === "active") === u.active) &&
         (type === "all" || u.userType === type || roles.find((r) => r.roleId === u.secondaryRoleId)?.userType === type) &&
         (!q || `${u.name} ${u.email} ${u.employeeId ?? ""}`.toLowerCase().includes(q.toLowerCase())));
+
+    const pickable = (u: UserRow) => u.active && u.userId !== me;
+    const shownPickable = shown.filter(pickable);
+    const allPicked = shownPickable.length > 0 && shownPickable.every((u) => picked.has(u.userId));
+    const togglePick = (id: number) => setPicked((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+    const toggleAll = () => setPicked((s) => { const n = new Set(s); for (const u of shownPickable) { if (allPicked) n.delete(u.userId); else n.add(u.userId); } return n; });
+    const pickedUsers = users.filter((u) => picked.has(u.userId));
+    const sendInvites = async () => {
+        setInviting(true);
+        try {
+            const r = await accessApi.invite([...picked]);
+            setInviteResults(r.results);
+            addToast({ title: r.sent ? `Invitation sent to ${r.sent} ${r.sent === 1 ? "person" : "people"}` : "No invitations sent", description: r.failed ? `${r.failed} could not be sent; see the list.` : undefined, color: r.failed ? (r.sent ? "warning" : "danger") : "success" });
+            setPicked(new Set());
+            load();
+        } catch (e) { addToast({ title: "Could not send invitations", description: errorText(e), color: "danger" }); } finally { setInviting(false); }
+    };
+    const fmtDay = (d: string) => new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 
     const toggleStatus = async (u: UserRow) => {
         try {
@@ -293,18 +317,39 @@ export default function UsersTab({ catalog, roles, departments, onChanged }: { c
                     </Select>
                     <Segmented label="Status" size="sm" value={status} onChange={setStatus} options={[{ key: "active", label: "Active" }, { key: "inactive", label: "Inactive" }, { key: "all", label: "All" }]} />
                 </div>
-                <Button color="primary" startContent={<Plus size={14} />} onPress={() => setForm({ open: true, editing: null })}>Add user</Button>
+                <div className="flex flex-wrap gap-2">
+                    <Button variant="bordered" startContent={<Send size={14} />} isDisabled={!picked.size} onPress={() => { setInviteResults(null); setInviteOpen(true); }}>
+                        Send invitation{picked.size ? ` (${picked.size})` : ""}
+                    </Button>
+                    <Button color="primary" startContent={<Plus size={14} />} onPress={() => setForm({ open: true, editing: null })}>Add user</Button>
+                </div>
             </div>
+            {picked.size > 0 && (
+                <div className="flex flex-wrap items-center gap-3 border border-brand-200 bg-brand-50/60 px-4 py-2 text-sm dark:border-brand-500/30 dark:bg-brand-500/10">
+                    <Mail size={15} className="text-brand-600" />
+                    <span><b>{picked.size}</b> selected for a People Hub invitation</span>
+                    <button type="button" className="text-xs font-semibold text-brand-600 hover:underline focus-ring" onClick={() => setPicked(new Set())}>Clear</button>
+                </div>
+            )}
 
             <div className="overflow-x-auto border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900">
                 <table className="w-full text-sm">
                     <thead><tr className="border-b border-ink-200 bg-ink-50 dark:border-white/10 dark:bg-white/5">
+                        <th className="w-10 px-4 py-3 text-left"><Checkbox size="sm" aria-label="Select all shown users" isSelected={allPicked} isIndeterminate={!allPicked && shownPickable.some((u) => picked.has(u.userId))} isDisabled={!shownPickable.length} onValueChange={toggleAll} /></th>
                         {["User", "User type", "Departments", "Access", "Two-factor", "Status", ""].map((h) => <th key={h} className="px-4 py-3 text-left">{h}</th>)}
                     </tr></thead>
                     <tbody>
                         {shown.map((u) => (
-                            <tr key={u.userId} className="border-b border-ink-100 last:border-0 hover:bg-ink-50/60 dark:border-white/5 dark:hover:bg-white/5">
-                                <td className="px-4 py-3"><Link to={`/profile/${u.userId}`} className="font-semibold text-ink-900 hover:text-brand-600 hover:underline dark:text-white">{u.name}</Link>{newOf(u.userId) && <span className="ml-2 bg-brand-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-700 dark:bg-brand-500/15 dark:text-brand-300">New · {newOf(u.userId)}</span>}<p className="text-xs text-ink-500 dark:text-ink-400">{u.email}</p></td>
+                            <tr key={u.userId} className={`border-b border-ink-100 last:border-0 hover:bg-ink-50/60 dark:border-white/5 dark:hover:bg-white/5 ${picked.has(u.userId) ? "bg-brand-50/40 dark:bg-brand-500/5" : ""}`}>
+                                <td className="px-4 py-3"><Checkbox size="sm" aria-label={`Select ${u.name}`} isSelected={picked.has(u.userId)} isDisabled={!pickable(u)} onValueChange={() => togglePick(u.userId)} /></td>
+                                <td className="px-4 py-3"><Link to={`/profile/${u.userId}`} className="font-semibold text-ink-900 hover:text-brand-600 hover:underline dark:text-white">{u.name}</Link>{newOf(u.userId) && <span className="ml-2 bg-brand-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-700 dark:bg-brand-500/15 dark:text-brand-300">New · {newOf(u.userId)}</span>}<p className="text-xs text-ink-500 dark:text-ink-400">{u.email}</p>
+                                    {(u.invitedAt || u.mustChangePassword) && (
+                                        <p className="mt-0.5 text-[11px] text-ink-500">
+                                            {u.invitedAt ? `Invited ${fmtDay(u.invitedAt)}` : ""}{u.invitedAt ? " · " : ""}
+                                            {u.mustChangePassword ? <span className="font-semibold text-amber-600 dark:text-amber-400">Has not set own password yet</span> : "signed in"}
+                                        </p>
+                                    )}
+                                </td>
                                 <td className="px-4 py-3">
                                     <p className="flex flex-wrap items-center gap-1.5">
                                         <span>{userTypeLabel(u.userType, u.roleName)}</span>
@@ -328,11 +373,44 @@ export default function UsersTab({ catalog, roles, departments, onChanged }: { c
                                 </td>
                             </tr>
                         ))}
-                        {!shown.length && <tr><td colSpan={7} className="px-4 py-12 text-center text-ink-500">{loading ? "Loading users…" : "No users match."}</td></tr>}
+                        {!shown.length && <tr><td colSpan={8} className="px-4 py-12 text-center text-ink-500">{loading ? "Loading users…" : "No users match."}</td></tr>}
                     </tbody>
                 </table>
             </div>
             <p className="text-xs text-ink-500 dark:text-ink-400">{shown.length} of {users.length} users</p>
+
+            <Modal isOpen={inviteOpen} onOpenChange={(o) => { if (!o && !inviting) setInviteOpen(false); }} size="lg" scrollBehavior="inside">
+                <ModalContent>
+                    <ModalHeader className="flex flex-col gap-1">
+                        <span className="flex items-center gap-2"><Send size={17} className="text-brand-600" />{inviteResults ? "Invitations" : "Send People Hub invitation"}</span>
+                        {!inviteResults && <span className="text-xs font-normal text-ink-500">Each person gets an email with a new temporary password and a button to the People Hub sign-in page. Their current password stops working. At first sign-in they must set their own; two-factor sign-in applies after that.</span>}
+                    </ModalHeader>
+                    <ModalBody>
+                        {inviteResults ? (
+                            <ul className="divide-y divide-ink-100 text-sm dark:divide-white/5">
+                                {inviteResults.map((r) => (
+                                    <li key={r.userId} className="flex items-center justify-between gap-3 py-2">
+                                        <span><b>{r.name}</b> <span className="text-xs text-ink-500">{r.email}</span></span>
+                                        {r.sent ? <Chip size="sm" color="success" variant="flat">Sent</Chip> : <span className="text-xs font-semibold text-rose-600">{r.reason ?? "Not sent"}</span>}
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <ul className="max-h-72 divide-y divide-ink-100 overflow-auto text-sm dark:divide-white/5">
+                                {pickedUsers.map((u) => <li key={u.userId} className="py-2"><b>{u.name}</b> <span className="text-xs text-ink-500">{u.email}</span></li>)}
+                            </ul>
+                        )}
+                    </ModalBody>
+                    <ModalFooter>
+                        {inviteResults ? <Button color="primary" onPress={() => setInviteOpen(false)}>Done</Button> : (
+                            <>
+                                <Button variant="light" isDisabled={inviting} onPress={() => setInviteOpen(false)}>Cancel</Button>
+                                <Button color="primary" startContent={<Send size={14} />} isLoading={inviting} isDisabled={!picked.size} onPress={sendInvites}>Send to {picked.size} {picked.size === 1 ? "person" : "people"}</Button>
+                            </>
+                        )}
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
 
             <AccessCanvas user={accessFor} catalog={catalog} onClose={() => setAccessFor(null)} onChanged={refresh} />
             <UserCanvas open={form.open} editing={form.editing} roles={roles} departments={departments} people={users} onClose={() => setForm({ open: false, editing: null })} onSaved={refresh} />

@@ -1,0 +1,1 @@
+ALTER TABLE OpenRoles ADD COLUMN recruiter VARCHAR(150) DEFAULT NULL AFTER hiring_manager;

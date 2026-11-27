@@ -117,9 +117,10 @@ export const NAV: NavModule[] = [
     roles: both,
     children: [
       { title: "Open Roles", href: "/hub/talent/open-roles", roles: both },
-      { title: "Interview Tracker", href: "/hub/talent/interview-tracker", roles: admin },
-      { title: "Interview Stages", href: "/hub/talent/interview-stages", roles: admin },
-      { title: "Employee Database", href: "/hub/talent/employee-database", roles: admin },
+      { title: "Applicants", href: "/hub/talent/interview-tracker", roles: admin },
+      { title: "Upload Applicants", href: "/hub/talent/upload-applicants", roles: admin },
+      { title: "Interview Tracker", href: "/hub/talent/interview-stages", roles: admin },
+      { title: "Applicants Database", href: "/hub/talent/employee-database", roles: admin },
       { title: "Offer Letter Generation", href: "/hub/talent/offer-letter", roles: admin },
       { title: "New Hire Notification", href: "/hub/talent/new-hire", roles: admin },
     ],

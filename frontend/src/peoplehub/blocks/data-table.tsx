@@ -1,20 +1,91 @@
-import { useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ChevronsUpDown, Download, Inbox, Search, X } from "lucide-react";
-import { Button, NativeSelect, cn } from "@/peoplehub/ui";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ChevronsUpDown, Download, Inbox, Search, Upload, X, ChevronDown, Check } from "lucide-react";
+import { Button, NativeSelect, cn, toast } from "@/peoplehub/ui";
 import type { Column, Row } from "@/peoplehub/modules/types";
 import { Cell, plain } from "./cell";
 import { EmptyState } from "./page";
 
 const PAGE = 8;
 
-export function DataTable({ title, description, columns, rows, tabsOn, filters = [], onRowClick }: {
-  title: string; description?: string; columns: Column[]; rows: Row[]; tabsOn?: string; filters?: { key: string; label: string }[]; onRowClick?: (row: Row) => void;
+// ── Column-picker modal ───────────────────────────────────────────────────────
+function ColumnPicker({ columns, selected, onConfirm, onCancel }: {
+  columns: Column[];
+  selected: Set<string>;
+  onConfirm: (s: Set<string>) => void;
+  onCancel: () => void;
+}) {
+  const [local, setLocal] = useState(new Set(selected));
+  const toggle = (k: string) => setLocal(s => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; });
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onCancel}>
+      <div className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-white/10 rounded-xl shadow-2xl w-80 p-5" onClick={e => e.stopPropagation()}>
+        <h3 className="text-sm font-bold text-ink-900 dark:text-white mb-1">Select Columns</h3>
+        <p className="text-xs text-ink-400 mb-4">Choose which columns to include in the export.</p>
+        <div className="space-y-1 max-h-64 overflow-y-auto mb-4">
+          {columns.map(c => (
+            <label key={c.key} className="flex items-center gap-3 px-2 py-2 rounded hover:bg-ink-50 dark:hover:bg-white/[0.04] cursor-pointer">
+              <span className={cn("flex size-4 shrink-0 items-center justify-center rounded border transition-colors",
+                local.has(c.key) ? "bg-brand-600 border-brand-600" : "border-ink-300 dark:border-white/20")}>
+                {local.has(c.key) && <Check className="size-3 text-white" />}
+              </span>
+              <input type="checkbox" className="sr-only" checked={local.has(c.key)} onChange={() => toggle(c.key)} />
+              <span className="text-sm text-ink-700 dark:text-ink-200">{c.label}</span>
+            </label>
+          ))}
+        </div>
+        <div className="flex gap-2 justify-end">
+          <Button variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
+          <Button size="sm" onClick={() => onConfirm(local)} disabled={local.size === 0}>
+            Export {local.size} column{local.size !== 1 ? "s" : ""}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Import progress toast ─────────────────────────────────────────────────────
+function parseCsv(text: string): Record<string, string>[] {
+  const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n").filter(Boolean);
+  if (lines.length < 2) return [];
+  const header = lines[0].split(",").map(h => h.replace(/^"|"$/g, "").trim());
+  return lines.slice(1).map(line => {
+    const vals: string[] = [];
+    let cur = "", inQ = false;
+    for (const ch of line) {
+      if (ch === '"' && !inQ) { inQ = true; continue; }
+      if (ch === '"' && inQ) { inQ = false; continue; }
+      if (ch === "," && !inQ) { vals.push(cur); cur = ""; continue; }
+      cur += ch;
+    }
+    vals.push(cur);
+    return Object.fromEntries(header.map((h, i) => [h, (vals[i] ?? "").trim()]));
+  });
+}
+
+export function DataTable({ title, description, columns, rows, tabsOn, filters = [], onRowClick, rowButton, exportExtras = [], onImport, searchExtras = [] }: {
+  title: string; description?: string; columns: Column[]; rows: Row[]; tabsOn?: string; filters?: { key: string; label: string }[]; onRowClick?: (row: Row) => void; rowButton?: { label: string; onClick: (row: Row) => void };
+  exportExtras?: { key: string; label: string }[];
+  onImport?: (parsedRows: Record<string, string>[]) => Promise<void>;
+  searchExtras?: string[];
 }) {
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState("All");
   const [active, setActive] = useState<Record<string, string>>({});
   const [sort, setSort] = useState<{ key: string; dir: 1 | -1 } | null>(null);
   const [page, setPage] = useState(0);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
+  const importRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!exportOpen) return;
+    function close(e: MouseEvent) { if (exportRef.current && !exportRef.current.contains(e.target as Node)) setExportOpen(false); }
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [exportOpen]);
 
   const tabs = useMemo(() => (tabsOn ? ["All", ...Array.from(new Set(rows.map((r) => plain(r[tabsOn]))))] : []), [rows, tabsOn]);
   const options = useMemo(
@@ -28,7 +99,8 @@ export function DataTable({ title, description, columns, rows, tabsOn, filters =
       if (tabsOn && tab !== "All" && plain(r[tabsOn]) !== tab) return false;
       for (const [k, v] of Object.entries(active)) if (v && plain(r[k]) !== v) return false;
       if (!q) return true;
-      return columns.some((c) => plain(r[c.key]).toLowerCase().includes(q));
+      return columns.some((c) => plain(r[c.key]).toLowerCase().includes(q))
+        || searchExtras.some((k) => plain(r[k]).toLowerCase().includes(q));
     });
     if (sort) {
       const col = columns.find((c) => c.key === sort.key);
@@ -46,13 +118,43 @@ export function DataTable({ title, description, columns, rows, tabsOn, filters =
   const visible = filtered.slice(current * PAGE, current * PAGE + PAGE);
   const hasFilters = query || Object.values(active).some(Boolean) || tab !== "All";
 
-  function exportCsv() {
+  function doExport(keys?: Set<string>) {
     const esc = (s: string) => `"${s.replace(/"/g, '""')}"`;
-    const csv = "﻿" + [columns.map((c) => esc(c.label)).join(","), ...filtered.map((r) => columns.map((c) => esc(plain(r[c.key]))).join(","))].join("\r\n");
+    const exportCols = keys ? columns.filter(c => keys.has(c.key)) : columns;
+    const extraCols = exportExtras;
+    const header = [...exportCols.map(c => esc(c.label)), ...extraCols.map(c => esc(c.label))].join(",");
+    const dataRows = filtered.map(r => [
+      ...exportCols.map(c => esc(plain(r[c.key]))),
+      ...extraCols.map(c => esc(plain(r[c.key] ?? ""))),
+    ].join(","));
+    const csv = "﻿" + [header, ...dataRows].join("\r\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const a = Object.assign(document.createElement("a"), { href: url, download: `${title.toLowerCase().replace(/\W+/g, "-")}.csv` });
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  function handlePickerConfirm(s: Set<string>) {
+    setPickerOpen(false);
+    doExport(s);
+  }
+
+  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !onImport) return;
+    e.target.value = "";
+    const text = await file.text();
+    const parsed = parseCsv(text);
+    if (!parsed.length) { toast.error("Could not parse CSV — no rows found."); return; }
+    setImporting(true);
+    try {
+      await onImport(parsed);
+      toast.success(`Import complete — ${parsed.length} rows processed.`);
+    } catch {
+      toast.error("Import failed. Check the CSV format and try again.");
+    } finally {
+      setImporting(false);
+    }
   }
 
   const toggleSort = (key: string) => setSort((s) => (s?.key !== key ? { key, dir: 1 } : s.dir === 1 ? { key, dir: -1 } : null));
@@ -76,7 +178,33 @@ export function DataTable({ title, description, columns, rows, tabsOn, filters =
               {options[f.key].map((o) => <option key={o}>{o}</option>)}
             </NativeSelect>
           ))}
-          <Button variant="outline" onClick={exportCsv}><Download /> Export</Button>
+          {/* Export dropdown */}
+          <div className="relative" ref={exportRef}>
+            <Button variant="outline" onClick={() => setExportOpen(o => !o)}>
+              <Download /> Export <ChevronDown className="size-3 opacity-60" />
+            </Button>
+            {exportOpen && (
+              <div className="absolute right-0 z-50 mt-1 w-48 rounded-lg border border-ink-200 dark:border-white/10 bg-white dark:bg-ink-900 shadow-xl py-1">
+                <button className="w-full px-4 py-2.5 text-left text-sm text-ink-700 dark:text-ink-200 hover:bg-ink-50 dark:hover:bg-white/[0.05]"
+                  onClick={() => { setExportOpen(false); doExport(); }}>
+                  All columns
+                </button>
+                <button className="w-full px-4 py-2.5 text-left text-sm text-ink-700 dark:text-ink-200 hover:bg-ink-50 dark:hover:bg-white/[0.05]"
+                  onClick={() => { setExportOpen(false); setPickerOpen(true); }}>
+                  Select columns…
+                </button>
+              </div>
+            )}
+          </div>
+          {/* Import button */}
+          {onImport && (
+            <>
+              <input ref={importRef} type="file" accept=".csv" className="sr-only" onChange={handleImport} />
+              <Button variant="outline" onClick={() => importRef.current?.click()} disabled={importing}>
+                <Upload /> {importing ? "Importing…" : "Import"}
+              </Button>
+            </>
+          )}
         </div>
       </header>
 
@@ -113,6 +241,7 @@ export function DataTable({ title, description, columns, rows, tabsOn, filters =
                     </button>
                   </th>
                 ))}
+                {rowButton && <th className="w-24" />}
               </tr>
             </thead>
             <tbody>
@@ -124,6 +253,15 @@ export function DataTable({ title, description, columns, rows, tabsOn, filters =
                       <Cell value={r[c.key]} type={c.type} />
                     </td>
                   ))}
+                  {rowButton && (
+                    <td className="px-3 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => rowButton.onClick(r)}
+                        className="px-3 py-1 text-xs font-semibold rounded border border-ink-200 dark:border-white/10 text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-white/[0.06] transition-colors">
+                        {rowButton.label}
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -141,6 +279,15 @@ export function DataTable({ title, description, columns, rows, tabsOn, filters =
           <Button variant="outline" size="icon-sm" disabled={current >= pages - 1} onClick={() => setPage(current + 1)} aria-label="Next page"><ChevronRight /></Button>
         </div>
       </footer>
+
+      {pickerOpen && (
+        <ColumnPicker
+          columns={columns}
+          selected={new Set(columns.map(c => c.key))}
+          onConfirm={handlePickerConfirm}
+          onCancel={() => setPickerOpen(false)}
+        />
+      )}
     </section>
   );
 }

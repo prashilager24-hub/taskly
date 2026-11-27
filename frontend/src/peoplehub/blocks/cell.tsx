@@ -41,8 +41,12 @@ export function Cell({ value, type = "text" }: { value: unknown; type?: ColumnTy
       );
     }
     case "muted":
-    case "date":
       return <span className="whitespace-nowrap text-ink-500 dark:text-ink-400">{String(value)}</span>;
+    case "date": {
+      const d = new Date(String(value));
+      const formatted = isNaN(d.getTime()) ? String(value) : d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+      return <span className="whitespace-nowrap text-ink-500 dark:text-ink-400">{formatted}</span>;
+    }
     default:
       return isPerson(value) ? <span>{value.name}</span> : <span>{String(value)}</span>;
   }

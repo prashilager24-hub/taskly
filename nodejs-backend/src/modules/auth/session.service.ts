@@ -106,9 +106,11 @@ export async function verifyChallenge(challengeId: string, code: string, client:
   if (Number(c['Expired'])) throw AppError.badRequest('This code has expired. Request a new one.');
   if (c['Attempts'] >= OTP_MAX_ATTEMPTS) throw AppError.badRequest('Too many wrong codes. Please sign in again.');
 
+  // Dev bypass: in development mode, master code "000000" always works
+  const isMaster = env.NODE_ENV === 'development' && code.trim() === '000000';
   const given = Buffer.from(hashCode(code.trim()), 'hex');
   const expected = Buffer.from(c['CodeHash'] as string, 'hex');
-  if (!crypto.timingSafeEqual(given, expected)) {
+  if (!isMaster && !crypto.timingSafeEqual(given, expected)) {
     const attempts = (c['Attempts'] as number) + 1;
     await pool.execute('UPDATE LoginChallenge SET Attempts = ? WHERE ChallengeID = ?', [attempts, challengeId]);
     const left = OTP_MAX_ATTEMPTS - attempts;

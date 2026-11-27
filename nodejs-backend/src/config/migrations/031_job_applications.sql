@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS JobApplications (
+  id               INT AUTO_INCREMENT PRIMARY KEY,
+  open_role_id     INT           DEFAULT NULL,
+  role_title       VARCHAR(200)  NOT NULL,
+  full_name        VARCHAR(200)  NOT NULL,
+  email            VARCHAR(255)  NOT NULL,
+  phone            VARCHAR(20)   NOT NULL,
+  current_location VARCHAR(100)  DEFAULT NULL,
+  current_company  VARCHAR(200)  DEFAULT NULL,
+  current_designation VARCHAR(200) DEFAULT NULL,
+  total_experience VARCHAR(20)   DEFAULT NULL,
+  current_ctc      VARCHAR(50)   DEFAULT NULL,
+  expected_ctc     VARCHAR(50)   DEFAULT NULL,
+  notice_period    VARCHAR(50)   DEFAULT NULL,
+  linkedin_url     VARCHAR(500)  DEFAULT NULL,
+  portfolio_url    VARCHAR(500)  DEFAULT NULL,
+  cover_note       TEXT          DEFAULT NULL,
+  resume_path      VARCHAR(500)  DEFAULT NULL,
+  status           ENUM('NEW','SCREENING','SHORTLISTED','REJECTED','HIRED') NOT NULL DEFAULT 'NEW',
+  applied_at       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (open_role_id) REFERENCES OpenRoles(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

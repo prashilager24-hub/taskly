@@ -36,7 +36,11 @@ import monthlyTargetsRouter from './modules/targets/monthlyTargets.routes';
 import formRouter from './modules/form/form.routes';
 import userGoalDataRouter from './modules/userGoalData/userGoalData.routes';
 import sprintEntryRouter from './modules/sprintEntry/sprintEntry.routes';
+import path from 'path';
 import techRouter from './modules/tech/tech.routes';
+import { publicOpenRolesRouter, adminOpenRolesRouter } from './modules/openRoles/openRoles.routes';
+import { publicApplicationsRouter, adminApplicationsRouter } from './modules/jobApplications/jobApplications.routes';
+import { getRecentAll } from './modules/talent/talentLogs.service';
 
 const app = express();
 
@@ -71,6 +75,13 @@ app.use(
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
 app.use(apiLimiter);
+
+// ── Static: uploaded files (resumes, JDs) — no frame restrictions so PDF embeds work ──
+app.use('/uploads', (_req, res, next) => {
+  res.removeHeader('X-Frame-Options');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  next();
+}, express.static(path.join(__dirname, '..', 'uploads')));
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => {
@@ -178,6 +189,24 @@ app.use('/api/meta', metaRouter);
 // ── Users (read-only) — Java: /api/users ─────────────────────────────────────
 // Port of UserController: GET /api/users, GET /api/users/:id
 app.use('/api/users', usersRouter);
+
+// ── Open Roles ────────────────────────────────────────────────────────────────
+// Public (no auth, wide CORS): GET /api/open-roles — for external TapMind website
+// Authenticated: /t2.0/.../open-roles — for People Hub admin panel
+app.use('/api/open-roles', publicOpenRolesRouter);
+app.use(`${BASE}/open-roles`, authenticate, adminOpenRolesRouter);
+
+// ── Job Applications ──────────────────────────────────────────────────────────
+// Public: POST /api/apply — candidates submit from the TapMind careers website
+// Authenticated: /t2.0/.../applications — People Hub interview tracker
+app.use('/api/apply', publicApplicationsRouter);
+app.use(`${BASE}/applications`, authenticate, adminApplicationsRouter);
+
+// ── Combined talent activity log (all entities, recent first) ─────────────────
+app.get(`${BASE}/talent-logs`, authenticate, async (_req, res) => {
+  const data = await getRecentAll(60);
+  res.json({ success: true, data });
+});
 
 // ── 404 + global error handler ────────────────────────────────────────────────
 app.use(notFoundHandler);

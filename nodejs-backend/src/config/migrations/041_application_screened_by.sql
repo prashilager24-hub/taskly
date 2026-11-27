@@ -1,0 +1,1 @@
+ALTER TABLE JobApplications ADD COLUMN screenedBy VARCHAR(150) DEFAULT NULL AFTER sourcedBy;

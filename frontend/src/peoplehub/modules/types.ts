@@ -24,11 +24,16 @@ export type Field = {
   label: string
   type: FieldType
   options?: string[]
+  /** key to fetch options from the API at open time, e.g. "departments" */
+  fetchOptions?: string
   placeholder?: string
   required?: boolean
   /** span both columns of the form grid */
   full?: boolean
   hint?: string
+  defaultValue?: string
+  /** accepted file types for file inputs, e.g. ".pdf,.doc,.docx" */
+  accept?: string
 }
 
 export type FormConfig = {

@@ -25,12 +25,20 @@ const EnvSchema = z.object({
   // Redis (optional)
   REDIS_URL: z.string().optional(),
 
+  // CDN (BlazingCDN Swift)
+  CDN_AUTH_URL: z.string().default('https://cdn15359691.blazingcdn.net/auth/v1.0'),
+  CDN_USERNAME: z.string().optional(),
+  CDN_API_KEY: z.string().optional(),
+  CDN_CONTAINER: z.string().default('tapmind-people-hub'),
+  CDN_PUBLIC_URL: z.string().default('https://cdn15359691.blazingcdn.net'),
+
   // Email
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
-  SMTP_FROM: z.string().default('noreply@taskly.com'),
+  SMTP_FROM: z.string().default('noreply@tapmind.com'),
+  TA_EMAIL: z.string().default('talent@tapmind.com'),
 
   // App URLs
   FRONTEND_URL: z.string().default('http://localhost:3030'),
@@ -40,6 +48,12 @@ const EnvSchema = z.object({
   VAPID_PUBLIC_KEY: z.string().default('BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjZEZqn7mknfnmSEyZdLANP_ipmWU'),
   VAPID_PRIVATE_KEY: z.string().default('UUxI4O8-FbRouAevSmBQ6o18hgE4nSG3qwvJTfKc-ls'),
   VAPID_EMAIL: z.string().email().default('admin@taskly.com'),
+
+  // Google Calendar / Meet
+  GOOGLE_CLIENT_EMAIL: z.string().optional(),
+  GOOGLE_PRIVATE_KEY: z.string().optional(),
+  GOOGLE_CALENDAR_ID: z.string().optional(),
+  GOOGLE_IMPERSONATE_EMAIL: z.string().optional(),
 
   // Appraisal: RoleIDs (comma separated) who act as Finance (Assessor 3) and HR. Admins always can.
   APPRAISAL_FINANCE_ROLE_IDS: z.string().default(''),

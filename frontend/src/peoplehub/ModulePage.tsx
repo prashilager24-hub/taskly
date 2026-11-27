@@ -31,9 +31,9 @@ export function ModulePage({ id }: { id: ModuleId }) {
   const actions = (config.actions ?? []).filter((a) => !a.role || a.role === role);
   const stats = isEmployee && emp?.stats ? emp.stats : config.stats;
 
-  function submit(action: Action, values: Record<string, string>) {
+  function submit(action: Action, values: Record<string, string | File>) {
     const row: Row = { id: `NEW-${String(added.length + 1).padStart(3, "0")}`, status: action.form?.status ?? "Pending" };
-    for (const f of action.form?.fields ?? []) row[f.name] = f.type === "person" ? person(values[f.name]) : f.type === "number" && values[f.name] ? Number(values[f.name]) : values[f.name];
+    for (const f of action.form?.fields ?? []) { const v = values[f.name]; const s = v instanceof File ? v.name : String(v ?? ""); row[f.name] = f.type === "person" ? person(s) : f.type === "number" && s ? Number(s) : s; }
     // Employees submit for themselves
     for (const c of config.table.columns) if (c.type === "person" && !row[c.key]) row[c.key] = user;
     setAdded((a) => [row, ...a]);

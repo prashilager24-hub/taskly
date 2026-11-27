@@ -52,7 +52,7 @@ async function findAllActiveUsers(): Promise<UserRow[]> {
      FROM Users u
      LEFT JOIN Users rm ON rm.UserID = u.ReportingManagerID
      LEFT JOIN Users el ON el.UserID = u.ElManagerID
-     WHERE u.IsActive = 1
+     WHERE (u.UserStatus = 1 OR u.UserStatus IS NULL)
        AND (u.IsUserArchived = 0 OR u.IsUserArchived IS NULL)
      ORDER BY u.UserName ASC`,
   );

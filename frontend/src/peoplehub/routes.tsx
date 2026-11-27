@@ -10,6 +10,9 @@ import { OfferLetter } from "@/peoplehub/views/OfferLetter";
 import { PmsDashboard, TargetGoals } from "@/peoplehub/views/TargetGoals";
 import { Worklog } from "@/peoplehub/views/Worklog";
 import { FinanceVariablePay, MyVariablePay, TeamVariablePay, VariablePayEligibility, VariablePayPolicy } from "@/peoplehub/views/VariablePay";
+import { OpenRoles } from "@/peoplehub/views/OpenRoles";
+import { InterviewTracker } from "@/peoplehub/views/InterviewTracker";
+import { UploadApplicants } from "@/peoplehub/views/UploadApplicants";
 
 /** Hand-built People Hub screens; every other /hub page is drawn from its config in modules/registry (sample data) */
 const CUSTOM: Record<string, React.ReactNode> = {
@@ -26,6 +29,9 @@ const CUSTOM: Record<string, React.ReactNode> = {
   "hrms/reports": <Reports />,
   "talent/interview-stages": <InterviewStages />,
   "talent/offer-letter": <OfferLetter />,
+  "talent/open-roles": <OpenRoles />,
+  "talent/interview-tracker": <InterviewTracker />,
+  "talent/upload-applicants": <UploadApplicants />,
   "assets/id-card": <IdCard />,
 };
 

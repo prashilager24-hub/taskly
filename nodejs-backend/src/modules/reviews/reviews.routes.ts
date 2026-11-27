@@ -20,7 +20,7 @@ import type mysql from 'mysql2/promise';
 
 // who is asking; reviews are written for and read by the person's own team leaders (Admin / Super Admin: anyone)
 const viewer = (req: { user?: { sub?: string | number; role?: number } }) => ({ id: Number(req.user?.sub), role: Number(req.user?.role) });
-const ownerOf = async (table: 'monthlyreview' | 'quarterlyreview', id: number) =>
+const ownerOf = async (table: 'MonthlyReview' | 'QuarterlyReview', id: number) =>
   Number((await pool.query<mysql.RowDataPacket[]>(`SELECT emp_id FROM ${table} WHERE id = ?`, [id]))[0][0]?.['emp_id'] ?? 0);
 
 // ── Monthly Reviews (Java contract: camelCase DTOs, plain arrays) ────────────
@@ -49,7 +49,7 @@ monthlyRouter.get('/:empId/:year', async (req, res, next) => {
 monthlyRouter.delete('/:id', requireModule('pms_feedback', 'update'), async (req, res, next) => {
   try {
     const v = viewer(req);
-    await assertTeam(v.id, v.role, [await ownerOf('monthlyreview', Number(req.params['id']))], 'You can delete feedback only for people in your team');
+    await assertTeam(v.id, v.role, [await ownerOf('MonthlyReview', Number(req.params['id']))], 'You can delete feedback only for people in your team');
     await pms.deleteMonthly(Number(req.params['id']));
     res.type('text/plain').send('Monthly review deleted successfully');
   } catch (e) { next(e); }
@@ -93,7 +93,7 @@ quarterlyRouter.get('/employee/:empId', async (req, res, next) => {
 quarterlyRouter.put('/update/:id', requireModule('pms_quarterly', 'update'), async (req, res, next) => {
   try {
     const v = viewer(req);
-    await assertTeam(v.id, v.role, [await ownerOf('quarterlyreview', Number(req.params['id']))], 'You can change reviews only for people in your team');
+    await assertTeam(v.id, v.role, [await ownerOf('QuarterlyReview', Number(req.params['id']))], 'You can change reviews only for people in your team');
     const id = await pms.updateQuarterly(Number(req.params['id']), req.body);
     res.json({ success: true, message: 'Quarterly review updated successfully', id });
   } catch (e) { next(e); }
@@ -112,7 +112,7 @@ quarterlyAliasRouter.get('/:empId', async (req, res, next) => {
 quarterlyAliasRouter.delete('/:id', requireModule('pms_quarterly', 'update'), async (req, res, next) => {
   try {
     const v = viewer(req);
-    await assertTeam(v.id, v.role, [await ownerOf('quarterlyreview', Number(req.params['id']))], 'You can delete reviews only for people in your team');
+    await assertTeam(v.id, v.role, [await ownerOf('QuarterlyReview', Number(req.params['id']))], 'You can delete reviews only for people in your team');
     await pms.deleteQuarterly(Number(req.params['id'])); res.json({ success: true, message: 'Quarterly review deleted' }); } catch (e) { next(e); }
 });
 

@@ -118,7 +118,7 @@ export async function loadRound(db: Db, departmentId: number, period: string): P
   const [sf] = ids.length ? await db.query<Row[]>(`SELECT CycleID, AnswersJson, SubmittedAt FROM AppraisalReview WHERE ReviewerRole = 'SELF' AND CycleID IN (?)`, [ids]) : [[]];
   const [al] = ids.length ? await db.query<Row[]>(`SELECT * FROM AppraisalAllocation WHERE CycleID IN (?)`, [ids]) : [[]];
   const [pm] = uids.length ? await db.query<Row[]>(
-    `SELECT emp_id, AVG(final_rating) AS avg, COUNT(*) AS cnt FROM quarterlyreview WHERE emp_id IN (?) AND quarter_end_date <= ? AND quarter_end_date > DATE_SUB(?, INTERVAL 12 MONTH) GROUP BY emp_id`,
+    `SELECT emp_id, AVG(final_rating) AS avg, COUNT(*) AS cnt FROM QuarterlyReview WHERE emp_id IN (?) AND quarter_end_date <= ? AND quarter_end_date > DATE_SUB(?, INTERVAL 12 MONTH) GROUP BY emp_id`,
     [uids, period, period]) : [[]];
   const [lg] = row ? await db.query<Row[]>('SELECT l.*, u.UserName FROM AppraisalBudgetLog l LEFT JOIN Users u ON u.UserID = l.ActorID WHERE l.RoundID = ? ORDER BY l.CreatedAt, l.LogID', [row['RoundID']]) : [[]];
   const [sh] = row ? await db.query<Row[]>(`SELECT s.*, u.UserName FROM AppraisalShare s JOIN Users u ON u.UserID = s.FlUserID WHERE s.RoundID = ? ORDER BY u.UserName`, [row['RoundID']]) : [[]];

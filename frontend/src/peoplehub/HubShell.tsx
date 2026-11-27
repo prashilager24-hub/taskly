@@ -33,7 +33,7 @@ function DemoBar() {
 }
 
 /** Pages that show real data from the database: no "sample data" bar, and their own access rules instead of the View-as switch */
-const REAL = ["/hub/taskly/goals", "/hub/dashboard/pms", "/hub/variable-pay/my", "/hub/variable-pay/team", "/hub/variable-pay/finance", "/hub/variable-pay/policy", "/hub/variable-pay/eligibility"];
+const REAL = ["/hub/taskly/goals", "/hub/dashboard/pms", "/hub/variable-pay/my", "/hub/variable-pay/team", "/hub/variable-pay/finance", "/hub/variable-pay/eligibility"];
 
 export default function HubShell() {
   const { pathname } = useLocation();

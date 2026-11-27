@@ -93,13 +93,24 @@ export async function updateTACallStatus(callId: number, status: string) {
 }
 
 // ── TAM Accounts ──────────────────────────────────────────────────────────────
-export async function getTAMAccounts(status?: string) {
+export type TamStatus = 'LIVE' | 'NOT_LIVE';
+// account_id is a BIGINT, which mysql2 returns as a string: send it as a number
+const asTam = (r: mysql.RowDataPacket | undefined) => (r ? { ...r, accountId: Number(r['accountId']) } : r);
+const TAM_COLS = `account_id AS accountId, publisher_name AS publisherName, status,
+  DATE_FORMAT(entry_date, '%Y-%m-%d') AS entryDate, DATE_FORMAT(live_date, '%Y-%m-%d') AS liveDate`;
+
+/** One page of tam_accounts (page starts at 1), in the shape DailyActivityLog reads */
+export async function getTAMAccounts(opts: { page: number; size: number; status?: string }) {
+  const status = opts.status === 'LIVE' || opts.status === 'NOT_LIVE' ? opts.status : null;
   const where = status ? 'WHERE status = ?' : '';
-  const params = status ? [status] : [];
+  const params: (string | number)[] = status ? [status] : [];
+  const [[{ total }]] = await pool.query<mysql.RowDataPacket[]>(`SELECT COUNT(*) AS total FROM tam_accounts ${where}`, params);
+  const totalItems = Number(total);
   const [rows] = await pool.query<mysql.RowDataPacket[]>(
-    `SELECT * FROM tam_accounts ${where} ORDER BY created_at DESC`, params,
+    `SELECT ${TAM_COLS} FROM tam_accounts ${where} ORDER BY created_at DESC, account_id DESC LIMIT ? OFFSET ?`,
+    [...params, opts.size, (opts.page - 1) * opts.size],
   );
-  return rows;
+  return { data: rows.map(asTam), totalItems, totalPages: Math.ceil(totalItems / opts.size), currentPage: opts.page };
 }
 
 export async function rescheduleTACall(input: {
@@ -119,45 +130,28 @@ export async function rescheduleTACall(input: {
   return row ?? null;
 }
 
-export async function createTAMAccount(input: {
-  AccountName: string;
-  ContactPerson?: string;
-  ContactEmail?: string;
-  TAMUserID?: number;
-  Status?: string;
-}) {
+export async function createTAMAccount(input: { publisherName: string; status: TamStatus; entryDate: string; userId: number }) {
   const [r] = await pool.execute<mysql.ResultSetHeader>(
-    `INSERT INTO TAMAccount (AccountName, ContactPerson, ContactEmail, TAMUserID, Status)
-     VALUES (?, ?, ?, ?, ?)`,
-    [input.AccountName, input.ContactPerson ?? null, input.ContactEmail ?? null,
-     input.TAMUserID ?? null, input.Status ?? 'ACTIVE'],
+    `INSERT INTO tam_accounts (publisher_name, status, entry_date, live_date, created_by_user_id, created_at, updated_at)
+     VALUES (?, ?, ?, ${input.status === 'LIVE' ? 'CURDATE()' : 'NULL'}, ?, NOW(), NOW())`,
+    [input.publisherName.trim(), input.status, input.entryDate, input.userId],
   );
-  const [[row]] = await pool.execute<mysql.RowDataPacket[]>(
-    'SELECT * FROM TAMAccount WHERE AccountID = ?', [r.insertId],
-  );
-  return row;
+  const [[row]] = await pool.execute<mysql.RowDataPacket[]>(`SELECT ${TAM_COLS} FROM tam_accounts WHERE account_id = ?`, [r.insertId]);
+  return asTam(row);
 }
 
-export async function updateTAMAccount(input: {
-  AccountID: number;
-  AccountName?: string;
-  ContactPerson?: string;
-  ContactEmail?: string;
-  TAMUserID?: number;
-  Status?: string;
-}) {
-  const fields: string[] = [];
-  const values: unknown[] = [];
-  if (input.AccountName !== undefined) { fields.push('AccountName = ?'); values.push(input.AccountName); }
-  if (input.ContactPerson !== undefined) { fields.push('ContactPerson = ?'); values.push(input.ContactPerson); }
-  if (input.ContactEmail !== undefined) { fields.push('ContactEmail = ?'); values.push(input.ContactEmail); }
-  if (input.TAMUserID !== undefined) { fields.push('TAMUserID = ?'); values.push(input.TAMUserID); }
-  if (input.Status !== undefined) { fields.push('Status = ?'); values.push(input.Status); }
-  if (!fields.length) throw new Error('No fields to update');
-  values.push(input.AccountID);
-  await pool.query(`UPDATE TAMAccount SET ${fields.join(', ')} WHERE AccountID = ?`, values);
-  const [[row]] = await pool.execute<mysql.RowDataPacket[]>(
-    'SELECT * FROM TAMAccount WHERE AccountID = ?', [input.AccountID],
-  );
-  return row ?? null;
+export async function updateTAMAccount(input: { accountId: number; publisherName?: string; status?: TamStatus; userId: number }) {
+  const fields = ['updated_by_user_id = ?', 'updated_at = NOW()'];
+  const values: (string | number)[] = [input.userId];
+  if (input.publisherName !== undefined) { fields.push('publisher_name = ?'); values.push(input.publisherName.trim()); }
+  if (input.status !== undefined) {
+    fields.push('status = ?'); values.push(input.status);
+    // the first time it goes live keeps its date; back to not live clears it
+    fields.push(input.status === 'LIVE' ? 'live_date = COALESCE(live_date, CURDATE())' : 'live_date = NULL');
+  }
+  values.push(input.accountId);
+  const [r] = await pool.execute<mysql.ResultSetHeader>(`UPDATE tam_accounts SET ${fields.join(', ')} WHERE account_id = ?`, values);
+  if (!r.affectedRows) throw new AppError('TAM account not found', 404);
+  const [[row]] = await pool.execute<mysql.RowDataPacket[]>(`SELECT ${TAM_COLS} FROM tam_accounts WHERE account_id = ?`, [input.accountId]);
+  return asTam(row);
 }

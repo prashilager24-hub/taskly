@@ -26,7 +26,7 @@ const dto = (r: Row) => ({
 /** A person's notes for one year, plus whether each quarter has started and whether its PMS review is already in (locked) */
 export async function listMine(userId: number, year: number) {
   const [rows] = await pool.execute<Row[]>('SELECT * FROM QuarterReflection WHERE UserID = ? AND QuarterYear = ?', [userId, year]);
-  const [reviews] = await pool.execute<Row[]>('SELECT quarter FROM quarterlyreview WHERE emp_id = ? AND quarter_year = ?', [userId, year]);
+  const [reviews] = await pool.execute<Row[]>('SELECT quarter FROM QuarterlyReview WHERE emp_id = ? AND quarter_year = ?', [userId, year]);
   const reviewed = new Set(reviews.map((r) => String(r['quarter'])));
   const today = new Date().toISOString().slice(0, 10);
   return {
@@ -54,7 +54,7 @@ export async function saveMine(userId: number, b: { quarter?: unknown; year?: un
   const failure = clean(b.biggestFailure, 'Biggest failure');
 
   if (quarterStart(b.quarter, year) > new Date().toISOString().slice(0, 10)) throw AppError.badRequest(`${b.quarter} ${year} has not started yet`);
-  const [[review]] = await pool.execute<Row[]>('SELECT id FROM quarterlyreview WHERE emp_id = ? AND quarter = ? AND quarter_year = ? LIMIT 1', [userId, b.quarter, year]);
+  const [[review]] = await pool.execute<Row[]>('SELECT id FROM QuarterlyReview WHERE emp_id = ? AND quarter = ? AND quarter_year = ? LIMIT 1', [userId, b.quarter, year]);
   const [[already]] = await pool.execute<Row[]>('SELECT 1 AS ok FROM QuarterReflection WHERE UserID = ? AND Quarter = ? AND QuarterYear = ? LIMIT 1', [userId, b.quarter, year]);
   if (review && already) throw AppError.badRequest(`Your ${b.quarter} ${year} review has already been submitted, so your notes are locked`);
 

@@ -9,7 +9,7 @@ import { InterviewStages } from "@/peoplehub/views/InterviewStages";
 import { OfferLetter } from "@/peoplehub/views/OfferLetter";
 import { PmsDashboard, TargetGoals } from "@/peoplehub/views/TargetGoals";
 import { Worklog } from "@/peoplehub/views/Worklog";
-import { FinanceVariablePay, MyVariablePay, TeamVariablePay, VariablePayEligibility, VariablePayPolicy } from "@/peoplehub/views/VariablePay";
+import { FinanceVariablePay, MyVariablePay, TeamVariablePay, VariablePayEligibility } from "@/peoplehub/views/VariablePay";
 
 /** Hand-built People Hub screens; every other /hub page is drawn from its config in modules/registry (sample data) */
 const CUSTOM: Record<string, React.ReactNode> = {
@@ -21,7 +21,6 @@ const CUSTOM: Record<string, React.ReactNode> = {
   "variable-pay/my": <MyVariablePay />,
   "variable-pay/team": <TeamVariablePay />,
   "variable-pay/finance": <FinanceVariablePay />,
-  "variable-pay/policy": <VariablePayPolicy />,
   "variable-pay/eligibility": <VariablePayEligibility />,
   "hrms/reports": <Reports />,
   "talent/interview-stages": <InterviewStages />,

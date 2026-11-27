@@ -17,6 +17,60 @@ Summary: one or two lines on what and why.
 
 ---
 
+## 2026-11-27 — MariaDB server fixes + My Variable Pay like My Appraisal  (branch PeopleHub-Update → main)
+Summary: the dev server (`peoplehub.tapmind.io`) runs **MariaDB 10.11 on Linux** with case-sensitive table names, where several pages returned 500. This makes the backend run there (these fixes were on the server only, in local commits that were never pushed, so every pull brought the errors back). It also reworks My Variable Pay to work like My Appraisal, half-yearly, with the policy as a document popup.
+
+### Frontend
+- `vite.config.ts`: `peoplehub.tapmind.io` added to `server.allowedHosts` (dev site moved from dev-taskly.tapmind.io).
+- **My Variable Pay** (`peoplehub/views/VariablePay.tsx`), built like My Appraisal: on entry one card with **Appeal for Variable Pay** (no eligibility shown yet). It opens three tabs:
+  - **Goals and targets by quarter:** the appraisal's PMS tables for the half year's quarters.
+  - **Variable pay calculation:** per-quarter and half-year Goal % / Target % / PMS score, the policy slab highlighted, and the amount. Then either **Eligible** + **Apply for Variable Pay** (goes to the Finance Head), or a small **Not eligible** tag with one short reason.
+  - **Appeal status:** steps, amounts, history.
+  - Earlier half years in a table below.
+- **Variable Pay Policy:** the "Policy & Slabs" page/menu item is removed. A **Variable Pay Policy** button (calculation tab, Variable Pay Overview) opens it as a document page; people with policy update access edit the slabs there.
+- Eligibility (HR): everyone is half-yearly now, so the cycle picker is gone ("Per half year").
+- `components/appraisal/QuarterGrid.tsx`: quarters sorted by year then quarter.
+### Backend
+- `app.ts`: `app.set('trust proxy', 1)`, because the backend sits behind nginx. Without it the sign-in rate limit (10 per 15 min) was shared by everyone, and `ERR_ERL_UNEXPECTED_X_FORWARDED_FOR` was logged on every request.
+- Notifications (`notifications.service.ts` `AUDIENCE_SQL`, `scripts/appraisalFlowCheck.ts`): `CAST(x AS JSON)` (MySQL only) → `CAST(x AS CHAR)`. Fixes `GET /notifications/mine` 500 on every page.
+- Exact table-name case `QuarterlyReview`, `MonthlyReview` and `PmsGoals` (was lowercase), including `ownerOf(...)` in `reviews.routes.ts`. Files:
+  - appraisal: service, flow
+  - reviews: pmsReviews, pmsOverview, quarterReflection, routes
+  - seed-demo, seed-demo-pms, scripts/appraisalTest
+
+  This fixes My Appraisal, Appraisal overview / split / allocation, Quarterly Review, PMS overview, Quarter Reflection and Goal review status.
+- **TAM accounts** (`sales.service.ts`, `sales.routes.ts` `/tam`): rewritten against the real table `tam_accounts`, with the bodies `DailyActivityLog.tsx` sends. Previously it used a `TAMAccount` table that does not exist.
+  - `POST /tam/create {publisherName, status, entryDate}`: `live_date` = today when LIVE.
+  - `PUT /tam/update {accountId, publisherName?, status?}`: LIVE keeps the first live date; NOT_LIVE clears it; 404 if not found.
+  - `GET /tam/list?page&size&status=ALL|LIVE|NOT_LIVE` returns `{data:[{accountId, publisherName, status, entryDate, liveDate}], totalItems, totalPages, currentPage}`, unwrapped; pages start at 1.
+  - The created-by / updated-by user is the signed-in user.
+- Variable Pay:
+  - Every period is half-yearly. Eligibility has a one-line `short` reason.
+  - New `GET /variable-pay/me/period/:key`: the half year's quarters, PMS rows and Quarter Highlights. Uses `pmsQuartersBetween` in appraisal.service.
+  - `GET /variable-pay/policy` is open to My / Finance / Policy access holders and returns the level %. Saving slabs still needs policy update access.
+- Access catalog: `hub_variable_pay_policy` is labelled "Variable Pay Policy".
+### Database
+- none (no new tables or columns).
+### Env / config
+- none.
+### Notes
+- **On the server:** the local commits `0c1d458` / `f520ec5` hold the same fixes. Before pulling, drop them (`git reset --hard origin/main` after checking nothing else is in them), otherwise the pull conflicts.
+- **Rules for backend SQL from now on:**
+  - It must run on **MariaDB 10.11**. No `CAST(... AS JSON)`, `->` / `->>`, `MEMBER OF`, `ANY_VALUE()`, `REGEXP_LIKE()`, `utf8mb4_0900_*` collations or `INSERT … AS new`.
+  - Write table names in their exact case.
+  - Every new table or column needs a migration in `src/config/migrations/`.
+  - Test against MariaDB before merging.
+- **Still open, not fixed here:**
+  - **Weekly Pulse:** the `sprintEntry` module uses an old `SprintEntry` shape, while the DB only has an empty `sprint_entries` table. It needs a real backend and a migration.
+  - **Endpoints pointing at missing tables** (no page uses them yet):
+    - TA call reschedule (`TACall` → `TACallSchedule`)
+    - tech sprint users (`TechSprintUser` → `TechSprintUserMapping`)
+    - push inbox (`notifications`)
+    - admin audit log (`audit_logs`)
+    - HR query rating / survey activation (`HRQuery`, `Survey`)
+
+---
+
 ## 2026-11-25 — People Hub: new shell, real PMS Dashboard / Target & Goals / Variable Pay, access, invitations  (branch PeopleHub-Update → main)
 Summary: the app is now **People Hub**. Existing Taskly pages are unchanged and sit under a "Taskly" parent in the sidebar. The People Hub blueprint modules are ported under `/hub` (sample data), and three of them run on real data: PMS Dashboard, PMS → Target & Goals and Variable Pay. The PMS score is the user's Model X engine. Every People Hub page is an Access Management permission; Admins can bulk-invite users by email, and the first sign-in forces a new password. The app opens on PMS Dashboard.
 

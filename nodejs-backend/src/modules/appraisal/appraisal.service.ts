@@ -104,10 +104,17 @@ const numOrNull = (v: unknown) => (v == null || v === '' ? null : Number(v));
 
 /** Part A: the PMS quarterly reviews of the 12 months before the cycle began, oldest first. Nothing is typed in the appraisal. */
 async function pmsQuarters(db: Db, userId: number, start: string): Promise<PmsQuarter[]> {
+  return pmsQuarterRows(db, userId, 'quarter_end_date <= ? AND quarter_end_date > DATE_SUB(?, INTERVAL 12 MONTH)', [start, start]);
+}
+/** The PMS quarterly reviews whose quarter ends between two dates (People Hub → Variable Pay shows a half year's quarters this way) */
+export async function pmsQuartersBetween(userId: number, from: string, to: string, db: Db = pool): Promise<PmsQuarter[]> {
+  return pmsQuarterRows(db, userId, 'quarter_end_date >= ? AND quarter_end_date <= ?', [from, to]);
+}
+async function pmsQuarterRows(db: Db, userId: number, where: string, params: string[]): Promise<PmsQuarter[]> {
   const [rows] = await db.execute<Row[]>(
     `SELECT quarter, quarter_year, ${D('quarter_start_date', 's')}, ${D('quarter_end_date', 'e')}, target_percent, goal_achievement, utilization_percent, efficiency_percent, efficiency_label,
             system_grade, manager_avg_rating, final_rating, grade, feedback
-       FROM quarterlyreview WHERE emp_id = ? AND quarter_end_date <= ? AND quarter_end_date > DATE_SUB(?, INTERVAL 12 MONTH) ORDER BY quarter_end_date`, [userId, start, start]);
+       FROM QuarterlyReview WHERE emp_id = ? AND ${where} ORDER BY quarter_end_date`, [userId, ...params]);
   const [notes] = await db.execute<Row[]>('SELECT Quarter, QuarterYear, BiggestAchievement, BiggestFailure FROM QuarterReflection WHERE UserID = ?', [userId]);
   return rows.map((r) => {
     const note = notes.find((n) => n['Quarter'] === r['quarter'] && Number(n['QuarterYear']) === Number(r['quarter_year']));

@@ -39,6 +39,8 @@ import sprintEntryRouter from './modules/sprintEntry/sprintEntry.routes';
 import techRouter from './modules/tech/tech.routes';
 
 const app = express();
+// Behind nginx on the server: use the real client IP (sign-in rate limit, logs)
+app.set('trust proxy', 1);
 
 // ── Security headers ──────────────────────────────────────────────────────────
 app.use(helmet());

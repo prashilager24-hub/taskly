@@ -360,19 +360,19 @@ async function main() {
     const target = between(78, 112), goal = between(70, 105), util = between(72, 98);
     const eff = Math.round((target + goal + util) / 3);
     await pool.query(
-      `INSERT INTO quarterlyreview (emp_id, quarter, quarter_year, quarter_start_date, quarter_end_date, target_percent, goal_achievement,
+      `INSERT INTO QuarterlyReview (emp_id, quarter, quarter_year, quarter_start_date, quarter_end_date, target_percent, goal_achievement,
          utilization_percent, efficiency_percent, efficiency_label, system_grade, manager_avg_rating, final_rating, status, created_at, updated_at)
        VALUES (?, 'Q2', 2026, '2026-07-01', '2026-09-30', ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [w.userId, target, goal, util, eff, eff >= 95 ? 'High' : eff >= 80 ? 'At Par' : 'Low', Math.min(5, Math.max(1, Math.round(eff / 20))),
         (3 + rand() * 2).toFixed(2), (3 + rand() * 2).toFixed(2), i % 4 === 3 ? 'At Risk' : 'On Track'],
     );
     await pool.query(
-      `INSERT INTO monthlyreview (emp_id, month, year, target, goal, utilization, efficiency, efficiency_label, status, start_date, end_date, created_at, updated_at)
+      `INSERT INTO MonthlyReview (emp_id, month, year, target, goal, utilization, efficiency, efficiency_label, status, start_date, end_date, created_at, updated_at)
        VALUES (?, 'September', 2026, ?, ?, ?, ?, ?, 'Submitted', '2026-09-01', '2026-09-30', NOW(), NOW())`,
       [w.userId, target, goal, util, eff, eff >= 95 ? 'High' : eff >= 80 ? 'At Par' : 'Low'],
     );
     await pool.query(
-      `INSERT INTO pmsgoals (UserID, DepartmentID, Quarter, GoalYear, GoalTitle, Description, Weight, Category, Status)
+      `INSERT INTO PmsGoals (UserID, DepartmentID, Quarter, GoalYear, GoalTitle, Description, Weight, Category, Status)
        VALUES (?, ?, 'Q3', 2026, ?, ?, ?, ?, ?), (?, ?, 'Q3', 2026, ?, ?, ?, ?, ?)`,
       [w.userId, w.deptId, 'Deliver quarterly roadmap items', 'Ship the committed items on time', 60, 'Delivery', i % 2 ? 'Acknowledged' : 'Pending',
         w.userId, w.deptId, 'Grow a skill', 'Complete one certification or course', 40, 'Learning', 'Pending'],

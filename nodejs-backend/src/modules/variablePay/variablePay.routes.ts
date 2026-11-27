@@ -7,6 +7,8 @@ import { validate } from '../../middlewares/validate';
 import { AppError } from '../../utils/AppError';
 import { sendSuccess } from '../../utils/response';
 import * as svc from './variablePay.service';
+import { can } from '../access/access.service';
+import { VARIABLE_PCT } from '../appraisal/appraisal.calc';
 
 const router = Router();
 router.use(authenticate);
@@ -26,6 +28,8 @@ router.get('/me', requireModule('hub_variable_pay_my'), wrap((req) => svc.mine(w
 router.post('/me/send', requireModule('hub_variable_pay_my', 'create'), validate(z.object({ periodKey: z.string().min(2).max(16), note: z.string().max(2000).nullish() })),
   wrap((req) => svc.send(who(req).id, req.body.periodKey, req.body.note ?? null)));
 
+router.get('/me/period/:key', requireModule('hub_variable_pay_my'), wrap((req) => svc.myPeriod(who(req).id, String(req.params['key']))));
+
 // ── Team Variable Pay (managers: their team's status only, no approving) ──
 router.get('/team', requireModule('hub_variable_pay_team'), wrap((req) => svc.team(who(req).id, who(req).role)));
 
@@ -43,7 +47,11 @@ router.post('/finance/paid', requireModule('hub_variable_pay_finance'), financeO
   wrap((req) => svc.markPaid(who(req).id, req.body.ids, req.body.paidOn)));
 
 // ── Policy & Slabs ──
-router.get('/policy', requireModule('hub_variable_pay_policy'), wrap(async () => ({ slabs: await svc.slabs(), levels: { ASSOCIATE: 10, MANAGER: 20, HEAD_EL: 30 } })));
+// the policy opens as a page from My Variable Pay and the Overview, so anyone with one of these can read it
+const anyOf = (...modules: string[]) => (req: Request, _res: Response, next: NextFunction) => {
+  Promise.all(modules.map((m) => can(who(req).id, m, 'read'))).then((ok) => (ok.some(Boolean) ? next() : next(AppError.forbidden('You do not have access to the Variable Pay policy')))).catch(next);
+};
+router.get('/policy', anyOf('hub_variable_pay_policy', 'hub_variable_pay_my', 'hub_variable_pay_finance'), wrap(async () => ({ slabs: await svc.slabs(), levels: VARIABLE_PCT })));
 const SlabSchema = z.object({ from: z.number().min(0).max(1000), to: z.number().min(0).max(1000).nullable(), payout: z.number().min(0).max(1000).nullable(), cap: z.number().min(0).max(1000).optional() });
 router.put('/policy', requireModule('hub_variable_pay_policy', 'update'), validate(z.object({ slabs: z.array(SlabSchema).min(1).max(8) })), wrap((req) => svc.saveSlabs(req.body.slabs)));
 

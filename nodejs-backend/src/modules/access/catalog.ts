@@ -92,7 +92,7 @@ export const CATALOG: ModuleDef[] = [
       { id: 'hub_variable_pay_my', label: 'My Variable Pay', description: 'Their PMS score, eligibility and payout for each period; create to appeal' },
       { id: 'hub_variable_pay_team', label: 'Team Variable Pay', description: 'Managers: their team\u2019s variable pay status (read only; nobody in the team approves)' },
       { id: 'hub_variable_pay_finance', label: 'Variable Pay Overview', description: 'Every employee\u2019s variable pay by year / quarter; approve appeals, send back, mark paid (Finance Head and Admin)' },
-      { id: 'hub_variable_pay_policy', label: 'Policy & Slabs', description: 'The payout slabs and the variable % by level; update to change the slabs' },
+      { id: 'hub_variable_pay_policy', label: 'Variable Pay Policy', description: 'The policy page (button on My Variable Pay and the Overview; everyone with My Variable Pay can read it); update to change the slabs' },
       { id: 'hub_variable_pay_eligibility', label: 'Eligibility', description: 'Each person’s cycle, CTC-based target variable and any override (HR); update to change' },
     ],
   },

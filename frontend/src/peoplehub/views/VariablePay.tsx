@@ -1,15 +1,19 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
-import { AlertTriangle, Check, CheckCircle2, ChevronDown, CornerUpLeft, Gauge, Layers, Send, Sparkles, Wallet, XCircle } from "lucide-react";
+import { AlertTriangle, Award, Check, CheckCircle2, ChevronDown, CornerUpLeft, FileText, Hourglass, Info, Layers, PartyPopper, Send, Wallet, XCircle } from "lucide-react";
 import {
   addToast, Button, Card, Checkbox, Chip, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem, Spinner, Tab, Tabs, Textarea,
 } from "@/components/ui";
 import { hasModuleAccess } from "@/lib/permissions";
+import PmsTable from "@/components/appraisal/PmsTable";
+import QuarterGrid, { type Slot } from "@/components/appraisal/QuarterGrid";
+import type { PmsQuarter } from "@/components/appraisal/api";
 
 /**
  * People Hub → Variable Pay (server: /variable-pay, see variablePay.service.ts).
- * Every employee (ELs too) sees their PMS final score per period and what the policy pays for it. If eligible they
- * appeal; the appeal goes straight to the Finance Head (no manager approves). Managers see their team's status only.
+ * Worked out each half year. Every employee (ELs too) opens the half year like My Appraisal: its quarters from PMS, the
+ * PMS score and what the policy pays for it. If eligible they appeal; the appeal goes straight to the Finance Head
+ * (no manager approves). Managers see their team's status only. The policy opens as a document page (PolicyModal).
  * The Finance Head sees every employee in the Variable Pay Overview: appealed vs paid, by year or quarter.
  */
 const BASE = "/t2.0/authentificationUtilization/variable-pay";
@@ -23,7 +27,7 @@ interface Req {
   note: string; status: Status; submittedAt: string; paidOn: string | null; history: Review[];
 }
 interface Quote { goalPct: number | null; targetPct: number | null; goalWeight: number; score: number | null; goalEntries: number; targetEntries: number; slabPct: number; targetAmount: number | null; computedAmount: number | null }
-interface Elig { eligible: boolean; reasons: string[]; minScore: number; gap: number | null }
+interface Elig { eligible: boolean; reasons: string[]; short: string; minScore: number; gap: number | null }
 interface Slab { from: number; to: number | null; payout: number | null; cap?: number }
 interface Period { key: string; label: string; start: string; end: string; cycle: string }
 
@@ -46,18 +50,6 @@ const STATUS: Record<Status | "NOT_APPEALED", { label: string; color: "default" 
   RETURNED: { label: "Sent back", color: "danger" },
 };
 const StatusChip = ({ s }: { s: Status | "NOT_APPEALED" }) => <Chip size="sm" variant="flat" color={STATUS[s].color}>{STATUS[s].label}</Chip>;
-
-/** A word of encouragement for someone who is not eligible this time (picked by the period, so it stays the same on reload) */
-const QUOTES = [
-  "Success is the sum of small efforts, repeated day in and day out. — Robert Collier",
-  "The secret of getting ahead is getting started. — Mark Twain",
-  "It always seems impossible until it's done. — Nelson Mandela",
-  "Don't watch the clock; do what it does. Keep going. — Sam Levenson",
-  "Quality is not an act, it is a habit. — Aristotle",
-  "Your next cycle is a fresh page. Set one clear goal each week and log it.",
-  "Small wins every day add up to a big score at the end of the quarter.",
-];
-const quoteFor = (key: string) => QUOTES[[...key].reduce((a, c) => a + c.charCodeAt(0), 0) % QUOTES.length]!;
 
 function Header({ title, sub, children }: { title: string; sub: React.ReactNode; children?: React.ReactNode }) {
   return (
@@ -106,34 +98,6 @@ function Stepper({ r, approver }: { r?: Req; approver: string }) {
   );
 }
 
-/** How the payout is worked out: goal % and target % → PMS final score → slab → amount */
-function Working({ q }: { q: { goalPct: number | null; targetPct: number | null; goalWeight: number; score: number | null; slabPct: number; targetAmount: number | null; computedAmount: number | null } }) {
-  const both = q.goalPct != null && q.targetPct != null;
-  const rows: [string, string, string][] = [
-    ["Goal %", pct(q.goalPct), both ? `weight ${q.goalWeight}%` : "each goal counts the same"],
-    ["Target %", pct(q.targetPct), both ? `weight ${100 - q.goalWeight}%` : "each target counts the same"],
-    ["PMS final score", pct(q.score), both && q.score != null ? `Goal^${(q.goalWeight / 100).toFixed(2)} × Target^${(1 - q.goalWeight / 100).toFixed(2)}` : q.goalPct == null && q.targetPct == null ? "no goal or target entries" : "needs both goal and target figures"],
-    ["Policy payout", `${q.slabPct}%`, "slab from Policy & Slabs"],
-    ["Target variable", inr(q.targetAmount), "100% payout for this period"],
-  ];
-  return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-      {rows.map(([k, v, h]) => (
-        <div key={k} className="border border-ink-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-ink-900">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-500">{k}</p>
-          <p className="text-base font-extrabold tabular-nums text-ink-900 dark:text-white">{v}</p>
-          <p className="text-[11px] text-ink-500">{h}</p>
-        </div>
-      ))}
-      <div className="border border-brand-300 bg-brand-50 px-3 py-2 dark:border-brand-500/40 dark:bg-brand-500/10">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-300">Variable pay</p>
-        <p className="text-base font-extrabold tabular-nums text-ink-900 dark:text-white">{inr(q.computedAmount)}</p>
-        <p className="text-[11px] text-ink-500">{q.targetAmount != null ? `${inr(q.targetAmount)} × ${q.slabPct}%` : "not set up"}</p>
-      </div>
-    </div>
-  );
-}
-
 function History({ r }: { r: Req }) {
   const [open, setOpen] = useState(false);
   const label: Record<string, string> = { SENT: "appealed", RESENT: "appealed again", APPROVED: "approved", RETURNED: "sent back", PAID: "marked paid" };
@@ -170,105 +134,258 @@ function useLoad<T>(url: string, params?: Record<string, unknown>) {
   return { d, loading, error, load };
 }
 
-/** Not eligible: the reasons, how far off they were, and some encouragement */
-function NotEligible({ el, periodKey }: { el: Elig; periodKey: string }) {
-  return (
-    <div className="flex flex-col gap-3 border-l-[3px] border-l-rose-500 bg-rose-50/60 p-4 dark:bg-rose-900/15">
-      <p className="flex items-center gap-2 text-sm font-bold text-rose-700 dark:text-rose-300"><XCircle size={16} /> Not eligible for variable pay this period</p>
-      <ul className="list-disc space-y-1 pl-5 text-sm text-ink-700 dark:text-ink-200">{el.reasons.map((r) => <li key={r}>{r}</li>)}</ul>
-      {el.gap != null && <p className="text-sm text-ink-700 dark:text-ink-200">You were <b>{el.gap.toFixed(2)} points</b> short of the {el.minScore}% needed. Keep your goal and target entries up to date every week to close the gap.</p>}
-      <p className="flex items-start gap-2 border-t border-rose-200 pt-3 text-sm italic text-ink-700 dark:border-rose-500/20 dark:text-ink-200"><Sparkles size={15} className="mt-0.5 shrink-0 text-brand-600" />{quoteFor(periodKey)}</p>
-    </div>
-  );
-}
-
 // ═══ My Variable Pay ═════════════════════════════════════════════════════════════════════════════
 interface Mine {
   person: { cycle: string; cycleLabel: string; cycleSet: boolean; level: string; levelPct: number; annual: number | null; source: "OVERRIDE" | "CTC" | null; department: string };
-  approver: { userId: number; name: string }; slabs: Slab[];
+  approver: { userId: number; name: string }; slabs: Slab[]; levels: Record<string, number>;
   current: Period & { quote: Quote; eligibility: Elig };
   periods: (Period & { state: "OPEN" | "SENT"; request: Req | null; quote: Quote | null; eligibility: Elig | null })[];
   requests: Req[];
 }
-export function MyVariablePay() {
-  const { d, loading, error, load } = useLoad<Mine>(`${BASE}/me`);
-  const [notes, setNotes] = useState<Record<string, string>>({});
-  const [sending, setSending] = useState<string | null>(null);
-  const send = (key: string) => {
-    setSending(key);
-    axios.post(`${BASE}/me/send`, { periodKey: key, note: notes[key] || null })
-      .then(() => { addToast({ title: "Appeal sent", description: `It is with ${d?.approver.name ?? "the Finance Head"} now.`, color: "success" }); load(); })
-      .catch((e) => addToast({ title: "Could not send", description: errText(e, "Please try again."), color: "danger" }))
-      .finally(() => setSending(null));
-  };
-  const paidYtd = (d?.requests ?? []).filter((r) => r.status === "PAID" && r.paidOn?.startsWith(String(new Date().getFullYear()))).reduce((a, r) => a + (r.finalAmount ?? 0), 0);
-  const levelName: Record<string, string> = { ASSOCIATE: "Associate", MANAGER: "Manager", HEAD_EL: "Head / EL" };
-  const approver = d ? `Finance Head · ${d.approver.name}` : "Finance Head";
+interface QuarterCalc { quarter: string; year: number; start: string; end: string; goalPct: number | null; targetPct: number | null; score: number | null; goalEntries: number; targetEntries: number }
+interface Detail { period: Period; quarters: QuarterCalc[]; pms: PmsQuarter[]; slots: Slot[] }
+type Calc = { goalPct: number | null; targetPct: number | null; score: number | null; slabPct: number; targetAmount: number | null; computedAmount: number | null };
 
+const shortLabel = (label: string) => label.split(" (")[0]!;
+/** The slab a score falls in (same rule as the server) */
+const slabOf = (score: number | null, list: Slab[]) => (score == null ? null : list.find((s) => score >= s.from && (s.to == null || score < s.to)) ?? null);
+const slabPay = (s: Slab) => (s.payout == null ? `at the score, up to ${s.cap ?? 120}%` : `${s.payout}%`);
+
+/**
+ * The half year's calculation, next to the quarters: each quarter's PMS Dashboard figures, the half year's PMS score,
+ * the policy slab it falls in and the amount. The appeal (or where it stands) sits at the bottom.
+ */
+function CalcCard({ label, quarters, calc, slabs, children }: { label: string; quarters: QuarterCalc[] | null; calc: Calc; slabs: Slab[]; children?: React.ReactNode }) {
+  const hit = slabOf(calc.score, slabs);
   return (
-    <section className="flex flex-col gap-5">
-      <Header title="My Variable Pay" sub="Your variable pay comes from your PMS final score for each period of your cycle and the Variable Pay policy. When a period ends and you are eligible, appeal for it; your appeal goes straight to the Finance Head." />
-      {loading && !d && <Spinner />}
-      {error && <p className="text-sm text-rose-600">{error}</p>}
-      {d && (
-        <>
-          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <Stat label="Your cycle" value={d.person.cycleLabel} hint={d.person.cycleSet ? d.person.department : "not set by HR yet: half-yearly is used"} icon={Layers} />
-            <Stat label="Annual target variable" value={inr(d.person.annual)} hint={d.person.source === "OVERRIDE" ? "set by HR" : d.person.source === "CTC" ? `${d.person.levelPct}% of CTC (${levelName[d.person.level] ?? d.person.level})` : "not set up"} icon={Wallet} />
-            <Stat label={`So far in ${d.current.label.split(" (")[0]}`} value={pct(d.current.quote.score)} hint={d.current.eligibility.eligible ? `on track for ${inr(d.current.quote.computedAmount)} (${d.current.quote.slabPct}%)` : `needs ${d.current.eligibility.minScore}% to qualify`} icon={Gauge} />
-            <Stat label="Paid this year" value={inr(paidYtd)} icon={CheckCircle2} />
-          </div>
+    <div className="flex flex-col border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900">
+      <div className="border-b border-ink-200 px-4 py-3 dark:border-white/10">
+        <p className="eyebrow">Your calculation</p>
+        <p className="text-sm font-bold text-ink-900 dark:text-white">{label}</p>
+      </div>
+      <table className="w-full text-xs">
+        <thead className="bg-ink-50 text-ink-500 dark:bg-ink-800"><tr>{["", "Goal", "Target", "PMS score"].map((h, i) => <th key={i} className={`px-3 py-2 font-semibold ${i ? "text-right" : "text-left"}`}>{h}</th>)}</tr></thead>
+        <tbody>
+          {quarters == null && <tr><td colSpan={4} className="px-3 py-3 text-center"><Spinner size="sm" /></td></tr>}
+          {quarters?.map((q) => (
+            <tr key={`${q.quarter}${q.year}`} className="border-t border-ink-100 dark:border-white/5">
+              <td className="px-3 py-2 font-semibold text-ink-700 dark:text-ink-200">{q.quarter} {q.year}</td>
+              <td className="px-3 py-2 text-right tabular-nums">{pct(q.goalPct)}</td>
+              <td className="px-3 py-2 text-right tabular-nums">{pct(q.targetPct)}</td>
+              <td className="px-3 py-2 text-right tabular-nums">{pct(q.score)}</td>
+            </tr>
+          ))}
+          <tr className="border-t border-ink-200 bg-ink-50 font-bold text-ink-900 dark:border-white/10 dark:bg-ink-800 dark:text-white">
+            <td className="px-3 py-2">Half year</td>
+            <td className="px-3 py-2 text-right tabular-nums">{pct(calc.goalPct)}</td>
+            <td className="px-3 py-2 text-right tabular-nums">{pct(calc.targetPct)}</td>
+            <td className="px-3 py-2 text-right tabular-nums text-brand-700 dark:text-brand-300">{pct(calc.score)}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p className="px-4 pt-2 text-[11px] text-ink-500">Worked out like your PMS Dashboard. The half year uses all its entries, so it is not the average of the two quarters.</p>
 
-          {d.periods.map((p) => {
-            const r = p.request;
-            const open = !r || r.status === "RETURNED";
+      <div className="px-4 pt-4">
+        <p className="eyebrow mb-1.5">Against the policy</p>
+        <ul className="border border-ink-200 text-xs dark:border-white/10">
+          {slabs.map((s) => {
+            const on = s === hit;
             return (
-              <Card key={p.key} className="p-5">
-                <div className="mb-3 flex flex-wrap items-center gap-3">
-                  <h2 className="text-sm font-bold uppercase tracking-wide text-ink-900 dark:text-white">{p.label}</h2>
-                  {r ? <StatusChip s={r.status} /> : p.eligibility?.eligible ? <Chip size="sm" variant="flat" color="success">Eligible</Chip> : <Chip size="sm" variant="flat" color="danger">Not eligible</Chip>}
-                  {r && <span className="ml-auto text-xs text-ink-500">Appealed {when(r.submittedAt)}</span>}
-                </div>
-                {!open ? (
-                  <div className="flex flex-col gap-3">
-                    <Working q={r!} />
-                    <Stepper r={r!} approver={approver} />
-                    {r!.finalAmount != null && <p className="text-sm">Approved: <b className="text-emerald-700 dark:text-emerald-300">{inr(r!.finalAmount)}</b>{r!.finalAmount !== r!.computedAmount ? ` (worked out ${inr(r!.computedAmount)})` : ""}{r!.paidOn ? ` · paid on ${day(r!.paidOn)}` : ""}</p>}
-                    <History r={r!} />
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    {r?.status === "RETURNED" && (
-                      <div className="border-l-[3px] border-l-rose-500 bg-rose-50 px-3 py-2 text-sm dark:bg-rose-900/20">
-                        Sent back: “{[...r.history].reverse().find((h) => h.action === "RETURNED")?.comment}”. Check your entries and appeal again; the score is worked out afresh.
-                      </div>
-                    )}
-                    {p.quote && <Working q={p.quote} />}
-                    {p.quote && <p className="text-xs text-ink-500">From {p.quote.goalEntries} goal and {p.quote.targetEntries} target entries between {day(p.start)} and {day(p.end)}. Missing something? Add it in PMS → Target & Goals first.</p>}
-                    {p.eligibility && !p.eligibility.eligible ? <NotEligible el={p.eligibility} periodKey={p.key} /> : (
-                      <>
-                        <Textarea label="Note for the Finance Head (optional)" size="sm" minRows={2} value={notes[p.key] ?? ""} onValueChange={(v) => setNotes((n) => ({ ...n, [p.key]: v }))} />
-                        <div className="flex flex-wrap items-center gap-3">
-                          <Button color="primary" startContent={<Send size={14} />} isLoading={sending === p.key} onPress={() => send(p.key)}>{r ? "Appeal again" : `Appeal for ${inr(p.quote?.computedAmount)}`}</Button>
-                          <Stepper approver={approver} />
-                        </div>
-                      </>
-                    )}
-                    {r && <History r={r} />}
-                  </div>
-                )}
-              </Card>
+              <li key={s.from} className={`flex items-center justify-between gap-2 border-t border-ink-100 px-3 py-1.5 first:border-t-0 dark:border-white/5 ${on ? "bg-brand-50 font-bold text-ink-900 ring-1 ring-inset ring-brand-400 dark:bg-brand-500/15 dark:text-white" : "text-ink-500"}`}>
+                <span className="tabular-nums">{slabText(s)}</span>
+                <span className="tabular-nums">{on && <Check size={12} className="mr-1 inline text-brand-600" />}{slabPay(s)}</span>
+              </li>
             );
           })}
+        </ul>
+      </div>
 
-          {d.requests.filter((r) => !d.periods.some((p) => p.key === r.periodKey)).length > 0 && (
-            <Card className="p-5">
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-ink-900 dark:text-white">Earlier periods</h2>
-              <RequestTable rows={d.requests.filter((r) => !d.periods.some((p) => p.key === r.periodKey))} hideName />
-            </Card>
-          )}
-        </>
+      <dl className="flex flex-col gap-1.5 px-4 py-4 text-sm">
+        <div className="flex justify-between gap-3"><dt className="text-ink-500">Variable for the half year</dt><dd className="font-semibold tabular-nums">{inr(calc.targetAmount)}</dd></div>
+        <div className="flex justify-between gap-3"><dt className="text-ink-500">Payout</dt><dd className="font-semibold tabular-nums">× {calc.slabPct}%</dd></div>
+        <div className="mt-1 flex items-end justify-between gap-3 border-t border-ink-200 pt-2.5 dark:border-white/10">
+          <dt className="text-xs font-bold uppercase tracking-wide text-ink-900 dark:text-white">Your variable pay</dt>
+          <dd className="text-2xl font-extrabold tabular-nums leading-none text-brand-700 dark:text-brand-300">{inr(calc.computedAmount)}</dd>
+        </div>
+      </dl>
+      {children && <div className="border-t border-ink-200 px-4 py-4 dark:border-white/10">{children}</div>}
+    </div>
+  );
+}
+
+// My Variable Pay, built like My Appraisal: one card with "Appeal for Variable Pay". It opens three tabs: Goals and
+// targets by quarter (from PMS, as in the appraisal), Variable pay calculation (eligible or not; Apply for Variable Pay
+// when eligible) and Appeal status.
+type VpTab = "goals" | "calc" | "status";
+export function MyVariablePay() {
+  const { d, loading, error, load } = useLoad<Mine>(`${BASE}/me`);
+  const [showForm, setShowForm] = useState(false);
+  const [tab, setTab] = useState<VpTab>("goals");
+  const [policy, setPolicy] = useState(false);
+  const [note, setNote] = useState("");
+  const [sending, setSending] = useState(false);
+  const [detail, setDetail] = useState<Detail | null>(null);
+  const formRef = useRef<HTMLDivElement>(null);
+  const p = d?.periods[0];
+
+  useEffect(() => {
+    if (!showForm || !p || detail?.period.key === p.key) return;
+    axios.get(`${BASE}/me/period/${p.key}`).then((r) => setDetail(data<Detail>(r)))
+      .catch((e) => addToast({ title: "Could not load your quarters", description: errText(e, "Please try again."), color: "danger" }));
+  }, [showForm, p?.key]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const open = (t: VpTab) => { setTab(t); setShowForm(true); setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); };
+  const send = () => {
+    if (!p) return;
+    setSending(true);
+    axios.post(`${BASE}/me/send`, { periodKey: p.key, note: note.trim() || null })
+      .then(() => { addToast({ title: "Your variable pay appeal is submitted", description: `It is with ${d?.approver.name ?? "the Finance Head"} now.`, color: "success" }); setNote(""); setTab("status"); load(); })
+      .catch((e) => addToast({ title: "Could not submit", description: errText(e, "Please try again."), color: "danger" }))
+      .finally(() => setSending(false));
+  };
+
+  if (loading && !d) return <div className="flex justify-center py-20"><Spinner /></div>;
+  if (!d || !p) return <Card className="p-10 text-center text-sm text-ink-500">{error || "No variable pay is open for you right now."}</Card>;
+
+  const r = p.request;
+  const eligible = !!p.eligibility?.eligible;
+  const calc: Calc = r && r.status !== "RETURNED" ? r : p.quote ?? { goalPct: null, targetPct: null, score: null, slabPct: 0, targetAmount: null, computedAmount: null };
+  const half = shortLabel(p.label);
+  const approver = `Finance Head · ${d.approver.name}`;
+  const lastReturn = r?.status === "RETURNED" ? [...r.history].reverse().find((h) => h.action === "RETURNED")?.comment : null;
+
+  // The top card: one line on where the person is, and one button (as in My Appraisal). Eligibility is shown only in the calculation.
+  let icon = <Award size={26} />;
+  let title = "Your variable pay is open";
+  let text: React.ReactNode = `${p.label}. Look at your goals and targets for each quarter and how your variable pay is worked out.`;
+  let action = <Button size="lg" color="primary" onPress={() => open("goals")}>Appeal for Variable Pay</Button>;
+  if (r?.status === "RETURNED") {
+    icon = <CornerUpLeft size={26} />; title = "Your appeal was sent back";
+    text = <>“{lastReturn}”. Check your entries and look at your quarters again.</>;
+  } else if (r?.status === "WITH_FINANCE" || r?.status === "WITH_REVIEWER") {
+    icon = <Hourglass size={26} />; title = "Your appeal is submitted and in progress";
+    text = `${half}: it is with the Finance Head. We will let you know soon.`;
+    action = <Button size="lg" variant="bordered" onPress={() => open("status")}>View my appeal</Button>;
+  } else if (r?.status === "APPROVED") {
+    icon = <CheckCircle2 size={26} />; title = `Your variable pay is approved: ${inr(r.finalAmount)}`;
+    text = `${half}. It will be paid with your salary.`;
+    action = <Button size="lg" variant="bordered" onPress={() => open("status")}>View my appeal</Button>;
+  } else if (r?.status === "PAID") {
+    icon = <PartyPopper size={26} />; title = `Your variable pay is paid: ${inr(r.finalAmount)}`;
+    text = `${half}. Paid on ${day(r.paidOn)}.`;
+    action = <Button size="lg" variant="bordered" onPress={() => open("status")}>View my appeal</Button>;
+  }
+  const earlier = d.requests.filter((x) => x.periodKey !== p.key);
+
+  return (
+    <section className="flex flex-col gap-6">
+      <Header title="My Variable Pay" sub="Your half-yearly variable pay: appeal for it, then see where it stands." />
+      <Card className="p-0">
+        <div className={showForm ? "flex flex-wrap items-center justify-between gap-4 p-5" : "flex flex-col items-center gap-5 px-4 py-12 text-center"}>
+          <div className={showForm ? "flex items-center gap-4" : "flex flex-col items-center gap-5"}>
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center bg-brand-50 text-brand-600 dark:bg-brand-600/10">{icon}</span>
+            <div className="flex max-w-[60ch] flex-col gap-1.5">
+              <h2 className="text-xl font-bold text-ink-900 dark:text-white">{title}</h2>
+              <p className="text-sm text-ink-500 dark:text-ink-400">{text}</p>
+            </div>
+          </div>
+          {showForm ? <Button size="lg" variant="bordered" onPress={() => setShowForm(false)}>Hide variable pay</Button> : action}
+        </div>
+      </Card>
+
+      {showForm && (
+        <div ref={formRef} className="scroll-mt-4">
+          <Card className="p-0">
+            <div className="px-5 pt-3">
+              <Tabs aria-label="Variable pay sections" selectedKey={tab} onSelectionChange={(k) => setTab(String(k) as VpTab)}>
+                <Tab key="goals" title="Goals and targets by quarter">
+                  <div className="flex flex-col gap-6 pb-5 pt-3">
+                    <p className="max-w-[72ch] text-sm text-ink-500 dark:text-ink-400">{p.label}. Everything here comes from your PMS Quarterly Reviews and your Quarter Highlights (PMS menu). There is nothing to fill in here.</p>
+                    {!detail ? <Spinner /> : (
+                      <>
+                        <PmsTable quarters={detail.pms} />
+                        <QuarterGrid slots={detail.slots} pms={detail.pms} />
+                      </>
+                    )}
+                    <div className="flex justify-end border-t border-ink-200 pt-4 dark:border-white/10">
+                      <Button color="primary" onPress={() => setTab("calc")}>Next: Variable pay calculation</Button>
+                    </div>
+                  </div>
+                </Tab>
+
+                <Tab key="calc" title="Variable pay calculation">
+                  <div className="flex flex-col gap-5 pb-5 pt-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="max-w-[72ch] text-sm text-ink-500 dark:text-ink-400">Worked out like your PMS Dashboard for {half}, then compared with the Variable Pay Policy.</p>
+                      <Button variant="bordered" startContent={<FileText size={15} />} onPress={() => setPolicy(true)}>Variable Pay Policy</Button>
+                    </div>
+                    <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
+                      <CalcCard label={half} quarters={detail?.quarters ?? null} calc={calc} slabs={d.slabs} />
+
+                      {/* the result: eligible or not, and Apply for Variable Pay */}
+                      <div className={`flex flex-col gap-4 border p-5 ${eligible || (r && r.status !== "RETURNED") ? "border-emerald-500/40 bg-emerald-50/50 dark:bg-emerald-500/10" : "border-ink-200 bg-ink-50 dark:border-white/10 dark:bg-ink-800"}`}>
+                        {r && r.status !== "RETURNED" ? (
+                          <>
+                            <Chip size="sm" variant="flat" color="success" className="self-start">Appealed</Chip>
+                            <p className="text-sm text-ink-700 dark:text-ink-200">You appealed for <b>{inr(r.computedAmount)}</b> on {day(r.submittedAt.slice(0, 10))}. See the Appeal status tab.</p>
+                          </>
+                        ) : eligible ? (
+                          <>
+                            <Chip size="sm" variant="flat" color="success" className="self-start" startContent={<CheckCircle2 size={13} />}>Eligible</Chip>
+                            <div>
+                              <p className="eyebrow">Your variable pay for {half}</p>
+                              <p className="mt-1 text-3xl font-extrabold tabular-nums leading-none text-ink-900 dark:text-white">{inr(calc.computedAmount)}</p>
+                              <p className="mt-1 text-xs text-ink-500">PMS score {pct(calc.score)} → {calc.slabPct}% of {inr(calc.targetAmount)}</p>
+                            </div>
+                            <Textarea label="Note for the Finance Head (optional)" size="sm" minRows={2} value={note} onValueChange={setNote} />
+                            <Button size="lg" color="primary" startContent={<Send size={15} />} isLoading={sending} onPress={send}>{r ? "Apply again" : "Apply for Variable Pay"}</Button>
+                            <p className="text-[11px] text-ink-500">Goes straight to {approver}.</p>
+                          </>
+                        ) : (
+                          <>
+                            <Chip size="sm" variant="flat" color="default" className="self-start">Not eligible</Chip>
+                            <p className="flex items-start gap-1.5 text-sm text-ink-600 dark:text-ink-300"><Info size={14} className="mt-0.5 shrink-0 text-ink-400" />{p.eligibility?.short || "Not eligible for this half year."}</p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </Tab>
+
+                <Tab key="status" title="Appeal status">
+                  <div className="flex flex-col gap-5 pb-5 pt-3">
+                    {r && r.status !== "RETURNED" ? (
+                      <>
+                        <Stepper r={r} approver={approver} />
+                        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                          <div><dt className="eyebrow">Appealed for</dt><dd className="mt-1 text-xl font-bold tabular-nums text-ink-900 dark:text-white">{inr(r.computedAmount)}</dd></div>
+                          <div><dt className="eyebrow">Approved</dt><dd className="mt-1 text-xl font-bold tabular-nums text-ink-900 dark:text-white">{inr(r.finalAmount)}</dd></div>
+                          <div><dt className="eyebrow">Paid on</dt><dd className="mt-1 text-xl font-bold text-ink-900 dark:text-white">{day(r.paidOn)}</dd></div>
+                        </dl>
+                        <History r={r} />
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center gap-3 border border-dashed border-ink-300 px-6 py-10 text-center dark:border-white/20">
+                        <span className="flex h-12 w-12 items-center justify-center bg-ink-100 text-ink-600 dark:bg-white/5 dark:text-ink-300"><Hourglass size={22} /></span>
+                        <p className="text-base font-bold text-ink-900 dark:text-white">Nothing to show yet</p>
+                        <p className="max-w-[56ch] text-sm text-ink-500">{r?.status === "RETURNED" ? "Your appeal was sent back. Apply again from the Variable pay calculation tab if you are eligible." : "Apply for variable pay from the Variable pay calculation tab. Where it stands shows here."}</p>
+                      </div>
+                    )}
+                  </div>
+                </Tab>
+              </Tabs>
+            </div>
+          </Card>
+        </div>
       )}
+
+      {earlier.length > 0 && (
+        <Card className="p-5">
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-ink-900 dark:text-white">Earlier half years</h2>
+          <RequestTable rows={earlier} hideName />
+        </Card>
+      )}
+      <PolicyModal open={policy} onClose={() => setPolicy(false)} />
     </section>
   );
 }
@@ -391,6 +508,7 @@ export function FinanceVariablePay() {
   const [tabChosen, setTabChosen] = useState(false);
   useEffect(() => { if (d && !tabChosen) setTab(d.requests.length ? "appeals" : "everyone"); }, [d, tabChosen]);
   const [eligF, setEligF] = useState("all");
+  const [policyOpen, setPolicyOpen] = useState(false);
 
   const depts = useMemo(() => [...new Set([...(d?.requests ?? []).map((r) => r.department), ...(d?.everyone ?? []).map((p) => p.department)])].sort(), [d]);
   const rows = (d?.requests ?? []).filter((r) => (dept === "all" || r.department === dept) && (statusF === "all" || r.status === statusF || (statusF === "WITH_FINANCE" && r.status === "WITH_REVIEWER")));
@@ -436,7 +554,10 @@ export function FinanceVariablePay() {
 
   return (
     <section className="flex flex-col gap-5">
-      <Header title="Variable Pay Overview" sub="Every employee's variable pay: appealed, approved and paid, by year or quarter. Approve appeals (changing an amount needs a reason), send one back to the employee, and mark them paid." />
+      <Header title="Variable Pay Overview" sub="Every employee's variable pay: appealed, approved and paid, by year or quarter. Approve appeals (changing an amount needs a reason), send one back to the employee, and mark them paid.">
+        <Button variant="bordered" startContent={<FileText size={15} />} onPress={() => setPolicyOpen(true)}>Variable Pay Policy</Button>
+      </Header>
+      <PolicyModal open={policyOpen} onClose={() => setPolicyOpen(false)} />
       <Card className="p-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {multi("Years", (d?.years ?? [thisYear]).map(String), years, setYears, (k) => k)}
@@ -621,81 +742,144 @@ export function FinanceVariablePay() {
   );
 }
 
-// ═══ Policy & Slabs ══════════════════════════════════════════════════════════════════════════════
-export function VariablePayPolicy() {
-  const { d, loading, error, load } = useLoad<{ slabs: Slab[]; levels: Record<string, number> }>(`${BASE}/policy`);
-  const canEdit = hasModuleAccess("hub_variable_pay_policy", "update");
+// ═══ Variable Pay Policy (opens as a document page; those with update access can change the slabs) ═══
+const LEVEL_NAME: Record<string, string> = { ASSOCIATE: "Associate", MANAGER: "Manager", HEAD_EL: "Head / EL" };
+const payoutFor = (score: number, list: Slab[]) => { const s = slabOf(score, list); return !s ? 0 : s.payout == null ? Math.min(score, s.cap ?? 120) : s.payout; };
+
+export function PolicyModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [d, setD] = useState<{ slabs: Slab[]; levels: Record<string, number> } | null>(null);
   const [draft, setDraft] = useState<Slab[] | null>(null);
+  const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
+  const canEdit = hasModuleAccess("hub_variable_pay_policy", "update");
+  const fetchPolicy = () => axios.get(`${BASE}/policy`).then((r) => setD(data(r))).catch((e) => addToast({ title: "Could not load the policy", description: errText(e, "Please try again."), color: "danger" }));
+  useEffect(() => { if (open) { setEditing(false); setDraft(null); fetchPolicy(); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const list = draft ?? d?.slabs ?? [];
   const set = (i: number, k: keyof Slab, v: string) => setDraft(list.map((s, j) => (j === i ? { ...s, [k]: v === "" ? null : Number(v) } : s)));
   const save = () => {
     setBusy(true);
     axios.put(`${BASE}/policy`, { slabs: list })
-      .then(() => { addToast({ title: "Slabs saved", description: "They apply to requests sent from now on.", color: "success" }); setDraft(null); load(); })
+      .then(() => { addToast({ title: "Slabs saved", description: "They apply to appeals sent from now on.", color: "success" }); setDraft(null); setEditing(false); fetchPolicy(); })
       .catch((e) => addToast({ title: "Could not save", description: errText(e, "Please check the slabs."), color: "danger" })).finally(() => setBusy(false));
   };
-  const cell = "h-8 w-24 border border-ink-200 bg-white px-2 text-right text-sm tabular-nums focus:border-brand-500 focus:outline-none disabled:bg-transparent disabled:border-transparent dark:border-white/10 dark:bg-ink-900";
+  const cell = "h-7 w-20 border border-ink-300 bg-white px-2 text-right text-xs tabular-nums focus:border-brand-500 focus:outline-none";
+  const minScore = list.filter((s) => s.payout == null || s.payout > 0).map((s) => s.from).sort((a, b) => a - b)[0] ?? 0;
+  const assoc = d?.levels["ASSOCIATE"] ?? 10, exScore = 82, exAnnual = (600000 * assoc) / 100, exPay = payoutFor(exScore, list);
+  const H = ({ n, children }: { n: number; children: React.ReactNode }) => <h3 className="mb-1.5 mt-6 text-[13px] font-bold uppercase tracking-wide text-ink-900">{n}. {children}</h3>;
+
   return (
-    <section className="flex flex-col gap-5">
-      <Header title="Policy & Slabs" sub="How variable pay is worked out for each period of a person's cycle." />
-      <Card className="p-5 text-sm leading-relaxed text-ink-700 dark:text-ink-200">
-        <ol className="list-decimal space-y-1 pl-5">
-          <li><b>Target variable</b> = annual CTC × the level's variable % ({d ? Object.entries(d.levels).map(([k, v]) => `${({ ASSOCIATE: "Associate", MANAGER: "Manager", HEAD_EL: "Head / EL" } as Record<string, string>)[k] ?? k} ${v}%`).join(", ") : "…"}), shared over the year by the person's cycle (quarterly ÷ 4, half-yearly ÷ 2, annual ÷ 1). HR can set a different annual amount per person in Eligibility.</li>
-          <li><b>PMS score</b> for the period is the PMS Dashboard's PMS Score: Goal %<sup>w</sup> × Target %<sup>1−w</sup>, with w = 70% when Goal is ahead of Target, otherwise 50%, plus any ±5% shift the person's manager set for the year. Goal % and Target % average each goal / target first, so every metric counts the same; each side counts as at least 5% and at most 150%.</li>
-          <li><b>Payout %</b> from the slab the score falls in (below), × the target variable = the amount the request starts with.</li>
-          <li><b>Eligible</b> when set up, with PMS entries in the period and a score in a paying slab. Eligible employees appeal; the appeal goes straight to the <b>Finance Head</b>, who approves it (any change to the amount needs a reason) and marks it paid. Managers see their team's status only.</li>
-        </ol>
-      </Card>
-      {loading && !d && <Spinner />}
-      {error && <p className="text-sm text-rose-600">{error}</p>}
-      <Card className="p-5">
-        <div className="mb-3 flex items-center gap-3">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-ink-900 dark:text-white">Payout slabs</h2>
-          {canEdit && <span className="text-xs text-ink-500">Edit the numbers and save. Leave "Payout" empty to pay at the score (up to the cap).</span>}
-        </div>
-        <table className="w-full max-w-3xl text-sm">
-          <thead className="bg-ink-50 dark:bg-ink-800"><tr className="text-left">{["Score from (%)", "Score below (%)", "Payout (%)", "Cap (%)", "Means"].map((h) => <th key={h} className="px-3 py-2.5">{h}</th>)}</tr></thead>
-          <tbody>
-            {list.map((s, i) => (
-              <tr key={i} className="border-t border-ink-100 dark:border-white/5">
-                <td className="px-3 py-2"><input type="number" className={cell} disabled={!canEdit} value={s.from} onChange={(e) => set(i, "from", e.target.value)} /></td>
-                <td className="px-3 py-2"><input type="number" className={cell} disabled={!canEdit} value={s.to ?? ""} placeholder="no end" onChange={(e) => set(i, "to", e.target.value)} /></td>
-                <td className="px-3 py-2"><input type="number" className={cell} disabled={!canEdit} value={s.payout ?? ""} placeholder="at score" onChange={(e) => set(i, "payout", e.target.value)} /></td>
-                <td className="px-3 py-2">{s.payout == null ? <input type="number" className={cell} disabled={!canEdit} value={s.cap ?? 120} onChange={(e) => set(i, "cap", e.target.value)} /> : <span className="text-ink-400">—</span>}</td>
-                <td className="px-3 py-2 text-ink-600 dark:text-ink-300">{slabText(s)} → {s.payout == null ? `paid at the score, up to ${s.cap ?? 120}%` : `${s.payout}% of the target variable`}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {canEdit && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button size="sm" variant="bordered" onPress={() => setDraft([...list.slice(0, -1), { ...list[list.length - 1]!, to: (list[list.length - 1]!.from + 10) }, { from: list[list.length - 1]!.from + 10, to: null, payout: null, cap: 120 }])}>Add slab</Button>
-            {list.length > 1 && <Button size="sm" variant="light" onPress={() => setDraft([...list.slice(0, -2), { ...list[list.length - 2]!, to: null, ...(list[list.length - 1]!.payout == null ? { payout: null, cap: list[list.length - 1]!.cap } : {}) }])}>Remove last</Button>}
-            {draft && <Button size="sm" variant="light" onPress={() => setDraft(null)}>Undo changes</Button>}
-            <Button size="sm" color="primary" isDisabled={!draft} isLoading={busy} onPress={save}>Save slabs</Button>
-          </div>
-        )}
-      </Card>
-    </section>
+    <Modal isOpen={open} onOpenChange={(o) => { if (!o) onClose(); }} size="4xl" scrollBehavior="inside">
+      <ModalContent>
+        <ModalHeader className="flex items-center gap-2 border-b border-ink-200 dark:border-white/10"><FileText size={17} className="text-brand-600" />Variable Pay Policy</ModalHeader>
+        <ModalBody className="bg-ink-100 px-3 py-6 dark:bg-ink-950 sm:px-8">
+          {!d ? <Spinner /> : (
+            // a printed page: always white, whatever the theme
+            <article className="mx-auto w-full max-w-[760px] border border-ink-200 bg-white px-6 py-10 text-[13px] leading-relaxed text-ink-700 shadow-[0_4px_24px_rgba(0,0,0,0.12)] sm:px-12">
+              <header className="flex items-start justify-between gap-4 border-b-2 border-ink-900 pb-4">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-600">People Hub · TapMind</p>
+                  <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-ink-900">Variable Pay Policy</h2>
+                </div>
+                <dl className="text-right text-[11px] text-ink-500">
+                  <div><dt className="inline">Applies to: </dt><dd className="inline font-semibold text-ink-900">every employee</dd></div>
+                  <div><dt className="inline">Worked out: </dt><dd className="inline font-semibold text-ink-900">each half year</dd></div>
+                </dl>
+              </header>
+
+              <H n={1}>Purpose</H>
+              <p>Variable pay rewards how well you meet your goals and targets. It is worked out each half year from your PMS score and paid once the Finance Head approves it.</p>
+
+              <H n={2}>Half years</H>
+              <table className="w-full border border-ink-300 text-xs">
+                <thead className="bg-ink-100 text-ink-900"><tr><th className="border border-ink-300 px-3 py-1.5 text-left">Half year</th><th className="border border-ink-300 px-3 py-1.5 text-left">Months</th><th className="border border-ink-300 px-3 py-1.5 text-left">PMS quarters</th></tr></thead>
+                <tbody>
+                  <tr><td className="border border-ink-300 px-3 py-1.5 font-semibold">H1</td><td className="border border-ink-300 px-3 py-1.5">April – September</td><td className="border border-ink-300 px-3 py-1.5">Q2 and Q3</td></tr>
+                  <tr><td className="border border-ink-300 px-3 py-1.5 font-semibold">H2</td><td className="border border-ink-300 px-3 py-1.5">October – March</td><td className="border border-ink-300 px-3 py-1.5">Q4 and the next Q1</td></tr>
+                </tbody>
+              </table>
+
+              <H n={3}>Your variable pay</H>
+              <p>Your yearly variable pay is your annual CTC × the variable % for your level: {Object.entries(d.levels).map(([k, v]) => `${LEVEL_NAME[k] ?? k} ${v}%`).join(", ")}. Half of it is for each half year. HR can set a different amount for a person.</p>
+
+              <H n={4}>Your PMS score</H>
+              <p>The same score as your PMS Dashboard. Goal % and Target % average each goal and target first, so every one counts the same. The score is Goal %<sup>w</sup> × Target %<sup>1−w</sup>, where w is 70% when Goal % is ahead of Target %, otherwise 50%. Each side counts as at least 5% and at most 150%. Your manager can move the weighting by up to 5% for the year, with a reason.</p>
+
+              <H n={5}>Payout slabs</H>
+              <table className="w-full border border-ink-300 text-xs">
+                <thead className="bg-ink-100 text-ink-900"><tr>{["PMS score", "Payout of your half-year variable", ...(editing ? ["From", "Below", "Payout %", "Cap %"] : [])].map((h) => <th key={h} className="border border-ink-300 px-3 py-1.5 text-left">{h}</th>)}</tr></thead>
+                <tbody>
+                  {list.map((s, i) => (
+                    <tr key={i}>
+                      <td className="border border-ink-300 px-3 py-1.5 font-semibold tabular-nums">{s.to == null ? `${s.from}% and above` : `${s.from}% to below ${s.to}%`}</td>
+                      <td className="border border-ink-300 px-3 py-1.5">{s.payout == null ? `paid at the score, up to ${s.cap ?? 120}%` : s.payout === 0 ? "no variable pay" : `${s.payout}%`}</td>
+                      {editing && (
+                        <>
+                          <td className="border border-ink-300 px-2 py-1"><input type="number" aria-label="From" className={cell} value={s.from} onChange={(e) => set(i, "from", e.target.value)} /></td>
+                          <td className="border border-ink-300 px-2 py-1"><input type="number" aria-label="Below" className={cell} value={s.to ?? ""} placeholder="no end" onChange={(e) => set(i, "to", e.target.value)} /></td>
+                          <td className="border border-ink-300 px-2 py-1"><input type="number" aria-label="Payout" className={cell} value={s.payout ?? ""} placeholder="at score" onChange={(e) => set(i, "payout", e.target.value)} /></td>
+                          <td className="border border-ink-300 px-2 py-1">{s.payout == null ? <input type="number" aria-label="Cap" className={cell} value={s.cap ?? 120} onChange={(e) => set(i, "cap", e.target.value)} /> : "—"}</td>
+                        </>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {editing && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Button size="sm" variant="bordered" onPress={() => setDraft([...list.slice(0, -1), { ...list[list.length - 1]!, to: list[list.length - 1]!.from + 10 }, { from: list[list.length - 1]!.from + 10, to: null, payout: null, cap: 120 }])}>Add slab</Button>
+                  {list.length > 1 && <Button size="sm" variant="light" onPress={() => setDraft([...list.slice(0, -2), { ...list[list.length - 2]!, to: null, ...(list[list.length - 1]!.payout == null ? { payout: null, cap: list[list.length - 1]!.cap } : {}) }])}>Remove last</Button>}
+                  <span className="self-center text-[11px] text-ink-500">Leave Payout empty to pay at the score (up to the cap).</span>
+                </div>
+              )}
+
+              <H n={6}>Who is eligible</H>
+              <ul className="list-disc space-y-0.5 pl-5">
+                <li>Your variable pay is set up (HR has your CTC, or an amount).</li>
+                <li>You have goal and target entries in the half year, so there is a PMS score.</li>
+                <li>Your PMS score is {minScore}% or more.</li>
+              </ul>
+
+              <H n={7}>Example</H>
+              <p>An {LEVEL_NAME["ASSOCIATE"]} with an annual CTC of ₹6,00,000 has {inr(exAnnual)} of variable pay a year, so {inr(exAnnual / 2)} for a half year. With a PMS score of {exScore}%, the payout is {exPay}%: <b className="text-ink-900">{inr(((exAnnual / 2) * exPay) / 100)}</b>.</p>
+
+              <H n={8}>How to claim it</H>
+              <p>When a half year ends, open My Variable Pay. If you are eligible, check your quarters and the calculation, and appeal. Your appeal goes straight to the Finance Head, who approves it (any change to the amount comes with a reason) or sends it back to you, and then marks it paid. The Finance Head’s own appeal is approved by an Admin.</p>
+
+              <footer className="mt-10 flex justify-between border-t border-ink-200 pt-3 text-[10px] uppercase tracking-wider text-ink-400">
+                <span>People Hub · Variable Pay Policy</span><span>Page 1 of 1</span>
+              </footer>
+            </article>
+          )}
+        </ModalBody>
+        <ModalFooter className="border-t border-ink-200 dark:border-white/10">
+          {canEdit && !editing && <Button variant="light" className="mr-auto" onPress={() => setEditing(true)}>Edit slabs</Button>}
+          {editing && (
+            <>
+              <Button variant="light" className="mr-auto" onPress={() => { setDraft(null); setEditing(false); }}>Cancel editing</Button>
+              <Button color="primary" isDisabled={!draft} isLoading={busy} onPress={save}>Save slabs</Button>
+            </>
+          )}
+          <Button variant="bordered" onPress={onClose}>Close</Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   );
 }
-
 // ═══ Eligibility (HR) ════════════════════════════════════════════════════════════════════════════
-interface Elig { userId: number; name: string; department: string; cycle: string; cycleSet: boolean; cycleLabel: string; level: string; levelPct: number; ctc: number | null; override: number | null; annual: number | null; source: "OVERRIDE" | "CTC" | null; perPeriod: number | null }
+interface EligRow { userId: number; name: string; department: string; cycle: string; cycleSet: boolean; cycleLabel: string; level: string; levelPct: number; ctc: number | null; override: number | null; annual: number | null; source: "OVERRIDE" | "CTC" | null; perPeriod: number | null }
 export function VariablePayEligibility() {
-  const { d, loading, error, load } = useLoad<Elig[]>(`${BASE}/eligibility`);
+  const { d, loading, error, load } = useLoad<EligRow[]>(`${BASE}/eligibility`);
   const canEdit = hasModuleAccess("hub_variable_pay_eligibility", "update");
   const [q, setQ] = useState("");
   const [only, setOnly] = useState("all");
-  const [edit, setEdit] = useState<Record<number, { override?: string; cycle?: string }>>({});
+  const [edit, setEdit] = useState<Record<number, { override?: string }>>({});
   const [busy, setBusy] = useState<number | null>(null);
   const rows = (d ?? []).filter((p) => (!q || `${p.name} ${p.department}`.toLowerCase().includes(q.toLowerCase())) && (only === "all" || (only === "missing" ? p.annual == null : p.source === "OVERRIDE")));
-  const save = (p: Elig) => {
+  const save = (p: EligRow) => {
     const e = edit[p.userId] ?? {};
     const body: Record<string, unknown> = {};
     if (e.override !== undefined) body.annualVariable = e.override === "" ? null : Number(e.override);
-    if (e.cycle !== undefined) body.cycle = e.cycle;
     setBusy(p.userId);
     axios.put(`${BASE}/eligibility/${p.userId}`, body)
       .then(() => { addToast({ title: "Saved", description: p.name, color: "success" }); setEdit((x) => { const n = { ...x }; delete n[p.userId]; return n; }); load(); })
@@ -704,7 +888,7 @@ export function VariablePayEligibility() {
   const levelName: Record<string, string> = { ASSOCIATE: "Associate", MANAGER: "Manager", HEAD_EL: "Head / EL" };
   return (
     <section className="flex flex-col gap-5">
-      <Header title="Eligibility" sub="Each person's variable pay cycle and target variable. It comes from their CTC and level (Appraisal Setup); set an annual amount here to use a different one." />
+      <Header title="Eligibility" sub="Each person's target variable, paid in two halves a year. It comes from their CTC and level (Appraisal Setup); set an annual amount here to use a different one." />
       {loading && !d && <Spinner />}
       {error && <p className="text-sm text-rose-600">{error}</p>}
       {d && (
@@ -723,24 +907,17 @@ export function VariablePayEligibility() {
           </div>
           <div className="overflow-x-auto border border-ink-200 bg-white dark:border-white/10 dark:bg-ink-900">
             <table className="w-full text-sm">
-              <thead className="bg-ink-50 dark:bg-ink-800"><tr className="text-left">{["Person", "Level", "Annual CTC", "Cycle", "Annual variable", "Per period", ""].map((h) => <th key={h} className="whitespace-nowrap px-3 py-2.5">{h}</th>)}</tr></thead>
+              <thead className="bg-ink-50 dark:bg-ink-800"><tr className="text-left">{["Person", "Level", "Annual CTC", "Cycle", "Annual variable", "Per half year", ""].map((h) => <th key={h} className="whitespace-nowrap px-3 py-2.5">{h}</th>)}</tr></thead>
               <tbody>
                 {rows.map((p) => {
                   const e = edit[p.userId] ?? {};
-                  const dirty = e.override !== undefined || e.cycle !== undefined;
+                  const dirty = e.override !== undefined;
                   return (
                     <tr key={p.userId} className="border-t border-ink-100 align-middle dark:border-white/5">
                       <td className="px-3 py-2"><b>{p.name}</b><p className="text-xs text-ink-500">{p.department}</p></td>
                       <td className="whitespace-nowrap px-3 py-2">{levelName[p.level] ?? p.level} <span className="text-xs text-ink-500">({p.levelPct}%)</span></td>
                       <td className="px-3 py-2 tabular-nums">{inr(p.ctc)}</td>
-                      <td className="px-3 py-2">
-                        {canEdit ? (
-                          <select aria-label={`Cycle for ${p.name}`} className="h-8 border border-ink-200 bg-white px-2 text-sm dark:border-white/10 dark:bg-ink-900" value={e.cycle ?? (p.cycleSet ? p.cycle : "")} onChange={(ev) => setEdit((x) => ({ ...x, [p.userId]: { ...e, cycle: ev.target.value } }))}>
-                            {!p.cycleSet && <option value="">Not set (half-yearly)</option>}
-                            <option value="QUARTERLY">Quarterly</option><option value="HALF_YEARLY">Half-yearly</option><option value="ANNUAL">Annual</option>
-                          </select>
-                        ) : <span>{p.cycleLabel}{!p.cycleSet && <span className="text-xs text-ink-500"> (not set)</span>}</span>}
-                      </td>
+                      <td className="px-3 py-2">Half-yearly</td>
                       <td className="px-3 py-2">
                         {canEdit ? (
                           <input type="number" min={0} aria-label={`Annual variable for ${p.name}`} placeholder={p.ctc ? `${inr(Math.round((p.ctc * p.levelPct) / 100))} from CTC` : "not set"}

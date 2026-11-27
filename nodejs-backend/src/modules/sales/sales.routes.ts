@@ -109,37 +109,44 @@ taCallsRouter.post('/list', async (req, res, next) => {
 const tamRouter = Router();
 tamRouter.use(authenticate);
 
+// Real table tam_accounts; the bodies are what DailyActivityLog sends (userID in the body is ignored: the signed-in user is used)
+const TamStatusSchema = z.enum(['NOT_LIVE', 'LIVE']);
 const CreateTAMSchema = z.object({
-  AccountName: z.string().min(2),
-  ContactPerson: z.string().optional(),
-  ContactEmail: z.string().email().optional(),
-  TAMUserID: z.number().int().positive().optional(),
-  Status: z.string().optional(),
+  publisherName: z.string().trim().min(1),
+  status: TamStatusSchema.default('NOT_LIVE'),
+  entryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  userID: z.number().int().optional(),
 });
 
 const UpdateTAMSchema = z.object({
-  AccountID: z.number().int().positive(),
-  AccountName: z.string().min(2).optional(),
-  ContactPerson: z.string().optional(),
-  ContactEmail: z.string().email().optional(),
-  TAMUserID: z.number().int().positive().optional(),
-  Status: z.string().optional(),
+  accountId: z.coerce.number().int().positive(),
+  publisherName: z.string().trim().min(1).optional(),
+  status: TamStatusSchema.optional(),
+  userID: z.number().int().optional(),
 });
 
 // POST /tam/create
 tamRouter.post('/create', validate(CreateTAMSchema), async (req, res, next) => {
-  try { sendSuccess(res, await svc.createTAMAccount(req.body), 201); } catch (e) { next(e); }
+  try {
+    const b = req.body as z.infer<typeof CreateTAMSchema>;
+    sendSuccess(res, await svc.createTAMAccount({ publisherName: b.publisherName, status: b.status, entryDate: b.entryDate, userId: Number(req.user?.sub) }), 201);
+  } catch (e) { next(e); }
 });
 
 // PUT  /tam/update
 tamRouter.put('/update', validate(UpdateTAMSchema), async (req, res, next) => {
-  try { sendSuccess(res, await svc.updateTAMAccount(req.body)); } catch (e) { next(e); }
+  try {
+    const b = req.body as z.infer<typeof UpdateTAMSchema>;
+    sendSuccess(res, await svc.updateTAMAccount({ accountId: b.accountId, publisherName: b.publisherName, status: b.status, userId: Number(req.user?.sub) }));
+  } catch (e) { next(e); }
 });
 
-// GET  /tam/list
+// GET  /tam/list?page=1&size=10&status=ALL|LIVE|NOT_LIVE → { data, totalItems, totalPages, currentPage } (not wrapped: the page reads result.data.data)
 tamRouter.get('/list', async (req, res, next) => {
   try {
-    sendSuccess(res, await svc.getTAMAccounts(req.query['status'] as string | undefined));
+    const page = Math.max(1, Number(req.query['page']) || 1);
+    const size = Math.min(500, Math.max(1, Number(req.query['size']) || 10));
+    res.json(await svc.getTAMAccounts({ page, size, status: req.query['status'] as string | undefined }));
   } catch (e) { next(e); }
 });
 

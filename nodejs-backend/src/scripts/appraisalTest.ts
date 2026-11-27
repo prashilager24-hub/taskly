@@ -100,13 +100,13 @@ async function seedPms(uid: number, key: string) {
     { q: 'Q2', y: 2026, s: '2026-04-01', e: '2026-06-30', t: 93, g: 85, u: 78, ef: 103, sg: 8, mr: 7.1 },
     { q: 'Q3', y: 2026, s: '2026-07-01', e: '2026-09-30', t: 97, g: 90, u: 80, ef: 105, sg: 9, mr: 7.6 },
   ];
-  await pool.execute('DELETE FROM quarterlyreview WHERE emp_id = ?', [uid]);
+  await pool.execute('DELETE FROM QuarterlyReview WHERE emp_id = ?', [uid]);
   for (const x of quarters) {
     const target = x.t + bump, goal = x.g + bump;
     const final = Math.round(((target * 0.4 + goal * 0.6) / 10) * 100) / 100;
     const label = final >= 8.5 ? 'Exceeds Expectations' : final >= 7 ? 'Meets Expectations' : 'Approaching Expectations';
     await pool.execute(
-      `INSERT INTO quarterlyreview SET emp_id = ?, quarter = ?, quarter_year = ?, quarter_start_date = ?, quarter_end_date = ?, target_percent = ?, goal_achievement = ?, utilization_percent = ?,
+      `INSERT INTO QuarterlyReview SET emp_id = ?, quarter = ?, quarter_year = ?, quarter_start_date = ?, quarter_end_date = ?, target_percent = ?, goal_achievement = ?, utilization_percent = ?,
          efficiency_percent = ?, efficiency_label = ?, system_grade = ?, manager_avg_rating = ?, final_rating = ?, manager_ratings = ?, feedback = ?, status = 'On Track', grade = ?, created_at = NOW(), updated_at = NOW()`,
       [uid, x.q, x.y, x.s, x.e, target, goal, x.u, x.ef, x.ef >= 100 ? 'High' : 'At Par', x.sg, x.mr, final, '{}',
         JSON.stringify([
@@ -165,7 +165,7 @@ async function reset(who?: string) {
 
 async function remove() {
   await reset();
-  await pool.execute('DELETE FROM quarterlyreview WHERE emp_id IN (SELECT UserID FROM Users WHERE UserEmail LIKE ?)', [EMAIL_LIKE]);
+  await pool.execute('DELETE FROM QuarterlyReview WHERE emp_id IN (SELECT UserID FROM Users WHERE UserEmail LIKE ?)', [EMAIL_LIKE]);
   await pool.execute('DELETE FROM DepartmentUser WHERE DepartmentID IN (SELECT DepartmentID FROM Department WHERE DepartmentName = ?)', [DEPT]);
   await pool.execute('DELETE FROM Department WHERE DepartmentName = ?', [DEPT]);
   await pool.execute('DELETE FROM UserSession WHERE UserID IN (SELECT UserID FROM Users WHERE UserEmail LIKE ?)', [EMAIL_LIKE]).catch(() => undefined);

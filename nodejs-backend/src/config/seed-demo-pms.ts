@@ -28,7 +28,7 @@ const TOPICS: Record<string, [string, string][]> = {
 (async () => {
   const [rows] = await pool.query<mysql.RowDataPacket[]>(
     `SELECT qr.id, qr.emp_id, qr.target_percent, qr.goal_achievement, rm.UserID AS rmId, rm.UserName AS rmName, el.UserID AS elId, el.UserName AS elName
-     FROM quarterlyreview qr JOIN Users u ON u.UserID = qr.emp_id
+     FROM QuarterlyReview qr JOIN Users u ON u.UserID = qr.emp_id
      LEFT JOIN Users rm ON rm.UserID = u.ReportingManagerID LEFT JOIN Users el ON el.UserID = u.ELManagerID
      WHERE ? OR qr.manager_ratings IS NULL OR qr.manager_ratings = '' OR qr.manager_ratings = 'null'
      ORDER BY qr.id`, [process.argv.includes('--force') ? 1 : 0]);
@@ -60,7 +60,7 @@ const TOPICS: Record<string, [string, string][]> = {
         assessor1Name: r['rmName'] ?? null, assessor2Name: r['elName'] ?? null, assessor1Id: r['rmId'] ?? null, assessor2Id: r['elId'] ?? null,
       }));
     await pool.query(
-      `UPDATE quarterlyreview SET manager_ratings = ?, feedback = ?, grade = ?, manager_avg_rating = ?, final_rating = ?, system_grade = ? WHERE id = ?`,
+      `UPDATE QuarterlyReview SET manager_ratings = ?, feedback = ?, grade = ?, manager_avg_rating = ?, final_rating = ?, system_grade = ? WHERE id = ?`,
       [JSON.stringify(ratings), JSON.stringify(feedback),
         JSON.stringify([{ finalGrade: grade, finalGradeLabel: GRADE_LABELS[grade], goalWeight: 60, targetWeight: 40, starRating: pct >= 100 ? 1 : 0 }]),
         mgr.toFixed(2), finalRating, Math.max(1, Math.min(10, Math.round(system))), r['id']]);

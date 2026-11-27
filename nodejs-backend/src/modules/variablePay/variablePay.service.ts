@@ -14,7 +14,7 @@ import { AppError } from '../../utils/AppError';
 import { levelOf } from '../access/hierarchy';
 import { hierarchyTeamOf } from '../access/hierarchy';
 import { VARIABLE_PCT, type EmployeeLevel } from '../appraisal/appraisal.calc';
-import { isFinance, isFinanceHead } from '../appraisal/appraisal.service';
+import { isFinance, isFinanceHead, pmsQuartersBetween } from '../appraisal/appraisal.service';
 import { performanceReport } from '../reports/performanceReport.service';
 import type { ReasonCode } from '../pms/pmsScore';
 
@@ -101,11 +101,12 @@ async function people(ids: number[] | null): Promise<Map<number, Person>> {
     const level: EmployeeLevel = (u['EmployeeLevel'] as EmployeeLevel | null) ?? ({ el: 'HEAD_EL', fl: 'MANAGER' } as Record<string, EmployeeLevel>)[levelOf(Number(u['RoleID']))] ?? 'ASSOCIATE';
     const levelPct = VARIABLE_PCT[level];
     const ctc = n(u['CurrentAnnualCtc']), override = n(u['AnnualVariable']);
-    const cycleSet = ['QUARTERLY', 'HALF_YEARLY', 'ANNUAL'].includes(String(u['VariableCycle']));
+    // variable pay is worked out and paid each half year (April – September, October – March) for everyone
+    const cycleSet = true;
     const annual = override ?? (ctc ? Math.round((ctc * levelPct) / 100) : null);
     const dept = n(u['DeptID']);
     out.set(Number(u['UserID']), {
-      userId: Number(u['UserID']), name: String(u['UserName']), cycle: cycleSet ? (u['VariableCycle'] as Cycle) : 'HALF_YEARLY', cycleSet, level, levelPct, ctc, override, annual,
+      userId: Number(u['UserID']), name: String(u['UserName']), cycle: 'HALF_YEARLY', cycleSet, level, levelPct, ctc, override, annual,
       source: override != null ? 'OVERRIDE' : ctc ? 'CTC' : null, departmentId: dept, department: dept ? dn.get(dept) ?? `Department ${dept}` : 'No department',
     });
   }
@@ -183,15 +184,20 @@ async function notify(users: (number | null | undefined)[], title: string, body:
 const inr = (v: number) => `₹${Math.round(v).toLocaleString('en-IN')}`;
 
 // ── Eligibility for a period: can this person appeal, and if not, why ──
-export interface Eligibility { eligible: boolean; reasons: string[]; minScore: number; gap: number | null }
+export interface Eligibility { eligible: boolean; reasons: string[]; short: string; minScore: number; gap: number | null }
 function eligibilityOf(p: Person, q: Awaited<ReturnType<typeof quote>>, list: Slab[]): Eligibility {
   const minScore = list.filter((s) => s.payout == null || s.payout > 0).map((s) => s.from).sort((a, b) => a - b)[0] ?? 0;
   const reasons: string[] = [];
   if (p.annual == null) reasons.push('Your variable pay is not set up: HR has not added your CTC in Appraisal Setup (or an amount in Variable Pay → Eligibility).');
   if (!q.goalEntries && !q.targetEntries) reasons.push('There are no goal or target entries for you in this period, so there is no PMS score.');
   else if (q.score == null) reasons.push(`Your ${q.goalEntries ? 'target' : 'goal'} results aren't recorded for this period, so a PMS score can't be given (it needs both goal and target results).`);
-  else if (q.slabPct <= 0) reasons.push(`Your PMS score is ${q.score?.toFixed(2) ?? '0'}%; variable pay starts at ${minScore}% (see Policy & Slabs).`);
-  return { eligible: !reasons.length, reasons, minScore, gap: q.score != null && q.score < minScore ? r2(minScore - q.score) : null };
+  else if (q.slabPct <= 0) reasons.push(`Your PMS score is ${q.score?.toFixed(2) ?? '0'}%; variable pay starts at ${minScore}% (see the Variable Pay Policy).`);
+  // one short line for the page (no long explanations)
+  const short = p.annual == null ? 'Your variable pay is not set up yet; HR adds it.'
+    : !q.goalEntries && !q.targetEntries ? 'No goal or target entries in this half year.'
+    : q.score == null ? `Your ${q.goalEntries ? 'target' : 'goal'} results are missing for this half year.`
+    : q.slabPct <= 0 ? `Your PMS score is ${q.score.toFixed(2)}%; variable pay starts at ${minScore}%.` : '';
+  return { eligible: !reasons.length, reasons, short, minScore, gap: q.score != null && q.score < minScore ? r2(minScore - q.score) : null };
 }
 
 // ── My Variable Pay ──
@@ -213,12 +219,44 @@ export async function mine(userId: number) {
   return {
     person: { cycle: p.cycle, cycleLabel: CYCLE_LABEL[p.cycle], cycleSet: p.cycleSet, level: p.level, levelPct: p.levelPct, annual: p.annual, source: p.source, department: p.department },
     approver: head && head.userId !== userId ? head : { userId: 0, name: 'Admin' },
-    slabs: list,
+    slabs: list, levels: VARIABLE_PCT,
     current: { ...current, quote: cq, eligibility: eligibilityOf(p, cq, list) },
     periods,
     requests,
   };
 }
+/** The calendar quarters of a period, oldest first (a half year has two) */
+function quartersIn(period: Period): Period[] {
+  const out: Period[] = [];
+  for (let q = periodOn('QUARTERLY', period.start); q.start <= period.end; q = periodOn('QUARTERLY', nextDay(q.end))) out.push(q);
+  return out;
+}
+const nextDay = (ymd: string) => { const d = new Date(`${ymd}T00:00:00`); d.setDate(d.getDate() + 1); return iso(d); };
+
+/**
+ * What the person sees when they open a half year (the "Appeal for Variable Pay" view, like My Appraisal): each quarter's
+ * PMS Quarterly Review and Quarter Highlights (as in the appraisal), and next to it each quarter's PMS Dashboard figures
+ * (Goal %, Target %, PMS score) and the half year's calculation against the policy.
+ */
+export async function myPeriod(userId: number, periodKey: string) {
+  const p = await personOf(userId);
+  const { current, sendable } = periodsFor(p.cycle);
+  const period = [...sendable, current].find((x) => x.key === periodKey);
+  if (!period) throw AppError.badRequest('That half year is not open for variable pay');
+  const quarters = [];
+  for (const q of quartersIn(period)) {
+    const s = await scoreOf(userId, q);
+    quarters.push({ quarter: q.key.slice(5), year: Number(q.key.slice(0, 4)), start: q.start, end: q.end, goalPct: s.goalPct, targetPct: s.targetPct, score: s.score, goalEntries: s.goalEntries, targetEntries: s.targetEntries });
+  }
+  const pms = await pmsQuartersBetween(userId, period.start, period.end);
+  const [notes] = await pool.query<Row[]>('SELECT Quarter, QuarterYear, BiggestAchievement, BiggestFailure FROM QuarterReflection WHERE UserID = ?', [userId]);
+  const slots = quarters.map((q, i) => {
+    const note = notes.find((x) => x['Quarter'] === q.quarter && Number(x['QuarterYear']) === q.year);
+    return { n: i + 1, quarter: q.quarter, year: q.year, achievement: String(note?.['BiggestAchievement'] ?? ''), failure: String(note?.['BiggestFailure'] ?? '') };
+  });
+  return { period, quarters, pms, slots };
+}
+
 async function financeHeadRef() {
   const [d] = await pool.query<Row[]>(
     `SELECT u.UserID, u.UserName FROM Department d JOIN Users u ON u.UserID = d.ExecutiveLeaderID AND u.IsUserArchived = 0

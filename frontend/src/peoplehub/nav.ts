@@ -77,7 +77,6 @@ export const NAV: NavModule[] = [
       { title: "My Variable Pay", href: "/hub/variable-pay/my", roles: both },
       { title: "Team Variable Pay", href: "/hub/variable-pay/team", roles: both },
       { title: "Variable Pay Overview", href: "/hub/variable-pay/finance", roles: admin },
-      { title: "Policy & Slabs", href: "/hub/variable-pay/policy", roles: both },
       { title: "Eligibility", href: "/hub/variable-pay/eligibility", roles: admin },
     ],
   },

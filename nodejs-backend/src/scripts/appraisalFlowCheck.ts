@@ -24,7 +24,7 @@ async function user(key: string, role: number) {
 async function cleanup() {
   const all = Object.values(ids);
   if (all.length) {
-    for (const u of all) await pool.execute("DELETE n FROM Notification n WHERE JSON_CONTAINS(n.Audience, CAST(? AS JSON), '$.users')", [u]);
+    for (const u of all) await pool.execute("DELETE n FROM Notification n WHERE JSON_CONTAINS(n.Audience, CAST(? AS CHAR), '$.users')", [u]);
     await pool.query('DELETE FROM AppraisalAudit WHERE CycleID IN (SELECT CycleID FROM AppraisalCycle WHERE UserID IN (?))', [all]);
     await pool.query('DELETE FROM AppraisalCycle WHERE UserID IN (?)', [all]);
   }

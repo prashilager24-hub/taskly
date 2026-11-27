@@ -23,7 +23,7 @@ export default function QuarterGrid({ slots, pms }: { slots: Slot[]; pms: PmsQua
                     </tr>
                 </thead>
                 <tbody>
-                    {[...slots].sort((x, y) => x.quarter.localeCompare(y.quarter)).map((s) => {
+                    {[...slots].sort((x, y) => x.year - y.year || x.quarter.localeCompare(y.quarter)).map((s) => {
                         const p = find(s);
                         return (
                             <tr key={s.n} className="border-b border-ink-100 align-top last:border-0 dark:border-white/5">

@@ -36,10 +36,10 @@ export async function pmsOverview() {
      ORDER BY u.UserName`);
 
   const [quarterly] = await pool.query<Row[]>(
-    `SELECT id, emp_id, quarter, quarter_year, target_percent, goal_achievement, final_rating, system_grade, status FROM quarterlyreview`);
+    `SELECT id, emp_id, quarter, quarter_year, target_percent, goal_achievement, final_rating, system_grade, status FROM QuarterlyReview`);
 
   const [monthly] = await pool.query<Row[]>(
-    `SELECT id, emp_id, month, year, target, goal, utilization, efficiency, efficiency_label, status, start_date, created_at, feedback FROM monthlyreview`);
+    `SELECT id, emp_id, month, year, target, goal, utilization, efficiency, efficiency_label, status, start_date, created_at, feedback FROM MonthlyReview`);
 
   return {
     people: people.map((p) => ({

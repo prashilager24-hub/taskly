@@ -53,7 +53,7 @@ async function departmentNames(userIds: number[]) {
   return map;
 }
 
-const QUARTERLY_SELECT = `SELECT qr.*, u.UserName, u.UserEmail FROM quarterlyreview qr JOIN Users u ON u.UserID = qr.emp_id`;
+const QUARTERLY_SELECT = `SELECT qr.*, u.UserName, u.UserEmail FROM QuarterlyReview qr JOIN Users u ON u.UserID = qr.emp_id`;
 
 export async function listQuarterly(empId?: number, quarter?: string, year?: string) {
   const [rows] = await pool.query<Row[]>(
@@ -80,20 +80,20 @@ export async function createQuarterly(b: QuarterlyBody) {
   if (!emp) throw AppError.notFound('Employee not found');
   await requireReflection(b.empId!, b.quarter, b.quarterYear);
   const [res] = await pool.execute<mysql.ResultSetHeader>(
-    `INSERT INTO quarterlyreview SET emp_id = ?, ${QUARTERLY_COLS}, created_at = NOW(), updated_at = NOW()`,
+    `INSERT INTO QuarterlyReview SET emp_id = ?, ${QUARTERLY_COLS}, created_at = NOW(), updated_at = NOW()`,
     [b.empId, ...quarterlyValues(b)] as never[]);
   return res.insertId;
 }
 
 export async function updateQuarterly(id: number, b: QuarterlyBody) {
   const [res] = await pool.execute<mysql.ResultSetHeader>(
-    `UPDATE quarterlyreview SET ${QUARTERLY_COLS}, updated_at = NOW() WHERE id = ?`, [...quarterlyValues(b), id] as never[]);
+    `UPDATE QuarterlyReview SET ${QUARTERLY_COLS}, updated_at = NOW() WHERE id = ?`, [...quarterlyValues(b), id] as never[]);
   if (!res.affectedRows) throw AppError.notFound('Quarterly review not found');
   return id;
 }
 
 export async function deleteQuarterly(id: number) {
-  await pool.execute('DELETE FROM quarterlyreview WHERE id = ?', [id]);
+  await pool.execute('DELETE FROM QuarterlyReview WHERE id = ?', [id]);
 }
 
 // ── Monthly ──────────────────────────────────────────────────────────────────
@@ -114,27 +114,27 @@ function monthlyDto(r: Row) {
 }
 
 export async function listMonthly(empId: number, year: string) {
-  const [rows] = await pool.execute<Row[]>('SELECT * FROM monthlyreview WHERE emp_id = ? ORDER BY id DESC', [empId]);
+  const [rows] = await pool.execute<Row[]>('SELECT * FROM MonthlyReview WHERE emp_id = ? ORDER BY id DESC', [empId]);
   const list = year.toUpperCase() === 'ALL' ? rows : rows.filter((r) => String(r['year']) === year);
   return list.map(monthlyDto);
 }
 
 export async function createMonthly(b: MonthlyBody) {
   const [dupes] = await pool.execute<Row[]>(
-    'SELECT id FROM monthlyreview WHERE emp_id = ? AND month = ? AND year = ? AND start_date <=> ? AND end_date <=> ?',
+    'SELECT id FROM MonthlyReview WHERE emp_id = ? AND month = ? AND year = ? AND start_date <=> ? AND end_date <=> ?',
     [b.empId ?? 0, b.month ?? '', b.year ?? 0, b.startDate ?? null, b.endDate ?? null]);
   if (dupes.length) throw AppError.badRequest('Monthly review already exists for this date range');
   const [res] = await pool.execute<mysql.ResultSetHeader>(
-    `INSERT INTO monthlyreview (emp_id, month, year, target, goal, utilization, efficiency, efficiency_label, status, start_date, end_date, feedback, accessor, timestamp)
+    `INSERT INTO MonthlyReview (emp_id, month, year, target, goal, utilization, efficiency, efficiency_label, status, start_date, end_date, feedback, accessor, timestamp)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [b.empId, b.month, b.year, b.target ?? null, b.goal ?? null, b.utilization ?? null, b.efficiency ?? null, b.efficiencyLabel ?? null,
       b.status ?? null, b.startDate ?? null, b.endDate ?? null, jsonText(b.feedback), jsonText(b.accessor), b.timestamp ?? null] as never[]);
-  const [[row]] = await pool.execute<Row[]>('SELECT * FROM monthlyreview WHERE id = ?', [res.insertId]);
+  const [[row]] = await pool.execute<Row[]>('SELECT * FROM MonthlyReview WHERE id = ?', [res.insertId]);
   return monthlyDto(row!);
 }
 
 export async function deleteMonthly(id: number) {
-  const [res] = await pool.execute<mysql.ResultSetHeader>('DELETE FROM monthlyreview WHERE id = ?', [id]);
+  const [res] = await pool.execute<mysql.ResultSetHeader>('DELETE FROM MonthlyReview WHERE id = ?', [id]);
   if (!res.affectedRows) throw AppError.notFound('Monthly review not found');
 }
 
@@ -167,7 +167,7 @@ export async function reviewStatusSummary(f: { departmentID?: number; filterType
             MAX(qr.manager_ratings) AS managerRatings, MAX(qr.target_percent) AS targetPercent, MAX(qr.goal_achievement) AS goalAchievement,
             MAX(u.EmployeeID) AS empId, MAX(rm.UserName) AS reportingManagerName, MAX(el.UserName) AS elName,
             (SELECT MAX(d.DepartmentName) FROM DepartmentUser du2 JOIN Department d ON d.DepartmentID = du2.DepartmentID WHERE du2.UserID = u.UserID) AS department
-     FROM quarterlyreview qr
+     FROM QuarterlyReview qr
      JOIN Users u ON u.UserID = qr.emp_id
      LEFT JOIN Users rm ON rm.UserID = u.ReportingManagerID
      LEFT JOIN Users el ON el.UserID = u.ELManagerID

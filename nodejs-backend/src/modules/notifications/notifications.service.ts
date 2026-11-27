@@ -26,9 +26,9 @@ const parse = (raw: unknown): Audience => { try { return audienceOf(JSON.parse(S
 /** Who can see a notification: everyone, or anyone matching a department / role / person in its audience */
 const AUDIENCE_SQL = `(
   JSON_EXTRACT(n.Audience, '$.all') = true
-  OR JSON_CONTAINS(n.Audience, CAST(u.UserID AS JSON), '$.users')
-  OR JSON_CONTAINS(n.Audience, CAST(u.RoleID AS JSON), '$.roles')
-  OR EXISTS (SELECT 1 FROM Department d WHERE JSON_CONTAINS(n.Audience, CAST(d.DepartmentID AS JSON), '$.departments')
+  OR JSON_CONTAINS(n.Audience, CAST(u.UserID AS CHAR), '$.users')
+  OR JSON_CONTAINS(n.Audience, CAST(u.RoleID AS CHAR), '$.roles')
+  OR EXISTS (SELECT 1 FROM Department d WHERE JSON_CONTAINS(n.Audience, CAST(d.DepartmentID AS CHAR), '$.departments')
        AND (d.DepartmentID IN (SELECT DepartmentID FROM DepartmentUser WHERE UserID = u.UserID) OR d.ExecutiveLeaderID = u.UserID OR d.FunctionalLeaderID = u.UserID))
 )`;
 
